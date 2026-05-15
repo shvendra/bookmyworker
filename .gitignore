@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+build/
+*.log
+.DS_Store
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+android/
+ios/
+bookmyworkers-mobile
