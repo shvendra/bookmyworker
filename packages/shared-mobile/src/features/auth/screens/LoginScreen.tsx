@@ -15,16 +15,24 @@ import {
   View,
 } from 'react-native';
 import { ROUTES } from '../../../shared/constants/routes';
-import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppInput } from '../../../shared/components/ui/AppInput';
 import { useAppTheme } from '../../../core/theme';
 import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
 import { authService } from '../services/authService';
+import { loginWithPassword } from '../../../core/api/endpoints/authApi';
+import { useAuth } from '../../../state/auth/AuthContext';
 import { type PhoneFormValues, phoneSchema } from '../validation/authSchemas';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { AuthStackParamList } from '../../../app/navigation/types';
+
+const passwordLoginSchema = z.object({
+  phone: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+  password: z.string().min(1, 'Password is required'),
+});
+type PasswordLoginValues = z.infer<typeof passwordLoginSchema>;
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -33,10 +41,11 @@ const { height: H } = Dimensions.get('window');
 export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const roleHint = route.params?.roleHint;
   const { theme } = useAppTheme();
-  const { t } = useTranslation();
   const toast = useToast();
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mode, setMode] = useState<'otp' | 'password'>('otp');
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -48,12 +57,20 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<PhoneFormValues>({
+  // OTP login form
+  const otpForm = useForm<PhoneFormValues>({
     resolver: zodResolver(phoneSchema),
     defaultValues: { phone: '' },
   });
+  const { control, handleSubmit, formState: { errors } } = otpForm;
 
-  const onSubmit = handleSubmit(async (values) => {
+  // Password login form
+  const pwForm = useForm<PasswordLoginValues>({
+    resolver: zodResolver(passwordLoginSchema),
+    defaultValues: { phone: '', password: '' },
+  });
+
+  const onSubmitOtp = handleSubmit(async (values) => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -68,6 +85,30 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
       setIsLoading(false);
     }
   });
+
+  const onSubmitPassword = pwForm.handleSubmit(async (values) => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const response = await loginWithPassword({ phone: values.phone, password: values.password });
+      await signIn({
+        tokens: { accessToken: response.token, refreshToken: response.token, expiresAt: Date.now() + 24 * 60 * 60 * 1000 },
+        user: response.user,
+        onboardingCompleted: true,
+        availableRoles: response.availableRoles,
+      });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Invalid phone or password. Please try again.';
+      setErrorMessage(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  });
+
+  const switchMode = (newMode: 'otp' | 'password'): void => {
+    setMode(newMode);
+    setErrorMessage(null);
+  };
 
   const isDark = theme.mode === 'dark';
 
@@ -117,77 +158,143 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
               !isDark && styles.cardShadow,
             ]}
           >
-            {/* Card header */}
-            <View style={styles.cardHeader}>
-              <AppText variant="heading" color={theme.colors.text}>
-                Welcome back 👋
-              </AppText>
-              <AppText variant="body" color={theme.colors.mutedText} style={styles.cardSubtitle}>
-                Enter your mobile number to receive an OTP
-              </AppText>
-            </View>
-
-            {/* Phone input */}
-            <View style={styles.inputGroup}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
-                Mobile Number
-              </AppText>
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="9876543210"
-                    keyboardType="phone-pad"
-                    leadingIcon="+91"
-                    maxLength={10}
-                    errorText={errors.phone?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Error message */}
-            {errorMessage ? (
-              <View style={[styles.errorBanner, { backgroundColor: theme.colors.dangerLight }]}>
-                <AppText variant="caption" color={theme.colors.danger}>
-                  ⚠ {errorMessage}
+            {/* Mode tabs */}
+            <View style={[styles.modeTabs, { borderColor: theme.colors.border }]}>
+              <TouchableOpacity
+                onPress={() => switchMode('otp')}
+                style={[styles.modeTab, mode === 'otp' && { backgroundColor: theme.colors.primary }]}
+                activeOpacity={0.8}
+              >
+                <AppText variant="labelSm" color={mode === 'otp' ? '#fff' : theme.colors.mutedText}>
+                  OTP Login
                 </AppText>
-              </View>
-            ) : null}
-
-            {/* CTA */}
-            <AppButton
-              title="Send OTP"
-              onPress={onSubmit}
-              loading={isLoading}
-              size="lg"
-              fullWidth
-              style={styles.ctaBtn}
-            />
-
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-              <AppText variant="caption" color={theme.colors.mutedText} style={styles.dividerText}>
-                or
-              </AppText>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => switchMode('password')}
+                style={[styles.modeTab, mode === 'password' && { backgroundColor: theme.colors.primary }]}
+                activeOpacity={0.8}
+              >
+                <AppText variant="labelSm" color={mode === 'password' ? '#fff' : theme.colors.mutedText}>
+                  Password Login
+                </AppText>
+              </TouchableOpacity>
             </View>
 
-            {/* Forgot password */}
-            <TouchableOpacity
-              onPress={() => navigation.navigate(ROUTES.AUTH.FORGOT_PASSWORD, roleHint ? { roleHint } : undefined)}
-              style={styles.forgotBtn}
-              activeOpacity={0.7}
-            >
-              <AppText variant="body" color={theme.colors.primary} style={styles.forgotText}>
-                Login with Password / Forgot Password
-              </AppText>
-            </TouchableOpacity>
+            {mode === 'otp' ? (
+              <>
+                {/* OTP mode header */}
+                <View style={styles.cardHeader}>
+                  <AppText variant="heading" color={theme.colors.text}>Welcome back 👋</AppText>
+                  <AppText variant="body" color={theme.colors.mutedText} style={styles.cardSubtitle}>
+                    Enter your mobile number to receive an OTP
+                  </AppText>
+                </View>
+
+                {/* Phone input */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
+                    Mobile Number
+                  </AppText>
+                  <Controller
+                    control={control}
+                    name="phone"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="9876543210"
+                        keyboardType="phone-pad"
+                        leadingIcon="+91"
+                        maxLength={10}
+                        errorText={errors.phone?.message}
+                      />
+                    )}
+                  />
+                </View>
+
+                {errorMessage ? (
+                  <View style={[styles.errorBanner, { backgroundColor: theme.colors.dangerLight }]}>
+                    <AppText variant="caption" color={theme.colors.danger}>⚠ {errorMessage}</AppText>
+                  </View>
+                ) : null}
+
+                <AppButton title="Send OTP" onPress={onSubmitOtp} loading={isLoading} size="lg" fullWidth style={styles.ctaBtn} />
+              </>
+            ) : (
+              <>
+                {/* Password mode header */}
+                <View style={styles.cardHeader}>
+                  <AppText variant="heading" color={theme.colors.text}>Login with Password 🔑</AppText>
+                  <AppText variant="body" color={theme.colors.mutedText} style={styles.cardSubtitle}>
+                    Enter your registered mobile number and password
+                  </AppText>
+                </View>
+
+                {/* Phone */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
+                    Mobile Number
+                  </AppText>
+                  <Controller
+                    control={pwForm.control}
+                    name="phone"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="9876543210"
+                        keyboardType="phone-pad"
+                        leadingIcon="+91"
+                        maxLength={10}
+                        errorText={pwForm.formState.errors.phone?.message}
+                      />
+                    )}
+                  />
+                </View>
+
+                {/* Password */}
+                <View style={styles.inputGroup}>
+                  <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
+                    Password
+                  </AppText>
+                  <Controller
+                    control={pwForm.control}
+                    name="password"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="Enter your password"
+                        secureTextEntry
+                        errorText={pwForm.formState.errors.password?.message}
+                      />
+                    )}
+                  />
+                </View>
+
+                {/* Forgot password link */}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate(ROUTES.AUTH.FORGOT_PASSWORD, roleHint ? { roleHint } : undefined)}
+                  style={styles.forgotInlineBtn}
+                  activeOpacity={0.7}
+                >
+                  <AppText variant="caption" color={theme.colors.primary} style={styles.forgotInlineText}>
+                    Forgot Password?
+                  </AppText>
+                </TouchableOpacity>
+
+                {errorMessage ? (
+                  <View style={[styles.errorBanner, { backgroundColor: theme.colors.dangerLight }]}>
+                    <AppText variant="caption" color={theme.colors.danger}>⚠ {errorMessage}</AppText>
+                  </View>
+                ) : null}
+
+                <AppButton title="Login" onPress={onSubmitPassword} loading={isLoading} size="lg" fullWidth style={styles.ctaBtn} />
+              </>
+            )}
           </Animated.View>
 
           {/* Register link */}
@@ -278,20 +385,22 @@ const styles = StyleSheet.create({
 
   ctaBtn: { marginTop: 4 },
 
-  dividerRow: {
+  modeTabs: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 20,
   },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { paddingHorizontal: 4 },
+  modeTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 0,
+  },
 
-  forgotBtn: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  forgotText: { fontWeight: '600' },
+  forgotInlineBtn: { alignSelf: 'flex-end', marginBottom: 4 },
+  forgotInlineText: { fontWeight: '600' },
 
   registerRow: {
     flexDirection: 'row',

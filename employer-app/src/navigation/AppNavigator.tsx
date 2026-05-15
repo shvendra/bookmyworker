@@ -92,7 +92,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="Register" component={EmployerRegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} initialParams={{ roleHint: 'employer' }} />
           </>
         ) : !state.session?.onboardingCompleted ? (
           // ── Onboarding — just KYC, no role selection ─────────────
