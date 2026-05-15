@@ -1,0 +1,13 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "../packages/shared-mobile/src/**/*.ts",
+    "../packages/shared-mobile/src/**/*.tsx"
+  ]
+}

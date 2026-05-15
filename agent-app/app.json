@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "BookMyWorker",
+    "slug": "bookmyworker-agent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bookmyworker-agent",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ECFEFF"
+    },
+    "plugins": [
+      "expo-localization",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0891B2",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bookmyworkers.agent",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used for uploading KYC documents.",
+        "NSPhotoLibraryUsageDescription": "Used for uploading profile and KYC photos.",
+        "NSLocationWhenInUseUsageDescription": "Used to show nearby jobs and record attendance location."
+      }
+    },
+    "android": {
+      "package": "com.bookmyworkers.agent",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0891B2"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
+      "eas": {
+        "projectId": "bookmyworker-agent"
+      }
+    }
+  }
+}

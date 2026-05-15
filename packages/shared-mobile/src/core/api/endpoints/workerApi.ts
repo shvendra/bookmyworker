@@ -1,0 +1,180 @@
+import { apiClient } from '../client';
+import type { WorkerProfile, AttendanceRecord } from '../../../shared/types/domain';
+
+export interface WorkerSearchParams {
+  role?: string;
+  state?: string;
+  district?: string;
+  city?: string;
+  block?: string;
+  category?: string;
+  workerType?: string;
+  workerGroup?: string;
+  gender?: string;
+  minAge?: number;
+  maxAge?: number;
+  status?: string | string[];
+  page?: number;
+  limit?: number;
+}
+
+export interface RawAgent {
+  _id: string;
+  name: string;
+  phone: string;
+  role?: string;
+  status?: string;
+  state?: string;
+  district?: string;
+  block?: string;
+  areasOfWork?: string[];
+  fixedSalary?: number;
+  salaryFrom?: number;
+  salaryTo?: number;
+  workExperience?: number;
+  profilePhoto?: string;
+  rating?: number;
+  totalRatings?: number;
+  dob?: string | number;
+  gender?: string;
+  veryfiedBage?: boolean;
+}
+
+export interface GetAllAgentsResponse {
+  success: boolean;
+  agents: RawAgent[];
+  pagination?: { totalPages: number; currentPage: number; totalCount: number; total?: number };
+}
+
+export interface WorkerDetail {
+  _id: string;
+  name: string;
+  role?: string;
+  status?: string;
+  state?: string;
+  district?: string;
+  block?: string;
+  profilePhoto?: string;
+  areasOfWork?: string[];
+  fixedSalary?: number;
+  salaryFrom?: number;
+  salaryTo?: number;
+  workExperience?: number;
+  rating?: number;
+  totalRatings?: number;
+  dob?: string | number;
+  gender?: string;
+  veryfiedBage?: boolean;
+  bio?: string;
+  about?: string;
+  categories?: string[];
+  workerGroup?: string;
+}
+
+export interface WorkerDashboardData {
+  profile: WorkerProfile;
+  todayAttendance?: AttendanceRecord;
+  activeRequirements: number;
+  totalEarnings: number;
+  pendingPayouts: number;
+  recentJobs: Array<{ id: string; title: string; employer: string; date: string; status: string }>;
+}
+
+function mapAgentToWorkerProfile(u: RawAgent): WorkerProfile {
+  return {
+    id: u._id,
+    fullName: u.name,
+    phone: u.phone,
+    category: (u.areasOfWork?.[0]) ?? '',
+    state: u.state ?? '',
+    district: u.district ?? '',
+    tehsil: u.block ?? '',
+    experienceYears: typeof u.workExperience === 'number' ? u.workExperience : 0,
+    rating: u.rating ?? 0,
+    verified: u.status === 'Verified',
+    profileImage: u.profilePhoto,
+    kycStatus: u.status === 'Verified' ? 'verified' : u.status === 'Block' ? 'rejected' : 'pending',
+    available: u.status !== 'Block',
+    dailyRate: u.fixedSalary ?? u.salaryFrom,
+    skills: u.areasOfWork,
+  };
+}
+
+export const workerApi = {
+  getAllAgents: async (params: WorkerSearchParams) => {
+    const response = await apiClient.get<GetAllAgentsResponse>('/api/v1/user/getAllAgents', {
+      params: {
+        state: params.state || undefined,
+        city: params.city || params.district || undefined,
+        block: params.block || undefined,
+        workerType: params.workerType || undefined,
+        workerGroup: params.workerGroup || undefined,
+        role: params.role || undefined,
+        gender: params.gender || undefined,
+        minAge: params.minAge || undefined,
+        maxAge: params.maxAge || undefined,
+        status: params.status || undefined,
+        page: params.page ?? 1,
+        limit: params.limit ?? 25,
+      },
+    });
+    const agents = response.data?.agents ?? [];
+    const pagination = response.data?.pagination;
+    return {
+      workers: agents.map(mapAgentToWorkerProfile),
+      rawAgents: agents,
+      total: pagination?.total ?? pagination?.totalCount ?? agents.length,
+      pages: pagination?.totalPages ?? 1,
+      currentPage: pagination?.currentPage ?? 1,
+    };
+  },
+
+  unlockNumber: async (agentId: string): Promise<{ phone: string }> => {
+    const res = await apiClient.get<{ phone: string }>(`/api/v1/user/unlock-number/${agentId}`);
+    return res.data;
+  },
+
+  saveWorkerRemark: async (workerId: string, status: string): Promise<void> => {
+    await apiClient.post('/api/v1/user/worker-remark', { workerId, status });
+  },
+
+  getWorkerRemarks: async (): Promise<Array<{ workerId: string; status: string }>> => {
+    const res = await apiClient.get<Array<{ workerId: string; status: string }>>('/api/v1/user/worker-remarks');
+    return res.data ?? [];
+  },
+
+  search: async (params: WorkerSearchParams) => {
+    return workerApi.getAllAgents(params);
+  },
+
+  getWorkerById: async (id: string): Promise<WorkerDetail> => {
+    const res = await apiClient.get<{ success: boolean; worker: WorkerDetail }>(`/api/v1/user/worker/${id}`);
+    return res.data.worker;
+  },
+
+  getProfile: (id: string) =>
+    apiClient.get<WorkerProfile>(`/api/v1/user/${id}`).then((r) => r.data),
+
+  // Fetch multiple agents by IDs in one request — used for Interested Agents list
+  getAgentsByIds: async (ids: string[]): Promise<RawAgent[]> => {
+    if (!ids.length) return [];
+    const res = await apiClient.get<{ agents: RawAgent[] }>('/api/v1/user/getAllAgentsAdmin', {
+      params: { ids: ids.join(',') },
+    });
+    return res.data?.agents ?? [];
+  },
+
+  getDashboard: () =>
+    apiClient.get<WorkerDashboardData>('/api/v1/worker/dashboard').then((r) => r.data),
+
+  updateProfile: (data: Partial<WorkerProfile>) =>
+    apiClient.put<WorkerProfile>('/api/v1/user/update', data).then((r) => r.data),
+
+  getAttendance: (params?: { requirementId?: string; from?: string; to?: string }) =>
+    apiClient
+      .get<AttendanceRecord[]>('/api/v1/attendance/get-by-requirement', { params })
+      .then((r) => r.data),
+
+  markAttendance: (data: { requirementId: string; type: 'check-in' | 'check-out'; location?: string }) =>
+    apiClient.post<AttendanceRecord>('/api/v1/attendance/add-attendance', data).then((r) => r.data),
+};

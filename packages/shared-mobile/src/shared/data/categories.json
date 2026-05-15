@@ -1,0 +1,598 @@
+[
+  {
+  "label": "Construction & Project Workers",
+  "hindilabel": "निर्माण और परियोजना कर्मचारी",
+  "marathilabel": "बांधकाम आणि प्रकल्प कामगार",
+  "gujaratilabel": "બાંધકામ અને પ્રોજેક્ટ કામદારો",
+  "value": "construction_project_workers",
+    "subcategories": [
+      {"label": "Mason / Rajmistri", "hindilabel": "राजमिस्त्री", "marathilabel": "राजमिस्त्री", "gujaratilabel": "મેસન / રાજમિસ્ટ્રી", "value": "mason"},
+      {"label": "Carpenter", "hindilabel": "बढ़ई", "marathilabel": "सुतार", "gujaratilabel": "કાર્પેન્ટર", "value": "carpenter"},
+      {"label": "Painter / Polisher", "hindilabel": "पेंटर / पॉलिशर", "marathilabel": "पेंटर / पॉलिशर", "gujaratilabel": "પેઈન્ટર / પોલિશર", "value": "painter_polisher"},
+      {"label": "Plumber", "hindilabel": "प्लंबर", "marathilabel": "प्लंबर", "gujaratilabel": "પ્લમ્બર", "value": "plumber"},
+      {"label": "Electrician", "hindilabel": "इलेक्ट्रीशियन", "marathilabel": "इलेक्ट्रिशियन", "gujaratilabel": "ઇલેક્ટ્રિશિયન", "value": "electrician"},
+      {"label": "Welder", "hindilabel": "वेल्डर", "marathilabel": "वेल्डर", "gujaratilabel": "વેલ્ડર", "value": "welder"},
+      {"label": "Fabricator", "hindilabel": "फैब्रिकेटर", "marathilabel": "फॅब्रिकेटर", "gujaratilabel": "ફેબ્રિકેટર", "value": "fabricator"},
+      {"label": "Tile / Marble / Granite Worker", "hindilabel": "टाइल / मार्बल वर्कर", "marathilabel": "टाइल / मार्बल कामगार", "gujaratilabel": "ટાઇલ / માર્બલ વર્કર", "value": "tile_marble_worker"},
+      {"label": "Scaffolder / Rigger", "hindilabel": "पाड़ बांधने वाला", "marathilabel": "स्कॅफोल्डर", "gujaratilabel": "સ્કેફોલ્ડર", "value": "scaffolder"},
+      {"label": "General Labour / Site Helper", "hindilabel": "सामान्य श्रमिक / साइट हेल्पर", "marathilabel": "सामान्य कामगार / साइट हेल्पर", "gujaratilabel": "સામાન્ય મજૂર / સાઇટ હેલ્પર", "value": "general_labour"},
+      {"label": "Steel Fixer / Bar Bender", "hindilabel": "स्टील फिक्सर / बार बेंडर", "marathilabel": "स्टील फिक्सर / बार बेंडर", "gujaratilabel": "સ્ટીલ ફિક્સર / બાર બેન્ડર", "value": "steel_fixer"},
+      {"label": "POP / Gypsum Worker", "hindilabel": "पीओपी / जिप्सम वर्कर", "marathilabel": "POP / जिप्सम कामगार", "gujaratilabel": "POP / જીપ્સમ વર્કર", "value": "pop_gypsum_worker"},
+      {"label": "Glass & Aluminium Worker", "hindilabel": "कांच और एल्युमीनियम वर्कर", "marathilabel": "काच आणि ॲल्युमिनियम कामगार", "gujaratilabel": "ગ્લાસ અને એલ્યુમિનિયમ વર્કર", "value": "glass_aluminium_worker"},
+      {"label": "Waterproofing Worker", "hindilabel": "वॉटरप्रूफिंग वर्कर", "marathilabel": "वॉटरप्रूफिंग कामगार", "gujaratilabel": "વોટરપ્રૂફિંગ વર્કર", "value": "waterproofing_worker"},
+      {"label": "Road Construction Worker", "hindilabel": "सड़क निर्माण श्रमिक", "marathilabel": "रस्ते बांधकाम कामगार", "gujaratilabel": "રોડ કન્સ્ટ્રક્શન વર્કર", "value": "road_construction_worker"},
+      {"label": "Excavator Operator", "hindilabel": "एक्सावेटर ऑपरेटर", "marathilabel": "एक्साव्हेटर ऑपरेटर", "gujaratilabel": "એક્સકેવેટર ઓપરેટર", "value": "excavator_operator"},
+      {"label": "Tower Crane Operator", "hindilabel": "टावर क्रेन ऑपरेटर", "marathilabel": "टावर क्रेन ऑपरेटर", "gujaratilabel": "ટાવર ક્રેન ઓપરેટર", "value": "tower_crane_operator"},
+      {"label": "Mason Helper", "hindilabel": "राजमिस्त्री हेल्पर", "marathilabel": "राजमिस्त्री हेल्पर", "gujaratilabel": "મેસન હેલ્પર", "value": "mason_helper"},
+      {"label": "Piling Worker", "hindilabel": "पाइलिंग वर्कर", "marathilabel": "पायलिंग कामगार", "gujaratilabel": "પાઇલિંગ વર્કર", "value": "piling_worker"},
+      {"label": "HVAC Duct Installer", "hindilabel": "एचवीएसी डक्ट इंस्टॉलर", "marathilabel": "HVAC डक्ट इंस्टॉलर", "gujaratilabel": "HVAC ડક્ટ ઇન્સ્ટોલર", "value": "hvac_duct_installer"},
+      {"label":"Shuttering Carpenter","hindilabel":"शटरिंग बढ़ई","marathilabel":"शटरिंग सुतार","gujaratilabel":"શટરિંગ કાર્પેન્ટર","value":"shuttering carpenter"},
+      {"label":"Steel Fixer","hindilabel":"स्टील फिक्सर","marathilabel":"स्टील फिक्सर","gujaratilabel":"સ્ટીલ ફિક્સર","value":"steel fixer"},
+      {"label":"Civil Helper","hindilabel":"सिविल हेल्पर","marathilabel":"सिव्हिल हेल्पर","gujaratilabel":"સિવિલ હેલ્પર","value":"civil helper"},
+      {"label":"Other Construction Work","hindilabel":"अन्य निर्माण कार्य","marathilabel":"इतर बांधकाम काम","gujaratilabel":"અન્ય બાંધકામ કામ","value":"other construction"}
+    ]
+  },
+  {
+  "label": "Manufacturing & Industrial Workers",
+  "hindilabel": "विनिर्माण और औद्योगिक कर्मचारी",
+  "marathilabel": "उत्पादन आणि औद्योगिक कामगार",
+  "gujaratilabel": "ઉત્પાદન અને ઔદ્યોગિક કામદારો",
+  "value": "manufacturing_industrial_workers",
+    "subcategories": [
+      {"label": "Machine Operator", "hindilabel": "मशीन ऑपरेटर", "marathilabel": "मशीन ऑपरेटर", "gujaratilabel": "મશીન ઓપરેટર", "value": "machine_operator"},
+      {"label": "CNC Operator", "hindilabel": "सीएनसी ऑपरेटर", "marathilabel": "CNC ऑपरेटर", "gujaratilabel": "CNC ઓપરેટર", "value": "cnc_operator"},
+      {"label": "VMC Operator", "hindilabel": "वीएमसी ऑपरेटर", "marathilabel": "VMC ऑपरेटर", "gujaratilabel": "VMC ઓપરેટર", "value": "vmc_operator"},
+      {"label": "Lathe Operator", "hindilabel": "लेथ ऑपरेटर", "marathilabel": "लेथ ऑपरेटर", "gujaratilabel": "લેથ ઓપરેટર", "value": "lathe_operator"},
+      {"label": "Fitter", "hindilabel": "फिटर", "marathilabel": "फिटर", "gujaratilabel": "ફિટર", "value": "fitter"},
+      {"label": "Fabricator", "hindilabel": "फैब्रिकेटर", "marathilabel": "फॅब्रिकेटर", "gujaratilabel": "ફેબ્રિકેટર", "value": "industrial_fabricator"},
+      {"label": "Assembly Line Worker", "hindilabel": "असेंबली लाइन वर्कर", "marathilabel": "असेंबली लाईन कामगार", "gujaratilabel": "એસેમ્બલી લાઇન વર્કર", "value": "assembly_line_worker"},
+      {"label": "Quality Inspector", "hindilabel": "गुणवत्ता निरीक्षक", "marathilabel": "गुणवत्ता निरीक्षक", "gujaratilabel": "ક્વોલિટી ઇન્સ્પેક્ટર", "value": "quality_inspector"},
+      {"label": "Packing Worker", "hindilabel": "पैकिंग वर्कर", "marathilabel": "पॅकिंग कामगार", "gujaratilabel": "પેકિંગ વર્કર", "value": "packing_worker"},
+      {"label": "Helper / Labour", "hindilabel": "हेल्पर / श्रमिक", "marathilabel": "हेल्पर / कामगार", "gujaratilabel": "હેલ્પર / મજૂર", "value": "industrial_helper"},
+      {"label": "Production Supervisor", "hindilabel": "उत्पादन पर्यवेक्षक", "marathilabel": "उत्पादन सुपरवायझर", "gujaratilabel": "પ્રોડક્શન સુપરવાઇઝર", "value": "production_supervisor"},
+      {"label": "Press Machine Operator", "hindilabel": "प्रेस मशीन ऑपरेटर", "marathilabel": "प्रेस मशीन ऑपरेटर", "gujaratilabel": "પ્રેસ મશીન ઓપરેટર", "value": "press_machine_operator"},
+      {"label": "Store Keeper", "hindilabel": "स्टोर कीपर", "marathilabel": "स्टोअर कीपर", "gujaratilabel": "સ્ટોર કીપર", "value": "store_keeper"},
+      {"label": "Maintenance Technician", "hindilabel": "रखरखाव तकनीशियन", "marathilabel": "मेंटेनन्स तंत्रज्ञ", "gujaratilabel": "મેન્ટેનન્સ ટેકનિશિયન", "value": "maintenance_technician"},
+      {"label": "Injection Moulding Operator", "hindilabel": "इंजेक्शन मोल्डिंग ऑपरेटर", "marathilabel": "इंजेक्शन मोल्डिंग ऑपरेटर", "gujaratilabel": "ઇન્જેક્શન મોલ્ડિંગ ઓપરેટર", "value": "injection_moulding_operator"},
+      {"label": "Welding Inspector", "hindilabel": "वेल्डिंग निरीक्षक", "marathilabel": "वेल्डिंग निरीक्षक", "gujaratilabel": "વેલ્ડિંગ ઇન્સ્પેક્ટર", "value": "welding_inspector"},
+      {"label": "Tool Room Technician", "hindilabel": "टूल रूम तकनीशियन", "marathilabel": "टूल रूम तंत्रज्ञ", "gujaratilabel": "ટૂલ રૂમ ટેકનિશિયન", "value": "tool_room_technician"},
+      {"label": "Production Planner", "hindilabel": "उत्पादन योजनाकार", "marathilabel": "उत्पादन नियोजक", "gujaratilabel": "પ્રોડક્શન પ્લાનર", "value": "production_planner"},
+      {"label": "Sheet Metal Worker", "hindilabel": "शीट मेटल वर्कर", "marathilabel": "शीट मेटल कामगार", "gujaratilabel": "શીટ મેટલ વર્કર", "value": "sheet_metal_worker"},
+      {"label": "Powder Coating Operator", "hindilabel": "पाउडर कोटिंग ऑपरेटर", "marathilabel": "पावडर कोटिंग ऑपरेटर", "gujaratilabel": "પાવડર કોટિંગ ઓપરેટર", "value": "powder_coating_operator"},
+      {"label":"Skilled Helper","hindilabel":"कुशल हेल्पर","marathilabel":"कुशल हेल्पर","gujaratilabel":"કુશળ હેલ્પર","value":"skilled helper"},
+      {"label":"Welder (MIG/TIG/ARC)","hindilabel":"वेल्डर","marathilabel":"वेल्डर","gujaratilabel":"વેલ્ડર","value":"welder"},
+      {"label":"HVAC / AC Technician","hindilabel":"एचवीएसी तकनीशियन","marathilabel":"HVAC तंत्रज्ञ","gujaratilabel":"HVAC ટેકનિશિયન","value":"hvac technician"},
+      {"label":"Other Industrial Work","hindilabel":"अन्य औद्योगिक कार्य","marathilabel":"इतर औद्योगिक काम","gujaratilabel":"અન્ય ઔદ્યોગિક કામ","value":"other industrial"}
+    ]
+  },
+  {
+ "label": "Agriculture & Farming Workers",
+  "hindilabel": "कृषि और खेती कर्मचारी",
+  "marathilabel": "शेती आणि कृषी कामगार",
+  "gujaratilabel": "કૃષિ અને ખેતી કામદારો",
+  "value": "agriculture_farming_workers",
+    "subcategories": [
+      {"label": "Farmer", "hindilabel": "किसान", "marathilabel": "शेतकरी", "gujaratilabel": "ખેડૂત", "value": "farmer"},
+      {"label": "Tractor Driver", "hindilabel": "ट्रैक्टर ड्राइवर", "marathilabel": "ट्रॅक्टर ड्रायव्हर", "gujaratilabel": "ટ્રેક્ટર ડ્રાઈવર", "value": "tractor_driver"},
+      {"label": "Harvester Operator", "hindilabel": "हार्वेस्टर ऑपरेटर", "marathilabel": "हार्वेस्टर ऑपरेटर", "gujaratilabel": "હાર્વેસ્ટર ઓપરેટર", "value": "harvester_operator"},
+      {"label": "Irrigation Worker", "hindilabel": "सिंचाई श्रमिक", "marathilabel": "सिंचन कामगार", "gujaratilabel": "સિંચાઈ કામદાર", "value": "irrigation_worker"},
+      {"label": "Cattle Care Worker", "hindilabel": "पशु देखभाल कर्मी", "marathilabel": "पशु देखभाल कामगार", "gujaratilabel": "પશુ સંભાળ કાર્યકર", "value": "cattle_care_worker"},
+      {"label": "Poultry Worker", "hindilabel": "पोल्ट्री वर्कर", "marathilabel": "पोल्ट्री कामगार", "gujaratilabel": "પોલ્ટ્રી વર્કર", "value": "poultry_worker"},
+      {"label": "Dairy Worker", "hindilabel": "डेयरी वर्कर", "marathilabel": "डेअरी कामगार", "gujaratilabel": "ડેરી વર્કર", "value": "dairy_worker"},
+      {"label": "Seed Sower", "hindilabel": "बीज बोने वाला", "marathilabel": "बियाणे पेरणारा", "gujaratilabel": "બીજ રોપનાર", "value": "seed_sower"},
+      {"label": "Fertilizer/Pesticide Worker", "hindilabel": "उर्वरक/कीटनाशक श्रमिक", "marathilabel": "खते/कीटकनाशक कामगार", "gujaratilabel": "ખાતર/જંતુનાશક કામદાર", "value": "fertilizer_pesticide_worker"},
+      {"label": "Seasonal Farm Labour", "hindilabel": "मौसमी कृषि श्रमिक", "marathilabel": "हंगामी शेतमजूर", "gujaratilabel": "મોસમી ખેત મજૂર", "value": "seasonal_farm_labour"},
+      {"label": "Greenhouse Worker", "hindilabel": "ग्रीनहाउस वर्कर", "marathilabel": "ग्रीनहाऊस कामगार", "gujaratilabel": "ગ્રીનહાઉસ વર્કર", "value": "greenhouse_worker"},
+      {"label": "Farm Equipment Mechanic", "hindilabel": "कृषि उपकरण मैकेनिक", "marathilabel": "शेती अवजारे मेकॅनिक", "gujaratilabel": "ખેતીના સાધનોના મિકેનિક", "value": "farm_equipment_mechanic"},
+      {"label": "Fruit Picker", "hindilabel": "फल तोड़ने वाला", "marathilabel": "फळे तोडणारा", "gujaratilabel": "ફળ તોડનાર", "value": "fruit_picker"},
+      {"label": "Vegetable Farm Worker", "hindilabel": "सब्जी फार्म श्रमिक", "marathilabel": "भाजीपाला शेतकरी कामगार", "gujaratilabel": "શાકભાજી ખેત કામદાર", "value": "vegetable_farm_worker"},
+      {"label": "Organic Farming Worker", "hindilabel": "जैविक खेती श्रमिक", "marathilabel": "सेंद्रिय शेती कामगार", "gujaratilabel": "ઓર્ગેનિક ફાર્મિંગ વર્કર", "value": "organic_farming_worker"},
+      {"label": "Fish Farm Worker", "hindilabel": "मछली पालन श्रमिक", "marathilabel": "मत्स्यपालन कामगार", "gujaratilabel": "મત્સ્ય ઉછેર કામદાર", "value": "fish_farm_worker"},
+      {"label": "Beekeeping Worker", "hindilabel": "मधुमक्खी पालन श्रमिक", "marathilabel": "मधुमक्षिका पालन कामगार", "gujaratilabel": "મધમાખી ઉછેર કામદાર", "value": "beekeeping_worker"},
+      {"label": "Plantation Worker", "hindilabel": "वृक्षारोपण श्रमिक", "marathilabel": "लागवड कामगार", "gujaratilabel": "પ્લાન્ટેશન વર્કર", "value": "plantation_worker"},
+      {"label": "Nursery Worker", "hindilabel": "नर्सरी वर्कर", "marathilabel": "नर्सरी कामगार", "gujaratilabel": "નર્સરી વર્કર", "value": "nursery_worker"},
+      {"label": "Crop Supervisor", "hindilabel": "फसल पर्यवेक्षक", "marathilabel": "पीक पर्यवेक्षक", "gujaratilabel": "પાક સુપરવાઇઝર", "value": "crop_supervisor"},
+       {"label":"Agriculture Worker","hindilabel":"कृषि मजदूर","marathilabel":"शेतमजूर","gujaratilabel":"કૃષિ કામદાર","value":"agriculture worker"},
+      {"label":"Farm Labour","hindilabel":"खेत मजदूर","marathilabel":"फार्म लेबर","gujaratilabel":"ખેત મજૂર","value":"farm labour"},
+      {"label":"Animal Care Worker","hindilabel":"पशु देखभाल कर्मचारी","marathilabel":"प्राणी देखभाल कामगार","gujaratilabel":"પશુ સંભાળ કામદાર","value":"animal care"},
+      {"label":"Crop Cutting Labour","hindilabel":"फसल कटाई मजदूर","marathilabel":"पीक कापणी कामगार","gujaratilabel":"પાક કાપણી મજૂર","value":"crop cutting"},
+      {"label":"Farm Equipment Operator","hindilabel":"कृषि उपकरण ऑपरेटर","marathilabel":"शेती उपकरण ऑपरेटर","gujaratilabel":"ખેત સાધન ઓપરેટર","value":"farm equipment operator"},
+      {"label":"Other Agriculture Work","hindilabel":"अन्य कृषि कार्य","marathilabel":"इतर शेती काम","gujaratilabel":"અન્ય કૃષિ કામ","value":"other agriculture"}
+    ]
+  },
+  {
+ "label": "Event & Decoration Workers",
+  "hindilabel": "इवेंट और सजावट कर्मचारी",
+  "marathilabel": "इव्हेंट आणि सजावट कामगार",
+  "gujaratilabel": "ઇવેન્ટ અને ડેકોરેશન કામદારો",
+  "value": "event_decoration_workers",
+    "subcategories": [
+      {"label": "Event Helper", "hindilabel": "इवेंट हेल्पर", "marathilabel": "इव्हेंट हेल्पर", "gujaratilabel": "ઇવેન્ટ હેલ્પર", "value": "event_helper"},
+      {"label": "Stage Setup Worker", "hindilabel": "स्टेज सेटअप वर्कर", "marathilabel": "स्टेज सेटअप कामगार", "gujaratilabel": "સ્ટેજ સેટઅપ વર્કર", "value": "stage_setup_worker"},
+      {"label": "Tent Worker", "hindilabel": "टेंट वर्कर", "marathilabel": "टेंट कामगार", "gujaratilabel": "ટેન્ટ વર્કર", "value": "tent_worker"},
+      {"label": "Light & Sound Worker", "hindilabel": "लाइट और साउंड वर्कर", "marathilabel": "लाईट आणि साऊंड कामगार", "gujaratilabel": "લાઇટ અને સાઉન્ડ વર્કર", "value": "light_sound_worker"},
+      {"label": "Decoration Worker", "hindilabel": "सजावट कर्मी", "marathilabel": "सजावट कामगार", "gujaratilabel": "ડેકોરેશન વર્કર", "value": "decoration_worker"},
+      {"label": "Catering Staff", "hindilabel": "कैटरिंग स्टाफ", "marathilabel": "कॅटरिंग स्टाफ", "gujaratilabel": "કેટરિંગ સ્ટાફ", "value": "catering_staff"},
+      {"label": "Cleaner", "hindilabel": "सफाई कर्मी", "marathilabel": "स्वच्छता कामगार", "gujaratilabel": "ક્લીનર", "value": "event_cleaner"},
+      {"label": "Photographer Assistant", "hindilabel": "फोटोग्राफर सहायक", "marathilabel": "फोटोग्राफर सहाय्यक", "gujaratilabel": "ફોટોગ્રાફર આસિસ્ટન્ટ", "value": "photographer_assistant"},
+      {"label": "Videographer Assistant", "hindilabel": "वीडियो ग्राफर सहायक", "marathilabel": "व्हिडिओग्राफर सहाय्यक", "gujaratilabel": "વિડિયોગ્રાફર આસિસ્ટન્ટ", "value": "videographer_assistant"},
+      {"label": "Event Coordinator", "hindilabel": "इवेंट समन्वयक", "marathilabel": "इव्हेंट समन्वयक", "gujaratilabel": "ઇવેન્ટ કોઓર્ડિનેટર", "value": "event_coordinator"},
+      {"label": "DJ Assistant", "hindilabel": "डीजे सहायक", "marathilabel": "डीजे सहाय्यक", "gujaratilabel": "DJ આસિસ્ટન્ટ", "value": "dj_assistant"},
+      {"label": "Flower Decoration Worker", "hindilabel": "फूल सजावट कर्मी", "marathilabel": "फुलांची सजावट कामगार", "gujaratilabel": "ફૂલ ડેકોરેશન વર્કર", "value": "flower_decoration_worker"},
+      {"label": "LED Wall Operator", "hindilabel": "एलईडी वॉल ऑपरेटर", "marathilabel": "LED वॉल ऑपरेटर", "gujaratilabel": "LED વોલ ઓપરેટર", "value": "led_wall_operator"},
+      {"label": "Anchor / Host Assistant", "hindilabel": "एंकर / होस्ट सहायक", "marathilabel": "अँकर / होस्ट सहाय्यक", "gujaratilabel": "એન્કર / હોસ્ટ આસિસ્ટન્ટ", "value": "anchor_host_assistant"},
+      {"label": "Generator Operator", "hindilabel": "जनरेटर ऑपरेटर", "marathilabel": "जनरेटर ऑपरेटर", "gujaratilabel": "જનરેટર ઓપરેટર", "value": "generator_operator"},
+      {"label": "Bouncer / Security Staff", "hindilabel": "बाउंसर / सुरक्षा कर्मचारी", "marathilabel": "बाउन्सर / सुरक्षा रक्षक", "gujaratilabel": "બાઉન્સર / સિક્યુરિટી સ્ટાફ", "value": "event_security"},
+      {"label": "Stage Designer", "hindilabel": "स्टेज डिजाइनर", "marathilabel": "स्टेज डिझाइनर", "gujaratilabel": "સ્ટેજ ડિઝાઇનર", "value": "stage_designer"},
+      {"label": "Wedding Setup Worker", "hindilabel": "शादी सेटअप कर्मी", "marathilabel": "लग्नाचा सेटअप कामगार", "gujaratilabel": "વેડિંગ સેટઅપ વર્કર", "value": "wedding_setup_worker"},
+      {"label": "Balloon Decoration Worker", "hindilabel": "गुब्बारा सजावट कर्मी", "marathilabel": "फुगे सजावट कामगार", "gujaratilabel": "બલૂન ડેકોરેશન વર્કર", "value": "balloon_decoration_worker"},
+      {"label": "Event Marketing Promoter", "hindilabel": "इवेंट मार्केटिंग प्रमोटर", "marathilabel": "इव्हेंट मार्केटिंग प्रमोटर", "gujaratilabel": "ઇવેન્ટ માર્કેટિંગ પ્રમોટર", "value": "event_marketing_promoter"}
+    ]
+  },
+{
+    "label": "Household & Domestic Workers",
+    "hindilabel": "घरेलू कर्मचारी",
+    "marathilabel": "घरगुती कामगार",
+    "gujaratilabel": "ઘરેલું અને ડોમેસ્ટિક કામદારો",
+    "value": "household_domestic_workers",
+    "subcategories": [
+      {
+        "label": "Maid",
+        "hindilabel": "कामवाली",
+        "marathilabel": "मोलकरीण",
+        "gujaratilabel": "કામવાળી",
+        "value": "maid"
+      },
+      {
+        "label": "Cook",
+        "hindilabel": "रसोइया",
+        "marathilabel": "स्वयंपाकी",
+        "gujaratilabel": "રસોઈયા",
+        "value": "cook"
+      },
+      {
+        "label": "Cleaner",
+        "hindilabel": "सफाई कर्मी",
+        "marathilabel": "स्वच्छता कामगार",
+        "gujaratilabel": "ક્લીનર",
+        "value": "domestic_cleaner"
+      },
+      {
+        "label": "Babysitter",
+        "hindilabel": "बेबीसिटर",
+        "marathilabel": "बेबीसिटर",
+        "gujaratilabel": "બેબીસિટર",
+        "value": "babysitter"
+      },
+      {
+        "label": "Gardener",
+        "hindilabel": "माली",
+        "marathilabel": "माळी",
+        "gujaratilabel": "માળી",
+        "value": "domestic_gardener"
+      },
+      {
+        "label": "Elderly Caregiver",
+        "hindilabel": "बुजुर्गों की देखभाल",
+        "marathilabel": "वृद्धांची काळजी",
+        "gujaratilabel": "વૃદ્ધોની સંભાળ",
+        "value": "elderly_caregiver"
+      },
+      {
+        "label": "Housekeeper",
+        "hindilabel": "हाउसकीपर",
+        "marathilabel": "हाऊसकीपर",
+        "gujaratilabel": "હાઉસકીપર",
+        "value": "housekeeper"
+      },
+      {
+        "label": "Pet Care Worker",
+        "hindilabel": "पालतू जानवर देखभाल",
+        "marathilabel": "पाळीव प्राणी काळजी",
+        "gujaratilabel": "પાલતુ પ્રાણી સંભાળ",
+        "value": "pet_care_worker"
+      },
+      {
+        "label": "Japa Maid",
+        "hindilabel": "जापा मेड",
+        "marathilabel": "जापा मेड",
+        "gujaratilabel": "જપા મેઇડ",
+        "value": "japa_maid"
+      },
+      {
+        "label": "Home Nurse",
+        "hindilabel": "होम नर्स",
+        "marathilabel": "होम नर्स",
+        "gujaratilabel": "હોમ નર્સ",
+        "value": "home_nurse"
+      },
+      {
+        "label": "Laundry Worker",
+        "hindilabel": "लॉन्ड्री कर्मचारी",
+        "marathilabel": "धुणी कर्मचारी",
+        "gujaratilabel": "લોન્ડ્રી વર્કર",
+        "value": "laundry_worker"
+      },
+      {
+        "label": "Ironing Worker",
+        "hindilabel": "इस्त्री कर्मचारी",
+        "marathilabel": "इस्त्री कर्मचारी",
+        "gujaratilabel": "ઇસ્ત્રી વર્કર",
+        "value": "ironing_worker"
+      },
+      {
+        "label": "Caretaker",
+        "hindilabel": "केयरटेकर",
+        "marathilabel": "केअरटेकर",
+        "gujaratilabel": "કેરટેકર",
+        "value": "caretaker"
+      },
+      {
+        "label": "Home Tutor",
+        "hindilabel": "होम ट्यूटर",
+        "marathilabel": "होम ट्यूटर",
+        "gujaratilabel": "હોમ ટ્યુટર",
+        "value": "home_tutor"
+      },
+      {
+        "label": "Dish Washer",
+        "hindilabel": "बर्तन धोने वाला",
+        "marathilabel": "भांडी धुणारा",
+        "gujaratilabel": "વાસણ ધોવનાર",
+        "value": "dish_washer"
+      },
+      {
+        "label": "Household Helper",
+        "hindilabel": "घरेलू सहायक",
+        "marathilabel": "घरगुती मदतनीस",
+        "gujaratilabel": "ઘરેલું હેલ્પર",
+        "value": "household_helper"
+      }
+    ]
+  },
+  {
+"label": "Hospitality & Service Workers",
+  "hindilabel": "आतिथ्य और सेवा कर्मचारी",
+  "marathilabel": "हॉस्पिटॅलिटी आणि सेवा कामगार",
+  "gujaratilabel": "હોસ્પિટાલિટી અને સેવા કામદારો",
+  "value": "hospitality_service_workers",
+    "subcategories": [
+      {
+        "label": "Waiter",
+        "hindilabel": "वेटर",
+        "marathilabel": "वेटर",
+        "gujaratilabel": "વેઈટર",
+        "value": "waiter"
+      },
+      {
+        "label": "Hotel Receptionist",
+        "hindilabel": "होटल रिसेप्शनिस्ट",
+        "marathilabel": "हॉटेल रिसेप्शनिस्ट",
+        "gujaratilabel": "હોટેલ રિસેપ્શનિસ્ટ",
+        "value": "hotel_receptionist"
+      },
+      {
+        "label": "Kitchen Helper",
+        "hindilabel": "किचन हेल्पर",
+        "marathilabel": "किचन हेल्पर",
+        "gujaratilabel": "કિચન હેલ્પર",
+        "value": "kitchen_helper"
+      },
+      {
+        "label": "Chef Assistant",
+        "hindilabel": "शेफ सहायक",
+        "marathilabel": "शेफ सहाय्यक",
+        "gujaratilabel": "શેફ આસિસ્ટન્ટ",
+        "value": "chef_assistant"
+      },
+      {
+        "label": "Steward",
+        "hindilabel": "स्टीवर्ड",
+        "marathilabel": "स्टीवर्ड",
+        "gujaratilabel": "સ્ટીવર્ડ",
+        "value": "steward"
+      },
+      {
+        "label": "Barista",
+        "hindilabel": "बरिस्ता",
+        "marathilabel": "बरिस्ता",
+        "gujaratilabel": "બારિસ્ટા",
+        "value": "barista"
+      },
+      {
+        "label": "Housekeeping Staff",
+        "hindilabel": "हाउसकीपिंग स्टाफ",
+        "marathilabel": "हाऊसकीपिंग स्टाफ",
+        "gujaratilabel": "હાઉસકિપિંગ સ્ટાફ",
+        "value": "housekeeping_staff"
+      },
+      {
+        "label": "Bellboy",
+        "hindilabel": "बेलबॉय",
+        "marathilabel": "बेलबॉय",
+        "gujaratilabel": "બેલબોય",
+        "value": "bellboy"
+      },
+      {
+        "label": "Catering Staff",
+        "hindilabel": "कैटरिंग स्टाफ",
+        "marathilabel": "कॅटरिंग स्टाफ",
+        "gujaratilabel": "કેટરિંગ સ્ટાફ",
+        "value": "catering_staff"
+      },
+      {
+        "label": "Front Office Executive",
+        "hindilabel": "फ्रंट ऑफिस एग्जीक्यूटिव",
+        "marathilabel": "फ्रंट ऑफिस एक्झिक्युटिव्ह",
+        "gujaratilabel": "ફ્રન્ટ ઓફિસ એક્ઝિક્યુટિવ",
+        "value": "front_office_executive"
+      },
+      {
+        "label": "Bakery Assistant",
+        "hindilabel": "बेकरी सहायक",
+        "marathilabel": "बेकरी सहाय्यक",
+        "gujaratilabel": "બેકરી આસિસ્ટન્ટ",
+        "value": "bakery_assistant"
+      },
+      {
+        "label": "Restaurant Captain",
+        "hindilabel": "रेस्टोरेंट कैप्टन",
+        "marathilabel": "रेस्टॉरंट कॅप्टन",
+        "gujaratilabel": "રેસ્ટોરન્ટ કેપ્ટન",
+        "value": "restaurant_captain"
+      },
+      {
+        "label": "Fast Food Worker",
+        "hindilabel": "फास्ट फूड कर्मचारी",
+        "marathilabel": "फास्ट फूड कामगार",
+        "gujaratilabel": "ફાસ્ટ ફૂડ વર્કર",
+        "value": "fast_food_worker"
+      },
+      {
+        "label": "Pantry Staff",
+        "hindilabel": "पेंट्री स्टाफ",
+        "marathilabel": "पँट्री स्टाफ",
+        "gujaratilabel": "પેન્ટ્રી સ્ટાફ",
+        "value": "pantry_staff"
+      },
+      {
+        "label": "Room Service Staff",
+        "hindilabel": "रूम सर्विस स्टाफ",
+        "marathilabel": "रूम सर्विस स्टाफ",
+        "gujaratilabel": "રૂમ સર્વિસ સ્ટાફ",
+        "value": "room_service_staff"
+      },
+      {
+        "label": "Banquet Staff",
+        "hindilabel": "बैंक्वेट स्टाफ",
+        "marathilabel": "बँक्वेट स्टाफ",
+        "gujaratilabel": "બેન્ક્વેટ સ્ટાફ",
+        "value": "banquet_staff"
+      },
+      {
+        "label": "Juice Maker",
+        "hindilabel": "जूस मेकर",
+        "marathilabel": "ज्यूस मेकर",
+        "gujaratilabel": "જ્યૂસ મેકર",
+        "value": "juice_maker"
+      },
+      {
+        "label": "Hotel Security Staff",
+        "hindilabel": "होटल सुरक्षा कर्मचारी",
+        "marathilabel": "हॉटेल सुरक्षा कर्मचारी",
+        "gujaratilabel": "હોટેલ સિક્યુરિટી સ્ટાફ",
+        "value": "hotel_security"
+      },
+      {
+        "label": "Other Hospitality Work",
+        "hindilabel": "अन्य हॉस्पिटैलिटी कार्य",
+        "marathilabel": "इतर हॉस्पिटॅलिटी काम",
+        "gujaratilabel": "અન્ય હૉસ્પિટાલિટી કામ",
+        "value": "other_hospitality"
+      }
+    ]
+  },
+  {
+    "label": "Transport & Logistics Workers",
+    "hindilabel": "परिवहन और रसद कर्मचारी",
+    "marathilabel": "वाहतूक आणि लॉजिस्टिक्स कामगार",
+    "gujaratilabel": "ટ્રાન્સપોર્ટ અને લોજિસ્ટિક્સ કામદારો",
+    "value": "transport_logistics_workers",
+    "subcategories": [
+      {"label": "Truck Driver", "hindilabel": "ट्रक ड्राइवर", "marathilabel": "ट्रक ड्रायव्हर", "gujaratilabel": "ટ્રક ડ્રાઈવર", "value": "truck_driver"},
+      {"label": "Tempo Driver", "hindilabel": "टेंपो ड्राइवर", "marathilabel": "टेंपो ड्रायव्हर", "gujaratilabel": "ટેમ્પો ડ્રાઈવર", "value": "tempo_driver"},
+      {"label": "Auto Driver", "hindilabel": "ऑटो ड्राइवर", "marathilabel": "ऑटो ड्रायव्हर", "gujaratilabel": "ઓટો ડ્રાઈવર", "value": "auto_driver"},
+      {"label": "Cab Driver", "hindilabel": "कैब ड्राइवर", "marathilabel": "कॅब ड्रायव्हर", "gujaratilabel": "કેબ ડ્રાઈવર", "value": "cab_driver"},
+      {"label": "Delivery Partner (E-commerce)", "hindilabel": "डिलीवरी पार्टनर", "marathilabel": "डिलिव्हरी पार्टनर", "gujaratilabel": "ડિલિવરી પાર્ટનર", "value": "delivery_partner"},
+      {"label": "Courier Boy", "hindilabel": "कूरियर बॉय", "marathilabel": "कुरिअर बॉय", "gujaratilabel": "કુરિયર બોય", "value": "courier_boy"},
+      {"label": "Loading Labour", "hindilabel": "लोडिंग लेबर", "marathilabel": "लोडिंग कामगार", "gujaratilabel": "લોડિંગ લેબર", "value": "loading_labour"},
+      {"label": "Unloading Labour", "hindilabel": "अनलोडिंग लेबर", "marathilabel": "अनलोडिंग कामगार", "gujaratilabel": "અનલોડિંગ લેબર", "value": "unloading_labour"},
+      {"label": "Warehouse Worker", "hindilabel": "वेयरहाउस वर्कर", "marathilabel": "वेअरहाऊस कामगार", "gujaratilabel": "વેરહાઉસ વર્કર", "value": "warehouse_worker"},
+      {"label": "Forklift Operator", "hindilabel": "फोर्कलिफ्ट ऑपरेटर", "marathilabel": "फोर्कलिफ्ट ऑपरेटर", "gujaratilabel": "ફોર્કલિફ્ટ ઓપરેટર", "value": "forklift_operator"},
+      {"label": "Crane Operator", "hindilabel": "क्रेन ऑपरेटर", "marathilabel": "क्रेन ऑपरेटर", "gujaratilabel": "ક્રેન ઓપરેટર", "value": "crane_operator"},
+      {"label": "Dispatcher", "hindilabel": "डिस्पैचर", "marathilabel": "डिस्पॅचर", "gujaratilabel": "ડિસ્પેચર", "value": "dispatcher"},
+      {"label": "Picker & Packer", "hindilabel": "पिकर और पैकर", "marathilabel": "पिकर आणि पॅकर", "gujaratilabel": "પિકર અને પેકર", "value": "picker_packer"},
+      {"label": "Logistics Coordinator", "hindilabel": "रसद समन्वयक", "marathilabel": "लॉजिस्टिक्स समन्वयक", "gujaratilabel": "લોજિસ્ટિક્સ કોઓર્ડિનેટર", "value": "logistics_coordinator"},
+      {"label": "Bus Driver", "hindilabel": "बस ड्राइवर", "marathilabel": "बस ड्रायव्हर", "gujaratilabel": "બસ ડ્રાઈવર", "value": "bus_driver"},
+      {"label": "Trailer Driver", "hindilabel": "ट्रेलर ड्राइवर", "marathilabel": "ट्रेलर ड्रायव्हर", "gujaratilabel": "ટ્રેલર ડ્રાઈવર", "value": "trailer_driver"},
+      {"label": "Fleet Supervisor", "hindilabel": "बेड़े पर्यवेक्षक", "marathilabel": "फ्लीट सुपरवायझर", "gujaratilabel": "ફ્લીટ સુપરવાઇઝર", "value": "fleet_supervisor"},
+      {"label": "Inventory Handler", "hindilabel": "इन्वेंट्री हैंडलर", "marathilabel": "इन्व्हेंटरी हँडलर", "gujaratilabel": "ઇન્વેન્ટરી હેન્ડલર", "value": "inventory_handler"},
+      {"label": "Shipping Assistant", "hindilabel": "शिपिंग सहायक", "marathilabel": "शिपिंग सहाय्यक", "gujaratilabel": "શિપિંગ આસિસ્ટન્ટ", "value": "shipping_assistant"},
+      {"label": "Route Coordinator", "hindilabel": "रूट समन्वयक", "marathilabel": "रूट समन्वयक", "gujaratilabel": "રૂટ કોઓર્ડિનેટર", "value": "route_coordinator"},
+      {"label":"Loader","hindilabel":"लोडर","marathilabel":"लोडर","gujaratilabel":"લોડર","value":"loader"},
+      {"label":"Unloader","hindilabel":"अनलोडर","marathilabel":"अनलोडर","gujaratilabel":"અનલોડર","value":"unloader"},
+      {"label":"Picker","hindilabel":"पिकर","marathilabel":"पिकर","gujaratilabel":"પિકર","value":"picker"},
+      {"label":"Packer","hindilabel":"पैकर","marathilabel":"पॅकर","gujaratilabel":"પેકર","value":"packer"},
+      {"label":"Warehouse Helper","hindilabel":"वेयरहाउस हेल्पर","marathilabel":"वेअरहाऊस हेल्पर","gujaratilabel":"વેરહાઉસ હેલ્પર","value":"warehouse helper"},
+      {"label":"Parcel Sorting Worker","hindilabel":"पार्सल छंटाई कर्मचारी","marathilabel":"पार्सल सॉर्टिंग कामगार","gujaratilabel":"પાર્સલ સોર્ટિંગ વર્કર","value":"parcel sorter"},
+      {"label":"Delivery Boy","hindilabel":"डिलीवरी बॉय","marathilabel":"डिलिव्हरी बॉय","gujaratilabel":"ડિલિવરી બોય","value":"delivery boy"},
+      {"label":"Dispatch Worker","hindilabel":"डिस्पैच कर्मचारी","marathilabel":"डिस्पॅच कामगार","gujaratilabel":"ડિસ્પેચ વર્કર","value":"dispatch worker"},
+      {"label":"Inventory Assistant","hindilabel":"इन्वेंटरी सहायक","marathilabel":"इन्व्हेंटरी सहाय्यक","gujaratilabel":"ઇન્વેન્ટરી સહાયક","value":"inventory assistant"},
+      {"label":"Other Logistics Workers","hindilabel":"अन्य लॉजिस्टिक्स कर्मचारी","marathilabel":"इतर लॉजिस्टिक्स कामगार","gujaratilabel":"અન્ય લોજિસ્ટિક્સ કામદારો","value":"other logistics"},
+       {"label":"Driver (LMV)","hindilabel":"एलएमवी ड्राइवर","marathilabel":"LMV ड्रायव्हर","gujaratilabel":"LMV ડ્રાઇવર","value":"lmv driver"},
+      {"label":"Driver (HMV)","hindilabel":"एचएमवी ड्राइवर","marathilabel":"HMV ड्रायव्हर","gujaratilabel":"HMV ડ્રાઇવર","value":"hmv driver"},
+      {"label":"Auto Driver","hindilabel":"ऑटो चालक","marathilabel":"ऑटो चालक","gujaratilabel":"ઓટો ડ્રાઇવર","value":"auto driver"},
+      {"label":"E-Rickshaw Driver","hindilabel":"ई-रिक्शा चालक","marathilabel":"ई-रिक्षा चालक","gujaratilabel":"ઈ-રિક્શા ડ્રાઇવર","value":"e-rickshaw driver"},
+      {"label":"Delivery Driver","hindilabel":"डिलीवरी ड्राइवर","marathilabel":"डिलिव्हरी ड्रायव्हर","gujaratilabel":"ડિલિવરી ડ્રાઇવર","value":"delivery driver"},
+      {"label":"Truck Driver Helper","hindilabel":"ट्रक ड्राइवर हेल्पर","marathilabel":"ट्रक ड्रायव्हर हेल्पर","gujaratilabel":"ટ્રક ડ્રાઇવર હેલ્પર","value":"truck helper"},
+      {"label":"Bus Driver Helper","hindilabel":"बस ड्राइवर हेल्पर","marathilabel":"बस ड्रायव्हर हेल्पर","gujaratilabel":"બસ ડ્રાઇવર હેલ્પર","value":"bus helper"},
+      {"label":"Crane Operator Helper","hindilabel":"क्रेन ऑपरेटर हेल्पर","marathilabel":"क्रेन ऑपरेटर हेल्पर","gujaratilabel":"ક્રેન ઓપરેટર હેલ્પર","value":"crane helper"},
+      {"label":"Tractor Driver (Transport)","hindilabel":"ट्रैक्टर चालक","marathilabel":"ट्रॅक्टर चालक","gujaratilabel":"ટ્રેક્ટર ડ્રાઇવર","value":"tractor transport"},
+      {"label":"Other Driving Work","hindilabel":"अन्य ड्राइविंग कार्य","marathilabel":"इतर ड्रायव्हिंग काम","gujaratilabel":"અન્ય ડ્રાઇવિંગ કામ","value":"other driving"}
+    ]
+  },
+  {
+"label": "Retail & Shop Workers",
+  "hindilabel": "रिटेल और दुकान कर्मचारी",
+  "marathilabel": "रिटेल आणि दुकान कामगार",
+  "gujaratilabel": "રિટેલ અને દુકાન કામદારો",
+  "value": "retail_shop_workers",
+    "subcategories": [
+      {"label": "Salesman", "hindilabel": "सेल्समैन", "marathilabel": "सेल्समन", "gujaratilabel": "સેલ્સમેન", "value": "salesman"},
+      {"label": "Cashier", "hindilabel": "कैशियर", "marathilabel": "कॅशियर", "gujaratilabel": "કેશિયર", "value": "cashier"},
+      {"label": "Store Helper", "hindilabel": "स्टोर हेल्पर", "marathilabel": "स्टोअर हेल्पर", "gujaratilabel": "સ્ટોર હેલ્પર", "value": "store_helper"},
+      {"label": "Inventory Manager", "hindilabel": "इन्वेंट्री मैनेजर", "marathilabel": "इन्व्हेंटरी मॅनेजर", "gujaratilabel": "ઇન્વેન્ટરી મેનેજર", "value": "inventory_manager"},
+      {"label": "Stock Boy", "hindilabel": "स्टॉक बॉय", "marathilabel": "स्टॉक बॉय", "gujaratilabel": "સ્ટોક બોય", "value": "stock_boy"},
+      {"label": "Billing Assistant", "hindilabel": "बिलिंग सहायक", "marathilabel": "बिलिंग सहाय्यक", "gujaratilabel": "બિલિંગ આસિસ્ટન્ટ", "value": "billing_assistant"},
+      {"label": "Packing Boy", "hindilabel": "पैकिंग बॉय", "marathilabel": "पॅकिंग बॉय", "gujaratilabel": "પેકિંગ બોય", "value": "packing_boy"},
+      {"label": "Delivery Boy (Retail)", "hindilabel": "डिलीवरी बॉय", "marathilabel": "डिलिव्हरी बॉय", "gujaratilabel": "ડિલિવરી બોય", "value": "retail_delivery_boy"},
+      {"label": "Visual Merchandiser", "hindilabel": "विजुअल मर्चेंडाइज़र", "marathilabel": "व्हिज्युअल मर्चेंडायझर", "gujaratilabel": "વિઝ્યુઅલ મર્ચેન્ડાઇઝર", "value": "visual_merchandiser"},
+      {"label": "Floor Supervisor", "hindilabel": "फ्लोर पर्यवेक्षक", "marathilabel": "फ्लोअर सुपरवायझर", "gujaratilabel": "ફ્લોર સુપરવાઇઝર", "value": "floor_supervisor"},
+      {"label": "Counter Sales Executive", "hindilabel": "काउंटर सेल्स एग्जीक्यूटिव", "marathilabel": "काउंटर सेल्स एक्झिक्युटिव्ह", "gujaratilabel": "કાઉન્ટર સેલ્સ એક્ઝિક્યુટિવ", "value": "counter_sales_executive"},
+      {"label": "Store Manager", "hindilabel": "स्टोर मैनेजर", "marathilabel": "स्टोअर मॅनेजर", "gujaratilabel": "સ્ટોર મેનેજર", "value": "store_manager"},
+      {"label": "Customer Support Staff", "hindilabel": "ग्राहक सहायता कर्मचारी", "marathilabel": "ग्राहक समर्थन कर्मचारी", "gujaratilabel": "કસ્ટમર સપોર્ટ સ્ટાફ", "value": "customer_support_staff"},
+      {"label": "Shelf Arranger", "hindilabel": "शेल्फ अरेंजर", "marathilabel": "शेल्फ अरेंजर", "gujaratilabel": "શેલ્ફ એરેન્જર", "value": "shelf_arranger"},
+      {"label": "Mall Helper", "hindilabel": "मॉल हेल्पर", "marathilabel": "मॉल हेल्पर", "gujaratilabel": "મોલ હેલ્પર", "value": "mall_helper"},
+      {"label": "Retail Supervisor", "hindilabel": "रिटेल पर्यवेक्षक", "marathilabel": "रिटेल सुपरवायझर", "gujaratilabel": "રિટેલ સુપરવાઇઝર", "value": "retail_supervisor"},
+      {"label": "Purchase Assistant", "hindilabel": "खरीद सहायक", "marathilabel": "खरेदी सहाय्यक", "gujaratilabel": "પર્ચેસ આસિસ્ટન્ટ", "value": "purchase_assistant"},
+      {"label": "Grocery Store Worker", "hindilabel": "किराना स्टोर कर्मचारी", "marathilabel": "किराणा दुकान कामगार", "gujaratilabel": "ગ્રોસરી સ્ટોર વર્કર", "value": "grocery_store_worker"},
+      {"label": "Pharmacy Sales Assistant", "hindilabel": "फार्मेसी सेल्स सहायक", "marathilabel": "फार्मसी सेल्स सहाय्यक", "gujaratilabel": "ફાર્મસી સેલ્સ આસિસ્ટન્ટ", "value": "pharmacy_sales_assistant"},
+      {"label": "Showroom Executive", "hindilabel": "शोरूम एग्जीक्यूटिव", "marathilabel": "शोरूम एक्झिक्युटिव्ह", "gujaratilabel": "શોરૂમ એક્ઝિક્યુટિવ", "value": "showroom_executive"},
+       {"label":"Sales Boy","hindilabel":"सेल्स बॉय","marathilabel":"सेल्स बॉय","gujaratilabel":"સેલ્સ બોય","value":"sales boy"},
+      {"label":"Sales Girl","hindilabel":"सेल्स गर्ल","marathilabel":"सेल्स गर्ल","gujaratilabel":"સેલ્સ ગર્લ","value":"sales girl"},
+      {"label":"Cashier","hindilabel":"कैशियर","marathilabel":"कॅशियर","gujaratilabel":"કેશિયર","value":"cashier"},
+      {"label":"Cleaning Staff","hindilabel":"सफाई कर्मचारी","marathilabel":"स्वच्छता कर्मचारी","gujaratilabel":"ક્લીનિંગ સ્ટાફ","value":"cleaning staff"},
+      {"label":"Delivery Executive","hindilabel":"डिलीवरी एग्जीक्यूटिव","marathilabel":"डिलिव्हरी एक्झिक्युटिव","gujaratilabel":"ડિલિવરી એક્ઝિક્યુટિવ","value":"delivery executive"},
+      {"label":"Customer Support Helper","hindilabel":"ग्राहक सहायता सहायक","marathilabel":"ग्राहक सहाय्यक","gujaratilabel":"કસ્ટમર સપોર્ટ હેલ્પર","value":"customer support helper"},
+      {"label":"Other Retail Work","hindilabel":"अन्य रिटेल कार्य","marathilabel":"इतर रिटेल काम","gujaratilabel":"અન્ય રિટેલ કામ","value":"other retail"}
+    ]
+  },
+  {
+  "label": "Skilled Technical Workers",
+  "hindilabel": "कुशल तकनीकी कर्मचारी",
+  "marathilabel": "कुशल तांत्रिक कामगार",
+  "gujaratilabel": "કુશળ તકનીકી કામદારો",
+  "value": "skilled_technical_workers",
+    "subcategories": [
+      {"label": "AC Technician", "hindilabel": "एसी तकनीशियन", "marathilabel": "AC तंत्रज्ञ", "gujaratilabel": "AC ટેકનિશિયન", "value": "ac_technician"},
+      {"label": "Refrigerator Technician", "hindilabel": "रेफ्रिजरेटर तकनीशियन", "marathilabel": "रेफ्रिजरेटर तंत्रज्ञ", "gujaratilabel": "રેફ્રિજરેટર ટેકનિશિયન", "value": "refrigerator_technician"},
+      {"label": "Washing Machine Technician", "hindilabel": "वाशिंग मशीन तकनीशियन", "marathilabel": "वॉशिंग मशीन तंत्रज्ञ", "gujaratilabel": "વોશિંગ મશીન ટેકનિશિયન", "value": "washing_machine_technician"},
+      {"label": "Mobile Repair Technician", "hindilabel": "मोबाइल मरम्मत तकनीशियन", "marathilabel": "मोबाईल दुरुस्ती तंत्रज्ञ", "gujaratilabel": "મોબાઇલ રિપેરિંગ ટેકનિશિયન", "value": "mobile_repair_technician"},
+      {"label": "Laptop/Desktop Repair Technician", "hindilabel": "लैपटॉप/डेस्कटॉप तकनीशियन", "marathilabel": "लॅपटॉप/डेस्कटॉप तंत्रज्ञ", "gujaratilabel": "લેપટોપ/ડેસ્કટોપ ટેકનિશિયન", "value": "computer_repair_technician"},
+      {"label": "Two-Wheeler Mechanic", "hindilabel": "टू-व्हीलर मैकेनिक", "marathilabel": "टू-व्हीलर मेकॅनिक", "gujaratilabel": "ટુ-વ્હીલર મિકેનિક", "value": "two_wheeler_mechanic"},
+      {"label": "Four-Wheeler Mechanic", "hindilabel": "फोर-व्हीलर मैकेनिक", "marathilabel": "फोर-व्हीलर मेकॅनिक", "gujaratilabel": "ફોર-વ્હીલર મિકેનિક", "value": "four_wheeler_mechanic"},
+      {"label": "CCTV Installer", "hindilabel": "सीसीटीवी इंस्टॉलर", "marathilabel": "CCTV इंस्टॉलर", "gujaratilabel": "CCTV ઇન્સ્ટોલર", "value": "cctv_installer"},
+      {"label": "RO/Water Purifier Technician", "hindilabel": "आरओ तकनीशियन", "marathilabel": "RO तंत्रज्ञ", "gujaratilabel": "RO ટેકનિશિયન", "value": "ro_technician"},
+      {"label": "Solar Panel Technician", "hindilabel": "सोलर पैनल तकनीशियन", "marathilabel": "सोलर पॅनेल तंत्रज्ञ", "gujaratilabel": "સોલર પેનલ ટેકનિશિયન", "value": "solar_panel_technician"},
+      {"label": "Electric Motor Rewinding Technician", "hindilabel": "मोटर रिवाइंडिंग तकनीशियन", "marathilabel": "मोटार रिवाइंडिंग तंत्रज्ञ", "gujaratilabel": "ઇલેક્ટ્રિક મોટર રિવાઇન્ડિંગ ટેકનિશિયન", "value": "motor_rewinding_technician"},
+      {"label": "Battery Technician", "hindilabel": "बैटरी तकनीशियन", "marathilabel": "बॅटरी तंत्रज्ञ", "gujaratilabel": "બેટરી ટેકનિશિયન", "value": "battery_technician"},
+      {"label": "Lift/Elevator Technician", "hindilabel": "लिफ्ट तकनीशियन", "marathilabel": "लिफ्ट तंत्रज्ञ", "gujaratilabel": "લિફ્ટ ટેકનિશિયન", "value": "lift_technician"},
+      {"label": "DG Generator Technician", "hindilabel": "जनरेटर तकनीशियन", "marathilabel": "जनरेटर तंत्रज्ञ", "gujaratilabel": "જનરેટર ટેકનિશિયન", "value": "generator_technician"},
+      {"label": "Fire Safety Technician", "hindilabel": "अग्नि सुरक्षा तकनीशियन", "marathilabel": "फायर सेफ्टी तंत्रज्ञ", "gujaratilabel": "ફાયર સેફ્ટી ટેકનિશિયન", "value": "fire_safety_technician"},
+      {"label": "Printer Repair Technician", "hindilabel": "प्रिंटर मरम्मत तकनीशियन", "marathilabel": "प्रिंटर दुरुस्ती तंत्रज्ञ", "gujaratilabel": "પ્રિન્ટર રિપેર ટેકનિશિયન", "value": "printer_repair_technician"},
+      {"label": "Home Appliance Technician", "hindilabel": "होम एप्लायंस तकनीशियन", "marathilabel": "होम अप्लायन्स तंत्रज्ञ", "gujaratilabel": "હોમ એપ્લાયન્સ ટેકનિશિયન", "value": "home_appliance_technician"},
+      {"label": "Inverter Technician", "hindilabel": "इन्वर्टर तकनीशियन", "marathilabel": "इन्व्हर्टर तंत्रज्ञ", "gujaratilabel": "ઇન્વર્ટર ટેકનિશિયન", "value": "inverter_technician"},
+      {"label": "Networking Technician", "hindilabel": "नेटवर्किंग तकनीशियन", "marathilabel": "नेटवर्किंग तंत्रज्ञ", "gujaratilabel": "નેટવર્કિંગ ટેકનિશિયન", "value": "networking_technician"},
+      {"label": "Biomedical Equipment Technician", "hindilabel": "बायोमेडिकल तकनीशियन", "marathilabel": "बायोमेडिकल तंत्रज्ञ", "gujaratilabel": "બાયોમેડિકલ ઇક્વિપમેન્ટ ટેકનિશિયન", "value": "biomedical_technician"}
+    ]
+  },
+  {
+"label": "Specialized & Creative Workers",
+  "hindilabel": "विशिष्ट और रचनात्मक कर्मचारी",
+  "marathilabel": "विशेष आणि सर्जनशील कामगार",
+  "gujaratilabel": "વિશિષ્ટ અને સર્જનાત્મક કામદારો",
+  "value": "specialized_creative_workers",
+    "subcategories": [
+      {"label": "Tailor", "hindilabel": "दर्जी", "marathilabel": "शिंपी", "gujaratilabel": "દરજી", "value": "tailor"},
+      {"label": "Fashion Designer", "hindilabel": "फैशन डिजाइनर", "marathilabel": "फॅशन डिझाइनर", "gujaratilabel": "ફેશન ડિઝાઇનર", "value": "fashion_designer"},
+      {"label": "Beautician", "hindilabel": "ब्यूटिशियन", "marathilabel": "ब्युटिशियन", "gujaratilabel": "બ્યુટિશિયન", "value": "beautician"},
+      {"label": "Barber / Hairdresser", "hindilabel": "नाई", "marathilabel": "न्हावी", "gujaratilabel": "વાણંદ", "value": "barber"},
+      {"label": "Photographer", "hindilabel": "फोटोग्राफर", "marathilabel": "फोटोग्राफर", "gujaratilabel": "ફોટોગ્રાફર", "value": "photographer"},
+      {"label": "Videographer", "hindilabel": "वीडियो ग्राफर", "marathilabel": "व्हिडिओग्राफर", "gujaratilabel": "વિડિયોગ્રાફર", "value": "videographer"},
+      {"label": "Artist / Painter", "hindilabel": "कलाकार / पेंटर", "marathilabel": "कलाकार / पेंटर", "gujaratilabel": "કલાકાર / પેઈન્ટર", "value": "artist_painter"},
+      {"label": "Furniture Carpenter", "hindilabel": "फर्नीचर बढ़ई", "marathilabel": "फर्निचर सुतार", "gujaratilabel": "ફર્નિચર કાર્પેન્ટર", "value": "furniture_carpenter"},
+      {"label": "Interior Worker", "hindilabel": "इंटीरियर वर्कर", "marathilabel": "इंटिरिअर कामगार", "gujaratilabel": "ઇન્ટિરિયર વર્કર", "value": "interior_worker"},
+      {"label": "Signboard/Poster Maker", "hindilabel": "साइनबोर्ड/पोस्टर मेकर", "marathilabel": "साइनबोर्ड/पोस्टर मेकर", "gujaratilabel": "સાઇનબોર્ડ/પોસ્ટર મેકર", "value": "poster_maker"},
+      {"label": "Graphic Designer", "hindilabel": "ग्राफिक डिजाइनर", "marathilabel": "ग्राफिक डिझाइनर", "gujaratilabel": "ગ્રાફિક ડિઝાઇનર", "value": "graphic_designer"},
+      {"label": "Mehndi Artist", "hindilabel": "मेहंदी कलाकार", "marathilabel": "मेहंदी कलाकार", "gujaratilabel": "મહેંદી આર્ટિસ્ટ", "value": "mehndi_artist"},
+      {"label": "Makeup Artist", "hindilabel": "मेकअप आर्टिस्ट", "marathilabel": "मेकअप आर्टिस्ट", "gujaratilabel": "મેકઅપ આર્ટિસ્ટ", "value": "makeup_artist"},
+      {"label": "Tattoo Artist", "hindilabel": "टैटू आर्टिस्ट", "marathilabel": "टॅटू आर्टिस्ट", "gujaratilabel": "ટેટૂ આર્ટિસ્ટ", "value": "tattoo_artist"},
+      {"label": "Handicraft Worker", "hindilabel": "हस्तशिल्प वर्कर", "marathilabel": "हस्तकला कामगार", "gujaratilabel": "હસ્તકલા કારીગર", "value": "handicraft_worker"},
+      {"label": "UI/UX Designer", "hindilabel": "यूआई/यूएक्स डिजाइनर", "marathilabel": "UI/UX डिझाइनर", "gujaratilabel": "UI/UX ડિઝાઇનર", "value": "ui_ux_designer"},
+      {"label": "Digital Marketing Executive", "hindilabel": "डिजिटल मार्केटिंग एग्जीक्यूटिव", "marathilabel": "डिजिटल मार्केटिंग एक्झिक्युटिव्ह", "gujaratilabel": "ડિજિટલ માર્કેટિંગ એક્ઝિક્યુટિવ", "value": "digital_marketing_executive"},
+      {"label": "Content Creator", "hindilabel": "कंटेंट क्रिएटर", "marathilabel": "कंटेंट क्रिएटर", "gujaratilabel": "કન્ટેન્ટ ક્રિએટર", "value": "content_creator"},
+      {"label": "Voice Over Artist", "hindilabel": "वॉयस ओवर आर्टिस्ट", "marathilabel": "व्हॉइस ओवर आर्टिस्ट", "gujaratilabel": "વોઈસ ઓવર આર્ટિસ્ટ", "value": "voice_over_artist"},
+      {"label": "Social Media Manager", "hindilabel": "सोशल मीडिया मैनेजर", "marathilabel": "सोशल मीडिया मॅनेजर", "gujaratilabel": "સોશિયલ મીડિયા મેનેજર", "value": "social_media_manager"}
+    ]
+  },
+    {
+    "label": "Automobile & Workshop Workers",
+    "hindilabel": "ऑटोमोबाइल वर्कशॉप कर्मचारी",
+    "marathilabel": "ऑटोमोबाइल वर्कशॉप कामगार",
+    "gujaratilabel": "ઓટોમોબાઇલ વર્કશોપ કામદાર",
+    "value": "Automobile & Workshop Workers",
+    "subcategories": [
+      {"label":"Mechanic (2W/4W)","hindilabel":"मेकैनिक","marathilabel":"मेकॅनिक","gujaratilabel":"મેકેનિક","value":"mechanic"},
+      {"label":"Helper Mechanic","hindilabel":"मेकैनिक हेल्पर","marathilabel":"मेकॅनिक हेल्पर","gujaratilabel":"મેકેનિક હેલ્પર","value":"helper mechanic"},
+      {"label":"Denter","hindilabel":"डेंटर","marathilabel":"डेंटर","gujaratilabel":"ડેન્ટર","value":"denter"},
+      {"label":"Automobile Painter","hindilabel":"ऑटो पेंटर","marathilabel":"ऑटो पेंटर","gujaratilabel":"ઓટો પેઇન્ટર","value":"auto painter"},
+      {"label":"Tyre Mechanic","hindilabel":"टायर मैकेनिक","marathilabel":"टायर मेकॅनिक","gujaratilabel":"ટાયર મેકેનિક","value":"tyre mechanic"},
+      {"label":"Battery Technician","hindilabel":"बैटरी तकनीशियन","marathilabel":"बॅटरी तंत्रज्ञ","gujaratilabel":"બેટરી ટેકનિશિયન","value":"battery technician"},
+      {"label":"Wheel Alignment Technician","hindilabel":"व्हील अलाइनमेंट तकनीशियन","marathilabel":"व्हील अलाइनमेंट तंत्रज्ञ","gujaratilabel":"વ્હીલ એલાઇનમેન્ટ ટેકનિશિયન","value":"wheel alignment"},
+      {"label":"AC Mechanic (Vehicle)","hindilabel":"वाहन एसी मैकेनिक","marathilabel":"वाहन AC मेकॅनिक","gujaratilabel":"વાહન AC મેકેનિક","value":"vehicle ac mechanic"},
+      {"label":"Car Washer","hindilabel":"कार वॉशर","marathilabel":"कार वॉशर","gujaratilabel":"કાર વોશર","value":"car washer"},
+      {"label":"Service Advisor Helper","hindilabel":"सर्विस सलाहकार सहायक","marathilabel":"सर्व्हिस सल्लागार सहाय्यक","gujaratilabel":"સર્વિસ એડવાઇઝર હેલ્પર","value":"service advisor helper"},
+      {"label":"Other Automobile Work","hindilabel":"अन्य ऑटोमोबाइल कार्य","marathilabel":"इतर ऑटोमोबाइल काम","gujaratilabel":"અન્ય ઓટોમોબાઇલ કામ","value":"other automobile"}
+    ]
+  },
+    {
+    "label": "Healthcare Support Workers",
+    "hindilabel": "स्वास्थ्य सहायता कर्मचारी",
+    "marathilabel": "आरोग्य सहाय्यक कामगार",
+    "gujaratilabel": "હેલ્થકેર સપોર્ટ કામદાર",
+    "value": "Healthcare Support Workers",
+    "subcategories": [
+      {"label":"Ward Boy","hindilabel":"वार्ड बॉय","marathilabel":"वार्ड बॉय","gujaratilabel":"વોર્ડ બોય","value":"ward boy"},
+      {"label":"Nursing Helper","hindilabel":"नर्सिंग हेल्पर","marathilabel":"नर्सिंग हेल्पर","gujaratilabel":"નર્સિંગ હેલ્પર","value":"nursing helper"},
+      {"label":"Patient Care","hindilabel":"मरीज देखभाल","marathilabel":"रुग्ण सेवा","gujaratilabel":"પેશન્ટ કેર","value":"patient care"},
+      {"label":"Hospital Cleaner","hindilabel":"अस्पताल सफाई कर्मचारी","marathilabel":"रुग्णालय स्वच्छता कामगार","gujaratilabel":"હોસ્પિટલ ક્લીનર","value":"hospital cleaner"},
+      {"label":"Medical Attendant","hindilabel":"मेडिकल अटेंडेंट","marathilabel":"मेडिकल अटेंडंट","gujaratilabel":"મેડિકલ એટેન્ડન્ટ","value":"medical attendant"},
+      {"label":"Bedside Helper","hindilabel":"बेडसाइड हेल्पर","marathilabel":"बेडसाइड हेल्पर","gujaratilabel":"બેડસાઇડ હેલ્પર","value":"bedside helper"},
+      {"label":"Dressing Helper","hindilabel":"ड्रेसिंग हेल्पर","marathilabel":"ड्रेसिंग हेल्पर","gujaratilabel":"ડ્રેસિંગ હેલ્પર","value":"dressing helper"},
+      {"label":"OT Helper","hindilabel":"ओटी हेल्पर","marathilabel":"OT हेल्पर","gujaratilabel":"OT હેલ્પર","value":"ot helper"},
+      {"label":"Ambulance Assistant","hindilabel":"एंबुलेंस सहायक","marathilabel":"ॲम्ब्युलन्स सहाय्यक","gujaratilabel":"એમ્બ્યુલન્સ સહાયક","value":"ambulance assistant"},
+      {"label":"Pharmacy Helper","hindilabel":"फार्मेसी हेल्पर","marathilabel":"फार्मसी हेल्पर","gujaratilabel":"ફાર્મસી હેલ્પર","value":"pharmacy helper"},
+      {"label":"Other Healthcare Support","hindilabel":"अन्य स्वास्थ्य सहायता","marathilabel":"इतर आरोग्य सहाय्य","gujaratilabel":"અન્ય હેલ્થ સપોર્ટ","value":"other healthcare"}
+    ]
+  },
+    {
+    "label": "Security & Facility Worker",
+    "hindilabel": "सुरक्षा एवं सुविधा कर्मचारी",
+    "marathilabel": "सुरक्षा व सुविधा कामगार",
+    "gujaratilabel": "સિક્યુરિટી અને ફેસિલિટી કામદાર",
+    "value": "Security & Facility Workers",
+    "subcategories": [
+      {"label":"Security Guard","hindilabel":"सिक्योरिटी गार्ड","marathilabel":"सिक्युरिटी गार्ड","gujaratilabel":"સિક્યુરિટી ગાર્ડ","value":"security guard"},
+      {"label":"CCTV Operator","hindilabel":"सीसीटीवी ऑपरेटर","marathilabel":"CCTV ऑपरेटर","gujaratilabel":"CCTV ઓપરેટર","value":"cctv operator"},
+      {"label":"Office Boy","hindilabel":"ऑफिस बॉय","marathilabel":"ऑफिस बॉय","gujaratilabel":"ઓફિસ બોય","value":"office boy"},
+      {"label":"Facility Cleaner","hindilabel":"फैसिलिटी क्लीनर","marathilabel":"फॅसिलिटी क्लीनर","gujaratilabel":"ફેસિલિટી ક્લીનર","value":"facility cleaner"},
+      {"label":"Sweeper","hindilabel":"सफाईकर्मी","marathilabel":"सफाई कामगार","gujaratilabel":"સ્વીપર","value":"sweeper"},
+      {"label":"Building Maintenance Helper","hindilabel":"बिल्डिंग मेंटेनेंस हेल्पर","marathilabel":"बिल्डिंग मेंटेनन्स हेल्पर","gujaratilabel":"બિલ્ડિંગ મેન્ટેનન્સ હેલ્પર","value":"maintenance helper"},
+      {"label":"Lift Operator","hindilabel":"लिफ्ट ऑपरेटर","marathilabel":"लिफ्ट ऑपरेटर","gujaratilabel":"લિફ્ટ ઓપરેટર","value":"lift operator"},
+      {"label":"Pantry Boy","hindilabel":"पैंट्री बॉय","marathilabel":"पँट्री बॉय","gujaratilabel":"પેન્ટ્રી બોય","value":"pantry boy"},
+      {"label":"Gatekeeper","hindilabel":"गेटकीपर","marathilabel":"गेटकीपर","gujaratilabel":"ગેટકીપર","value":"gatekeeper"},
+      {"label":"Watchman","hindilabel":"चौकीदार","marathilabel":"वॉचमन","gujaratilabel":"વોચમેન","value":"watchman"},
+      {"label":"Other Facility Work","hindilabel":"अन्य सुविधा कार्य","marathilabel":"इतर सुविधा काम","gujaratilabel":"અન્ય ફેસિલિટી કામ","value":"other facility"}
+    ]
+  }
+]

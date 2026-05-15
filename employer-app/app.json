@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "BookMyWorker Employer",
+    "slug": "bookmyworker-employer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bookmyworker-employer",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F3EFFE"
+    },
+    "plugins": [
+      "expo-localization",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#7C3AED",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bookmyworkers.employer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used for uploading KYC documents.",
+        "NSPhotoLibraryUsageDescription": "Used for uploading profile and KYC photos.",
+        "NSLocationWhenInUseUsageDescription": "Used to show nearby workers."
+      }
+    },
+    "android": {
+      "package": "com.bookmyworkers.employer",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#7C3AED"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
+      "eas": {
+        "projectId": "26a471b1-82cf-4e21-ba26-6f8f6a82f6e4"
+      }
+    },
+    "owner": "singh2495shivendra"
+  }
+}
