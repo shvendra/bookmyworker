@@ -2,6 +2,8 @@ export type AppRole = 'worker' | 'employer' | 'agent' | 'selfworker' | 'admin' |
 export type KycStatus = 'pending' | 'verified' | 'rejected';
 export type AppLanguage = 'en' | 'hi' | 'mr' | 'gu' | 'ta' | 'te' | 'kn' | 'ml' | 'bn' | 'or' | 'pa';
 
+export type EmployerTypeKey = 'individual' | 'contractor' | 'agency' | 'industry';
+
 export interface UserProfile {
   id: string;
   fullName: string;
@@ -15,6 +17,11 @@ export interface UserProfile {
   district?: string;
   tehsil?: string;
   serviceArea?: string[];
+  // Employer subscription fields
+  isSubscribed?: boolean;
+  subscriptionExpiry?: string;
+  remainingContacts?: number;
+  employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
 }
 
 export interface AuthTokens {

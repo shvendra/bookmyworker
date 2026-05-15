@@ -717,7 +717,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         </AppText>
                         <TouchableOpacity
                           style={styles.subOverlayBtn}
-                          onPress={() => navigation.navigate('WorkerSearch')}
+                          onPress={() => navigation.navigate('Subscription')}
                         >
                           <AppText style={styles.subOverlayBtnTxt}>View Plans</AppText>
                         </TouchableOpacity>

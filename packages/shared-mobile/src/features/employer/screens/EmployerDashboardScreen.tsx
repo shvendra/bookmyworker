@@ -26,7 +26,6 @@ import { AppButton } from '../../../shared/components/ui/AppButton';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { useToast } from '../../../shared/state/toast/ToastContext';
-import { SubscriptionModal } from '../../../shared/components/ui/SubscriptionModal';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { ENV } from '../../../core/config/env';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -306,7 +305,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const insets = useSafeAreaInsets();
 
   const [reqTab, setReqTab]  = useState<ReqTab>('all');
-  const [showSub, setShowSub] = useState(false);
   const [closeTarget, setCloseTarget] = useState<RawRequirement | null>(null);
   const [closingId, setClosingId]     = useState<string | null>(null);
 
@@ -382,7 +380,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   };
 
   const handlePost = (): void => {
-    if (!isSubscribed) { setShowSub(true); return; }
+    if (!isSubscribed) { navigation.navigate('Subscription'); return; }
     navigation.navigate('PostRequirement');
   };
 
@@ -405,14 +403,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const NEARBY_SHOW = 10;
   const displayedNearby = useMemo(() => nearbyAgents.slice(0, NEARBY_SHOW), [nearbyAgents]);
 
-  const employerType = (() => {
-    const l = String(profile?.employerType ?? '').toLowerCase();
-    if (l.includes('industry'))   return 'industry' as const;
-    if (l.includes('agency'))     return 'agency' as const;
-    if (l.includes('contractor')) return 'contractor' as const;
-    return 'individual' as const;
-  })();
-
   return (
     <>
       <ScrollView
@@ -429,6 +419,21 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </View>
           <Avatar name={user?.fullName ?? 'E'} size={44} />
         </View>
+
+        {/* ── Subscription Banner ────────────────────────────────────── */}
+        {!isSubscribed && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Subscription')}
+            style={[styles.alertCard, { backgroundColor: '#eff6ff', borderColor: '#2563eb' }]}
+            activeOpacity={0.85}
+          >
+            <AppText style={{ fontSize: 15 }}>🔒</AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={[styles.alertTitle, { color: '#1d4ed8' }]}>Subscribe to Unlock Features</AppText>
+              <AppText style={[styles.alertSub, { color: '#2563eb' }]}>Post requirements, view contacts & more →</AppText>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* ── KYC Alert ──────────────────────────────────────────────── */}
         {kycUnverified && (
@@ -606,17 +611,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           )}
         </View>
       </ScrollView>
-
-      {/* ── Subscription Modal ────────────────────────────────────────── */}
-      <SubscriptionModal
-        visible={showSub}
-        onClose={() => setShowSub(false)}
-        employerType={employerType}
-        employerId={user?.id}
-        employerName={user?.fullName}
-        email={user?.email}
-        employerPhone={profile?.phone}
-      />
 
       {/* ── Close Confirm Modal ───────────────────────────────────────── */}
       <Modal visible={!!closeTarget} animationType="fade" transparent onRequestClose={() => setCloseTarget(null)}>

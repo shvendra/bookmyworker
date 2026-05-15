@@ -19,7 +19,6 @@ import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
-import { SubscriptionModal } from '../../../shared/components/ui/SubscriptionModal';
 import { ENV } from '../../../core/config/env';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
@@ -195,9 +194,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
   const topPad = insets.top + statusBarH;
 
-  const [unlockedPhone,    setUnlockedPhone]    = useState<string | null>(null);
-  const [unlocking,        setUnlocking]        = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false);
+  const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
+  const [unlocking,     setUnlocking]     = useState(false);
 
   // ── Worker data from new endpoint ────────────────────────────────────────
   const { data: worker, isLoading, isError, refetch } = useQuery<WorkerDetail>({
@@ -244,7 +242,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       if (msg === 'Contact limit exhausted') {
         Alert.alert('Contact Limit Reached', 'You have reached your unlock limit. Upgrade your plan.', [
-          { text: 'View Plans', onPress: () => setShowSubscription(true) },
+          { text: 'View Plans', onPress: () => navigation.navigate('Subscription') },
           { text: 'Dismiss', style: 'cancel' },
         ]);
       } else {
@@ -502,7 +500,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       </View>
                     ))}
                   </View>
-                  <TouchableOpacity onPress={() => setShowSubscription(true)} style={s.subscribeBtn} activeOpacity={0.85}>
+                  <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={s.subscribeBtn} activeOpacity={0.85}>
                     <AppText style={s.subscribeTxt}>View Subscription Plans</AppText>
                   </TouchableOpacity>
                 </View>
@@ -512,16 +510,6 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         </View>
       </ScrollView>
 
-      {/* Subscription modal */}
-      <SubscriptionModal
-        visible={showSubscription}
-        onClose={() => setShowSubscription(false)}
-        employerType={employerType}
-        employerId={user?.id}
-        employerName={user?.fullName}
-        email={user?.email}
-        employerPhone={user?.phone}
-      />
     </View>
   );
 };

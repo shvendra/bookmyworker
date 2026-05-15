@@ -51,6 +51,9 @@ export type RootStackParamList = {
   Notifications: undefined;
   SwitchAccount: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
+  Subscription: { agentId?: string } | undefined;
+  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: keyof RootStackParamList };
+  TopupWebView: { url: string; merchantOrderId: string };
 };
 
 // Aliases so existing imports don't need updating

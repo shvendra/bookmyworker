@@ -42,6 +42,8 @@ import { WorkerProfileScreen } from '../../features/search/screens/WorkerProfile
 import { AddWorkerScreen } from '../../features/agent/screens/AddWorkerScreen';
 import { WorkerSearchScreen } from '../../features/search/screens/WorkerSearchScreen';
 import { ChatRoomScreen } from '../../features/chat/screens/ChatRoomScreen';
+import { SubscriptionScreen } from '../../features/payment/screens/SubscriptionScreen';
+import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
 
 import type { RootStackParamList } from './types';
 
@@ -123,6 +125,9 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Support & Help' }} />
             <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Terms & Privacy' }} />
             <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Switch Account' }} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen
               name="ChatRoom"
               options={({ route }) => ({ animation: 'slide_from_right', headerShown: true, title: route.params.roomName })}

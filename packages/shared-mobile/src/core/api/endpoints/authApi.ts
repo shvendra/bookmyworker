@@ -25,6 +25,11 @@ interface BackendUser {
   district?: string;
   block?: string;
   profilePhoto?: string;
+  isSubscribed?: boolean;
+  subscriptionExpery?: string;   // backend typo — "Expery" not "Expiry"
+  subscriptionExpiry?: string;
+  remainingContacts?: number;
+  employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
 }
 
 export interface VerifyOtpResponse {
@@ -58,6 +63,10 @@ function mapBackendUser(u: BackendUser): UserProfile {
     state: u.state,
     district: u.district,
     profileImage: u.profilePhoto,
+    isSubscribed: u.isSubscribed,
+    subscriptionExpiry: u.subscriptionExpery ?? u.subscriptionExpiry,
+    remainingContacts: u.remainingContacts,
+    employerType: u.employerType,
   };
 }
 

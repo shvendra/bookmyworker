@@ -555,16 +555,78 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
   </View>
 );
 
+// ─── Subscription Gate ────────────────────────────────────────────────────────
+const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  const navigation = useNavigation<Nav>();
+  return (
+    <ScrollView
+      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={[styles.typeContent, { alignItems: 'center', justifyContent: 'center', flexGrow: 1 }]}
+    >
+      <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+        <AppText variant="body" color={theme.colors.primary}>← Back</AppText>
+      </TouchableOpacity>
+
+      <View style={{ alignItems: 'center', marginTop: 20 }}>
+        <AppText style={{ fontSize: 56, marginBottom: 16 }}>🔐</AppText>
+        <AppText variant="title" style={{ textAlign: 'center', color: theme.colors.text, marginBottom: 8 }}>
+          Subscription Required
+        </AppText>
+        <AppText variant="body" color={theme.colors.mutedText} style={{ textAlign: 'center', lineHeight: 22, marginBottom: 28 }}>
+          You need an active subscription to post job requirements and access worker profiles.
+          Subscribe to unlock the full BookMyWorker experience.
+        </AppText>
+
+        <View style={{ width: '100%', backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, marginBottom: 24, gap: 10, borderWidth: 1, borderColor: theme.colors.border }}>
+          {[
+            '✅ Post unlimited job requirements',
+            '✅ Access worker contact details',
+            '✅ View interested applicants',
+            '✅ Priority listing & support',
+          ].map((benefit) => (
+            <AppText key={benefit} variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>{benefit}</AppText>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Subscription')}
+          style={{ backgroundColor: '#2563eb', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 32, width: '100%', alignItems: 'center', marginBottom: 12 }}
+        >
+          <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>View Plans & Subscribe</AppText>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onBack}>
+          <AppText variant="body" color={theme.colors.mutedText}>Maybe later</AppText>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+};
+
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const PostRequirementScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
+  const { state: authState } = useAuth();
+  const user = authState.session?.user;
   const [reqType, setReqType] = useState<RequirementType | null>(null);
+
+  const isEmployer = user?.role === 'employer';
+  const isSubscribed = isEmployer
+    ? (!!user?.isSubscribed && (!user.subscriptionExpiry || new Date(user.subscriptionExpiry).getTime() > Date.now()))
+    : true; // non-employers (agents) don't need subscription
+
+  const goBack = (): void => { if (navigation.canGoBack()) navigation.goBack(); };
+
+  if (isEmployer && !isSubscribed) {
+    return <SubscriptionGate onBack={goBack} />;
+  }
 
   if (!reqType) {
     return (
       <TypeSelectionStep
         onSelect={(type) => setReqType(type)}
-        onBack={() => { if (navigation.canGoBack()) navigation.goBack(); }}
+        onBack={goBack}
       />
     );
   }
