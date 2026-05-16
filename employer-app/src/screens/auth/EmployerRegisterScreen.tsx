@@ -3,15 +3,16 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
@@ -28,9 +29,26 @@ import type { EmployerStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<EmployerStackParamList, 'Register'>;
 
+type EmployerTypeKey = 'individual' | 'contractor' | 'agency' | 'industry';
+
+const EMPLOYER_TYPES: { key: EmployerTypeKey; label: string; icon: string; desc: string }[] = [
+  { key: 'individual', label: 'Individual',      icon: '👤', desc: 'Household / personal hire' },
+  { key: 'contractor', label: 'Contractor',      icon: '🔧', desc: 'Civil / site contractor' },
+  { key: 'agency',     label: 'Agency',          icon: '🏦', desc: 'Staffing / placement agency' },
+  { key: 'industry',   label: 'Company / Factory', icon: '🏭', desc: 'Factory or industry owner' },
+];
+
 export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [selectedTypes, setSelectedTypes] = useState<Record<EmployerTypeKey, boolean>>({
+    individual: false,
+    contractor: false,
+    agency: false,
+    industry: false,
+  });
 
   const {
     control,
@@ -50,13 +68,26 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
       block: '',
       pinCode: '',
       email: '',
-      referredBy: '',
     },
   });
 
-  const stateVal = watch('state');
+  const stateVal    = watch('state');
   const districtVal = watch('district');
-  const blockVal = watch('block');
+  const blockVal    = watch('block');
+
+  const toggleType = (key: EmployerTypeKey): void => {
+    setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const hasType = Object.values(selectedTypes).some(Boolean);
+
+  const goToStep2 = (): void => {
+    if (!hasType) {
+      Alert.alert('Select Type', 'Please select at least one employer type to continue.');
+      return;
+    }
+    setStep(2);
+  };
 
   const onSubmit = handleSubmit(async (values) => {
     if (!values.state || !values.district) {
@@ -76,7 +107,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         block: values.block,
         pinCode: values.pinCode ?? undefined,
         email: values.email ?? undefined,
-        referredBy: values.referredBy ?? undefined,
+        employerType: JSON.stringify(selectedTypes),
       });
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send OTP');
@@ -85,33 +116,46 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
     }
   });
 
-  const isDark = theme.mode === 'dark';
-  const purple = '#7C3AED';
+  const isDark  = theme.mode === 'dark';
+  const purple  = '#1338b0';
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F9F5FF' }]}>
       <StatusBar barStyle="light-content" backgroundColor={purple} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: purple }]}>
-        <SafeAreaView>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <View style={styles.headerIconWrap}>
-              <AppText style={styles.headerIcon}>🏢</AppText>
-            </View>
-            <View style={styles.headerTextWrap}>
-              <AppText variant="heading" color="#FFFFFF" style={styles.headerTitle}>
-                Employer Registration
-              </AppText>
-              <AppText variant="caption" color="rgba(255,255,255,0.75)">
-                Post requirements &amp; hire verified workers
-              </AppText>
-            </View>
+      <View style={[styles.header, { backgroundColor: purple, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => (step === 2 ? setStep(1) : navigation.goBack())}
+          style={styles.backBtn}
+        >
+          <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View style={styles.headerIconWrap}>
+                  <Image
+                source={require('../../../../packages/shared-mobile/assets/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
           </View>
-        </SafeAreaView>
+          <View style={styles.headerTextWrap}>
+            <AppText variant="heading" color="#FFFFFF" style={styles.headerTitle}>
+              Employer Registration
+            </AppText>
+            <AppText variant="caption" color="rgba(255,255,255,0.75)">
+              {step === 1 ? 'Step 1 of 2 — Select employer type' : 'Step 2 of 2 — Account details'}
+            </AppText>
+          </View>
+        </View>
+
+        {/* Step dots */}
+        <View style={styles.stepDots}>
+          <View style={[styles.stepDot, { backgroundColor: '#fff' }]} />
+          <View style={styles.stepLine} />
+          <View style={[styles.stepDot, step === 2 ? { backgroundColor: '#fff' } : styles.stepDotInactive]} />
+        </View>
+
         <View style={[styles.deco, styles.deco1]} />
         <View style={[styles.deco, styles.deco2]} />
       </View>
@@ -125,195 +169,236 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: theme.colors.card },
-              !isDark && styles.cardShadow,
-            ]}
-          >
-            <AppText variant="subtitle" color={theme.colors.text} style={styles.cardTitle}>
-              Create Your Account
-            </AppText>
-
-            {/* Name */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Full Name / Company Name
+          {/* ── Step 1: Employer Type ── */}
+          {step === 1 && (
+            <View style={[styles.card, { backgroundColor: theme.colors.card }, !isDark && styles.cardShadow]}>
+              <AppText variant="subtitle" color={theme.colors.text} style={styles.cardTitle}>
+                What type of employer are you?
               </AppText>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="e.g. Sharma Industries"
-                    errorText={errors.name?.message}
-                  />
-                )}
+              <AppText variant="body" color={theme.colors.mutedText} style={styles.cardSubtitle}>
+                Select all that apply. This helps us match you with the right workers.
+              </AppText>
+
+              <View style={styles.typeGrid}>
+                {EMPLOYER_TYPES.map(({ key, label, icon, desc }) => {
+                  const isSelected = selectedTypes[key];
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      onPress={() => toggleType(key)}
+                      activeOpacity={0.75}
+                      style={[
+                        styles.typeCard,
+                        {
+                          borderColor: isSelected ? purple : theme.colors.border,
+                          backgroundColor: isSelected
+                            ? (isDark ? '#3D1F7A' : '#F3EEFF')
+                            : theme.colors.card,
+                        },
+                      ]}
+                    >
+                      <View style={styles.typeCardTop}>
+                        <AppText style={styles.typeIcon}>{icon}</AppText>
+                        <View style={[styles.typeCheck, {
+                          backgroundColor: isSelected ? purple : 'transparent',
+                          borderColor: isSelected ? purple : theme.colors.border,
+                        }]}>
+                          {isSelected ? <AppText style={styles.typeCheckMark}>✓</AppText> : null}
+                        </View>
+                      </View>
+                      <AppText variant="labelSm" color={isSelected ? purple : theme.colors.text} style={styles.typeLabel}>
+                        {label}
+                      </AppText>
+                      <AppText variant="micro" color={theme.colors.mutedText} style={styles.typeDesc}>
+                        {desc}
+                      </AppText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {!hasType && (
+                <View style={[styles.hintBanner, { backgroundColor: isDark ? '#2D1B4E' : '#F3EEFF' }]}>
+                  <AppText variant="caption" color={purple}>
+                    Select at least one type to continue
+                  </AppText>
+                </View>
+              )}
+
+              <AppButton
+                title="Next →"
+                onPress={goToStep2}
+                size="lg"
+                fullWidth
+                style={styles.submitBtn}
               />
             </View>
+          )}
 
-            {/* Phone */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Mobile Number
+          {/* ── Step 2: Account Details ── */}
+          {step === 2 && (
+            <View style={[styles.card, { backgroundColor: theme.colors.card }, !isDark && styles.cardShadow]}>
+              <AppText variant="subtitle" color={theme.colors.text} style={styles.cardTitle}>
+                Create Your Account
               </AppText>
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="9876543210"
-                    keyboardType="phone-pad"
-                    leadingIcon="+91"
-                    maxLength={10}
-                    errorText={errors.phone?.message}
-                  />
-                )}
+
+              {/* Name */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Full Name / Company Name
+                </AppText>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="e.g. Sharma Industries"
+                      errorText={errors.name?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Phone */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Mobile Number
+                </AppText>
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="9876543210"
+                      keyboardType="phone-pad"
+                      leadingIcon="+91"
+                      maxLength={10}
+                      errorText={errors.phone?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Password */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Password
+                </AppText>
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Min 6 characters"
+                      secureTextEntry
+                      errorText={errors.password?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Confirm Password */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Confirm Password
+                </AppText>
+                <Controller
+                  control={control}
+                  name="confirmPassword"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Re-enter password"
+                      secureTextEntry
+                      errorText={errors.confirmPassword?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Email */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Email (optional)
+                </AppText>
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value ?? ''}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="company@email.com"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      errorText={errors.email?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Location */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  Location
+                </AppText>
+                <LocationSelector
+                  state={stateVal}
+                  district={districtVal}
+                  block={blockVal}
+                  onStateChange={(v) => setValue('state', v)}
+                  onDistrictChange={(v) => setValue('district', v)}
+                  onBlockChange={(v) => setValue('block', v)}
+                  stateError={errors.state?.message}
+                  districtError={errors.district?.message}
+                  blockError={errors.block?.message}
+                />
+              </View>
+
+              {/* PIN Code */}
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                  PIN Code (optional)
+                </AppText>
+                <Controller
+                  control={control}
+                  name="pinCode"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      value={value ?? ''}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="6-digit PIN"
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      errorText={errors.pinCode?.message}
+                    />
+                  )}
+                />
+              </View>
+
+              <AppButton
+                title="Send OTP & Register"
+                onPress={onSubmit}
+                loading={isLoading}
+                size="lg"
+                fullWidth
+                style={styles.submitBtn}
               />
             </View>
-
-            {/* Password */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Password
-              </AppText>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Min 6 characters"
-                    secureTextEntry
-                    errorText={errors.password?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Confirm Password */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Confirm Password
-              </AppText>
-              <Controller
-                control={control}
-                name="confirmPassword"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Re-enter password"
-                    secureTextEntry
-                    errorText={errors.confirmPassword?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Email */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Email (optional)
-              </AppText>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="company@email.com"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    errorText={errors.email?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Location */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Location
-              </AppText>
-              <LocationSelector
-                state={stateVal}
-                district={districtVal}
-                block={blockVal}
-                onStateChange={(v) => setValue('state', v)}
-                onDistrictChange={(v) => setValue('district', v)}
-                onBlockChange={(v) => setValue('block', v)}
-                stateError={errors.state?.message}
-                districtError={errors.district?.message}
-                blockError={errors.block?.message}
-              />
-            </View>
-
-            {/* PIN Code */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                PIN Code (optional)
-              </AppText>
-              <Controller
-                control={control}
-                name="pinCode"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="6-digit PIN"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    errorText={errors.pinCode?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Referred By */}
-            <View style={styles.field}>
-              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
-                Referred By (optional)
-              </AppText>
-              <Controller
-                control={control}
-                name="referredBy"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Referral mobile number"
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                    errorText={errors.referredBy?.message}
-                  />
-                )}
-              />
-            </View>
-
-            <AppButton
-              title="Send OTP & Register"
-              onPress={onSubmit}
-              loading={isLoading}
-              size="lg"
-              fullWidth
-              style={styles.submitBtn}
-            />
-          </View>
+          )}
 
           {/* Login link */}
           <View style={styles.loginRow}>
@@ -341,9 +426,9 @@ const styles = StyleSheet.create({
     minHeight: 160,
     justifyContent: 'flex-end',
   },
-  backBtn: { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 8 : 8, paddingBottom: 4 },
+  backBtn: { paddingBottom: 4 },
   backArrow: { fontSize: 28, lineHeight: 32, fontWeight: '300' },
-  headerContent: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 8 },
+  headerContent: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 10 },
   headerIconWrap: {
     width: 48,
     height: 48,
@@ -352,9 +437,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerIcon: { fontSize: 26, lineHeight: 30 },
   headerTextWrap: { gap: 2, flex: 1 },
   headerTitle: { lineHeight: 26 },
+
+  stepDots: { flexDirection: 'row', alignItems: 'center', gap: 0, paddingBottom: 4 },
+  stepDot: { width: 10, height: 10, borderRadius: 5 },
+  stepDotInactive: { backgroundColor: 'rgba(255,255,255,0.35)' },
+  stepLine: { width: 28, height: 2, backgroundColor: 'rgba(255,255,255,0.35)', marginHorizontal: 4 },
+
   deco: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)' },
   deco1: { width: 180, height: 180, top: -60, right: -40 },
   deco2: { width: 100, height: 100, bottom: -20, right: 80 },
@@ -374,7 +464,43 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 8,
   },
-  cardTitle: { marginBottom: 20 },
+  cardTitle:    { marginBottom: 6 },
+  cardSubtitle: { marginBottom: 20, lineHeight: 20 },
+
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  typeCard: {
+    width: '47%',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 14,
+    gap: 6,
+  },
+  typeCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  typeIcon:  { fontSize: 26, lineHeight: 30 },
+  typeCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeCheckMark: { fontSize: 12, color: '#fff', fontWeight: '800', lineHeight: 16 },
+  typeLabel:     { fontWeight: '700', marginTop: 2 },
+  typeDesc:      { lineHeight: 16 },
+
+  hintBanner: {
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
 
   field: { marginBottom: 16, gap: 6 },
   label: { letterSpacing: 0.3 },
@@ -388,4 +514,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   loginLink: { fontWeight: '700' },
+  logoImage: { width: 55, height: 55 },
 });

@@ -8,13 +8,10 @@ const config = getDefaultConfig(projectRoot);
 
 config.watchFolders = [sharedRoot];
 
-// Only resolve from this app's node_modules.
+// Ensure Metro resolves modules from this app's node_modules first,
+// preventing duplicate React instances from parent directories.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
 ];
-
-// Disable hierarchical lookup so Metro does NOT walk up into
-// bookmyworkers-mobile/node_modules and load a second React instance.
-config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;

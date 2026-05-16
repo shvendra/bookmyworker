@@ -16,6 +16,7 @@ export type EmployerStackParamList = {
     pinCode?: string;
     email?: string;
     referredBy?: string;
+    employerType?: string;
     gender?: string;
     dob?: string;
     address?: string;
@@ -39,6 +40,10 @@ export type EmployerStackParamList = {
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   // Wallet (for Transactions tab)
   Transactions: undefined;
+  // Subscription + payment flow
+  Subscription: { agentId?: string } | undefined;
+  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };
+  TopupWebView: { url: string; merchantOrderId: string };
 };
 
 // Keep MainStackParamList alias so employer screens can be typed with it
