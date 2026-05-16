@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useState } from 'react';
 import {
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -11,6 +12,7 @@ import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RequirementType } from '../../../core/api/endpoints/requirementsApi';
 import { FormInput } from '../../../shared/components/forms/FormInput';
@@ -618,24 +620,40 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   const goBack = (): void => { if (navigation.canGoBack()) navigation.goBack(); };
 
+  const title = reqType ? 'Post Requirement' : 'Select Type';
+
   if (isEmployer && !isSubscribed) {
-    return <SubscriptionGate onBack={goBack} />;
+    return (
+      <View style={{ flex: 1 }}>
+        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <ScreenHeader title="Post Requirement" onBack={goBack} />
+        <SubscriptionGate onBack={goBack} />
+      </View>
+    );
   }
 
   if (!reqType) {
     return (
-      <TypeSelectionStep
-        onSelect={(type) => setReqType(type)}
-        onBack={goBack}
-      />
+      <View style={{ flex: 1 }}>
+        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <ScreenHeader title="Post Requirement" onBack={goBack} />
+        <TypeSelectionStep
+          onSelect={(type) => setReqType(type)}
+          onBack={goBack}
+        />
+      </View>
     );
   }
 
   return (
-    <RequirementFormStep
-      reqType={reqType}
-      onBack={() => setReqType(null)}
-    />
+    <View style={{ flex: 1 }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title={title} onBack={() => setReqType(null)} />
+      <RequirementFormStep
+        reqType={reqType}
+        onBack={() => setReqType(null)}
+      />
+    </View>
   );
 };
 

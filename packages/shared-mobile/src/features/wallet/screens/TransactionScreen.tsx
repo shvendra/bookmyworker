@@ -4,11 +4,14 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { walletApi } from '../../../core/api/endpoints/walletApi';
@@ -328,15 +331,13 @@ type Tab = 'history' | 'payments';
 
 export const TransactionScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation();
   const [tab, setTab] = useState<Tab>('history');
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* Page header */}
-      <View style={[styles.header, { backgroundColor: '#093d71' }]}>
-        <AppText style={styles.headerTitle}>History</AppText>
-        <AppText style={styles.headerSub}>Work records & payments</AppText>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="History" onBack={() => navigation.goBack()} />
 
       {/* Tab row */}
       <View style={[styles.tabRow, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
@@ -367,9 +368,6 @@ export const TransactionScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   root:       { flex: 1 },
-  header:     { paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, gap: 2 },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  headerSub:  { color: 'rgba(255,255,255,0.7)', fontSize: 13 },
   tabRow:     { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   tab:        { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabTxt:     { fontSize: 13, fontWeight: '700' },

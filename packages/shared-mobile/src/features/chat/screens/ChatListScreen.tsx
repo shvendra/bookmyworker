@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { chatApi } from '../../../core/api/endpoints/chatApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
@@ -49,9 +50,8 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.headerBar}>
-        <AppText variant="title">Messages</AppText>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Messages" />
 
       {roomList.length === 0 ? (
         <EmptyState
@@ -115,11 +115,6 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerBar: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 10,
-  },
   list: { flexGrow: 1 },
   roomItem: {
     flexDirection: 'row',

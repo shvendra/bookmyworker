@@ -3,10 +3,12 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { walletApi, type RawPaymentTransaction, type WithdrawalPayload } from '../../../core/api/endpoints/walletApi';
@@ -136,12 +138,15 @@ export const WalletScreen = (): React.JSX.Element => {
   const payoutLabel = role === 'employer' ? 'Add Funds' : 'Request Payout';
 
   return (
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Wallet" />
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Balance Card */}
       <View style={[styles.balanceCard, { backgroundColor: theme.colors.primary }]}>
         <AppText variant="caption" color="rgba(255,255,255,0.8)">{walletTitle}</AppText>
@@ -241,6 +246,7 @@ export const WalletScreen = (): React.JSX.Element => {
         </AppCard>
       )}
     </ScrollView>
+    </View>
   );
 };
 

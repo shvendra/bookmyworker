@@ -7,10 +7,12 @@ import {
   Alert,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -135,15 +137,15 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const currentPhotoUri = photoUri ?? user?.profileImage;
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Edit Profile" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-        <AppText variant="body" color={theme.colors.primary}>← Back</AppText>
-      </TouchableOpacity>
       <AppText variant="title">Edit Profile</AppText>
       <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
         Update your personal information
@@ -200,17 +202,6 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         blockLabel="Block / Tehsil"
       />
 
-      {/* BANK DETAILS */}
-      <SectionLabel label="BANK DETAILS" theme={theme} />
-      <AppCard style={styles.card}>
-        <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardHint}>
-          Required for salary and commission payouts.
-        </AppText>
-        <FormInput control={control} name="accountNumber" label="Account Number" placeholder="123456789012" keyboardType="number-pad" />
-        <FormInput control={control} name="ifscCode" label="IFSC Code" placeholder="SBIN0001234" />
-        <FormInput control={control} name="bankName" label="Bank Name" placeholder="State Bank of India" />
-      </AppCard>
-
       {/* CHANGE PASSWORD */}
       <SectionLabel label="CHANGE PASSWORD" theme={theme} />
       <AppCard style={styles.card}>
@@ -228,6 +219,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
       <AppButton title="Save Changes" onPress={onSubmit} loading={loading} style={styles.saveBtn} />
     </ScrollView>
+    </View>
   );
 };
 
@@ -238,7 +230,6 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 48 },
-  backBtn: { marginBottom: 16 },
   subtitle: { marginTop: 4, marginBottom: 24 },
   avatarSection: { alignItems: 'center', marginBottom: 24 },
   avatar: { width: 88, height: 88, borderRadius: 44 },

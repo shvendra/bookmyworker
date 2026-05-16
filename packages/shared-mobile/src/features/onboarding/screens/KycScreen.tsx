@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -16,7 +17,7 @@ import { type KycFormValues, kycSchema } from '../../auth/validation/authSchemas
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'Kyc'>;
 
-export const KycScreen = (_props: Props): React.JSX.Element => {
+export const KycScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state, setLanguage, updateProfile, completeOnboarding } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +58,9 @@ export const KycScreen = (_props: Props): React.JSX.Element => {
   });
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="KYC Verification" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -185,6 +189,7 @@ export const KycScreen = (_props: Props): React.JSX.Element => {
         Your Aadhaar details are encrypted and only used for verification purposes.
       </AppText>
     </ScrollView>
+    </View>
   );
 };
 

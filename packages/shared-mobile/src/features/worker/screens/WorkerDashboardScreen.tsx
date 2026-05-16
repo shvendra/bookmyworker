@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
-import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { QuickActionCard, QuickActionsRow } from '../../../shared/components/ui/QuickActionCard';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
@@ -48,6 +48,13 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
   const kycPending = user?.kycStatus === 'pending';
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader
+        title={user?.fullName ?? 'Worker'}
+        rightIcon="🔔"
+        onRightPress={() => {}}
+      />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -61,33 +68,22 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Premium Gradient Header */}
-      <GradientHeader
-        subtitle={greet()}
-        title={user?.fullName ?? 'Worker'}
-        caption="Find opportunities near you"
-        avatarName={user?.fullName ?? 'W'}
-        onAvatarPress={() => navigation.navigate('Profile' as never)}
-        rightIcon="🔔"
-        onRightPress={() => {}}
-      >
-        {/* Wallet strip inside header */}
-        <View style={styles.walletStrip}>
-          <View style={styles.walletLeft}>
-            <AppText variant="micro" color="rgba(255,255,255,0.65)">Wallet Balance</AppText>
-            <AppText variant="numeric" color="#FFFFFF" style={styles.walletAmt}>
-              ₹{balance.toLocaleString('en-IN')}
-            </AppText>
-          </View>
-          <AppButton
-            title="Withdraw"
-            variant="outline"
-            size="sm"
-            onPress={() => navigation.navigate('Wallet' as never)}
-            style={styles.withdrawBtn}
-          />
+      {/* Wallet strip */}
+      <View style={[styles.walletStrip, { backgroundColor: '#1338B0' }]}>
+        <View style={styles.walletLeft}>
+          <AppText variant="micro" color="rgba(255,255,255,0.65)">Wallet Balance</AppText>
+          <AppText variant="numeric" color="#FFFFFF" style={styles.walletAmt}>
+            ₹{balance.toLocaleString('en-IN')}
+          </AppText>
         </View>
-      </GradientHeader>
+        <AppButton
+          title="Withdraw"
+          variant="outline"
+          size="sm"
+          onPress={() => navigation.navigate('Wallet' as never)}
+          style={styles.withdrawBtn}
+        />
+      </View>
 
       <View style={styles.body}>
         {/* KYC Alert */}
@@ -153,6 +149,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -164,10 +161,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   walletLeft: { gap: 2 },
   walletAmt: { fontSize: 20, lineHeight: 26 },

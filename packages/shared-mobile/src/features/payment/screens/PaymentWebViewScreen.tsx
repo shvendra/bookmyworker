@@ -2,16 +2,19 @@ import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { WebView, type WebViewNavigation } from 'react-native-webview';
+import { WebView, type WebViewNavigation, type ShouldStartLoadRequest, type WebViewErrorEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { queryClient } from '../../../core/query/queryClient';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -45,19 +48,25 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const resolved = useRef(false);
+  const webViewRef = useRef<WebView>(null);
 
   const handleDone = (status: string, amount: string): void => {
     if (resolved.current) return;
     resolved.current = true;
 
     if (status === 'completed') {
-      // Refresh user profile so isSubscribed / remainingContacts updates
+      // Refresh auth session + invalidate dashboard query cache so subscription
+      // status / remainingContacts reflect immediately when user navigates back
       void (async () => {
         try {
           const { getCurrentUser } = await import('../../../core/api/endpoints/authApi');
           const freshUser = await getCurrentUser();
           await updateProfile(freshUser);
         } catch { /* non-fatal */ }
+        // Force all profile-dependent queries to refetch on next focus
+        void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
+        void queryClient.invalidateQueries({ queryKey: ['search-user-profile'] });
+        void queryClient.invalidateQueries({ queryKey: ['subscription-screen-profile'] });
       })();
 
       Alert.alert(
@@ -126,15 +135,43 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
       )}
 
       <WebView
+        ref={webViewRef}
         source={{ uri: url }}
         style={s.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onLoadProgress={({ nativeEvent }: { nativeEvent: { progress: number } }) => setProgress(nativeEvent.progress)}
         onNavigationStateChange={onNavigationStateChange}
+        originWhitelist={['*']}
+        mixedContentMode="always"
         javaScriptEnabled
         domStorageEnabled
         thirdPartyCookiesEnabled
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        cacheEnabled={false}
+        userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
+        // Intercept non-http schemes before WebView tries to navigate (works on iOS;
+        // on Android this runs async so onError below is the reliable fallback)
+        onShouldStartLoadWithRequest={(req: ShouldStartLoadRequest) => {
+          const { url: reqUrl } = req;
+          if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
+            void Linking.openURL(reqUrl).catch(() => {
+              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+            });
+            return false;
+          }
+          return true;
+        }}
+        // Android fallback: if the scheme error page shows, open via Linking then restore
+        onError={({ nativeEvent }: WebViewErrorEvent) => {
+          if (nativeEvent.code === -10 && nativeEvent.url) {
+            void Linking.openURL(nativeEvent.url).catch(() => {
+              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+            });
+            webViewRef.current?.goBack();
+          }
+        }}
         renderLoading={() => (
           <View style={s.loaderOverlay}>
             <ActivityIndicator size="large" color="#2563eb" />
@@ -142,6 +179,8 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
           </View>
         )}
         startInLoadingState
+        setSupportMultipleWindows={false}
+        androidLayerType={Platform.OS === 'android' ? 'hardware' : undefined}
       />
     </View>
   );
@@ -159,6 +198,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const resolved = useRef(false);
+  const webViewRef = useRef<WebView>(null);
 
   const handleDone = (status: string, amount: string): void => {
     if (resolved.current) return;
@@ -171,6 +211,9 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
           const freshUser = await getCurrentUser();
           await updateProfile(freshUser);
         } catch { /* non-fatal */ }
+        void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
+        void queryClient.invalidateQueries({ queryKey: ['search-user-profile'] });
+        void queryClient.invalidateQueries({ queryKey: ['subscription-screen-profile'] });
       })();
       Alert.alert(
         'Top-up Successful! 🎉',
@@ -219,15 +262,40 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
       )}
 
       <WebView
+        ref={webViewRef}
         source={{ uri: url }}
         style={s.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onLoadProgress={({ nativeEvent }: { nativeEvent: { progress: number } }) => setProgress(nativeEvent.progress)}
         onNavigationStateChange={onNavigationStateChange}
+        originWhitelist={['*']}
+        mixedContentMode="always"
         javaScriptEnabled
         domStorageEnabled
         thirdPartyCookiesEnabled
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        cacheEnabled={false}
+        userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
+        onShouldStartLoadWithRequest={(req: ShouldStartLoadRequest) => {
+          const { url: reqUrl } = req;
+          if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
+            void Linking.openURL(reqUrl).catch(() => {
+              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+            });
+            return false;
+          }
+          return true;
+        }}
+        onError={({ nativeEvent }: WebViewErrorEvent) => {
+          if (nativeEvent.code === -10 && nativeEvent.url) {
+            void Linking.openURL(nativeEvent.url).catch(() => {
+              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+            });
+            webViewRef.current?.goBack();
+          }
+        }}
         renderLoading={() => (
           <View style={s.loaderOverlay}>
             <ActivityIndicator size="large" color="#2563eb" />
@@ -235,6 +303,8 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
           </View>
         )}
         startInLoadingState
+        setSupportMultipleWindows={false}
+        androidLayerType={Platform.OS === 'android' ? 'hardware' : undefined}
       />
     </View>
   );

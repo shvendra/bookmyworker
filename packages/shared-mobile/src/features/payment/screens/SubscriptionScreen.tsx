@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  StatusBar,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { apiClient } from '../../../core/api/client';
 import { paymentApi, GST_RATE } from '../../../core/api/endpoints/paymentApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
+
+interface FreshProfile {
+  isSubscribed?: boolean;
+  subscriptionExpery?: string;
+  remainingContacts?: number;
+  employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
+}
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -112,16 +121,40 @@ const C = {
 
 export const SubscriptionScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
-  const insets = useSafeAreaInsets();
-  const { state: authState, updateProfile } = useAuth();
+  const { state: authState } = useAuth();
   const user = authState.session?.user;
-
-  const employerType = resolveEmployerType(user?.employerType);
-  const plans = buildPlans(employerType);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const isSubscribed = !!user?.isSubscribed &&
-    (!user.subscriptionExpiry || new Date(user.subscriptionExpiry).getTime() > Date.now());
+  // Fetch fresh profile — session user is stale after contacts are consumed
+  const profileQuery = useQuery({
+    queryKey: ['subscription-screen-profile'],
+    queryFn: async () => {
+      const res = await apiClient.get<{ user?: FreshProfile }>('/api/v1/user/getuser');
+      return res.data.user ?? null;
+    },
+    staleTime: 60 * 1000,
+  });
+
+  // Only refetch on focus when the cached data is actually stale
+  useFocusEffect(
+    useCallback(() => {
+      if (profileQuery.isStale) {
+        void profileQuery.refetch();
+      }
+    }, [profileQuery]),
+  );
+
+  const profile = profileQuery.data;
+
+  // Use fresh API data; fallback to session for employer type (rarely changes)
+  const isSubscribed = !!profile?.isSubscribed &&
+    (!profile.subscriptionExpery || new Date(profile.subscriptionExpery).getTime() > Date.now());
+
+  const remainingContacts = profile?.remainingContacts ?? 0;
+  const employerType = resolveEmployerType(
+    (profile?.employerType ?? user?.employerType) as Parameters<typeof resolveEmployerType>[0],
+  );
+  const plans = buildPlans(employerType);
 
   const handleBuyPlan = async (plan: Plan): Promise<void> => {
     if (!user) return;
@@ -196,18 +229,10 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
   return (
     <View style={[s.root, { backgroundColor: C.light }]}>
-      {/* Header */}
-      <View style={[s.header, { paddingTop: insets.top + 10, borderBottomColor: C.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <AppText style={s.backIcon}>←</AppText>
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <AppText style={s.headerTitle}>Pricing Plans</AppText>
-          <AppText style={s.headerSub}>Choose a plan to unlock worker contacts</AppText>
-        </View>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Pricing Plans" onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={s.hero}>
           <AppText style={s.heroTitle}>BookMyWorker Subscription</AppText>
@@ -222,19 +247,23 @@ export const SubscriptionScreen = (): React.JSX.Element => {
           <View style={s.activeBadge}>
             <AppText style={s.activeBadgeText}>
               ✅ Active Subscription
-              {user?.subscriptionExpiry
-                ? `  ·  Expires ${new Date(user.subscriptionExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
+              {profile?.subscriptionExpery
+                ? `  ·  Expires ${new Date(profile.subscriptionExpery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
                 : ''}
             </AppText>
           </View>
         )}
 
-        {/* Remaining contacts */}
-        {isSubscribed && typeof user?.remainingContacts === 'number' && (
+        {/* Remaining contacts — always from fresh API data */}
+        {isSubscribed && (
           <View style={s.contactsRow}>
-            <AppText style={s.contactsText}>
-              📞  Remaining Contacts: <AppText style={s.contactsBold}>{user.remainingContacts}</AppText>
-            </AppText>
+            {profileQuery.isFetching && !profileQuery.data ? (
+              <ActivityIndicator size="small" color="#1d4ed8" />
+            ) : (
+              <AppText style={s.contactsText}>
+                📞  Remaining Contacts: <AppText style={s.contactsBold}>{remainingContacts}</AppText>
+              </AppText>
+            )}
           </View>
         )}
 
@@ -347,12 +376,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
 const s = StyleSheet.create({
   root:         { flex: 1 },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 14, backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
-  backBtn:      { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
-  backIcon:     { fontSize: 20, fontWeight: '700', color: '#0f172a' },
-  headerTitle:  { fontSize: 16, fontWeight: '800', color: '#0f172a' },
-  headerSub:    { fontSize: 12, color: '#64748b', fontWeight: '500', marginTop: 1 },
-  scroll:       { paddingHorizontal: 16, paddingTop: 16 },
+  scroll:       { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
   hero:         { marginBottom: 20, alignItems: 'center' },
   heroTitle:    { fontSize: 22, fontWeight: '900', color: '#0f172a', textAlign: 'center', letterSpacing: -0.5 },
   heroSub:      { fontSize: 13, color: '#64748b', textAlign: 'center', marginTop: 6, lineHeight: 20 },

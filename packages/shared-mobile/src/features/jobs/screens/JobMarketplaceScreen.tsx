@@ -6,6 +6,7 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -290,6 +292,8 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Job Marketplace" />
       {/* Search bar */}
       <View style={[styles.searchRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <View style={[styles.searchBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>

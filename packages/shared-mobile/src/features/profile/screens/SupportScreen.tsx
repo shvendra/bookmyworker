@@ -1,8 +1,10 @@
 import React from 'react';
-import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 
 const FAQS = [
   {
@@ -58,8 +60,12 @@ const ContactCard = ({ icon, title, subtitle, onPress }: ContactCardProps): Reac
 
 export const SupportScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation();
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Support & Help" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -106,6 +112,7 @@ export const SupportScreen = (): React.JSX.Element => {
         BookMyWorkers · v1.0.0{'\n'}support@bookmyworkers.com
       </AppText>
     </ScrollView>
+    </View>
   );
 };
 

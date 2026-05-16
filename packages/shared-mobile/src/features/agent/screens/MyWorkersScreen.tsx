@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
@@ -88,20 +90,15 @@ export const MyWorkersScreen = (): React.JSX.Element => {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="My Workers" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <AppText variant="caption" color={theme.colors.mutedText}>My Workers</AppText>
-          <AppText variant="title">{user?.fullName ?? 'Agent'}</AppText>
-        </View>
-        <Avatar name={user?.fullName ?? 'A'} size={44} />
-      </View>
 
       {/* Stats row */}
       <View style={styles.statsRow}>
@@ -184,13 +181,13 @@ export const MyWorkersScreen = (): React.JSX.Element => {
         })
       )}
     </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   statChip: { flex: 1, alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingVertical: 12, gap: 2 },
   statNum: { fontSize: 22, lineHeight: 28, fontWeight: '800' },

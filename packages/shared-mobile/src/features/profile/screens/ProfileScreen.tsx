@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Modal,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   TouchableOpacity,
@@ -13,7 +14,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
-import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
 import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
@@ -138,32 +139,33 @@ export const ProfileScreen = (): React.JSX.Element => {
   };
 
   return (
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Gradient Header — photo + name + status only */}
-      <GradientHeader title="">
-        <View style={styles.profileCenter}>
-          <Avatar
-            name={user?.fullName ?? 'U'}
-            uri={user?.profileImage}
-            size={88}
-            ring
-            ringColor="rgba(255,255,255,0.55)"
-            online={user?.kycStatus === 'verified'}
-          />
-          <AppText style={styles.profileName}>
-            {user?.fullName ?? 'User'}
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="My Profile" />
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+      {/* Avatar + name + status in content area */}
+      <View style={[styles.profileCenter, { backgroundColor: '#1338B0', paddingTop: 20, paddingBottom: 24 }]}>
+        <Avatar
+          name={user?.fullName ?? 'U'}
+          uri={user?.profileImage}
+          size={88}
+          ring
+          ringColor="rgba(255,255,255,0.55)"
+          online={user?.kycStatus === 'verified'}
+        />
+        <AppText style={styles.profileName}>
+          {user?.fullName ?? 'User'}
+        </AppText>
+        <View style={[styles.statusPill, { backgroundColor: kycColors.bg }]}>
+          <AppText style={[styles.statusPillTxt, { color: kycColors.text }]}>
+            {(user?.kycStatus ?? 'PENDING').toUpperCase()}
           </AppText>
-          <View style={[styles.statusPill, { backgroundColor: kycColors.bg }]}>
-            <AppText style={[styles.statusPillTxt, { color: kycColors.text }]}>
-              {(user?.kycStatus ?? 'PENDING').toUpperCase()}
-            </AppText>
-          </View>
         </View>
-      </GradientHeader>
+      </View>
 
       <View style={styles.body}>
         {/* Switch Account — hidden for employer (single-role app) */}
@@ -361,6 +363,7 @@ export const ProfileScreen = (): React.JSX.Element => {
         </View>
       </Modal>
     </ScrollView>
+    </View>
   );
 };
 

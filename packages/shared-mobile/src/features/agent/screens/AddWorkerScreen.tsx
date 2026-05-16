@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   ScrollView,
+  StatusBar,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -130,17 +131,15 @@ export const AddWorkerScreen = (): React.JSX.Element => {
   });
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Add Worker" onBack={canGoBack ? () => navigation.goBack() : undefined} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {canGoBack && (
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <AppText variant="body" color={theme.colors.primary}>← Back</AppText>
-        </TouchableOpacity>
-      )}
       <AppText variant="title">Add Worker</AppText>
       <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
         Register a new worker under your account.
@@ -283,6 +282,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
         style={styles.submitBtn}
       />
     </ScrollView>
+    </View>
   );
 };
 
@@ -293,7 +293,6 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 48 },
-  backBtn: { marginBottom: 12 },
   subtitle: { marginTop: 4, marginBottom: 20 },
   sectionLabel: {
     marginTop: 20, marginBottom: 8,

@@ -3,10 +3,12 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -156,24 +158,12 @@ export const NotificationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Top bar */}
-      <View style={[styles.topBar, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <View style={styles.topLeft}>
-          <AppText variant="subtitle" color={theme.colors.text}>Notifications</AppText>
-          {unreadCount > 0 && (
-            <View style={[styles.countBadge, { backgroundColor: theme.colors.danger }]}>
-              <AppText style={styles.countText}>{unreadCount}</AppText>
-            </View>
-          )}
-        </View>
-        {unreadCount > 0 && (
-          <Pressable onPress={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            <AppText variant="labelSm" color={theme.colors.primary}>
-              {markAllRead.isPending ? 'Marking…' : '✓ Mark all read'}
-            </AppText>
-          </Pressable>
-        )}
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader
+        title="Notifications"
+        rightIcon={unreadCount > 0 ? '✓' : undefined}
+        onRightPress={unreadCount > 0 ? () => markAllRead.mutate() : undefined}
+      />
 
       {notifications.length === 0 ? (
         <View style={styles.empty}>
@@ -237,25 +227,6 @@ export const NotificationsScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  topLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  countBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  countText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 
   list: { padding: 16, paddingBottom: 40 },
 

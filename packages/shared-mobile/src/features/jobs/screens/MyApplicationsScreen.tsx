@@ -1,6 +1,7 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StatusBar, StyleSheet, View } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -50,17 +51,8 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <AppButton
-          title="← Back"
-          variant="ghost"
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        />
-        <AppText variant="subtitle" style={styles.headerTitle}>My Applications</AppText>
-        <View style={styles.headerRight} />
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="My Applications" onBack={() => navigation.goBack()} />
 
       {applications.length === 0 ? (
         <EmptyState
@@ -138,17 +130,6 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: { width: 60 },
-  headerTitle: { flex: 1, textAlign: 'center' },
-  headerRight: { width: 60 },
   list: { padding: 16, paddingBottom: 40 },
   count: { marginBottom: 12 },
   card: { marginBottom: 12 },

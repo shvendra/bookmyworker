@@ -3,16 +3,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -26,10 +27,12 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'OtpVerification'>;
 const { width: W } = Dimensions.get('window');
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;
-const BOX_SIZE = Math.floor((W - 48 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
+// Account for scroll padding (20×2=40) + card padding (24×2=48) + breathing room (16)
+const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const toast = useToast();
   const isDark = theme.mode === 'dark';
@@ -156,14 +159,16 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
       <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
 
       {/* Brand strip */}
-      <View style={styles.brandStrip}>
-        <SafeAreaView>
-          <View style={[styles.brandContent, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 16 : 16 }]}>
-            <View style={styles.brandLogoWrap}>
-              <AppText style={styles.brandLogo}>🏗️</AppText>
-            </View>
+      <View style={[styles.brandStrip, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.brandContent}>
+          <View style={styles.brandLogoWrap}>
+            <Image source={require('../../../../assets/logo.png')} style={styles.brandLogoImg} resizeMode="contain" />
           </View>
-        </SafeAreaView>
+          <View>
+            <AppText style={styles.brandName}>BookMyWorker</AppText>
+            <AppText style={styles.brandTagline}>Verify your number</AppText>
+          </View>
+        </View>
         <View style={[styles.deco, styles.deco1]} />
         <View style={[styles.deco, styles.deco2]} />
       </View>
@@ -186,7 +191,9 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
                 Verify Your Number
               </AppText>
               <AppText variant="body" color={theme.colors.mutedText} center style={styles.subText}>
-                We sent a {OTP_LENGTH}-digit OTP to{'\n'}
+                We sent a {OTP_LENGTH}-digit OTP via{' '}
+                <AppText variant="bodyMd" color="#25D366">WhatsApp</AppText>
+                {' '}to{'\n'}
                 <AppText variant="bodyMd" color={theme.colors.text}>+91 {route.params.phone}</AppText>
               </AppText>
               <Pressable onPress={() => navigation.goBack()}>
@@ -301,7 +308,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
           {/* Trust row */}
           <View style={styles.trustRow}>
-            {['🔒 End-to-end encrypted', '✅ Secure verification'].map((item) => (
+            {['🔒 End-to-end encrypted', '💬 Sent via WhatsApp', '✅ Secure verification'].map((item) => (
               <View key={item} style={[styles.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>
@@ -319,12 +326,15 @@ const styles = StyleSheet.create({
   brandStrip: {
     backgroundColor: '#1338B0',
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 28,
     overflow: 'hidden',
-    minHeight: 100,
-    justifyContent: 'flex-end',
   },
-  brandContent: { paddingBottom: 8 },
+  brandContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingBottom: 4,
+  },
   brandLogoWrap: {
     width: 48,
     height: 48,
@@ -333,7 +343,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandLogo: { fontSize: 26, lineHeight: 30 },
+  brandLogoImg: { width: 32, height: 32 },
+  brandName:    { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  brandTagline: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
   deco: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)' },
   deco1: { width: 180, height: 180, top: -80, right: -50 },
   deco2: { width: 100, height: 100, bottom: -20, right: 100 },
@@ -344,7 +356,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     padding: 24,
-    marginTop: -20,
+    marginTop: 0,
     alignItems: 'center',
   },
   cardShadow: {

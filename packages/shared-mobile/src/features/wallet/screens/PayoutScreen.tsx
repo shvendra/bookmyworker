@@ -3,10 +3,13 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { walletApi } from '../../../core/api/endpoints/walletApi';
@@ -120,6 +123,7 @@ export const PayoutScreen = (): React.JSX.Element => {
   const { state } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const navigation = useNavigation();
   const user = state.session?.user;
   const userId = user?.id ?? '';
 
@@ -220,17 +224,15 @@ export const PayoutScreen = (): React.JSX.Element => {
   if (isLoading) return <LoadingState message="Loading payout details…" />;
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Payout Summary" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* Page Title */}
-      <View style={styles.pageHeader}>
-        <AppText variant="title">Payout Summary</AppText>
-        <AppText variant="caption" color={theme.colors.mutedText}>Payout / Transactions</AppText>
-      </View>
 
       {/* Inline error banner */}
       {isError && (
@@ -369,6 +371,7 @@ export const PayoutScreen = (): React.JSX.Element => {
         </Modal>
       )}
     </ScrollView>
+    </View>
   );
 };
 

@@ -13,16 +13,10 @@ import { AppText } from '../../shared/components/ui/AppText';
 import { WorkerDashboardScreen } from '../../features/worker/screens/WorkerDashboardScreen';
 import { EmployerDashboardScreen } from '../../features/employer/screens/EmployerDashboardScreen';
 import { AgentDashboardScreen } from '../../features/agent/screens/AgentDashboardScreen';
-import { AdminDashboardScreen } from '../../features/admin/screens/AdminDashboardScreen';
-import { SuperAdminDashboardScreen } from '../../features/admin/screens/SuperAdminDashboardScreen';
-
 // ── Role-specific feature screens ─────────────────────────────────────────────
 import { MyWorkersScreen } from '../../features/agent/screens/MyWorkersScreen';
 import { PayoutScreen } from '../../features/wallet/screens/PayoutScreen';
 import { TransactionScreen } from '../../features/wallet/screens/TransactionScreen';
-import { AdminPayoutScreen } from '../../features/admin/screens/AdminPayoutScreen';
-import { UsersManagementScreen } from '../../features/admin/screens/UsersManagementScreen';
-import { LeadsManagementScreen } from '../../features/admin/screens/LeadsManagementScreen';
 
 // ── Shared screens ────────────────────────────────────────────────────────────
 import { WorkerSearchScreen } from '../../features/search/screens/WorkerSearchScreen';
@@ -80,19 +74,20 @@ const roleTabConfigs: Record<AppRole, TabConfig[]> = {
     { name: 'Payout',   label: 'Payout',   component: PayoutScreen,         icon: { outline: 'wallet-outline',    filled: 'wallet'    } },
     { name: 'Profile',  label: 'Profile',  component: ProfileScreen,        icon: { outline: 'person-outline',    filled: 'person'    } },
   ],
+  // Admin/SuperAdmin roles fall back to the employer tab set
   admin: [
-    { name: 'Home',    label: 'Home',    component: AdminDashboardScreen,  icon: { outline: 'home-outline',     filled: 'home'      } },
-    { name: 'Users',   label: 'Users',   component: UsersManagementScreen, icon: { outline: 'people-outline',   filled: 'people'    } },
-    { name: 'Leads',   label: 'Leads',   component: LeadsManagementScreen, icon: { outline: 'bar-chart-outline',filled: 'bar-chart' }, isAction: true },
-    { name: 'Payouts', label: 'Payouts', component: AdminPayoutScreen,     icon: { outline: 'cash-outline',     filled: 'cash'      } },
-    { name: 'Profile', label: 'Profile', component: ProfileScreen,         icon: { outline: 'person-outline',   filled: 'person'    } },
+    { name: 'Home',         label: 'Home',     component: EmployerDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'        } },
+    { name: 'Workers',      label: 'Workers',  component: WorkerSearchScreen,      icon: { outline: 'people-outline',    filled: 'people'      } },
+    { name: 'Post',         label: 'Post Job', component: PostRequirementScreen,   icon: { outline: 'add-circle-outline',filled: 'add-circle'  }, isAction: true },
+    { name: 'Transactions', label: 'History',  component: TransactionScreen,       icon: { outline: 'receipt-outline',   filled: 'receipt'     } },
+    { name: 'Profile',      label: 'Profile',  component: ProfileScreen,           icon: { outline: 'person-outline',    filled: 'person'      } },
   ],
   superadmin: [
-    { name: 'Home',    label: 'Home',    component: SuperAdminDashboardScreen, icon: { outline: 'home-outline',     filled: 'home'      } },
-    { name: 'Users',   label: 'Users',   component: UsersManagementScreen,     icon: { outline: 'people-outline',   filled: 'people'    } },
-    { name: 'Leads',   label: 'Leads',   component: LeadsManagementScreen,     icon: { outline: 'bar-chart-outline',filled: 'bar-chart' }, isAction: true },
-    { name: 'Payouts', label: 'Payouts', component: AdminPayoutScreen,         icon: { outline: 'cash-outline',     filled: 'cash'      } },
-    { name: 'Profile', label: 'Profile', component: ProfileScreen,             icon: { outline: 'person-outline',   filled: 'person'    } },
+    { name: 'Home',         label: 'Home',     component: EmployerDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'        } },
+    { name: 'Workers',      label: 'Workers',  component: WorkerSearchScreen,      icon: { outline: 'people-outline',    filled: 'people'      } },
+    { name: 'Post',         label: 'Post Job', component: PostRequirementScreen,   icon: { outline: 'add-circle-outline',filled: 'add-circle'  }, isAction: true },
+    { name: 'Transactions', label: 'History',  component: TransactionScreen,       icon: { outline: 'receipt-outline',   filled: 'receipt'     } },
+    { name: 'Profile',      label: 'Profile',  component: ProfileScreen,           icon: { outline: 'person-outline',    filled: 'person'      } },
   ],
 };
 

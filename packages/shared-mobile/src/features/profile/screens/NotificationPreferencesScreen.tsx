@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   View,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { notificationApi, type NotificationPreferences } from '../../../core/api/endpoints/notificationApi';
@@ -40,6 +43,7 @@ const PREF_ROWS: PrefRow[] = [
 
 export const NotificationPreferencesScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation();
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFS);
   const [loading, setLoading] = useState(true);
@@ -75,6 +79,9 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Notification Preferences" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -121,6 +128,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
         Changes are saved immediately. You can update these anytime.
       </AppText>
     </ScrollView>
+    </View>
   );
 };
 

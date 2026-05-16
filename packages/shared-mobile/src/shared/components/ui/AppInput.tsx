@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Pressable,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -31,10 +32,15 @@ export const AppInput = ({
   maxLength,
   showCount,
   value,
+  onChangeText,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
   ...rest
 }: AppInputProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<TextInput | null>(null);
+
   const hasError = Boolean(errorText);
   const isDark = theme.mode === 'dark';
 
@@ -85,7 +91,7 @@ export const AppInput = ({
         </View>
       )}
 
-      {/* Input row */}
+      {/* Input row — View container; only the prefix icon uses Pressable to focus the input */}
       <View
         style={[
           styles.inputRow,
@@ -97,22 +103,31 @@ export const AppInput = ({
         ]}
       >
         {leadingIcon ? (
-          <AppText style={[styles.leadingIcon, { color: focused ? theme.colors.primary : theme.colors.mutedText }]}>
-            {leadingIcon}
-          </AppText>
+          <Pressable onPress={() => inputRef.current?.focus()} style={styles.leadingIconBtn}>
+            <AppText
+              style={[
+                styles.leadingIcon,
+                { color: focused ? theme.colors.primary : theme.colors.mutedText },
+              ]}
+            >
+              {leadingIcon}
+            </AppText>
+          </Pressable>
         ) : null}
 
         <TextInput
+          ref={inputRef}
           placeholderTextColor={theme.colors.mutedText}
           maxLength={maxLength}
           value={value}
+          onChangeText={onChangeText}
           onFocus={(e) => {
             setFocused(true);
-            rest.onFocus?.(e);
+            onFocusProp?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
-            rest.onBlur?.(e);
+            onBlurProp?.(e);
           }}
           style={[
             styles.input,
@@ -171,14 +186,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 54,
   },
-  input: {
-    fontSize: 15,
-    paddingVertical: 14,
-    paddingHorizontal: 0,
-  },
-  leadingIcon: {
+input: {
+  fontSize: 15,
+  paddingVertical: 14,
+  paddingHorizontal: 0,
+  flex: 1,
+  minWidth: 0,
+},
+leadingIconBtn: {
+  marginRight: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+},  leadingIcon: {
     fontSize: 17,
-    marginRight: 10,
     lineHeight: 22,
   },
   trailingBtn: { marginLeft: 10 },

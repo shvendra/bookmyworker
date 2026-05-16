@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 
@@ -63,6 +65,9 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
   const isDark = theme.mode === 'dark';
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Switch Account" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -184,6 +189,7 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
         </AppText>
       </View>
     </ScrollView>
+    </View>
   );
 };
 

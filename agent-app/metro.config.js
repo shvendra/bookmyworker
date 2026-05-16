@@ -13,8 +13,4 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
 ];
 
-// Disable hierarchical lookup so Metro does NOT walk up into
-// bookmyworkers-mobile/node_modules and load a second React instance.
-config.resolver.disableHierarchicalLookup = true;
-
 module.exports = config;

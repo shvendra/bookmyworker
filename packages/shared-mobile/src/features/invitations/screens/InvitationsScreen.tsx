@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -33,12 +34,8 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <AppText variant="title">My Requirements</AppText>
-        <AppText variant="caption" color={theme.colors.mutedText}>
-          {all.length} total
-        </AppText>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="My Requirements" />
 
       <ScrollView
         horizontal
@@ -108,14 +105,6 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 4,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   filters: {
     paddingHorizontal: 16,
     paddingVertical: 10,

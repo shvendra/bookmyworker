@@ -1,6 +1,7 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -49,15 +50,8 @@ export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <AppButton
-          title="← Back"
-          variant="ghost"
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        />
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title={job.title ?? 'Job Detail'} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Job Title & Status */}
@@ -157,13 +151,6 @@ const detailRowStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: { alignSelf: 'flex-start' },
   scroll: { padding: 16, paddingBottom: 100 },
   titleCard: { marginBottom: 12 },
   titleRow: {

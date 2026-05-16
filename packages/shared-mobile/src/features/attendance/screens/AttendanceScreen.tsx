@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
@@ -82,8 +83,11 @@ export const AttendanceScreen = (): React.JSX.Element => {
   if (isError) return <ErrorState title="Unable to Load Attendance" message="Could not fetch attendance records. Please check your connection and try again." onRetry={() => void refetch()} />;
 
   return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Attendance" />
     <FlatList
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} />}
       showsVerticalScrollIndicator={false}
@@ -190,6 +194,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
         <EmptyState title="No attendance records" message="Your attendance history will appear here." />
       )}
     />
+    </View>
   );
 };
 

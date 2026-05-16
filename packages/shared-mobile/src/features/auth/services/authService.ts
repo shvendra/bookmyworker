@@ -58,9 +58,9 @@ export const authService = {
   },
 
   // Called after registration to get a session token via OTP login
-  loginAfterRegister: async (phone: string, otp: string): Promise<AuthSession> => {
+  loginAfterRegister: async (phone: string, otp: string, roleHint?: AppRole): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();
-    const response = await verifyOtp({ phone, otp });
+    const response = await verifyOtp({ phone, otp, roleHint });
     if (pushToken) {
       notificationApi.registerToken(pushToken).catch(() => {});
     }

@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,17 +13,17 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
-import { ENV } from '../../../core/config/env';
+import { buildPhotoUrl } from '../../../core/config/env';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
-const FILE_BASE = ENV.API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -154,11 +153,11 @@ const sec = StyleSheet.create({
 });
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
-const LoadingSkeleton = ({ topPad }: { topPad: number }): React.JSX.Element => {
+const LoadingSkeleton = (): React.JSX.Element => {
   const pulse = C.slateLight;
   return (
-    <View style={{ flex: 1, backgroundColor: C.navy }}>
-      <View style={{ paddingTop: topPad + 16, height: 240, backgroundColor: C.navy, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
+    <View style={{ flex: 1, backgroundColor: '#1338b0' }}>
+      <View style={{ paddingTop: 16, height: 240, backgroundColor: '#1338b0', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
         <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 140, height: 18, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 100, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' }} />
@@ -189,10 +188,6 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const user = authState.session?.user;
   const isEmployer = user?.role === 'employer';
   const insets = useSafeAreaInsets();
-
-  // On Android, also account for the status bar
-  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
-  const topPad = insets.top + statusBarH;
 
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
   const [unlocking,     setUnlocking]     = useState(false);
@@ -254,32 +249,28 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   };
 
   // ── Loading & error states ───────────────────────────────────────────────
-  if (isLoading) return <LoadingSkeleton topPad={topPad} />;
+  if (isLoading) return <LoadingSkeleton />;
 
   if (isError || !worker) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ position: 'absolute', top: topPad + 12, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: C.slateLight, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <AppText style={{ fontSize: 18, fontWeight: '700', color: C.navy }}>←</AppText>
-        </TouchableOpacity>
-        <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>Profile Unavailable</AppText>
-        <AppText style={{ fontSize: 13, color: C.slate, textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
-          Could not load this worker's profile. Please check your connection and try again.
-        </AppText>
-        <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: C.navy, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}>
-          <AppText style={{ color: C.white, fontWeight: '800', fontSize: 14 }}>Retry</AppText>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <ScreenHeader title="Worker Profile" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>Profile Unavailable</AppText>
+          <AppText style={{ fontSize: 13, color: C.slate, textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
+            Could not load this worker's profile. Please check your connection and try again.
+          </AppText>
+          <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: C.navy, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}>
+            <AppText style={{ color: C.white, fontWeight: '800', fontSize: 14 }}>Retry</AppText>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   // ── Derived display data ─────────────────────────────────────────────────
-  const photoUrl = worker.profilePhoto
-    ? `${FILE_BASE}/${worker.profilePhoto}`.replace(/([^:]\/)\/+/g, '$1')
-    : undefined;
+  const photoUrl = buildPhotoUrl(worker.profilePhoto);
 
   const displayName = formatName(worker.name ?? 'Unknown');
   const initials    = displayName.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
@@ -298,8 +289,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      {/* Transparent status bar on Android */}
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title={displayName} onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -308,19 +299,10 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         bounces={true}
       >
         {/* ── Hero ──────────────────────────────────────────────────── */}
-        <View style={[s.hero, { paddingTop: topPad + 16, backgroundColor: C.navy }]}>
+        <View style={[s.hero, { paddingTop: 16, backgroundColor: '#1338b0' }]}>
           {/* Decorative circles */}
           <View style={s.heroCircle1} pointerEvents="none" />
           <View style={s.heroCircle2} pointerEvents="none" />
-
-          {/* Back button */}
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={[s.backBtn, { top: topPad + 14 }]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText style={s.backIcon}>←</AppText>
-          </TouchableOpacity>
 
           {/* Avatar */}
           <View style={s.avatarWrap}>
@@ -520,14 +502,12 @@ const s = StyleSheet.create({
   hero:        { alignItems: 'center', paddingBottom: 28, paddingHorizontal: 20, overflow: 'hidden', position: 'relative' },
   heroCircle1: { position: 'absolute', width: 280, height: 280, borderRadius: 140, top: -90, right: -70, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroCircle2: { position: 'absolute', width: 200, height: 200, borderRadius: 100, bottom: -40, left: -60, backgroundColor: 'rgba(255,255,255,0.03)' },
-  backBtn:     { position: 'absolute', top: 16, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  backIcon:    { color: '#ffffff', fontSize: 20, fontWeight: '700' },
 
   avatarWrap:     { position: 'relative', marginBottom: 14 },
   avatar:         { width: 96, height: 96, borderRadius: 48, borderWidth: 3 },
   avatarFallback: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
   initials:       { fontSize: 30, fontWeight: '800', color: '#ffffff' },
-  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#0f172a' },
+  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#1338b0' },
 
   heroName:     { fontSize: 24, fontWeight: '800', color: '#ffffff', textAlign: 'center', marginBottom: 4 },
   heroCategory: { fontSize: 13, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginBottom: 2 },

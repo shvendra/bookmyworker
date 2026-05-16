@@ -18,6 +18,7 @@ export type RootStackParamList = {
     pinCode?: string;
     email?: string;
     referredBy?: string;
+    employerType?: string;
     gender?: string;
     dob?: string;
     address?: string;

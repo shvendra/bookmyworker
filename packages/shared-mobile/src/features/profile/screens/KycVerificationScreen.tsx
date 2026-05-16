@@ -4,14 +4,17 @@ import {
   Alert,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -153,6 +156,7 @@ const ds = StyleSheet.create({
 export const KycVerificationScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const navigation = useNavigation();
   const user = state.session?.user;
   const kycStatus: KycStatus = (user?.kycStatus ?? 'pending') as KycStatus;
   const isVerified = kycStatus === 'verified';
@@ -234,6 +238,9 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="KYC Verification" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[scr.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={scr.content}
@@ -429,6 +436,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
         ))}
       </AppCard>
     </ScrollView>
+    </View>
   );
 };
 

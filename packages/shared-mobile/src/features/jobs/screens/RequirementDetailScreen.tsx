@@ -6,11 +6,13 @@ import {
   Linking,
   Modal,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
@@ -37,6 +39,13 @@ interface RawAttendance {
 }
 
 // ─── Small helpers ─────────────────────────────────────────────────────────────
+
+/** Remove underscores and title-case — matches CRM formatLabel pattern */
+const fmtLabel = (s?: string | null): string => {
+  if (!s) return '—';
+  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 const formatDate = (d?: string): string => {
   if (!d) return '—';
   try {
@@ -412,33 +421,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <AppText style={styles.backIcon}>←</AppText>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <AppText style={styles.headerWorkType} numberOfLines={1}>
-            {req.workType ?? 'Requirement'}{req.subCategory ? ` · ${req.subCategory}` : ''}
-          </AppText>
-          <TouchableOpacity onPress={handleERNPress} style={styles.ernRow}>
-            <AppText style={styles.ernText}>
-              {req.ERN_NUMBER ?? 'No ERN'}
-            </AppText>
-            {isAssigned && <AppText style={styles.ernArrow}> 📋 SOW</AppText>}
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: statusColor(req.status) + '20', borderColor: statusColor(req.status) + '40' }]}>
-          <AppText style={[styles.statusText, { color: statusColor(req.status) }]}>
-            {req.status ?? 'Unknown'}
-          </AppText>
-        </View>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader
+        title={`${fmtLabel(req.workType)}${req.subCategory ? ` · ${fmtLabel(req.subCategory)}` : ''}`}
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* ── Requirement Details ──────────────────────────────────────── */}
         <SectionCard title="📋 Requirement Details">
-          {req.req_type && <InfoRow icon="🏷️" label="Type" value={req.req_type.replace(/_/g, ' ')} />}
+          {req.req_type && <InfoRow icon="🏷️" label="Type" value={fmtLabel(req.req_type)} />}
           {req.district && <InfoRow icon="📍" label="Location" value={[req.tehsil, req.district, req.state].filter(Boolean).join(', ')} />}
           {req.workLocation && <InfoRow icon="🗺️" label="Work Site" value={req.workLocation} />}
           {req.workerNeedDate && <InfoRow icon="📅" label="Start Date" value={formatDate(req.workerNeedDate)} />}
@@ -776,38 +768,6 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#093d71',
-    paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 16,
-    gap: 10,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: { color: '#fff', fontSize: 20, lineHeight: 22 },
-  headerCenter: { flex: 1 },
-  headerWorkType: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  ernRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  ernText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
-  ernArrow: { color: '#93c5fd', fontSize: 12, fontWeight: '600' },
-  statusBadge: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: { fontSize: 11, fontWeight: '800' },
 
   scroll: { padding: 16, paddingBottom: 40 },
 

@@ -4,6 +4,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -24,7 +25,7 @@ import { AppButton } from '../../../shared/components/ui/AppButton';
 import { Badge } from '../../../shared/components/ui/Badge';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
-import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { SkeletonCard } from '../../../shared/components/ui/Skeleton';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
@@ -510,6 +511,13 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   const openCount = reqsQuery.data?.pagination?.totalCount ?? openReqs.length;
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader
+        title={user?.fullName ?? (isAgent ? 'Agent' : 'Worker')}
+        rightIcon="🔔"
+        onRightPress={() => navigation.navigate('Notifications')}
+      />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -524,41 +532,31 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Gradient header */}
-      <GradientHeader
-        subtitle={greet()}
-        title={user?.fullName ?? (isAgent ? 'Agent' : 'Worker')}
-        caption={isAgent ? 'Agent Portal · Grow your network' : 'Worker Portal · Find your next job'}
-        avatarName={user?.fullName ?? 'A'}
-        onAvatarPress={() => navigation.navigate('Profile' as never)}
-        rightIcon="🔔"
-        onRightPress={() => navigation.navigate('Notifications')}
-      >
-        <View style={styles.commStrip}>
-          <View style={styles.commItem}>
-            <AppText variant="micro" color="rgba(255,255,255,0.65)">
-              {isAgent ? 'Pending Commission' : 'Pending Earnings'}
-            </AppText>
-            <AppText variant="numeric" color="#FFFFFF" style={styles.commAmt}>
-              ₹{(stats?.pendingCommission ?? 0).toLocaleString('en-IN')}
-            </AppText>
-          </View>
-          <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-          <View style={styles.commItem}>
-            <AppText variant="micro" color="rgba(255,255,255,0.65)">Total Earned</AppText>
-            <AppText variant="numeric" color="#4ADE80" style={styles.commAmt}>
-              ₹{(stats?.totalCommission ?? 0).toLocaleString('en-IN')}
-            </AppText>
-          </View>
-          <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-          <View style={styles.commItem}>
-            <AppText variant="micro" color="rgba(255,255,255,0.65)">Fulfilled</AppText>
-            <AppText variant="numeric" color="#FCD34D" style={styles.commAmt}>
-              {stats?.fulfilledRequirements ?? 0}
-            </AppText>
-          </View>
+      {/* Commission strip */}
+      <View style={[styles.commStrip, { backgroundColor: '#1338B0' }]}>
+        <View style={styles.commItem}>
+          <AppText variant="micro" color="rgba(255,255,255,0.65)">
+            {isAgent ? 'Pending Commission' : 'Pending Earnings'}
+          </AppText>
+          <AppText variant="numeric" color="#FFFFFF" style={styles.commAmt}>
+            ₹{(stats?.pendingCommission ?? 0).toLocaleString('en-IN')}
+          </AppText>
         </View>
-      </GradientHeader>
+        <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+        <View style={styles.commItem}>
+          <AppText variant="micro" color="rgba(255,255,255,0.65)">Total Earned</AppText>
+          <AppText variant="numeric" color="#4ADE80" style={styles.commAmt}>
+            ₹{(stats?.totalCommission ?? 0).toLocaleString('en-IN')}
+          </AppText>
+        </View>
+        <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+        <View style={styles.commItem}>
+          <AppText variant="micro" color="rgba(255,255,255,0.65)">Fulfilled</AppText>
+          <AppText variant="numeric" color="#FCD34D" style={styles.commAmt}>
+            {stats?.fulfilledRequirements ?? 0}
+          </AppText>
+        </View>
+      </View>
 
       <View style={styles.body}>
 
@@ -766,6 +764,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -776,10 +775,8 @@ const styles = StyleSheet.create({
   commStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   commItem: { flex: 1, alignItems: 'center', gap: 2 },
   commDivider: { width: 1, height: 32, marginHorizontal: 8 },

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 
@@ -94,10 +96,14 @@ const PRIVACY = [
 
 export const TermsPrivacyScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation();
   const [tab, setTab] = useState<Tab>('terms');
   const sections = tab === 'terms' ? TERMS : PRIVACY;
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title="Terms & Privacy" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -144,6 +150,7 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
         © 2025 BookMyWorkers. All rights reserved.
       </AppText>
     </ScrollView>
+    </View>
   );
 };
 

@@ -8,6 +8,7 @@ import {
   StatusBar,
   StyleSheet,
   View,
+  Image,
 } from 'react-native';
 import { ROUTES } from '../../../shared/constants/routes';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -61,7 +62,11 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
             ]}
           >
             <View style={styles.logoMark}>
-              <AppText style={styles.logoEmoji}>🏗️</AppText>
+               <Image
+    source={require('../../../../assets/logo.png')} // update path
+    style={styles.logoImage}
+    resizeMode="contain"
+  />
             </View>
             <AppText variant="display" color="#FFFFFF" style={styles.heroTitle}>
               BookMyWorker
@@ -194,4 +199,8 @@ const styles = StyleSheet.create({
   cta: { gap: 10 },
   registerBtn: { backgroundColor: 'transparent' },
   terms: { marginTop: 6, lineHeight: 16 },
+  logoImage: {
+  width: 100,
+  height: 100,
+},
 });

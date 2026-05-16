@@ -101,6 +101,7 @@ export interface RegisterPayload {
   pinCode?: string;
   email?: string;
   referredBy?: string;
+  employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
   gender?: string;
   dob?: string;
   address?: string;
@@ -162,10 +163,15 @@ export const loginWithPassword = async (payload: {
   phone?: string;
   email?: string;
   password: string;
+  roleHint?: AppRole;
 }): Promise<VerifyOtpResponse> => {
+  const backendRole = payload.roleHint ? toBackendRole(payload.roleHint) : undefined;
   const response = await apiClient.post('/api/v1/user/login', {
-    ...payload,
+    phone: payload.phone,
+    email: payload.email,
+    password: payload.password,
     loginMethod: 'password',
+    ...(backendRole ? { role: backendRole } : {}),
   });
   const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };
   if (!body.token || !body.user) throw new Error('Invalid auth response from server.');
@@ -177,7 +183,7 @@ export const sendPasswordResetOtp = async (payload: {
   email?: string;
   role: string;
 }): Promise<void> => {
-  await apiClient.post('/api/v1/otp/send-otp', { ...payload, role: payload.role });
+  await apiClient.post('/api/v1/otp/send-otp-user', { phone: payload.phone, role: payload.role });
 };
 
 export const verifyPasswordResetOtp = async (payload: {

@@ -3,11 +3,13 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { chatApi } from '../../../core/api/endpoints/chatApi';
@@ -15,6 +17,7 @@ import { socketService } from '../../../core/realtime/socketService';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
+import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import type { ChatMessage } from '../../../shared/types/domain';
 
@@ -35,6 +38,7 @@ const formatTime = (iso: string): string => {
 export const ChatRoomScreen = ({ roomId, roomName, roomAvatar }: ChatRoomScreenProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const navigation = useNavigation();
   const userId = state.session?.user.id ?? '';
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -107,11 +111,8 @@ export const ChatRoomScreen = ({ roomId, roomName, roomAvatar }: ChatRoomScreenP
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
-      {/* Room Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <Avatar name={roomName} uri={roomAvatar} size={36} />
-        <AppText variant="label">{roomName}</AppText>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <ScreenHeader title={roomName} onBack={() => navigation.goBack()} />
 
       {/* Messages */}
       <FlatList
@@ -195,14 +196,6 @@ export const ChatRoomScreen = ({ roomId, roomName, roomAvatar }: ChatRoomScreenP
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   messageList: {
     padding: 16,
     paddingBottom: 8,
