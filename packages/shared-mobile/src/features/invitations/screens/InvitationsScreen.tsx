@@ -34,7 +34,7 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="My Requirements" />
 
       <ScrollView

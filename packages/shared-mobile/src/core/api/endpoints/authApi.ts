@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { buildPhotoUrl } from '../../config/env';
 import type { AppRole, UserProfile } from '../../../shared/types/domain';
 
 export interface RequestOtpPayload {
@@ -30,6 +31,7 @@ interface BackendUser {
   subscriptionExpiry?: string;
   remainingContacts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
+  veryfiedBage?: boolean;
 }
 
 export interface VerifyOtpResponse {
@@ -62,11 +64,12 @@ function mapBackendUser(u: BackendUser): UserProfile {
     email: u.email,
     state: u.state,
     district: u.district,
-    profileImage: u.profilePhoto,
+    profileImage: buildPhotoUrl(u.profilePhoto),
     isSubscribed: u.isSubscribed,
     subscriptionExpiry: u.subscriptionExpery ?? u.subscriptionExpiry,
     remainingContacts: u.remainingContacts,
     employerType: u.employerType,
+    veryfiedBage: u.veryfiedBage,
   };
 }
 

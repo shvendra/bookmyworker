@@ -52,8 +52,7 @@ export const registerStep2Schema = z
   });
 
 export const kycSchema = z.object({
-  fullName: z.string().min(3, 'Full name is required'),
-  aadhaarLast4: z.string().regex(/^\d{4}$/, 'Enter valid Aadhaar last 4 digits'),
+  fullName: z.string().optional(),
   language: z.enum(['en', 'hi', 'mr', 'gu', 'ta', 'te', 'kn', 'ml', 'bn', 'or', 'pa']),
 });
 

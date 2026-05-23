@@ -46,6 +46,18 @@ export const PasswordLoginForm = ({ navigation, roleHint }: Props): React.JSX.El
         password: values.password,
         roleHint,
       });
+
+      // Role mismatch — show a clear error instead of silently redirecting
+      const actualRole = response.user.role;
+      if (roleHint === 'employer' && actualRole !== 'employer') {
+        setErrorMessage('No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.');
+        return;
+      }
+      if (!roleHint && actualRole === 'employer') {
+        setErrorMessage('This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.');
+        return;
+      }
+
       await signIn({
         tokens: {
           accessToken: response.token,
@@ -57,7 +69,9 @@ export const PasswordLoginForm = ({ navigation, roleHint }: Props): React.JSX.El
         availableRoles: response.availableRoles,
       });
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Invalid phone or password. Please try again.';
+      const msg =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? (error instanceof Error ? error.message : 'Invalid phone or password. Please try again.');
       setErrorMessage(msg);
     } finally {
       setIsLoading(false);

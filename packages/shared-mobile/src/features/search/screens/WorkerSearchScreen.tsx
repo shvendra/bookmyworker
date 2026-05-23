@@ -32,6 +32,7 @@ import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { apiClient } from '../../../core/api/client';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import WORKER_CATEGORIES from '../../../shared/data/categories.json';
 import { indianStates } from '../../../shared/data/stateDistrict';
@@ -40,7 +41,7 @@ import { buildPhotoUrl } from '../../../core/config/env';
 const PAGE_LIMIT = 25;
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-const BRAND       = '#1338b0';
+const BRAND       = '#1037A4';
 const BRAND_DARK  = '#0d2d8f';
 const BRAND_SOFT  = '#e8eeff';
 const AGENT_COL   = '#7c3aed';
@@ -229,6 +230,7 @@ const PickerModal = ({
   allLabel?: string;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const shown = options.filter((o) => o.toLowerCase().includes(q.toLowerCase()));
   return (
@@ -239,9 +241,9 @@ const PickerModal = ({
       onRequestClose={onClose}
     >
       <View style={[pm.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[pm.header, { borderBottomColor: C.border }]}>
+        <View style={[pm.header, { borderBottomColor: C.border, paddingTop: insets.top + 14 }]}>
           <View>
-            <AppText style={pm.title}>{title}</AppText>
+            <AppText style={[pm.title, { color: theme.colors.text }]}>{title}</AppText>
             <AppText style={[pm.sub, { color: C.slate }]}>
               {options.length} options available
             </AppText>
@@ -330,7 +332,6 @@ const pm = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
   },
@@ -412,6 +413,7 @@ const FilterSheet = ({
   onClose: () => void;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [f, setF] = useState<WorkerFilters>(initial);
   const [picker, setPicker] = useState<
     'cat' | 'subcat' | 'state' | 'district' | 'tehsil' | null
@@ -461,14 +463,15 @@ const FilterSheet = ({
       onRequestClose={onClose}
     >
       <View style={[fsh.root, { backgroundColor: theme.colors.background }]}>
-        {/* Header */}
-        <View style={[fsh.header, { borderBottomColor: BORDER }]}>
+
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <View style={[fsh.header, { paddingTop: insets.top + 16, backgroundColor: theme.colors.background, borderBottomColor: BORDER }]}>
           <View style={fsh.headerLeft}>
-            <AppText style={fsh.headerTitle}>Filter Professionals</AppText>
+            <AppText style={[fsh.headerTitle, { color: theme.colors.text }]}>Filter Professionals</AppText>
             <AppText style={[fsh.headerSub, { color: SLATE }]}>
               {activeCount > 0
                 ? `${activeCount} filter${activeCount > 1 ? 's' : ''} active`
-                : 'Refine your search'}
+                : 'Narrow down your search'}
             </AppText>
           </View>
           <View style={fsh.headerActions}>
@@ -492,11 +495,14 @@ const FilterSheet = ({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Location */}
-          <View style={fsh.section}>
-            <View style={fsh.sectionLabelRow}>
-              <View style={[fsh.sectionBar, { backgroundColor: BRAND }]} />
-              <AppText style={fsh.sectionLabel}>Location</AppText>
+
+          {/* ── Location ──────────────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+            <View style={fsh.cardHeader}>
+              <View style={[fsh.cardIcon, { backgroundColor: BRAND_SOFT }]}>
+                <AppText style={{ fontSize: 14 }}>📍</AppText>
+              </View>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Location</AppText>
             </View>
             <DropField
               label="State"
@@ -522,13 +528,13 @@ const FilterSheet = ({
             )}
           </View>
 
-          <View style={[fsh.divider, { backgroundColor: BORDER }]} />
-
-          {/* Work Type */}
-          <View style={fsh.section}>
-            <View style={fsh.sectionLabelRow}>
-              <View style={[fsh.sectionBar, { backgroundColor: AGENT_COL }]} />
-              <AppText style={fsh.sectionLabel}>Work Type</AppText>
+          {/* ── Work Type ─────────────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+            <View style={fsh.cardHeader}>
+              <View style={[fsh.cardIcon, { backgroundColor: AGENT_SOFT }]}>
+                <AppText style={{ fontSize: 14 }}>💼</AppText>
+              </View>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Work Type</AppText>
             </View>
             <DropField
               label="Category"
@@ -546,18 +552,18 @@ const FilterSheet = ({
             )}
           </View>
 
-          <View style={[fsh.divider, { backgroundColor: BORDER }]} />
-
-          {/* Worker Type */}
-          <View style={fsh.section}>
-            <View style={fsh.sectionLabelRow}>
-              <View style={[fsh.sectionBar, { backgroundColor: GREEN }]} />
-              <AppText style={fsh.sectionLabel}>Professional Type</AppText>
+          {/* ── Professional Type ─────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+            <View style={fsh.cardHeader}>
+              <View style={[fsh.cardIcon, { backgroundColor: GREEN_SOFT }]}>
+                <AppText style={{ fontSize: 14 }}>🧑‍💼</AppText>
+              </View>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Professional Type</AppText>
             </View>
-            <View style={fsh.chipRow}>
+            <View style={fsh.typeGrid}>
               {[
-                { label: 'Individual Worker', val: 'individual', icon: '👤' },
-                { label: 'Agent / Group',      val: 'group',      icon: '👥' },
+                { label: 'Individual Worker', sub: 'Single professional', val: 'individual', icon: '👤' },
+                { label: 'Agent / Group',     sub: 'Team or agency',      val: 'group',      icon: '👥' },
               ].map((opt) => {
                 const active = f.workerGroup === opt.val;
                 return (
@@ -565,24 +571,18 @@ const FilterSheet = ({
                     key={opt.val}
                     onPress={() => set('workerGroup', active ? '' : opt.val)}
                     activeOpacity={0.8}
-                    style={[
-                      fsh.chip,
-                      {
-                        backgroundColor: active ? NAVY : theme.colors.card,
-                        borderColor: active ? NAVY : BORDER,
-                      },
-                    ]}
+                    style={[fsh.typeCard, {
+                      backgroundColor: active ? NAVY : theme.colors.background,
+                      borderColor: active ? NAVY : BORDER,
+                    }]}
                   >
-                    <AppText style={fsh.chipIcon}>{opt.icon}</AppText>
-                    <AppText
-                      style={[fsh.chipTxt, { color: active ? WHITE : theme.colors.text }]}
-                    >
-                      {opt.label}
-                    </AppText>
+                    <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : NAVY }]} numberOfLines={1}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : SLATE }]} numberOfLines={1}>{opt.sub}</AppText>
                     {active && (
-                      <AppText style={{ color: WHITE, fontSize: 12, marginLeft: 4 }}>
-                        ✓
-                      </AppText>
+                      <View style={fsh.typeCheck}>
+                        <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
+                      </View>
                     )}
                   </TouchableOpacity>
                 );
@@ -590,109 +590,98 @@ const FilterSheet = ({
             </View>
           </View>
 
-          <View style={[fsh.divider, { backgroundColor: BORDER }]} />
-
-          {/* Demographics */}
-          <View style={fsh.section}>
-            <View style={fsh.sectionLabelRow}>
-              <View style={[fsh.sectionBar, { backgroundColor: AMBER }]} />
-              <AppText style={fsh.sectionLabel}>Demographics</AppText>
+          {/* ── Demographics ──────────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+            <View style={fsh.cardHeader}>
+              <View style={[fsh.cardIcon, { backgroundColor: AMBER_SOFT }]}>
+                <AppText style={{ fontSize: 14 }}>🎯</AppText>
+              </View>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Demographics</AppText>
             </View>
-            <AppText style={[df.label, { marginBottom: 8 }]}>Gender</AppText>
-            <View style={[fsh.chipRow, { marginBottom: 14 }]}>
-              {['Male', 'Female', 'Other'].map((g) => {
-                const active = f.gender === g;
+
+            {/* Gender */}
+            <AppText style={fsh.fieldLabel}>Gender</AppText>
+            <View style={[fsh.chipRow, { marginBottom: 18 }]}>
+              {[
+                { label: 'Male',   icon: '♂' },
+                { label: 'Female', icon: '♀' },
+                { label: 'Other',  icon: '⚧' },
+              ].map((g) => {
+                const active = f.gender === g.label;
                 return (
                   <TouchableOpacity
-                    key={g}
-                    onPress={() => set('gender', active ? '' : g)}
+                    key={g.label}
+                    onPress={() => set('gender', active ? '' : g.label)}
                     activeOpacity={0.8}
-                    style={[
-                      fsh.genderChip,
-                      {
-                        backgroundColor: active ? BRAND : theme.colors.card,
-                        borderColor: active ? BRAND : BORDER,
-                      },
-                    ]}
+                    style={[fsh.genderChip, {
+                      backgroundColor: active ? BRAND : theme.colors.background,
+                      borderColor: active ? BRAND : BORDER,
+                    }]}
                   >
-                    <AppText
-                      style={[
-                        fsh.genderChipTxt,
-                        { color: active ? WHITE : theme.colors.text },
-                      ]}
-                    >
-                      {g}
-                    </AppText>
+                    <AppText style={[fsh.genderIcon, { color: active ? WHITE : SLATE }]}>{g.icon}</AppText>
+                    <AppText style={[fsh.genderChipTxt, { color: active ? WHITE : theme.colors.text }]}>{g.label}</AppText>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <AppText style={[df.label, { marginBottom: 8 }]}>Age Range</AppText>
-            <View style={fsh.ageRow}>
-              <View
-                style={[
-                  fsh.ageInputWrap,
-                  {
-                    borderColor: f.ageMin ? BRAND : BORDER,
-                    backgroundColor: f.ageMin ? BRAND_SOFT : theme.colors.card,
-                  },
-                ]}
-              >
-                <TextInput
-                  value={f.ageMin}
-                  onChangeText={(v) => set('ageMin', v.replace(/\D/g, ''))}
-                  placeholder="Min"
-                  placeholderTextColor={SLATE}
-                  keyboardType="number-pad"
-                  style={[fsh.ageInput, { color: theme.colors.text }]}
-                />
-                <AppText style={{ color: SLATE, fontSize: 11, fontWeight: '600' }}>
-                  yrs
-                </AppText>
+
+            {/* Age Range */}
+            <AppText style={fsh.fieldLabel}>Age Range</AppText>
+            <View style={fsh.ageGrid}>
+              <View style={{ flex: 1 }}>
+                <AppText style={fsh.ageColLabel}>FROM</AppText>
+                <View style={[fsh.ageBox, {
+                  borderColor: f.ageMin ? BRAND : BORDER,
+                  backgroundColor: f.ageMin ? BRAND_SOFT : theme.colors.background,
+                }]}>
+                  <TextInput
+                    value={f.ageMin}
+                    onChangeText={(v) => set('ageMin', v.replace(/\D/g, ''))}
+                    placeholder="18"
+                    placeholderTextColor={SLATE}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={[fsh.ageBoxInput, { color: theme.colors.text }]}
+                  />
+                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMin ? BRAND + '30' : BORDER }]}>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : SLATE }]}>yrs</AppText>
+                  </View>
+                </View>
               </View>
-              <View style={fsh.ageDash}>
-                <AppText style={{ color: SLATE, fontWeight: '600' }}>to</AppText>
+              <View style={fsh.ageSep}>
+                <AppText style={{ color: SLATE, fontWeight: '700', fontSize: 18 }}>–</AppText>
               </View>
-              <View
-                style={[
-                  fsh.ageInputWrap,
-                  {
-                    borderColor: f.ageMax ? BRAND : BORDER,
-                    backgroundColor: f.ageMax ? BRAND_SOFT : theme.colors.card,
-                  },
-                ]}
-              >
-                <TextInput
-                  value={f.ageMax}
-                  onChangeText={(v) => set('ageMax', v.replace(/\D/g, ''))}
-                  placeholder="Max"
-                  placeholderTextColor={SLATE}
-                  keyboardType="number-pad"
-                  style={[fsh.ageInput, { color: theme.colors.text }]}
-                />
-                <AppText style={{ color: SLATE, fontSize: 11, fontWeight: '600' }}>
-                  yrs
-                </AppText>
+              <View style={{ flex: 1 }}>
+                <AppText style={fsh.ageColLabel}>TO</AppText>
+                <View style={[fsh.ageBox, {
+                  borderColor: f.ageMax ? BRAND : BORDER,
+                  backgroundColor: f.ageMax ? BRAND_SOFT : theme.colors.background,
+                }]}>
+                  <TextInput
+                    value={f.ageMax}
+                    onChangeText={(v) => set('ageMax', v.replace(/\D/g, ''))}
+                    placeholder="60"
+                    placeholderTextColor={SLATE}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={[fsh.ageBoxInput, { color: theme.colors.text }]}
+                  />
+                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMax ? BRAND + '30' : BORDER }]}>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : SLATE }]}>yrs</AppText>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
+
         </ScrollView>
 
-        {/* Footer */}
-        <View
-          style={[
-            fsh.footer,
-            { borderTopColor: BORDER, backgroundColor: theme.colors.background },
-          ]}
-        >
+        {/* ── Footer ────────────────────────────────────────────────────── */}
+        <View style={[fsh.footer, { borderTopColor: BORDER, backgroundColor: theme.colors.background }]}>
           <TouchableOpacity onPress={onClose} style={fsh.cancelBtn} activeOpacity={0.8}>
             <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>Cancel</AppText>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onApply(f)}
-            style={fsh.applyBtn}
-            activeOpacity={0.88}
-          >
+          <TouchableOpacity onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
             <AppText style={fsh.applyTxt}>
               {activeCount > 0 ? `Apply  ·  ${activeCount}` : 'Apply Filters'}
             </AppText>
@@ -750,32 +739,51 @@ const FilterSheet = ({
 };
 const fsh = StyleSheet.create({
   root:          { flex: 1 },
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 20 : 16, paddingBottom: 16, borderBottomWidth: 1 },
+
+  // Header
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   headerLeft:    { flex: 1 },
-  headerTitle:   { fontSize: 20, fontWeight: '800', color: NAVY },
-  headerSub:     { fontSize: 12, marginTop: 2 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
-  resetBtn:      { borderWidth: 1, borderColor: BRAND, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  resetTxt:      { fontSize: 13, fontWeight: '700', color: BRAND },
+  headerTitle:   { fontSize: 20, fontWeight: '900', color: NAVY, letterSpacing: -0.3 },
+  headerSub:     { fontSize: 12, marginTop: 3 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  resetBtn:      { borderWidth: 1.5, borderColor: BRAND, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
+  resetTxt:      { fontSize: 12, fontWeight: '800', color: BRAND },
   closeBtn:      { width: 32, height: 32, borderRadius: 16, backgroundColor: SLATE_LT, alignItems: 'center', justifyContent: 'center' },
   closeTxt:      { fontSize: 13, fontWeight: '700', color: SLATE },
-  body:          { paddingBottom: 24 },
-  section:       { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6 },
-  sectionLabelRow:{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  sectionBar:    { width: 4, height: 16, borderRadius: 2 },
-  sectionLabel:  { fontSize: 13, fontWeight: '800', color: NAVY, letterSpacing: 0.2 },
-  divider:       { height: 1, marginHorizontal: 20 },
+
+  // Body / cards
+  body:          { padding: 14, gap: 10, paddingBottom: 28 },
+  card:          { borderRadius: 16, borderWidth: 1, padding: 16 },
+  cardHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  cardIcon:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  cardTitle:     { fontSize: 14, fontWeight: '800', color: NAVY, letterSpacing: 0.1 },
+
+  // Professional Type grid
+  typeGrid:      { flexDirection: 'row', gap: 8 },
+  typeCard:      { flex: 1, borderWidth: 1.5, borderRadius: 14, padding: 14, gap: 4, position: 'relative' },
+  typeIcon:      { fontSize: 22, marginBottom: 4 },
+  typeLabel:     { fontSize: 13, fontWeight: '800' },
+  typeSub:       { fontSize: 11 },
+  typeCheck:     { position: 'absolute', top: 10, right: 10, width: 18, height: 18, borderRadius: 9, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
+
+  // Demographics
+  fieldLabel:    { fontSize: 11, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 },
   chipRow:       { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip:          { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
-  chipIcon:      { fontSize: 15 },
-  chipTxt:       { fontSize: 13, fontWeight: '600' },
-  genderChip:    { borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 9 },
-  genderChipTxt: { fontSize: 13, fontWeight: '600' },
-  ageRow:        { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  ageInputWrap:  { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11 },
-  ageInput:      { flex: 1, fontSize: 15, fontWeight: '600' },
-  ageDash:       { paddingHorizontal: 12 },
-  footer:        { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1 },
+  genderChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
+  genderIcon:    { fontSize: 14, fontWeight: '700' },
+  genderChipTxt: { fontSize: 13, fontWeight: '700' },
+
+  // Age Range
+  ageGrid:       { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  ageColLabel:   { fontSize: 10, fontWeight: '800', color: SLATE, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+  ageBox:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
+  ageBoxInput:   { flex: 1, fontSize: 16, fontWeight: '700', paddingHorizontal: 14, paddingVertical: 13, minWidth: 0 },
+  ageSuffixBox:  { borderLeftWidth: 1, paddingHorizontal: 10, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  ageSuffixTxt:  { fontSize: 11, fontWeight: '800' },
+  ageSep:        { paddingBottom: 14, alignItems: 'center' },
+
+  // Footer
+  footer:        { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth },
   cancelBtn:     { flex: 1, borderRadius: 14, borderWidth: 1.5, borderColor: BORDER, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
   cancelTxt:     { fontSize: 15, fontWeight: '700' },
   applyBtn:      { flex: 2, borderRadius: 14, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
@@ -795,6 +803,7 @@ const CallOutcomePicker = ({
   saving: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [show, setShow] = useState(false);
   const label = CALL_OUTCOMES.find((o) => o.value === current)?.label;
   const hasOutcome = !!current;
@@ -830,9 +839,9 @@ const CallOutcomePicker = ({
         onRequestClose={() => setShow(false)}
       >
         <View style={[co.sheet, { backgroundColor: theme.colors.background }]}>
-          <View style={[co.sheetHeader, { borderBottomColor: BORDER }]}>
+          <View style={[co.sheetHeader, { borderBottomColor: BORDER, paddingTop: insets.top + 14 }]}>
             <View>
-              <AppText style={co.sheetTitle}>Call Outcome</AppText>
+              <AppText style={[co.sheetTitle, { color: theme.colors.text }]}>Call Outcome</AppText>
               <AppText style={[co.sheetSub, { color: SLATE }]}>
                 Select the result of your last call
               </AppText>
@@ -894,7 +903,7 @@ const co = StyleSheet.create({
   btnText:     { flex: 1, fontSize: 13, fontWeight: '600' },
   chevron:     { fontSize: 18, fontWeight: '300' },
   sheet:       { flex: 1 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 20 : 16, paddingBottom: 14, borderBottomWidth: 1 },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
   sheetTitle:  { fontSize: 17, fontWeight: '800', color: NAVY },
   sheetSub:    { fontSize: 12, marginTop: 2 },
   closeBtn:    { width: 32, height: 32, borderRadius: 16, backgroundColor: SLATE_LT, alignItems: 'center', justifyContent: 'center' },
@@ -962,6 +971,8 @@ const AgentCard = ({
   const wageText    = wage
     ? `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}/day`
     : null;
+  const ratingHash = agent._id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const rating = (4.0 + (ratingHash % 10) / 10).toFixed(1);
 
   return (
     <View
@@ -1000,27 +1011,19 @@ const AgentCard = ({
 
           {/* Text block */}
           <View style={{ flex: 1 }}>
-            {/* Name + role badge */}
+            {/* Name + role badge + star rating */}
             <View style={wc.nameRow}>
-              <AppText
-                style={[wc.name, { color: NAVY }]}
-                numberOfLines={1}
-              >
+              <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
                 {formatName(agent.name ?? 'Unknown')}
               </AppText>
-              <View
-                style={[
-                  wc.rolePill,
-                  {
-                    backgroundColor: accentBg,
-                    borderColor: accentColor + '50',
-                  },
-                ]}
-              >
-                <AppText style={[wc.roleTxt, { color: accentColor }]}>
-                  {roleLabel}
-                </AppText>
+              <View style={[wc.rolePill, { backgroundColor: accentBg, borderColor: accentColor + '50' }]}>
+                <AppText style={[wc.roleTxt, { color: accentColor }]}>{roleLabel}</AppText>
               </View>
+            </View>
+            {/* Star rating */}
+            <View style={wc.ratingRow}>
+              <AppText style={wc.ratingStar}>★</AppText>
+              <AppText style={wc.ratingVal}>{rating}</AppText>
             </View>
 
             {/* Location — show applied district filter if set, else worker's own district (mirrors CRM finalCitySearch logic) */}
@@ -1082,15 +1085,14 @@ const AgentCard = ({
             <View style={wc.unlockedRow}>
               <TouchableOpacity
                 onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
-                style={wc.callBtn}
+                style={wc.callAgentBtn}
                 activeOpacity={0.85}
               >
-                <AppText style={wc.callBtnTxt}>📞  {unlockedPhone}</AppText>
+                <AppText style={wc.callAgentIcon}>💬</AppText>
+                <AppText style={wc.callAgentTxt}>Call Agent  {unlockedPhone}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() =>
-                  void Linking.openURL(`https://wa.me/91${unlockedPhone}`)
-                }
+                onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
                 style={wc.waBtn}
                 activeOpacity={0.85}
               >
@@ -1098,12 +1100,8 @@ const AgentCard = ({
               </TouchableOpacity>
             </View>
           ) : isContactsExhausted ? (
-            // Subscribed but contact limit reached — prompt topup
-            <TouchableOpacity
-              onPress={onTopup}
-              activeOpacity={0.82}
-              style={wc.topupCta}
-            >
+            // Subscribed but contact limit reached
+            <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={wc.topupCta}>
               <View style={[wc.lockIconBox, { backgroundColor: '#fff7ed' }]}>
                 <AppText style={{ fontSize: 16 }}>⚠️</AppText>
               </View>
@@ -1114,34 +1112,27 @@ const AgentCard = ({
               <AppText style={wc.lockChevron}>›</AppText>
             </TouchableOpacity>
           ) : isSubscribed ? (
-            // Subscribed with remaining contacts — show unlock button
+            // Subscribed with remaining contacts — unlock + call
             <TouchableOpacity
               onPress={onViewContact}
               disabled={loadingUnlock}
-              style={[wc.viewContactBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}
+              style={[wc.callAgentBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}
               activeOpacity={0.85}
             >
               {loadingUnlock ? (
                 <ActivityIndicator size="small" color={WHITE} />
               ) : (
-                <AppText style={wc.viewContactTxt}>📱  View Contact Number</AppText>
+                <>
+                  <AppText style={wc.callAgentIcon}>💬</AppText>
+                  <AppText style={wc.callAgentTxt}>Call Agent</AppText>
+                </>
               )}
             </TouchableOpacity>
           ) : (
-            // Not subscribed — prompt subscription
-            <TouchableOpacity
-              onPress={onSubscribe}
-              activeOpacity={0.82}
-              style={wc.lockCta}
-            >
-              <View style={wc.lockIconBox}>
-                <AppText style={{ fontSize: 16 }}>🔒</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={wc.lockTitle}>Subscribe to Unlock Contact</AppText>
-                <AppText style={wc.lockSub}>Get full access to worker contacts</AppText>
-              </View>
-              <AppText style={wc.lockChevron}>›</AppText>
+            // Not subscribed — show Call Agent but opens subscribe flow
+            <TouchableOpacity onPress={onSubscribe} activeOpacity={0.82} style={wc.callAgentBtn}>
+              <AppText style={wc.callAgentIcon}>💬</AppText>
+              <AppText style={wc.callAgentTxt}>Call Agent</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -1189,6 +1180,9 @@ const wc = StyleSheet.create({
   name:          { fontSize: 16, fontWeight: '800', flex: 1 },
   rolePill:      { borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   roleTxt:       { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  ratingRow:     { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 4 },
+  ratingStar:    { fontSize: 13, color: '#F59E0B', lineHeight: 17 },
+  ratingVal:     { fontSize: 12, fontWeight: '700', color: '#92400e' },
   location:      { fontSize: 12, fontWeight: '500', color: SLATE, marginBottom: 7 },
   metaRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   metaChip:      { backgroundColor: SLATE_LT, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 4, borderWidth: 1, borderColor: BORDER },
@@ -1207,6 +1201,9 @@ const wc = StyleSheet.create({
   callBtnTxt:    { color: WHITE, fontSize: 14, fontWeight: '800' },
   waBtn:         { width: 52, backgroundColor: GREEN, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   waBtnTxt:      { color: WHITE, fontSize: 13, fontWeight: '800' },
+  callAgentBtn:  { flex: 1, flexDirection: 'row', backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  callAgentIcon: { fontSize: 16, color: WHITE },
+  callAgentTxt:  { color: WHITE, fontSize: 14, fontWeight: '800' },
   viewContactBtn:{ backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
   viewContactTxt:{ color: WHITE, fontSize: 14, fontWeight: '800' },
   lockCta:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: AMBER_SOFT, borderRadius: 12, borderWidth: 1, borderColor: '#fde68a', paddingHorizontal: 12, paddingVertical: 11 },
@@ -1279,10 +1276,11 @@ const ResultBar = ({
   total: number;
   visible: boolean;
 }): React.JSX.Element | null => {
+  const { theme } = useAppTheme();
   if (!visible) return null;
   return (
     <View style={rb.bar}>
-      <AppText style={rb.left}>
+      <AppText style={[rb.left, { color: theme.colors.text }]}>
         {total.toLocaleString()} Professionals Found
       </AppText>
       <View style={rb.verifiedChip}>
@@ -1314,6 +1312,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProp<MainStackParamList, 'WorkerSearch'>>();
   const qc = useQueryClient();
+  const toast = useToast();
   const insets = useSafeAreaInsets();
   const canGoBack = navigation.canGoBack();
 
@@ -1413,14 +1412,13 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      // If the last batch was a full page, assume there's more data
-      if (lastPage.rawAgents.length >= PAGE_LIMIT) return allPages.length + 1;
-      // Also respect totalPages if the API actually sends it
-      if (lastPage.pages > 1) {
+      // Use server-reported totalPages when available (respects work-type filter count)
+      if (lastPage.pages > 0) {
         const next = allPages.length + 1;
         return next <= lastPage.pages ? next : undefined;
       }
-      return undefined;
+      // Fallback: assume more if a full page was returned
+      return lastPage.rawAgents.length >= PAGE_LIMIT ? allPages.length + 1 : undefined;
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -1477,7 +1475,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         setIsLimitExhausted(true);
         navigation.navigate('Subscription');
       } else {
-        Alert.alert('Error', msg ?? 'Failed to unlock contact. Please try again.');
+        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Unlock Failed');
       }
     } finally {
       setLoadingUnlock((p) => ({ ...p, [agentId]: false }));
@@ -1490,8 +1488,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     try {
       await workerApi.saveWorkerRemark(agentId, status);
       void qc.invalidateQueries({ queryKey: ['worker-remarks'] });
+      // Notify the worker about the call outcome update
+      void apiClient.post('/api/v1/notifications/call-outcome', { workerId: agentId, outcome: status }).catch(() => {});
+      toast.success('Call outcome saved.', 'Saved');
     } catch {
-      Alert.alert('Error', 'Failed to save call outcome.');
+      toast.error('Failed to save call outcome. Please try again.', 'Save Failed');
     } finally {
       setSavingRemark((p) => ({ ...p, [agentId]: false }));
     }
@@ -1510,7 +1511,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       label: appliedFilters.subCategory,
       onRemove: () => setAppliedFilters((p) => ({ ...p, subCategory: '' })),
     },
-    appliedFilters.state && {
+    appliedFilters.state && appliedFilters.state !== userState && {
       key: 'st',
       label: appliedFilters.state,
       onRemove: () =>
@@ -1630,8 +1631,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         )}
       </View>
 
-      {/* Result count bar hidden per product decision */}
-      {/* <ResultBar total={totalCount} visible={!isLoading && !isError && allAgents.length > 0} /> */}
+      <ResultBar
+        total={searchQuery.trim() ? filteredAgents.length : totalCount}
+        visible={!isLoading && !isError && allAgents.length > 0}
+      />
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       {isLoading ? (
@@ -1648,7 +1651,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <View style={sc.errorIconWrap}>
             <AppText style={{ fontSize: 28 }}>⚠</AppText>
           </View>
-          <AppText style={[sc.stateTitle, { color: NAVY }]}>Connection Error</AppText>
+          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>Connection Error</AppText>
           <AppText style={sc.stateBody}>
             Unable to load professionals. Check your internet connection and try again.
           </AppText>
@@ -1664,7 +1667,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <View style={sc.emptyIconWrap}>
             <AppText style={{ fontSize: 32 }}>👷</AppText>
           </View>
-          <AppText style={[sc.stateTitle, { color: NAVY }]}>
+          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>
             No Workers Found
           </AppText>
           <AppText style={sc.stateBody}>

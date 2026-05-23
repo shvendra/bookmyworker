@@ -35,6 +35,16 @@ export interface TopupPayload {
   ernStatus: 'contact_topup';
 }
 
+export interface VerifiedBadgePayload {
+  employerId: string;
+  firstName: string;
+  email: string;
+  employer_phone: string;
+  role: string;
+  price?: number;
+  gstCharges?: number;
+}
+
 export const paymentApi = {
   initiateSubscription: async (payload: InitTransactionPayload): Promise<InitTransactionResponse> => {
     const res = await apiClient.post<InitTransactionResponse>('/api/v1/payment/add-trans', payload);
@@ -43,6 +53,23 @@ export const paymentApi = {
 
   initiateTopup: async (payload: TopupPayload): Promise<InitTransactionResponse> => {
     const res = await apiClient.post<InitTransactionResponse>('/api/v1/payment/add-topup-trans', payload);
+    return res.data;
+  },
+
+  initiateVerifiedBadge: async (payload: VerifiedBadgePayload): Promise<InitTransactionResponse> => {
+    const isAgent = payload.role === 'agent';
+    const amount = payload.price ?? (isAgent ? 999 : 49);
+    const gstCharges = payload.gstCharges ?? 0;
+    const res = await apiClient.post<InitTransactionResponse>('/api/v1/payment/add-trans', {
+      employerId: payload.employerId,
+      firstName: payload.firstName,
+      email: payload.email,
+      employer_phone: payload.employer_phone,
+      paymentType: 'verifiedbadge',
+      amount,
+      gstCharges,
+      productName: 'Verified Badge',
+    });
     return res.data;
   },
 };

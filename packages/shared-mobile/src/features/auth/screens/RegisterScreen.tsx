@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { Controller, useForm } from 'react-hook-form';
 import { useAppTheme } from '../../../core/theme';
 import { Screen } from '../../../shared/components/layout/Screen';
@@ -30,6 +31,7 @@ const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
 
 export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const toast = useToast();
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -68,7 +70,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const onSubmit = handleSubmit(async (values) => {
     if (!role) return;
     if (!values.state || !values.district) {
-      Alert.alert('Required', 'Please select your state and district.');
+      toast.warning('Please select your state and district.', 'Required');
       return;
     }
     setIsLoading(true);
@@ -87,7 +89,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
         fixedSalary: values.fixedSalary, salaryFrom: values.salaryFrom, salaryTo: values.salaryTo,
       });
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send OTP');
+      toast.error(error instanceof Error ? error.message : 'Failed to send OTP. Please try again.', 'Error');
     } finally {
       setIsLoading(false);
     }

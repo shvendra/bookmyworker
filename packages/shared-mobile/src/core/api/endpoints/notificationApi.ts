@@ -5,7 +5,7 @@ export interface NotificationItem {
   userId: string;
   title: string;
   body: string;
-  type: 'requirement' | 'interest' | 'payment' | 'payout' | 'kyc' | 'chat' | 'system';
+  type: 'requirement' | 'interest' | 'payment' | 'payout' | 'kyc' | 'chat' | 'system' | 'newWorker';
   data?: Record<string, unknown>;
   read: boolean;
   createdAt: string;
@@ -28,6 +28,8 @@ export interface NotificationPreferences {
   kycUpdate: boolean;
   chat: boolean;
   promotions: boolean;
+  newWorkerInState: boolean;
+  callOutcome: boolean;
 }
 
 export const notificationApi = {

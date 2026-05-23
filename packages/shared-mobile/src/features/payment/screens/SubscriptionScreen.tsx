@@ -1,12 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +15,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { apiClient } from '../../../core/api/client';
-import { paymentApi, GST_RATE } from '../../../core/api/endpoints/paymentApi';
+import { paymentApi } from '../../../core/api/endpoints/paymentApi';
+import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
+import { useAppTheme } from '../../../core/theme';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
 
@@ -27,8 +31,8 @@ interface FreshProfile {
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
-// ─── Pricing data (mirrors CRM PricingPage.jsx) ───────────────────────────────
-const EMPLOYER_PRICING: Record<EmployerTypeKey, Record<string, number>> = {
+// ─── Fallback pricing (overridden by global settings API) ────────────────────
+const FALLBACK_PRICING: Record<EmployerTypeKey, Record<string, number>> = {
   individual: { '1m': 199,  '6m': 999,  '12m': 1999 },
   contractor: { '1m': 599,  '6m': 2900, '12m': 4999 },
   agency:     { '1m': 599,  '6m': 2900, '12m': 4999 },
@@ -58,8 +62,8 @@ function resolveEmployerType(
   return 'individual';
 }
 
-function buildPlans(employerType: EmployerTypeKey): Plan[] {
-  const p = EMPLOYER_PRICING[employerType];
+function buildPlans(employerType: EmployerTypeKey, subscriptionPricing?: Record<string, Record<string, number>>): Plan[] {
+  const p = (subscriptionPricing?.[employerType] ?? FALLBACK_PRICING[employerType]) as Record<string, number>;
   return [
     {
       id: '1m',
@@ -121,9 +125,14 @@ const C = {
 
 export const SubscriptionScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
+  const { theme } = useAppTheme();
   const { state: authState } = useAuth();
+  const { config } = useAppConfig();
   const user = authState.session?.user;
+  const toast = useToast();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+
+  const { pricing, gstRate } = usePricingConfig();
 
   // Fetch fresh profile — session user is stale after contacts are consumed
   const profileQuery = useQuery({
@@ -154,14 +163,14 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const employerType = resolveEmployerType(
     (profile?.employerType ?? user?.employerType) as Parameters<typeof resolveEmployerType>[0],
   );
-  const plans = buildPlans(employerType);
+  const plans = buildPlans(employerType, pricing.subscription as unknown as Record<string, Record<string, number>>);
 
   const handleBuyPlan = async (plan: Plan): Promise<void> => {
     if (!user) return;
     setLoadingPlanId(plan.id);
     try {
       const baseAmount = plan.price;
-      const gstCharges = parseFloat((baseAmount * GST_RATE).toFixed(2));
+      const gstCharges = parseFloat((baseAmount * gstRate).toFixed(2));
       const totalAmount = parseFloat((baseAmount + gstCharges).toFixed(2));
 
       const resp = await paymentApi.initiateSubscription({
@@ -183,10 +192,10 @@ export const SubscriptionScreen = (): React.JSX.Element => {
           merchantOrderId: resp.merchantOrderId,
         });
       } else {
-        Alert.alert('Error', 'Payment URL not received. Please try again.');
+        toast.error('Payment URL not received. Please try again.', 'Payment Error');
       }
     } catch {
-      Alert.alert('Payment Failed', 'Could not initiate payment. Please try again.');
+      toast.error('Could not initiate payment. Please try again.', 'Payment Failed');
     } finally {
       setLoadingPlanId(null);
     }
@@ -194,9 +203,12 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
   const handleTopup = async (contactCount: 50 | 100): Promise<void> => {
     if (!user) return;
-    const TOPUP_PRICES = { 50: 199, 100: 349 };
+    const TOPUP_PRICES = {
+      50:  pricing.topup.contacts50,
+      100: pricing.topup.contacts100,
+    };
     const baseAmount = TOPUP_PRICES[contactCount];
-    const gstCharges = parseFloat((baseAmount * GST_RATE).toFixed(2));
+    const gstCharges = parseFloat((baseAmount * gstRate).toFixed(2));
     const totalAmount = parseFloat((baseAmount + gstCharges).toFixed(2));
 
     setLoadingPlanId(`topup_${contactCount}`);
@@ -218,24 +230,24 @@ export const SubscriptionScreen = (): React.JSX.Element => {
           merchantOrderId: resp.merchantOrderId,
         });
       } else {
-        Alert.alert('Error', 'Payment URL not received. Please try again.');
+        toast.error('Payment URL not received. Please try again.', 'Payment Error');
       }
     } catch {
-      Alert.alert('Payment Failed', 'Could not initiate payment. Please try again.');
+      toast.error('Could not initiate payment. Please try again.', 'Payment Failed');
     } finally {
       setLoadingPlanId(null);
     }
   };
 
   return (
-    <View style={[s.root, { backgroundColor: C.light }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+    <View style={[s.root, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Pricing Plans" onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={s.hero}>
-          <AppText style={s.heroTitle}>BookMyWorker Subscription</AppText>
+          <AppText style={[s.heroTitle, { color: theme.colors.text }]}>BookMyWorker Subscription</AppText>
           <AppText style={s.heroSub}>
             Get access to verified workers across India.{'\n'}
             Plans built for employers, contractors & industries.
@@ -268,9 +280,9 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         )}
 
         {/* Plan cards */}
-        <AppText style={s.sectionLabel}>Subscription Plans</AppText>
+        <AppText style={[s.sectionLabel, { color: theme.colors.text }]}>Subscription Plans</AppText>
         {plans.map((plan) => {
-          const gst = parseFloat((plan.price * GST_RATE).toFixed(2));
+          const gst = parseFloat((plan.price * gstRate).toFixed(2));
           const total = parseFloat((plan.price + gst).toFixed(2));
           const isLoading = loadingPlanId === plan.id;
 
@@ -284,11 +296,11 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
               <View style={s.planTop}>
                 <View>
-                  <AppText style={s.planLabel}>{plan.label}</AppText>
+                  <AppText style={[s.planLabel, { color: theme.colors.text }]}>{plan.label}</AppText>
                   <AppText style={s.planDuration}>{plan.duration} Access</AppText>
                 </View>
                 <View style={s.priceBox}>
-                  <AppText style={s.priceMain}>₹{plan.price}</AppText>
+                  <AppText style={[s.priceMain, { color: theme.colors.text }]}>₹{plan.price}</AppText>
                   <AppText style={s.priceGst}>+ ₹{gst} GST</AppText>
                   <AppText style={s.priceTotal}>Total: ₹{total}</AppText>
                 </View>
@@ -296,11 +308,11 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
               <View style={s.statsRow}>
                 <View style={s.statChip}>
-                  <AppText style={s.statVal}>{plan.workers}+</AppText>
+                  <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.workers}+</AppText>
                   <AppText style={s.statKey}>Workers</AppText>
                 </View>
                 <View style={s.statChip}>
-                  <AppText style={s.statVal}>{plan.posts}</AppText>
+                  <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.posts}</AppText>
                   <AppText style={s.statKey}>Posts</AppText>
                 </View>
               </View>
@@ -331,22 +343,22 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         {/* Topup section — only show if already subscribed */}
         {isSubscribed && (
           <View style={s.topupSection}>
-            <AppText style={s.sectionLabel}>Contact Top-up</AppText>
+            <AppText style={[s.sectionLabel, { color: theme.colors.text }]}>Contact Top-up</AppText>
             <AppText style={s.topupDesc}>
               Need more contacts? Top up your account without changing your plan.
             </AppText>
 
             {([50, 100] as const).map((count) => {
-              const prices = { 50: 199, 100: 349 };
+              const prices = { 50: pricing.topup.contacts50, 100: pricing.topup.contacts100 };
               const base = prices[count];
-              const gst = parseFloat((base * GST_RATE).toFixed(2));
+              const gst = parseFloat((base * gstRate).toFixed(2));
               const total = parseFloat((base + gst).toFixed(2));
               const isLoading = loadingPlanId === `topup_${count}`;
 
               return (
                 <View key={count} style={s.topupCard}>
                   <View>
-                    <AppText style={s.topupTitle}>{count} Contacts</AppText>
+                    <AppText style={[s.topupTitle, { color: theme.colors.text }]}>{count} Contacts</AppText>
                     <AppText style={s.topupPrice}>₹{base} + ₹{gst} GST = <AppText style={{ fontWeight: '800' }}>₹{total}</AppText></AppText>
                   </View>
                   <TouchableOpacity
@@ -367,7 +379,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
         {/* Support */}
         <View style={s.support}>
-          <AppText style={s.supportText}>Need help? Contact support@bookmyworkers.com</AppText>
+          <AppText style={s.supportText}>Need help? Contact {config.contact.supportEmail}</AppText>
         </View>
       </ScrollView>
     </View>

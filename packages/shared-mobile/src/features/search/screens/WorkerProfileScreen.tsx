@@ -2,7 +2,6 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   ScrollView,
   StatusBar,
@@ -21,6 +20,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { buildPhotoUrl } from '../../../core/config/env';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
@@ -156,8 +156,8 @@ const sec = StyleSheet.create({
 const LoadingSkeleton = (): React.JSX.Element => {
   const pulse = C.slateLight;
   return (
-    <View style={{ flex: 1, backgroundColor: '#1338b0' }}>
-      <View style={{ paddingTop: 16, height: 240, backgroundColor: '#1338b0', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
+    <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
+      <View style={{ paddingTop: 16, height: 240, backgroundColor: '#1037A4', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
         <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 140, height: 18, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 100, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' }} />
@@ -185,6 +185,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const { theme } = useAppTheme();
   const { workerId } = route.params;
   const { state: authState } = useAuth();
+  const toast = useToast();
   const user = authState.session?.user;
   const isEmployer = user?.role === 'employer';
   const insets = useSafeAreaInsets();
@@ -200,8 +201,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     retry: 2,
   });
 
-  // ── Employer subscription ────────────────────────────────────────────────
-  const { data: empProfile } = useQuery<FullUserProfile | null>({
+  // ── Employer subscription — always fresh, no stale cache ────────────────
+  const { data: empProfile, isSuccess: empProfileLoaded } = useQuery<FullUserProfile | null>({
     queryKey: ['emp-profile-worker-detail'],
     queryFn: async () => {
       const { apiClient } = await import('../../../core/api/client');
@@ -209,11 +210,15 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       return res.data.user ?? null;
     },
     enabled: isEmployer,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
   });
 
   const isSubscribed = (() => {
-    if (!isEmployer || !empProfile?.isSubscribed) return false;
+    if (!isEmployer) return false;
+    if (!empProfileLoaded) return true; // optimistic: assume subscribed while loading
+    if (!empProfile?.isSubscribed) return false;
     const exp = empProfile.subscriptionExpery;
     if (!exp) return true;
     return new Date(exp).getTime() > Date.now();
@@ -232,16 +237,25 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     setUnlocking(true);
     try {
       const res = await workerApi.unlockNumber(workerId);
-      if (res.phone) setUnlockedPhone(res.phone);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      if (msg === 'Contact limit exhausted') {
-        Alert.alert('Contact Limit Reached', 'You have reached your unlock limit. Upgrade your plan.', [
-          { text: 'View Plans', onPress: () => navigation.navigate('Subscription') },
-          { text: 'Dismiss', style: 'cancel' },
-        ]);
+      if (res.phone) {
+        setUnlockedPhone(res.phone);
+        toast.success('Contact number unlocked successfully.', 'Unlocked');
       } else {
-        Alert.alert('Error', msg ?? 'Failed to unlock contact.');
+        // Backend returned 200 but no phone (e.g. subscription required)
+        const errMsg = res.message ?? 'Unable to unlock contact. Please check your subscription.';
+        toast.error(errMsg, 'Unlock Failed');
+        if (errMsg.toLowerCase().includes('subscribe')) {
+          navigation.navigate('Subscription');
+        }
+      }
+    } catch (err: unknown) {
+      const errObj = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = errObj?.response?.data?.message ?? errObj?.message;
+      if (msg === 'Contact limit exhausted') {
+        toast.warning('Contact limit reached. Upgrade your plan to unlock more.', 'Limit Reached');
+        navigation.navigate('Subscription');
+      } else {
+        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Unlock Failed');
       }
     } finally {
       setUnlocking(false);
@@ -254,7 +268,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   if (isError || !worker) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
         <ScreenHeader title="Worker Profile" onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>Profile Unavailable</AppText>
@@ -289,8 +303,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader title={displayName} onBack={() => navigation.goBack()} />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <ScreenHeader title="Worker Profile" onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -299,8 +313,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         bounces={true}
       >
         {/* ── Hero ──────────────────────────────────────────────────── */}
-        <View style={[s.hero, { paddingTop: 16, backgroundColor: '#1338b0' }]}>
-          {/* Decorative circles */}
+        <View style={[s.hero, { paddingTop: 16, backgroundColor: '#1037A4' }]}>
+          {/* Depth layer + circles — matches GradientHeader */}
+          <View style={s.heroDepth} pointerEvents="none" />
           <View style={s.heroCircle1} pointerEvents="none" />
           <View style={s.heroCircle2} pointerEvents="none" />
 
@@ -465,17 +480,17 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                   }
                 </TouchableOpacity>
               ) : (
-                // ─ Not subscribed
+                // ─ Not subscribed / subscription expired
                 <View style={s.lockBox}>
                   <View style={s.lockIconWrap}>
                     <AppText style={{ fontSize: 28 }}>🔒</AppText>
                   </View>
-                  <AppText style={s.lockTitle}>Contact Details Locked</AppText>
+                  <AppText style={s.lockTitle}>No Active Subscription</AppText>
                   <AppText style={[s.lockSub, { color: C.slate }]}>
-                    Subscribe to BookMyWorker to view and call this worker's contact number.
+                    You don't have an active subscription. Subscribe to BookMyWorker to access worker contact details and hire directly.
                   </AppText>
                   <View style={s.lockBenefits}>
-                    {['Unlimited worker contact access', 'Direct call & WhatsApp', 'Priority matching'].map((b, i) => (
+                    {['View & call worker contact numbers', 'Direct WhatsApp messaging', 'Unlimited access to interested agents'].map((b, i) => (
                       <View key={i} style={s.benefitRow}>
                         <View style={s.benefitDot} />
                         <AppText style={[s.benefitTxt, { color: C.slate }]}>{b}</AppText>
@@ -500,6 +515,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 const s = StyleSheet.create({
   // Hero section
   hero:        { alignItems: 'center', paddingBottom: 28, paddingHorizontal: 20, overflow: 'hidden', position: 'relative' },
+  heroDepth:   { ...StyleSheet.absoluteFillObject, backgroundColor: '#0F2888', opacity: 0.45 },
   heroCircle1: { position: 'absolute', width: 280, height: 280, borderRadius: 140, top: -90, right: -70, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroCircle2: { position: 'absolute', width: 200, height: 200, borderRadius: 100, bottom: -40, left: -60, backgroundColor: 'rgba(255,255,255,0.03)' },
 
@@ -507,7 +523,7 @@ const s = StyleSheet.create({
   avatar:         { width: 96, height: 96, borderRadius: 48, borderWidth: 3 },
   avatarFallback: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
   initials:       { fontSize: 30, fontWeight: '800', color: '#ffffff' },
-  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#1338b0' },
+  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#1037A4' },
 
   heroName:     { fontSize: 24, fontWeight: '800', color: '#ffffff', textAlign: 'center', marginBottom: 4 },
   heroCategory: { fontSize: 13, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginBottom: 2 },

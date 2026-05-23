@@ -3,15 +3,8 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "PATH=/Users/sonu/.nvm/versions/node/v20.20.2/bin:$PATH expo start --clear",
-    "dev": "PATH=/Users/sonu/.nvm/versions/node/v20.20.2/bin:$PATH expo start",
-    "android": "PATH=/Users/sonu/.nvm/versions/node/v20.20.2/bin:$PATH expo start --android",
-    "ios": "PATH=/Users/sonu/.nvm/versions/node/v20.20.2/bin:$PATH expo start --ios",
-    "web": "PATH=/Users/sonu/.nvm/versions/node/v20.20.2/bin:$PATH expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
-    "build:android": "eas build --platform android --profile production",
-    "build:ios": "eas build --platform ios --profile production"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -23,28 +16,30 @@
     "@tanstack/react-query": "^5.90.2",
     "@tanstack/react-query-persist-client": "^5.90.2",
     "axios": "^1.13.1",
-    "expo": "~54.0.33",
     "expo-device": "~8.0.10",
     "expo-image-picker": "~17.0.11",
     "expo-localization": "~17.0.8",
     "expo-notifications": "~0.32.17",
     "expo-secure-store": "~15.0.8",
-    "expo-status-bar": "~3.0.9",
     "i18next": "^25.6.3",
-    "react": "19.1.0",
-    "react-dom": "^19.1.0",
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.66.0",
     "react-i18next": "^16.2.4",
+    "socket.io-client": "^4.8.1",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "expo": "~54.0.33",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "^19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-web": "^0.21.2",
-    "react-native-worklets": "^0.5.1",
-    "socket.io-client": "^4.8.1",
-    "zod": "^3.25.76"
+    "react-native-worklets": "^0.5.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

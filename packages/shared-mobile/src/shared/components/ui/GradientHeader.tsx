@@ -4,8 +4,6 @@
  */
 import React from 'react';
 import {
-  Platform,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -63,8 +61,8 @@ export const GradientHeader = ({
   const insets = useSafeAreaInsets();
   const isDark = theme.mode === 'dark';
 
-  const topPad = insets.top + (Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0);
-  const bgColor = gradientColor ?? (isDark ? theme.colors.headerBg : '#1338B0');
+  const topPad = insets.top; // insets.top already includes status bar on both iOS and Android
+  const bgColor = gradientColor ?? (isDark ? theme.colors.headerBg : '#1037A4');
   const bgColor2 = isDark ? theme.colors.headerBg2 : '#0F2888';
 
   return (
@@ -286,7 +284,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 1.5,
-    borderColor: '#1338B0',
+    borderColor: '#1037A4',
   },
   notifCount: {
     color: '#FFFFFF',

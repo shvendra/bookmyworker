@@ -35,6 +35,7 @@ export interface CreateRequirementPayload {
   remarks: string;
   minBudgetPerWorker: number;
   maxBudgetPerWorker: number;
+  salaryType?: 'Daily' | 'Weekly' | 'Monthly';
   estimated_days?: string;
   workLocation?: string;
   latitude?: number;
@@ -81,6 +82,7 @@ export interface RawRequirement {
   workerQuantityUnskilled?: number;
   minBudgetPerWorker?: number;
   maxBudgetPerWorker?: number;
+  salaryType?: 'Daily' | 'Weekly' | 'Monthly';
   employerId?: string;
   employerName?: string;
   employerPhone?: string;
@@ -120,6 +122,7 @@ export interface RoleAwareFilters {
   page?: number;
   limit?: number;
   search?: string;
+  myInterests?: boolean;
 }
 
 // Serialize params with repeated keys for arrays (district=X&district=Y)
@@ -142,7 +145,7 @@ const serializeParams = (params: Record<string, unknown>): string => {
 export const requirementsApi = {
   // Mobile-optimised listing: priority-sorted (district→state→India), filter-enabled
   listForRole: (filters: RoleAwareFilters) => {
-    const { role, userId, workType, subCategory, state, district, page = 1, limit = 20, search } = filters;
+    const { role, userId, workType, subCategory, state, district, page = 1, limit = 20, search, myInterests } = filters;
     const params: Record<string, unknown> = { page, limit };
 
     // For employer, scope to their own requirements
@@ -154,6 +157,7 @@ export const requirementsApi = {
     if (state) params.state = state;
     if (district) params.district = district;
     if (search?.trim()) params.search = search.trim();
+    if (myInterests) params.myInterests = 'true';
 
     const qs = serializeParams(params);
     return apiClient
@@ -161,6 +165,7 @@ export const requirementsApi = {
         requirements: RawRequirement[];
         pagination?: { totalPages: number; currentPage: number; totalCount: number };
         total?: number;
+        myInterestsCount?: number;
       }>(`/api/v1/mobile/requirements?${qs}`)
       .then((r) => ({
         requirements: r.data.requirements ?? [],
@@ -169,6 +174,7 @@ export const requirementsApi = {
           currentPage: page,
           totalCount: r.data.total ?? 0,
         },
+        myInterestsCount: r.data.myInterestsCount,
       }));
   },
 

@@ -50,7 +50,7 @@ export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title={job.title ?? 'Job Detail'} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

@@ -8,6 +8,10 @@ import i18n from '../../core/i18n';
 import { queryClient } from '../../core/query/queryClient';
 import { resetToWelcome } from '../../core/navigation/navigationRef';
 import { registerSignOutHandler, unregisterSignOutHandler } from './authEventBus';
+import { getCurrentUser, setDefaultRoleApi } from '../../core/api/endpoints/authApi';
+import { apiClient } from '../../core/api/client';
+import { notificationApi } from '../../core/api/endpoints/notificationApi';
+import { authService } from '../../features/auth/services/authService';
 import type { AppLanguage, AppRole } from '../../shared/types/domain';
 import type { AuthContextValue, AuthSession, AuthState } from './authTypes';
 
@@ -28,11 +32,9 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
         // Refresh availableRoles from backend in background
         void (async () => {
           try {
-            const { getCurrentUser } = await import('../../core/api/endpoints/authApi');
             const freshUser = await getCurrentUser();
             // getCurrentUser returns UserProfile but we also need availableRoles
             // Fetch via getUser endpoint which now returns availableRoles
-            const { apiClient } = await import('../../core/api/client');
             const res = await apiClient.get('/api/v1/user/getuser');
             const body = res.data as { availableRoles?: string[]; defaultRole?: string };
             if (body.availableRoles && body.availableRoles.length > 0) {
@@ -89,11 +91,9 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
     void (async () => {
       try { await clearAuthSession(); } catch {}
       try {
-        const { notificationApi } = await import('../../core/api/endpoints/notificationApi');
         await notificationApi.removeToken();
       } catch {}
       try {
-        const { apiClient } = await import('../../core/api/client');
         await apiClient.get('/api/v1/user/logout');
       } catch {}
     })();
@@ -126,8 +126,6 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
   const switchRole = useCallback(
     async (backendRole: string): Promise<void> => {
       const phone = (await loadAuthSession())?.user?.phone;
-      // Dynamic import avoids circular dependency with authService → notificationApi
-      const { authService } = await import('../../features/auth/services/authService');
       const newSession = await authService.switchRole(backendRole, phone);
       await saveAuthSession(newSession);
       queryClient.clear();
@@ -139,7 +137,6 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   const setDefaultRole = useCallback(
     async (backendRole: string): Promise<void> => {
-      const { setDefaultRoleApi } = await import('../../core/api/endpoints/authApi');
       await setDefaultRoleApi(backendRole);
       // Update local session so the UI reflects the new default immediately
       setState((prev) => {

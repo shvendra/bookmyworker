@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StatusBar,
@@ -10,12 +11,15 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { apiClient } from '../../../core/api/client';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
-import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
 import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
 import type { MainStackParamList } from '../../../app/navigation/types';
@@ -103,12 +107,17 @@ export const ProfileScreen = (): React.JSX.Element => {
   const { state, signOut, setLanguage } = useAuth();
   const navigation = useNavigation<ProfileNav>();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
   const user = state.session?.user;
   const availableRoles = state.session?.availableRoles ?? [];
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [savingLang, setSavingLang] = useState(false);
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
-
+  const [verifiedModalVisible, setVerifiedModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+const [showDeleteSection, setShowDeleteSection] = useState(false);
+  const { pricing } = usePricingConfig();
   const currentLang = LANGUAGE_OPTIONS.find((l) => l.value === (user?.language ?? 'en'));
   const isDark = theme.mode === 'dark';
   const currentBackendRole = FRONTEND_TO_BACKEND[user?.role ?? ''] ?? (user?.role?.toUpperCase() ?? 'USER');
@@ -138,38 +147,88 @@ export const ProfileScreen = (): React.JSX.Element => {
     setTimeout(() => { signOut(); }, 300);
   };
 
+  const confirmDeleteAccount = async (): Promise<void> => {
+    setIsDeletingAccount(true);
+    try {
+      await apiClient.delete('api/v1/user/account');
+      setDeleteAccountModalVisible(false);
+      toast.success('Your account has been permanently deleted.');
+      setTimeout(() => { signOut(); }, 800);
+    } catch {
+      toast.error('Could not delete account. Please try again.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader title="My Profile" />
+    <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <VerifiedBadgeModal
+        visible={verifiedModalVisible}
+        onDismiss={() => setVerifiedModalVisible(false)}
+        userRole={user?.role ?? ''}
+        userId={user?.id ?? ''}
+        userName={user?.fullName ?? ''}
+        userEmail={user?.email ?? ''}
+        userPhone={user?.phone ?? ''}
+      />
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-      {/* Avatar + name + status in content area */}
-      <View style={[styles.profileCenter, { backgroundColor: '#1338B0', paddingTop: 20, paddingBottom: 24 }]}>
+      {/* Avatar + name + role + location — unified hero (absorbs status bar) */}
+      <View style={[styles.profileCenter, { backgroundColor: '#1037A4', paddingTop: insets.top + 16, paddingBottom: 24 }]}>
+        {/* Depth layer — matches GradientHeader */}
+        <View style={styles.heroDepth} pointerEvents="none" />
+        <View style={[styles.heroCircle, styles.heroCircle1]} pointerEvents="none" />
+        <View style={[styles.heroCircle, styles.heroCircle2]} pointerEvents="none" />
+        <View style={[styles.heroCircle, styles.heroCircle3]} pointerEvents="none" />
+        {/* Back arrow */}
+        {navigation.canGoBack() && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={[styles.heroBack, { top: insets.top + 8 }]}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <AppText style={styles.heroBackIcon}>‹</AppText>
+          </TouchableOpacity>
+        )}
         <Avatar
           name={user?.fullName ?? 'U'}
           uri={user?.profileImage}
-          size={88}
+          size={80}
           ring
           ringColor="rgba(255,255,255,0.55)"
           online={user?.kycStatus === 'verified'}
         />
-        <AppText style={styles.profileName}>
-          {user?.fullName ?? 'User'}
-        </AppText>
-        <View style={[styles.statusPill, { backgroundColor: kycColors.bg }]}>
-          <AppText style={[styles.statusPillTxt, { color: kycColors.text }]}>
-            {(user?.kycStatus ?? 'PENDING').toUpperCase()}
+        {user?.kycStatus === 'verified' && (
+          <View style={styles.verifiedBadge}>
+            <AppText style={styles.verifiedBadgeTxt}>✓ VERIFIED</AppText>
+          </View>
+        )}
+        <AppText style={styles.profileName}>{user?.fullName ?? 'User'}</AppText>
+        <AppText style={styles.profileRole}>{currentBackendRole}</AppText>
+        {(user?.district ?? user?.state) ? (
+          <AppText style={styles.profileLocation}>
+            📍 {[user?.district, user?.state].filter(Boolean).join(', ')}
           </AppText>
-        </View>
+        ) : null}
+        {/* Edit Public Profile button */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('EditProfile')}
+          style={styles.editProfileBtn}
+          activeOpacity={0.8}
+        >
+          <AppText style={styles.editProfileTxt}>Edit Public Profile</AppText>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
-        {/* Switch Account — hidden for employer (single-role app) */}
-        {user?.role !== 'employer' && (
+        {/* Switch Account — only admin / superadmin have multiple roles */}
+        {(user?.role === 'admin' || user?.role === 'superadmin') && (
           <TouchableOpacity
             onPress={() => navigation.navigate('SwitchAccount')}
             activeOpacity={0.8}
@@ -188,30 +247,79 @@ export const ProfileScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         )}
 
-        {/* Account Section */}
-        <MenuSection label="ACCOUNT">
-          <MenuItem icon="👤" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
+        {/* Verification & Trust */}
+        <MenuSection label="VERIFICATION & TRUST">
           <MenuItem
-            icon="🪪"
+            icon="🛡️"
             label="KYC Verification"
             onPress={() => navigation.navigate('KycVerification')}
             badge={user?.kycStatus === 'pending' ? '!' : undefined}
+            right={
+              user?.kycStatus === 'verified' ? (
+                <View style={styles.approvedBadge}>
+                  <AppText style={styles.approvedBadgeTxt}>✓ Approved</AppText>
+                </View>
+              ) : undefined
+            }
           />
-          <MenuItem icon="🔔" label="Notifications" onPress={() => navigation.navigate('Notifications')} />
-          <MenuItem icon="⚙️" label="Notification Settings" onPress={() => navigation.navigate('NotificationPreferences')} />
+          {(user?.role === 'agent' || user?.role === 'selfworker' || user?.role === 'worker') && (
+            <MenuItem
+              icon="🏆"
+              label="Become a Verified Agent"
+              onPress={() => setVerifiedModalVisible(true)}
+              isLast
+              right={
+                <View style={styles.verifyBadgeBtn}>
+                  <AppText style={styles.verifyBadgeBtnText}>
+                    {user?.role === 'agent'
+                      ? `₹${pricing.verifiedBadge.agent}`
+                      : `₹${pricing.verifiedBadge.worker}`}
+                  </AppText>
+                </View>
+              }
+            />
+          )}
+        </MenuSection>
+
+        {/* Account Settings */}
+        <MenuSection label="ACCOUNT SETTINGS">
+          {user?.role !== 'employer' && (
+            <MenuItem
+              icon="🌐"
+              label="Language"
+              onPress={() => setLangModalVisible(true)}
+              right={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <AppText variant="micro" color={theme.colors.primary} weight="700">
+                    {currentLang?.nativeLabel ?? 'English'}
+                  </AppText>
+                  <AppText style={styles.menuChevron} color={theme.colors.mutedText}>›</AppText>
+                </View>
+              }
+            />
+          )}
           <MenuItem
-            icon="🌐"
-            label={`Language · ${currentLang?.nativeLabel ?? 'English'}`}
-            onPress={() => setLangModalVisible(true)}
-            isLast
+            icon="🔔"
+            label="Notifications Hub"
+            onPress={() => navigation.navigate('Notifications')}
+            right={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <AppText variant="micro" color={theme.colors.mutedText}>All activity alerts</AppText>
+                <AppText style={[styles.menuChevron, { color: theme.colors.mutedText }]}>›</AppText>
+              </View>
+            }
           />
+          <MenuItem icon="🛡️" label="Security & Privacy" onPress={() => navigation.navigate('TermsPrivacy')} />
+          <MenuItem icon="💳" label="Payments & Billing" onPress={() => navigation.navigate('Subscription')} />
+          <MenuItem icon="🧾" label="Payment History" onPress={() => navigation.navigate('Transactions')} />
+          <MenuItem icon="⚙️" label="Notification Settings" onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 
         {/* Appearance Section */}
         <MenuSection label="APPEARANCE">
           <MenuItem
-            icon={isDark ? '🌙' : '☀️'}
-            label={isDark ? 'Dark Mode' : 'Light Mode'}
+            icon="🌙"
+            label="Dark Mode / Theme"
             onPress={() => {}}
             isLast
             right={
@@ -237,13 +345,8 @@ export const ProfileScreen = (): React.JSX.Element => {
           </MenuSection>
         )}
 
-        {/* More Section */}
-        <MenuSection label="MORE">
-          <MenuItem icon="💬" label="Support & Help" onPress={() => navigation.navigate('Support')} />
-          <MenuItem icon="⭐" label="Rate the App" onPress={() => {}} />
-          <MenuItem icon="📄" label="Terms & Privacy" onPress={() => navigation.navigate('TermsPrivacy')} isLast />
-        </MenuSection>
 
+      
         {/* Sign Out */}
         <TouchableOpacity
           onPress={handleSignOut}
@@ -255,7 +358,132 @@ export const ProfileScreen = (): React.JSX.Element => {
             Sign Out
           </AppText>
         </TouchableOpacity>
+{/* Delete Account Accordion */}
+<View
+  style={[
+    styles.deleteAccordionWrapper,
+    {
+      alignItems: 'center',
+      marginTop: 30,
+      marginBottom: 25,
+    },
+  ]}
+>
+  <View style={{ width: '90%', maxWidth: 360 }}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => setShowDeleteSection(!showDeleteSection)}
+      style={[
+        styles.deleteAccordionHeader,
+        {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 6,
+        },
+      ]}
+    >
+      <AppText
+        style={[
+          styles.deleteAccordionTitle,
+          {
+            fontSize: 12,
+            color: '#999',
+            opacity: 0.8,
+            textAlign: 'center',
+            flex: 1,
+          },
+        ]}
+      >
+        Want to remove or delete account?
+      </AppText>
 
+      <AppText
+        style={[
+          styles.deleteAccordionArrow,
+          {
+            fontSize: 14,
+            color: '#999',
+            marginLeft: 8,
+          },
+        ]}
+      >
+        {showDeleteSection ? '⌃' : '⌄'}
+      </AppText>
+    </TouchableOpacity>
+
+    {showDeleteSection && (
+      <View
+        style={[
+          styles.dangerZoneCard,
+          {
+            marginTop: 8,
+            borderWidth: 1,
+            borderRadius: 14,
+            padding: 10,
+            borderColor: theme.colors.danger + '30',
+            backgroundColor: theme.colors.dangerLight,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => setDeleteAccountModalVisible(true)}
+          activeOpacity={0.75}
+          style={[
+            styles.deleteAccountRow,
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.menuIconWrap,
+              {
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 10,
+                backgroundColor: theme.colors.danger + '15',
+              },
+            ]}
+          >
+            <AppText style={styles.menuIcon}>🗑️</AppText>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <AppText
+              variant="body"
+              color={theme.colors.danger}
+              style={{
+                fontWeight: '700',
+                fontSize: 13,
+              }}
+            >
+              Delete Account
+            </AppText>
+
+            <AppText
+              variant="micro"
+              color={theme.colors.danger}
+              style={{
+                opacity: 0.7,
+                marginTop: 2,
+                fontSize: 10,
+              }}
+            >
+              Permanently remove your account
+            </AppText>
+          </View>
+        </TouchableOpacity>
+      </View>
+    )}
+  </View>
+</View>
         <AppText variant="micro" color={theme.colors.mutedText} style={styles.version}>
           BookMyWorkers v1.0.0
         </AppText>
@@ -362,6 +590,47 @@ export const ProfileScreen = (): React.JSX.Element => {
           </View>
         </View>
       </Modal>
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={deleteAccountModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => { if (!isDeletingAccount) setDeleteAccountModalVisible(false); }}
+      >
+        <View style={styles.signOutOverlay}>
+          <View style={[styles.signOutDialog, { backgroundColor: theme.colors.card }]}>
+            <AppText style={styles.signOutEmoji}>⚠️</AppText>
+            <AppText variant="subtitle" color={theme.colors.danger} style={styles.signOutTitle}>
+              Delete Account?
+            </AppText>
+            <AppText variant="body" color={theme.colors.mutedText} style={styles.signOutMessage}>
+              This will permanently remove your account and all personal data from our servers. Active requirements and payment records may be retained for legal compliance.{'\n\n'}This action cannot be undone.
+            </AppText>
+            <View style={styles.signOutActions}>
+              <TouchableOpacity
+                onPress={() => setDeleteAccountModalVisible(false)}
+                disabled={isDeletingAccount}
+                style={[styles.signOutActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: isDeletingAccount ? 0.5 : 1 }]}
+                activeOpacity={0.8}
+              >
+                <AppText variant="label" color={theme.colors.text}>Cancel</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void confirmDeleteAccount()}
+                disabled={isDeletingAccount}
+                style={[styles.signOutActionBtn, { backgroundColor: theme.colors.danger, opacity: isDeletingAccount ? 0.7 : 1 }]}
+                activeOpacity={0.8}
+              >
+                {isDeletingAccount ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <AppText variant="label" color="#FFFFFF">Delete</AppText>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
     </View>
   );
@@ -371,29 +640,75 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 48 },
 
-  // ── Profile header — centered photo / name / status ──────────────────────
+  // ── Profile hero — continuous from status bar, matches GradientHeader look ──
   profileCenter: {
     alignItems: 'center',
-    gap: 10,
-    paddingBottom: 4,
+    gap: 6,
+    paddingHorizontal: 20,
+    overflow: 'hidden',
   },
+  heroDepth: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0F2888',
+    opacity: 0.45,
+  },
+  heroCircle: { position: 'absolute', borderRadius: 999 },
+  heroCircle1: { width: 260, height: 260, top: -110, right: -70, backgroundColor: 'rgba(255,255,255,0.055)' },
+  heroCircle2: { width: 160, height: 160, bottom: -60, left: '30%', backgroundColor: 'rgba(255,255,255,0.04)' },
+  heroCircle3: { width: 120, height: 120, top: 20, left: -40, backgroundColor: 'rgba(255,255,255,0.03)' },
+  verifiedBadge: {
+    backgroundColor: '#16a34a',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginTop: -4,
+  },
+  verifiedBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   profileName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: 0.2,
+    marginTop: 2,
   },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
+  profileRole: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  statusPillTxt: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+  profileLocation: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
   },
+  editProfileBtn: {
+    marginTop: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 28,
+  },
+  editProfileTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  heroBack: {
+    position: 'absolute',
+    left: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  heroBackIcon: { fontSize: 26, color: '#fff', fontWeight: '300', lineHeight: 30, marginLeft: -2 },
+
+  approvedBadge: { backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#86efac' },
+  approvedBadgeTxt: { fontSize: 11, fontWeight: '700', color: '#16a34a' },
+  verifyBadgeBtn: { backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#86EFAC' },
+  verifyBadgeBtnText: { fontSize: 12, fontWeight: '800', color: '#15803D' },
 
   body: { padding: 16, gap: 12 },
 
@@ -462,6 +777,28 @@ const styles = StyleSheet.create({
   signOutText: { fontWeight: '700', fontSize: 16 },
 
   version: { textAlign: 'center', marginTop: 8 },
+
+  dangerZoneCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    paddingBottom: 4,
+  },
+  dangerZoneLabel: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+    letterSpacing: 1,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  deleteAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: {

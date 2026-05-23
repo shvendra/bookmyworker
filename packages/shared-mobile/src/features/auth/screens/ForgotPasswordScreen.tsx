@@ -18,6 +18,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppInput } from '../../../shared/components/ui/AppInput';
+import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
 import { useAppTheme } from '../../../core/theme';
@@ -186,7 +187,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
 
   return (
     <View style={[s.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* ── Brand + stepper strip ───────────────────────────────── */}
       <View style={[s.brandStrip, { paddingTop: insets.top + 12 }]}>
@@ -196,7 +197,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
             </TouchableOpacity>
             <View style={s.brandCenter}>
               <View style={s.brandIconWrap}>
-                <Image source={require('../../../../assets/logo.png')} style={s.brandLogoImg} resizeMode="contain" />
+                <BrandLogo style={s.brandLogoImg} />
               </View>
               <AppText style={s.brandName}>BookMyWorker</AppText>
             </View>
@@ -218,7 +219,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   <AppText style={[
                     s.stepCircleText,
                     step > st.num  && { color: '#fff' },
-                    step === st.num && { color: '#1338B0' },
+                    step === st.num && { color: '#1037A4' },
                     step < st.num  && { color: 'rgba(255,255,255,0.45)' },
                   ]}>
                     {step > st.num ? '✓' : String(st.num)}
@@ -493,7 +494,7 @@ const s = StyleSheet.create({
 
   // ── Brand strip ───────────────────────────────────────────────────
   brandStrip: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 24,
     overflow: 'hidden',

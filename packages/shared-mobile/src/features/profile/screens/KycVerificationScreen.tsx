@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
@@ -17,9 +17,9 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
-import { AppButton } from '../../../shared/components/ui/AppButton';
 import { Badge } from '../../../shared/components/ui/Badge';
 import { apiClient } from '../../../core/api/client';
+import { buildPhotoUrl } from '../../../core/config/env';
 import type { KycStatus } from '../../../shared/types/domain';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -41,14 +41,14 @@ const C = {
 
 interface DocState { uri: string; name: string; type: string }
 
-const pickImage = async (title: string): Promise<DocState | null> => {
+const pickImage = async (title: string, onPermissionDenied?: () => void): Promise<DocState | null> => {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission Required', 'Camera roll permission is needed to upload documents.');
+    onPermissionDenied?.();
     return null;
   }
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'],
     quality: 0.8,
     allowsEditing: true,
     aspect: [4, 3],
@@ -79,47 +79,22 @@ const st = StyleSheet.create({
   label:   { fontSize: 15, fontWeight: '800', color: C.navy },
 });
 
-// ─── Labeled input ────────────────────────────────────────────────────────────
-const LabeledInput = ({ label, value, onChangeText, placeholder, disabled, autoCapitalize }: {
-  label: string; value: string; onChangeText: (v: string) => void;
-  placeholder: string; disabled?: boolean; autoCapitalize?: 'none' | 'words' | 'sentences';
-}): React.JSX.Element => {
-  const { theme } = useAppTheme();
-  const active = value.length > 0;
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <AppText style={inp.label}>{label}</AppText>
-      <View style={[inp.field, {
-        borderColor: active ? C.blue : C.border,
-        backgroundColor: disabled ? C.border + '22' : theme.colors.card,
-      }]}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={C.slate}
-          editable={!disabled}
-          autoCapitalize={autoCapitalize ?? 'sentences'}
-          style={[inp.input, { color: theme.colors.text, opacity: disabled ? 0.5 : 1 }]}
-        />
-      </View>
-    </View>
-  );
-};
-const inp = StyleSheet.create({
-  label: { fontSize: 12, fontWeight: '700', color: C.slate, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
-  field: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14 },
-  input: { paddingVertical: 13, fontSize: 14, fontWeight: '500' },
-});
-
 // ─── Doc upload slot ──────────────────────────────────────────────────────────
+// Uses Pressable instead of TouchableOpacity — RN 0.81 New Architecture throws
+// "Property 'TouchableOpacity' doesn't exist" when TouchableOpacity wraps a
+// view with overflow:hidden in Fabric renderer.
 const DocUploadSlot = ({ label, doc, onPick, disabled }: {
   label: string; doc: DocState | null; onPick: () => void; disabled?: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   return (
-    <TouchableOpacity onPress={onPick} disabled={disabled} activeOpacity={0.7}
-      style={[ds.slot, { borderColor: doc ? C.blue : C.border, backgroundColor: theme.colors.card }]}>
+    <Pressable
+      onPress={disabled ? undefined : onPick}
+      style={({ pressed }) => [
+        ds.slot,
+        { borderColor: doc ? C.blue : C.border, backgroundColor: theme.colors.card, opacity: pressed ? 0.75 : 1 },
+      ]}
+    >
       {doc ? (
         <>
           <Image source={{ uri: doc.uri }} style={ds.preview} resizeMode="cover" />
@@ -134,43 +109,39 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
           <View style={ds.camBox}><AppText style={{ fontSize: 22 }}>📷</AppText></View>
           <AppText style={ds.emptyLabel}>{label}</AppText>
           <AppText style={ds.emptyHint}>Tap to upload</AppText>
+          <AppText style={ds.cropHint}>✂️ Crop &amp; rotate after selecting</AppText>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 const ds = StyleSheet.create({
-  slot:         { flex: 1, height: 130, borderWidth: 1.5, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
+  slot:         { flex: 1, height: 150, borderWidth: 1.5, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
   preview:      { width: '100%', height: '100%' },
   overlay:      { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(37,99,235,0.85)', padding: 8, alignItems: 'center' },
   overlayTick:  { color: '#fff', fontSize: 12, fontWeight: '800' },
   overlayLabel: { color: '#fff', fontSize: 11, fontWeight: '700' },
   overlayChange:{ color: 'rgba(255,255,255,0.75)', fontSize: 10 },
-  empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12 },
+  empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 12 },
   camBox:       { width: 44, height: 44, borderRadius: 12, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center' },
   emptyLabel:   { fontSize: 12, fontWeight: '700', color: C.navy, textAlign: 'center' },
   emptyHint:    { fontSize: 11, color: C.slate },
+  cropHint:     { fontSize: 10, color: C.blue, fontWeight: '600', textAlign: 'center', marginTop: 2 },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export const KycVerificationScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const toast = useToast();
   const navigation = useNavigation();
   const user = state.session?.user;
   const kycStatus: KycStatus = (user?.kycStatus ?? 'pending') as KycStatus;
   const isVerified = kycStatus === 'verified';
 
-  // GST toggle
-  const [hasGST, setHasGST]           = useState<boolean>(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
-  // GST fields
-  const [gstNumber,    setGstNumber]   = useState('');
-  const [firmName,     setFirmName]    = useState('');
-  const [firmAddress,  setFirmAddress] = useState('');
-
-  // Aadhaar fields
+  // Government ID photos (front & back)
   const [front, setFront] = useState<DocState | null>(null);
   const [back,  setBack]  = useState<DocState | null>(null);
 
@@ -183,14 +154,14 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     const load = async (): Promise<void> => {
       try {
         const res = await apiClient.get<{
-          user?: { kyc?: { gstNumber?: string; firmName?: string; firmAddress?: string } }
+          user?: { kyc?: { aadharFront?: string; aadharBack?: string } };
         }>('/api/v1/user/getuser');
         const kyc = res.data?.user?.kyc;
-        if (kyc?.gstNumber) {
-          setHasGST(true);
-          setGstNumber(kyc.gstNumber);
-          setFirmName(kyc.firmName ?? '');
-          setFirmAddress(kyc.firmAddress ?? '');
+        if (kyc?.aadharFront || kyc?.aadharBack) {
+          const frontUrl = buildPhotoUrl(kyc.aadharFront);
+          const backUrl  = buildPhotoUrl(kyc.aadharBack);
+          if (frontUrl) setFront({ uri: frontUrl, name: 'id_front.jpg', type: 'image/jpeg' });
+          if (backUrl)  setBack({ uri: backUrl,   name: 'id_back.jpg',  type: 'image/jpeg' });
         }
       } catch { /* use defaults */ }
       finally { setProfileLoaded(true); }
@@ -202,36 +173,22 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     setError(null);
     setSubmitting(true);
     try {
-      if (hasGST) {
-        if (!gstNumber.trim()) {
-          Alert.alert('GST Required', 'Please enter your GST number to proceed.');
-          return;
-        }
-        await apiClient.put('/api/v1/user/update', {
-          kyc: {
-            gstNumber: gstNumber.trim(),
-            firmName:    firmName.trim(),
-            firmAddress: firmAddress.trim(),
-          },
-        });
-        setSuccess(true);
-        Alert.alert('KYC Submitted', 'Your GST details have been submitted for verification.');
-      } else {
-        if (!front || !back) {
-          Alert.alert('Documents Required', 'Please upload both Aadhaar front and back photos.');
-          return;
-        }
-        const formData = new FormData();
-        formData.append('aadharFront', { uri: front.uri, name: front.name, type: front.type } as unknown as Blob);
-        formData.append('aadharBack',  { uri: back.uri,  name: back.name,  type: back.type  } as unknown as Blob);
-        await apiClient.put('/api/v1/user/update', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        setSuccess(true);
-        Alert.alert('Documents Submitted', 'Your Aadhaar documents have been submitted. Verification usually takes 24–48 hours.');
+      if (!front || !back) {
+        toast.warning('Please upload both front and back photos of your government ID.', 'Documents Required');
+        return;
       }
+      const formData = new FormData();
+      formData.append('aadharFront', { uri: front.uri, name: front.name, type: front.type } as unknown as Blob);
+      formData.append('aadharBack',  { uri: back.uri,  name: back.name,  type: back.type  } as unknown as Blob);
+      await apiClient.put('/api/v1/user/update', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setSuccess(true);
+      toast.success('Documents submitted. Verification usually takes 24–48 hours.', 'Documents Submitted');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed. Please try again.');
+      const msg = e instanceof Error ? e.message : 'Upload failed. Please try again.';
+      setError(msg);
+      toast.error(msg, 'Submission Failed');
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +196,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="KYC Verification" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[scr.scroll, { backgroundColor: theme.colors.background }]}
@@ -281,105 +238,34 @@ export const KycVerificationScreen = (): React.JSX.Element => {
       {/* ── KYC form (hidden if verified) ───────────────────────────── */}
       {!isVerified && (
         <>
-          {/* GST toggle */}
+          {/* ── Government ID upload ──────────────────────────────────── */}
           <AppCard style={scr.card}>
-            <SectionTitle icon="🏢" text="Do You Have GST?" />
-            <AppText style={[scr.toggleHint, { color: C.slate }]}>
-              If your business is GST registered, you can verify using GST instead of Aadhaar.
+            <SectionTitle icon="🪪" text="Upload Government ID Card" />
+            <AppText style={[scr.fieldHint, { color: C.slate }]}>
+              Upload clear photos of both sides of any valid government-issued photo ID — Voter ID, PAN Card, Driving Licence, Passport, or any other official photo ID.
             </AppText>
-            <View style={scr.toggleRow}>
-              {[
-                { label: 'Yes, I have GST',   val: true,  icon: '✅' },
-                { label: 'No, use Aadhaar',   val: false, icon: '🪪' },
-              ].map((opt) => {
-                const active = hasGST === opt.val;
-                return (
-                  <TouchableOpacity
-                    key={String(opt.val)}
-                    onPress={() => { if (!isVerified) setHasGST(opt.val); }}
-                    activeOpacity={0.8}
-                    style={[scr.toggleBtn, {
-                      backgroundColor: active ? C.navy : theme.colors.card,
-                      borderColor:     active ? C.navy : C.border,
-                    }]}
-                  >
-                    <AppText style={{ fontSize: 18 }}>{opt.icon}</AppText>
-                    <AppText style={[scr.toggleBtnTxt, { color: active ? C.white : theme.colors.text }]}>
-                      {opt.label}
-                    </AppText>
-                    {active && (
-                      <View style={scr.toggleCheck}>
-                        <AppText style={{ color: C.white, fontSize: 10, fontWeight: '800' }}>✓</AppText>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={scr.docsRow}>
+              <DocUploadSlot
+                label="ID Card Front"
+                doc={front}
+                onPick={() => void pickImage('ID Front', () => toast.warning('Photo library permission is needed to upload documents.', 'Permission Required')).then((d) => { if (d) setFront(d); })}
+                disabled={submitting}
+              />
+              <DocUploadSlot
+                label="ID Card Back"
+                doc={back}
+                onPick={() => void pickImage('ID Back', () => toast.warning('Photo library permission is needed to upload documents.', 'Permission Required')).then((d) => { if (d) setBack(d); })}
+                disabled={submitting}
+              />
+            </View>
+            {/* File format hint */}
+            <View style={scr.formatHint}>
+              <AppText style={{ fontSize: 13 }}>📎</AppText>
+              <AppText style={[scr.formatHintTxt, { color: C.slate }]}>
+                Supported formats: JPG, JPEG, PNG · Max 5 MB per file
+              </AppText>
             </View>
           </AppCard>
-
-          {/* ── GST path ──────────────────────────────────────────────── */}
-          {hasGST && (
-            <AppCard style={scr.card}>
-              <SectionTitle icon="📋" text="GST Details" />
-              <AppText style={[scr.fieldHint, { color: C.slate }]}>
-                Enter your GST registration details. These will be verified by our team.
-              </AppText>
-              <LabeledInput
-                label="GST Number *"
-                value={gstNumber}
-                onChangeText={setGstNumber}
-                placeholder="e.g. 22AAAAA0000A1Z5"
-                disabled={isVerified}
-                autoCapitalize="none"
-              />
-              <LabeledInput
-                label="Firm / Business Name"
-                value={firmName}
-                onChangeText={setFirmName}
-                placeholder="Your registered firm name"
-                disabled={isVerified}
-                autoCapitalize="words"
-              />
-              <LabeledInput
-                label="Firm Address"
-                value={firmAddress}
-                onChangeText={setFirmAddress}
-                placeholder="Registered address"
-                disabled={isVerified}
-              />
-              <View style={[scr.gstNote, { backgroundColor: C.blueSoft, borderColor: C.blueLight ?? '#bfdbfe' }]}>
-                <AppText style={{ fontSize: 14 }}>ℹ️</AppText>
-                <AppText style={[scr.gstNoteText, { color: '#1e40af' }]}>
-                  GST-verified employers get a business badge and priority listing.
-                </AppText>
-              </View>
-            </AppCard>
-          )}
-
-          {/* ── Aadhaar path ──────────────────────────────────────────── */}
-          {!hasGST && (
-            <AppCard style={scr.card}>
-              <SectionTitle icon="🪪" text="Upload Aadhaar Card" />
-              <AppText style={[scr.fieldHint, { color: C.slate }]}>
-                Upload clear photos of both sides of your Aadhaar card.
-              </AppText>
-              <View style={scr.docsRow}>
-                <DocUploadSlot
-                  label="Aadhaar Front"
-                  doc={front}
-                  onPick={() => void pickImage('Aadhaar Front').then((d) => { if (d) setFront(d); })}
-                  disabled={submitting}
-                />
-                <DocUploadSlot
-                  label="Aadhaar Back"
-                  doc={back}
-                  onPick={() => void pickImage('Aadhaar Back').then((d) => { if (d) setBack(d); })}
-                  disabled={submitting}
-                />
-              </View>
-            </AppCard>
-          )}
 
           {/* ── Feedback messages ─────────────────────────────────────── */}
           {!!error && (
@@ -422,9 +308,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
       <AppCard style={scr.card}>
         <SectionTitle icon="📌" text="Important Notes" />
         {[
-          hasGST
-            ? 'Enter your exact GST number as registered with the government.'
-            : 'Use original Aadhaar card photos (not photocopies or scans).',
+          'Use original government ID card photos — not photocopies or screenshots.',
           'Ensure all text is clearly visible and not blurry.',
           'Files must be under 5 MB each.',
           'Your data is encrypted and used only for verification.',
@@ -440,8 +324,6 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   );
 };
 
-const C_blueLight = '#bfdbfe';
-
 const scr = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { padding: 16, paddingBottom: 48, gap: 12 },
@@ -455,20 +337,12 @@ const scr = StyleSheet.create({
   statusLabel:  { fontSize: 13, fontWeight: '700', color: '#0f172a' },
   statusMsg:    { fontSize: 12, lineHeight: 18 },
 
-  card:         { marginBottom: 0 },
-
-  toggleHint:   { fontSize: 12, lineHeight: 18, marginBottom: 14 },
-  toggleRow:    { gap: 10 },
-  toggleBtn:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, padding: 14, gap: 12 },
-  toggleBtnTxt: { flex: 1, fontSize: 14, fontWeight: '700' },
-  toggleCheck:  { width: 20, height: 20, borderRadius: 10, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center' },
-
+  card:       { marginBottom: 0 },
   fieldHint:  { fontSize: 12, lineHeight: 18, marginBottom: 14 },
 
-  gstNote:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 10, borderWidth: 1, padding: 12, marginTop: 6 },
-  gstNoteText: { flex: 1, fontSize: 12, lineHeight: 18 },
-
   docsRow:    { flexDirection: 'row', gap: 10 },
+  formatHint:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: '#F8FAFC', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: C.border },
+  formatHintTxt: { fontSize: 12, lineHeight: 17 },
 
   feedbackBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
   feedbackText: { flex: 1, fontSize: 13, lineHeight: 18 },

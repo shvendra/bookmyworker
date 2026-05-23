@@ -89,6 +89,7 @@ const requirementSchema = z.object({
   inTime: z.string().optional(),
   outTime: z.string().optional(),
   remarks: z.string().min(5, 'Please describe the work (min 5 chars)'),
+  salaryType: z.enum(['Daily', 'Weekly', 'Monthly']),
   minBudgetPerWorker: z.string().regex(/^\d+$/, 'Enter min budget'),
   maxBudgetPerWorker: z.string().regex(/^\d+$/, 'Enter max budget'),
   estimated_days: z.string().optional(),
@@ -237,6 +238,7 @@ const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Elem
       inTime: '',
       outTime: '',
       remarks: '',
+      salaryType: 'Daily' as const,
       minBudgetPerWorker: '',
       maxBudgetPerWorker: '',
       estimated_days: '',
@@ -263,10 +265,19 @@ const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Elem
         district: values.district,
         tehsil: values.tehsil,
         pinCode: values.pinCode ?? undefined,
-        workerNeedDate: values.workerNeedDate,
+        workerNeedDate: (() => {
+          const d = values.workerNeedDate.trim();
+          // Convert DD/MM/YYYY → YYYY-MM-DD so Mongoose can parse the date
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+            const [dd, mm, yyyy] = d.split('/');
+            return `${yyyy}-${mm}-${dd}`;
+          }
+          return d;
+        })(),
         inTime: isDailyWages ? values.inTime : undefined,
         outTime: isDailyWages ? values.outTime : undefined,
         remarks: values.remarks,
+        salaryType: values.salaryType,
         minBudgetPerWorker: Number(values.minBudgetPerWorker),
         maxBudgetPerWorker: Number(values.maxBudgetPerWorker),
         estimated_days: values.estimated_days,
@@ -471,16 +482,52 @@ const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Elem
         />
       </AppCard>
 
+      {/* SALARY TYPE */}
+      <SectionLabel label="Payment Type" theme={theme} />
+      <AppCard style={styles.card}>
+        <Controller
+          control={control}
+          name="salaryType"
+          render={({ field: { value, onChange } }) => (
+            <View style={styles.salaryTypeRow}>
+              {(['Daily', 'Weekly', 'Monthly'] as const).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => onChange(type)}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.salaryTypeChip,
+                    {
+                      backgroundColor: value === type ? theme.colors.primary : theme.colors.surface,
+                      borderColor: value === type ? theme.colors.primary : theme.colors.border,
+                    },
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      styles.salaryTypeChipTxt,
+                      { color: value === type ? '#fff' : theme.colors.mutedText },
+                    ]}
+                  >
+                    {type === 'Daily' ? '📅 Daily' : type === 'Weekly' ? '📆 Weekly' : '🗓 Monthly'}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        />
+      </AppCard>
+
       {/* BUDGET */}
-      <SectionLabel label="Budget (₹ per worker / day)" theme={theme} />
+      <SectionLabel label={`Budget (₹ per worker / ${watch('salaryType')?.toLowerCase() ?? 'day'})`} theme={theme} />
       <AppCard style={styles.card}>
         <View style={styles.row}>
           <View style={styles.rowHalf}>
             <FormInput
               control={control}
               name="minBudgetPerWorker"
-              label="Min Budget *"
-              placeholder="400"
+              label="Min Amount *"
+              placeholder={watch('salaryType') === 'Monthly' ? '8000' : watch('salaryType') === 'Weekly' ? '2000' : '400'}
               keyboardType="numeric"
             />
           </View>
@@ -488,8 +535,8 @@ const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Elem
             <FormInput
               control={control}
               name="maxBudgetPerWorker"
-              label="Max Budget *"
-              placeholder="700"
+              label="Max Amount *"
+              placeholder={watch('salaryType') === 'Monthly' ? '15000' : watch('salaryType') === 'Weekly' ? '4000' : '700'}
               keyboardType="numeric"
             />
           </View>
@@ -625,7 +672,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
   if (isEmployer && !isSubscribed) {
     return (
       <View style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
         <ScreenHeader title="Post Requirement" onBack={goBack} />
         <SubscriptionGate onBack={goBack} />
       </View>
@@ -635,7 +682,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
   if (!reqType) {
     return (
       <View style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
         <ScreenHeader title="Post Requirement" onBack={goBack} />
         <TypeSelectionStep
           onSelect={(type) => setReqType(type)}
@@ -647,7 +694,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title={title} onBack={() => setReqType(null)} />
       <RequirementFormStep
         reqType={reqType}
@@ -700,6 +747,13 @@ const styles = StyleSheet.create({
   card: { marginBottom: 4 },
   row: { flexDirection: 'row', gap: 10 },
   rowHalf: { flex: 1 },
+  // Salary type radio buttons
+  salaryTypeRow: { flexDirection: 'row', gap: 10 },
+  salaryTypeChip: {
+    flex: 1, alignItems: 'center', paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1.5,
+  },
+  salaryTypeChipTxt: { fontSize: 13, fontWeight: '700' },
   // Perks grid
   flagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   flagChip: {

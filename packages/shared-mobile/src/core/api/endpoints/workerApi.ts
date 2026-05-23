@@ -129,8 +129,8 @@ export const workerApi = {
     };
   },
 
-  unlockNumber: async (agentId: string): Promise<{ phone: string }> => {
-    const res = await apiClient.get<{ phone: string }>(`/api/v1/user/unlock-number/${agentId}`);
+  unlockNumber: async (agentId: string): Promise<{ phone?: string; message?: string }> => {
+    const res = await apiClient.get<{ phone?: string; message?: string }>(`/api/v1/user/unlock-number/${agentId}`);
     return res.data;
   },
 
@@ -155,13 +155,31 @@ export const workerApi = {
   getProfile: (id: string) =>
     apiClient.get<WorkerProfile>(`/api/v1/user/${id}`).then((r) => r.data),
 
-  // Fetch multiple agents by IDs in one request — used for Interested Agents list
+  // Fetch profiles for interested agents by ID — works for all roles (agent/worker/selfworker)
+  // Fetches each profile individually in parallel because getAllAgentsAdmin ignores the ids filter
   getAgentsByIds: async (ids: string[]): Promise<RawAgent[]> => {
     if (!ids.length) return [];
-    const res = await apiClient.get<{ agents: RawAgent[] }>('/api/v1/user/getAllAgentsAdmin', {
-      params: { ids: ids.join(',') },
-    });
-    return res.data?.agents ?? [];
+    type WorkerResponse = { success: boolean; worker: WorkerDetail & { phone?: string; fullName?: string } };
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        apiClient.get<WorkerResponse>(`/api/v1/user/worker/${id}`).then((r) => r.data.worker)
+      )
+    );
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<WorkerDetail & { phone?: string; fullName?: string }> =>
+          r.status === 'fulfilled' && r.value != null
+      )
+      .map((r) => ({
+        _id: r.value._id,
+        name: r.value.name ?? r.value.fullName ?? '',
+        phone: r.value.phone ?? '',
+        state: r.value.state,
+        district: r.value.district,
+        block: r.value.block,
+        role: r.value.role,
+        status: r.value.status,
+      }));
   },
 
   getDashboard: () =>

@@ -1,29 +1,32 @@
 import React from 'react';
-import { RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { walletApi } from '../../../core/api/endpoints/walletApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
-import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { QuickActionCard, QuickActionsRow } from '../../../shared/components/ui/QuickActionCard';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { MainStackParamList } from '../../../app/navigation/types';
-const greet = (): string => {
+
+const getGreetKey = (): 'goodMorning' | 'goodAfternoon' | 'goodEvening' => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'goodMorning';
+  if (h < 17) return 'goodAfternoon';
+  return 'goodEvening';
 };
 
 export const WorkerDashboardScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const { t } = useTranslation();
   const user = state.session?.user;
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
@@ -46,109 +49,124 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
 
   const balance = balanceQuery.data ?? 0;
   const kycPending = user?.kycStatus === 'pending';
+  const greetKey = getGreetKey();
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+
+      {/* ── Hero Header ──────────────────────────────────────────────── */}
+      <GradientHeader
+        subtitle={t(greetKey)}
         title={user?.fullName ?? 'Worker'}
+        caption={
+          kycPending
+            ? `⚠️ ${t('verificationPending')}`
+            : `✓ Verified`
+        }
+        avatarName={user?.fullName ?? 'W'}
+        onAvatarPress={() => navigation.navigate('Profile')}
         rightIcon="🔔"
-        onRightPress={() => {}}
-      />
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
-        />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Wallet strip */}
-      <View style={[styles.walletStrip, { backgroundColor: '#1338B0' }]}>
-        <View style={styles.walletLeft}>
-          <AppText variant="micro" color="rgba(255,255,255,0.65)">Wallet Balance</AppText>
-          <AppText variant="numeric" color="#FFFFFF" style={styles.walletAmt}>
-            ₹{balance.toLocaleString('en-IN')}
-          </AppText>
-        </View>
-        <AppButton
-          title="Withdraw"
-          variant="outline"
-          size="sm"
-          onPress={() => navigation.navigate('Wallet' as never)}
-          style={styles.withdrawBtn}
-        />
-      </View>
-
-      <View style={styles.body}>
-        {/* KYC Alert */}
-        {kycPending && (
-          <View style={[styles.alertBanner, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning }]}>
-            <AppText style={styles.alertIcon}>⚠️</AppText>
-            <View style={styles.alertTextWrap}>
-              <AppText variant="labelSm" color={theme.colors.warning}>KYC Verification Pending</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText} style={styles.alertSub}>
-                Complete your KYC to receive job invitations and payouts
-              </AppText>
-            </View>
+        onRightPress={() => navigation.navigate('Notifications')}
+      >
+        {/* Wallet balance baked into hero */}
+        <View style={styles.heroWallet}>
+          <View style={styles.heroWalletLeft}>
+            <AppText style={styles.heroWalletLabel}>{t('walletBalance')}</AppText>
+            <AppText style={styles.heroWalletAmt}>
+              ₹{balance.toLocaleString('en-IN')}
+            </AppText>
           </View>
-        )}
-
-        {/* Quick Actions */}
-        <SectionHeader title="Quick Actions" style={styles.sectionGap} />
-        <QuickActionsRow>
-          <QuickActionCard
-            icon="🔍"
-            title="Browse Jobs"
-            subtitle="Find near you"
-            color={theme.colors.primary}
-            onPress={() => navigation.navigate('JobMarketplace')}
-          />
-          <QuickActionCard
-            icon="📅"
-            title="Attendance"
-            subtitle="Mark today"
-            color={theme.colors.success}
-            onPress={() => navigation.navigate('Attendance' as never)}
-          />
-        </QuickActionsRow>
-
-        {/* Browse by Category */}
-        <SectionHeader
-          title="Browse by Category"
-          actionLabel="See all"
-          onAction={() => navigation.navigate('JobMarketplace')}
-          style={styles.sectionGap}
-        />
-        <WorkerCategoryGrid onCategoryPress={handleCategoryPress} />
-
-
-        {/* Explore CTA */}
-        <View
-          style={[
-            styles.exploreCta,
-            { backgroundColor: theme.colors.primaryLight },
-          ]}
-        >
-          <AppText variant="heading" color={theme.colors.primary} style={styles.exploreTitle}>
-            Find Work Near You
-          </AppText>
-          <AppText variant="caption" color={theme.colors.mutedText} style={styles.exploreSub}>
-            Browse hundreds of open requirements and apply instantly.
-          </AppText>
           <AppButton
-            title="Browse All Jobs →"
-            onPress={() => navigation.navigate('JobMarketplace')}
-            size="md"
+            title={t('withdraw')}
+            variant="outline"
+            size="sm"
+            onPress={() => navigation.navigate('Wallet' as never)}
+            style={styles.withdrawBtn}
           />
         </View>
-      </View>
-    </ScrollView>
+      </GradientHeader>
+
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.body}>
+
+          {/* KYC Alert */}
+          {kycPending && (
+            <Pressable
+              onPress={() => navigation.navigate('Kyc')}
+              style={[styles.alertBanner, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning }]}
+            >
+              <AppText style={styles.alertIcon}>⚠️</AppText>
+              <View style={styles.alertTextWrap}>
+                <AppText variant="labelSm" color={theme.colors.warning}>{t('kycPendingTitle')}</AppText>
+                <AppText variant="caption" color={theme.colors.mutedText} style={styles.alertSub}>
+                  {t('kycPendingMsg')}
+                </AppText>
+              </View>
+            </Pressable>
+          )}
+
+          {/* ── Browse Work Categories ─────────────────────────────── */}
+          <SectionHeader
+            title={t('browseCategories')}
+            subtitle={t('browseCategoriesSubtitle')}
+            actionLabel={t('seeAll')}
+            onAction={() => navigation.navigate('JobMarketplace')}
+            style={styles.sectionFirst}
+          />
+          <WorkerCategoryGrid
+            onCategoryPress={handleCategoryPress}
+            columns={3}
+            cellHeight={100}
+          />
+
+          {/* Quick Actions */}
+          <SectionHeader title="Quick Actions" style={styles.sectionGap} />
+          <QuickActionsRow>
+            <QuickActionCard
+              icon="🔍"
+              title="Browse Jobs"
+              subtitle="Find near you"
+              color={theme.colors.primary}
+              onPress={() => navigation.navigate('JobMarketplace')}
+            />
+            <QuickActionCard
+              icon="📅"
+              title="Attendance"
+              subtitle="Mark today"
+              color={theme.colors.success}
+              onPress={() => navigation.navigate('Attendance' as never)}
+            />
+          </QuickActionsRow>
+
+          {/* Explore CTA */}
+          <View style={[styles.exploreCta, { backgroundColor: theme.colors.primaryLight }]}>
+            <AppText variant="heading" color={theme.colors.primary} style={styles.exploreTitle}>
+              Find Work Near You
+            </AppText>
+            <AppText variant="caption" color={theme.colors.mutedText} style={styles.exploreSub}>
+              Browse hundreds of open requirements and apply instantly.
+            </AppText>
+            <AppButton
+              title="Browse All Jobs →"
+              onPress={() => navigation.navigate('JobMarketplace')}
+              size="md"
+            />
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -157,15 +175,30 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 40 },
 
-  walletStrip: {
+  // ── Hero wallet (inside GradientHeader children) ─────────────────────────
+  heroWallet: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 16,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  walletLeft: { gap: 2 },
-  walletAmt: { fontSize: 20, lineHeight: 26 },
+  heroWalletLeft: { gap: 3 },
+  heroWalletLabel: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  heroWalletAmt: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+  },
   withdrawBtn: { borderColor: 'rgba(255,255,255,0.5)' },
 
   body: { padding: 16, gap: 0 },
@@ -177,49 +210,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   alertIcon: { fontSize: 18, lineHeight: 22 },
   alertTextWrap: { flex: 1, gap: 3 },
   alertSub: { lineHeight: 16 },
 
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 4,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 14,
-    gap: 4,
-    borderWidth: 1,
-  },
-  statIcon: { fontSize: 22, lineHeight: 26 },
-  statValue: { fontSize: 22, lineHeight: 28 },
-
+  sectionFirst: { marginTop: 4, marginBottom: 10 },
   sectionGap: { marginTop: 20 },
-
-  appCard: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    marginBottom: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  appStatusBar: {
-    width: 4,
-  },
-  appCardBody: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 10,
-  },
-  appInfo: { flex: 1, gap: 4 },
-  appDate: { lineHeight: 15 },
 
   exploreCta: {
     borderRadius: 18,

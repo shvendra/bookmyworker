@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Modal,
   RefreshControl,
@@ -12,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { walletApi } from '../../../core/api/endpoints/walletApi';
 import type { RawPaymentTransaction } from '../../../core/api/endpoints/walletApi';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -48,23 +50,27 @@ const statusColor = (s?: string): string => {
 interface InvoiceProps {
   txn: RawPaymentTransaction | null;
   userName: string;
+  companyAddress: string;
+  supportEmail:   string;
+  gstNumber:      string;
   onClose: () => void;
 }
 
-const InvoiceModal = ({ txn, userName, onClose }: InvoiceProps): React.JSX.Element | null => {
+const InvoiceModal = ({ txn, userName, companyAddress, supportEmail, gstNumber, onClose }: InvoiceProps): React.JSX.Element | null => {
+  const insets = useSafeAreaInsets();
   if (!txn) return null;
   const baseAmt = (txn.amount ?? 0) / 1.18;
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <ScrollView style={styles.invoiceScroll} contentContainerStyle={styles.invoiceContent}>
+      <ScrollView style={styles.invoiceScroll} contentContainerStyle={[styles.invoiceContent, { paddingTop: insets.top + 16 }]}>
         {/* Header */}
         <View style={styles.invoiceHeader}>
           <AppText variant="title" color="#1976D2" style={styles.invoiceBrand}>BookMyWorker</AppText>
           <AppText variant="caption" color="#64748B" style={styles.invoiceAddr}>
-            Khasara No 34/1/33, Rewa Semariya Road, Karahiya, Rewa, MP - 486450
+            {companyAddress}
           </AppText>
-          <AppText variant="caption" color="#64748B">support@bookmyworkers.com</AppText>
-          <AppText variant="caption" color="#1E293B" style={{ fontWeight: '700' }}>GSTIN: 23NBJPS3070R1ZQ</AppText>
+          <AppText variant="caption" color="#64748B">{supportEmail}</AppText>
+          <AppText variant="caption" color="#1E293B" style={{ fontWeight: '700' }}>GSTIN: {gstNumber}</AppText>
         </View>
 
         {/* Meta */}
@@ -121,6 +127,7 @@ const InvoiceModal = ({ txn, userName, onClose }: InvoiceProps): React.JSX.Eleme
 export const PayoutScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const { config } = useAppConfig();
   const queryClient = useQueryClient();
   const toast = useToast();
   const navigation = useNavigation();
@@ -225,7 +232,7 @@ export const PayoutScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Payout Summary" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -333,7 +340,14 @@ export const PayoutScreen = (): React.JSX.Element => {
       )}
 
       {/* Invoice Modal */}
-      <InvoiceModal txn={selectedTxn} userName={user?.fullName ?? ''} onClose={() => setSelectedTxn(null)} />
+      <InvoiceModal
+        txn={selectedTxn}
+        userName={user?.fullName ?? ''}
+        companyAddress={config.contact.companyAddress}
+        supportEmail={config.contact.supportEmail}
+        gstNumber={config.contact.gstNumber}
+        onClose={() => setSelectedTxn(null)}
+      />
 
       {/* Withdraw Confirm Alert */}
       {showWithdraw && (

@@ -139,7 +139,7 @@ export const WalletScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Wallet" />
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}

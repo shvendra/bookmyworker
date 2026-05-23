@@ -1,769 +1,381 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Linking,
+  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../core/api/client';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppTheme } from '../../../core/theme';
-import { agentApi } from '../../../core/api/endpoints/agentApi';
+import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
-import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
-import { useToast } from '../../../shared/state/toast/ToastContext';
 import { AppText } from '../../../shared/components/ui/AppText';
-import { AppButton } from '../../../shared/components/ui/AppButton';
-import { Badge } from '../../../shared/components/ui/Badge';
-import { Avatar } from '../../../shared/components/ui/Avatar';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
-import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { SkeletonCard } from '../../../shared/components/ui/Skeleton';
-import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
-import categoriesData from '../../../shared/data/categories.json';
+import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 
-interface CategoryEntry {
-  label: string;
-  value: string;
-  subcategories: Array<{ label: string; value: string }>;
-}
-
-const CATEGORIES = categoriesData as CategoryEntry[];
-
-
-const greet = (): string => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const getGreetKey = (): 'goodMorning' | 'goodAfternoon' | 'goodEvening' => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'goodMorning';
+  if (h < 17) return 'goodAfternoon';
+  return 'goodEvening';
 };
 
-const formatDate = (d?: string): string => {
-  if (!d) return '—';
-  try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); }
-  catch { return '—'; }
-};
+const VERIFIED_BADGE_SHOWN_KEY = 'verifiedBadgeShown_v1';
 
-// ── Open requirement card ─────────────────────────────────────────────────────
-interface ReqCardProps {
-  req: RawRequirement;
-  userId: string;
-  wage: string;
-  onWageChange: (v: string) => void;
-  onSubmit: () => void;
-  isPending: boolean;
+// ── Activity ──────────────────────────────────────────────────────────────────
+interface ActivityItem {
+  _id: string;
+  action: string;
+  entity: string;
+  description?: string;
+  createdAt: string;
 }
 
-const OpenReqCard = ({ req, userId, wage, onWageChange, onSubmit, isPending }: ReqCardProps): React.JSX.Element => {
+const timeAgo = (date: string): string => {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
+const ACTION_COLOR: Record<string, { bg: string; color: string; border: string; symbol: string }> = {
+  CREATE: { bg: '#dcfce7', color: '#16a34a', border: '#86efac', symbol: '+' },
+  UPDATE: { bg: '#dbeafe', color: '#2563eb', border: '#93c5fd', symbol: '✎' },
+  DELETE: { bg: '#fee2e2', color: '#dc2626', border: '#fca5a5', symbol: '×' },
+  VIEW:   { bg: '#f5f3ff', color: '#7c3aed', border: '#c4b5fd', symbol: '◉' },
+  LOGIN:  { bg: '#f0fdf4', color: '#16a34a', border: '#86efac', symbol: '→' },
+  LOGOUT: { bg: '#fff7ed', color: '#ea580c', border: '#fdba74', symbol: '←' },
+};
+
+const AgentActivityRow = ({ item, isLast }: { item: ActivityItem; isLast: boolean }): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-
-  const alreadyInterested = req.intrestedAgents?.some(
-    (a) => String(a.agentId) === String(userId),
-  ) ?? false;
-
-  const minWage = req.minBudgetPerWorker ?? 0;
-  const maxWage = req.maxBudgetPerWorker ?? 0;
-
+  const cfg = ACTION_COLOR[item.action] ?? ACTION_COLOR.UPDATE;
   return (
-    <View
-      style={[
-        styles.reqCard,
-        {
-          backgroundColor: theme.colors.card,
-          borderColor: isDark ? theme.colors.border : '#E2E8F4',
-        },
-        !isDark && theme.shadow.sm,
-      ]}
-    >
-      {/* Header row */}
-      <View style={styles.reqHeader}>
-        <View style={styles.reqHeaderLeft}>
-          <View style={[styles.reqCategoryBadge, { backgroundColor: theme.colors.primaryLight }]}>
-            <AppText style={[styles.reqCategoryText, { color: theme.colors.primary }]}>
-              {req.workType ?? '—'}
-            </AppText>
+    <View style={[agAct.row, isLast && { borderBottomWidth: 0 }]}>
+      <View style={[agAct.dot, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
+        <AppText style={[agAct.dotTxt, { color: cfg.color }]}>{cfg.symbol}</AppText>
+      </View>
+      <View style={agAct.body}>
+        <View style={agAct.topRow}>
+          <View style={[agAct.badge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
+            <AppText style={[agAct.badgeTxt, { color: cfg.color }]}>{item.action}</AppText>
           </View>
-          {req.subCategory ? (
-            <AppText variant="micro" color={theme.colors.mutedText}>{req.subCategory}</AppText>
-          ) : null}
+          <AppText style={[agAct.entity, { color: theme.colors.text }]}>{item.entity}</AppText>
         </View>
-        <Badge
-          label={req.status ?? 'Open'}
-          variant={req.status?.toLowerCase() === 'open' ? 'success' : 'warning'}
-          size="sm"
-        />
-      </View>
-
-      {/* ERN + Date */}
-      <View style={styles.reqMeta}>
-        {req.ERN_NUMBER ? (
-          <AppText variant="micro" color={theme.colors.primary} style={styles.reqErn}>
-            #{req.ERN_NUMBER}
-          </AppText>
-        ) : null}
-        <AppText variant="micro" color={theme.colors.mutedText}>
-          📅 {formatDate(req.workerNeedDate)}
-        </AppText>
-      </View>
-
-      {/* Info grid */}
-      <View style={styles.reqInfoGrid}>
-        <View style={styles.reqInfoItem}>
-          <AppText style={styles.reqInfoIcon}>📍</AppText>
-          <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={1}>
-            {req.district ?? '—'}{req.state ? `, ${req.state}` : ''}
-          </AppText>
-        </View>
-        <View style={styles.reqInfoItem}>
-          <AppText style={styles.reqInfoIcon}>👷</AppText>
-          <AppText variant="micro" color={theme.colors.mutedText}>
-            {(req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0)} workers needed
-          </AppText>
-        </View>
-        <View style={styles.reqInfoItem}>
-          <AppText style={styles.reqInfoIcon}>💰</AppText>
-          <AppText variant="micro" color={theme.colors.success} style={{ fontWeight: '700' }}>
-            ₹{minWage}–{maxWage}/day
-          </AppText>
-        </View>
-      </View>
-
-      {/* Express interest row */}
-      <View style={[styles.interestRow, { borderTopColor: theme.colors.divider }]}>
-        {alreadyInterested ? (
-          <View style={[styles.interestDoneWrap, { backgroundColor: theme.colors.successLight }]}>
-            <AppText variant="caption" color={theme.colors.success} style={{ fontWeight: '700' }}>
-              ✓ Interest Shown
-            </AppText>
-          </View>
-        ) : (
-          <>
-            <TextInput
-              style={[
-                styles.wageInput,
-                {
-                  backgroundColor: theme.colors.surface1,
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                },
-              ]}
-              value={wage}
-              onChangeText={onWageChange}
-              placeholder={`Quote per head (min ₹${minWage})`}
-              placeholderTextColor={theme.colors.mutedText}
-              keyboardType="number-pad"
-              returnKeyType="done"
-            />
-            <AppButton
-              title={isPending ? '…' : 'Show Interest'}
-              onPress={onSubmit}
-              disabled={!wage || isPending}
-              size="sm"
-              style={styles.interestBtn}
-            />
-          </>
-        )}
+        <AppText style={agAct.desc} numberOfLines={1}>{item.description ?? item.action}</AppText>
+        <AppText style={agAct.time}>{timeAgo(item.createdAt)}</AppText>
       </View>
     </View>
   );
 };
 
-// ── Assigned requirement card ─────────────────────────────────────────────────
-interface AssignedCardProps {
-  req: RawRequirement;
-  onPress: () => void;
-  onAccept: () => void;
-  onReject: () => void;
-  accepting: boolean;
-}
-
-const AssignedCard = ({ req, onPress, onAccept, onReject, accepting }: AssignedCardProps): React.JSX.Element => {
-  const { theme } = useAppTheme();
-
-  // isAgentAccepted comes as string "Yes"/"No" from backend
-  const isAccepted = (req.isAgentAccepted as unknown as string) === 'Yes';
-  const totalWorkers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
-  const wage = req.finalAgentRequiredWage ?? req.maxBudgetPerWorker ?? 0;
-  const startDate = req.workerNeedDate
-    ? new Date(req.workerNeedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '—';
-
-  const PERKS: Array<{ key: keyof RawRequirement; label: string }> = [
-    { key: 'accommodationAvailable', label: '🏠 Stay' },
-    { key: 'foodAvailable', label: '🍱 Food' },
-    { key: 'transportProvided', label: '🚌 Transport' },
-    { key: 'weeklyOff', label: '📅 Weekly Off' },
-    { key: 'overtimeAvailable', label: '⏰ Overtime' },
-    { key: 'bonus', label: '💰 Bonus' },
-    { key: 'incentive', label: '🎯 Incentive' },
-  ];
-  const activePerks = PERKS.filter((p) => req[p.key] === true).map((p) => p.label);
-
-  return (
-    <View style={styles.activeCard}>
-      {/* Dark gradient header */}
-      <View style={styles.activeCardHeader}>
-        <View style={styles.activeCardErnRow}>
-          <View style={styles.ernBadge}>
-            <AppText style={styles.ernBadgeText}>ERN #{req.ERN_NUMBER ?? '—'}</AppText>
-          </View>
-          <View style={[styles.statusPill, { backgroundColor: isAccepted ? '#22c55e' : '#f59e0b' }]}>
-            <AppText style={styles.statusPillText}>{isAccepted ? '✓ Accepted' : 'Pending'}</AppText>
-          </View>
-        </View>
-
-        <AppText style={styles.activeCardTitle} numberOfLines={1}>
-          {req.workType ?? '—'}{req.subCategory ? ` · ${req.subCategory}` : ''}
-          {req.remarks ? ` · ${req.remarks}` : ''}
-        </AppText>
-
-        <View style={styles.activeCardMeta}>
-          <AppText style={styles.activeCardMetaText}>
-            📍 {req.district ?? '—'}{req.tehsil ? `, ${req.tehsil}` : ''}{req.workLocation ? ` · ${req.workLocation}` : ''}
-          </AppText>
-        </View>
-      </View>
-
-      {/* Info grid */}
-      <View style={styles.activeCardBody}>
-        <View style={styles.activeInfoGrid}>
-          <View style={styles.activeInfoCell}>
-            <AppText style={styles.activeInfoLabel}>Workers</AppText>
-            <AppText style={styles.activeInfoValue}>👷 {totalWorkers}</AppText>
-          </View>
-          <View style={styles.activeInfoDivider} />
-          <View style={styles.activeInfoCell}>
-            <AppText style={styles.activeInfoLabel}>Per Head</AppText>
-            <AppText style={[styles.activeInfoValue, { color: '#22c55e' }]}>₹{Math.round(wage)}/-</AppText>
-          </View>
-          <View style={styles.activeInfoDivider} />
-          <View style={styles.activeInfoCell}>
-            <AppText style={styles.activeInfoLabel}>Start Date</AppText>
-            <AppText style={styles.activeInfoValue}>{startDate}</AppText>
-          </View>
-        </View>
-
-        {/* Employer row */}
-        <View style={styles.activeEmployerRow}>
-          <View style={{ flex: 1 }}>
-            <AppText style={styles.activeInfoLabel}>Employer</AppText>
-            <AppText style={styles.activeEmployerName} numberOfLines={1}>
-              {req.employerName ?? '—'}
-            </AppText>
-          </View>
-          {req.employerPhone ? (
-            <TouchableOpacity
-              onPress={() => void Linking.openURL(`tel:${req.employerPhone}`)}
-              style={styles.callBtn}
-              activeOpacity={0.8}
-            >
-              <AppText style={styles.callBtnText}>📞 Call</AppText>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {/* Perks */}
-        {activePerks.length > 0 && (
-          <View style={styles.perksRow}>
-            {activePerks.map((p) => (
-              <View key={p} style={styles.perkChip}>
-                <AppText style={styles.perkChipText}>{p}</AppText>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Action buttons */}
-        <View style={styles.activeCardActions}>
-          {!isAccepted ? (
-            <>
-              <TouchableOpacity
-                onPress={onReject}
-                disabled={accepting}
-                style={[styles.actionBtn, styles.rejectBtn]}
-                activeOpacity={0.8}
-              >
-                <AppText style={[styles.actionBtnText, { color: '#ef4444' }]}>✕ Reject</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={onAccept}
-                disabled={accepting}
-                style={[styles.actionBtn, styles.acceptBtn]}
-                activeOpacity={0.8}
-              >
-                <AppText style={[styles.actionBtnText, { color: '#fff' }]}>
-                  {accepting ? 'Processing…' : '✓ Accept'}
-                </AppText>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <TouchableOpacity
-              onPress={onPress}
-              style={[styles.actionBtn, styles.viewBtn]}
-              activeOpacity={0.8}
-            >
-              <AppText style={[styles.actionBtnText, { color: '#fff' }]}>View Details →</AppText>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// ── Filter chip row ───────────────────────────────────────────────────────────
-interface FilterChipProps {
+// ── Stat Widget Card ──────────────────────────────────────────────────────────
+interface StatWidgetProps {
+  emoji: string;
   label: string;
-  active: boolean;
+  sub: string | null;
+  gradient: readonly [string, string];
   onPress: () => void;
+  isLoading?: boolean;
 }
 
-const FilterChip = ({ label, active, onPress }: FilterChipProps): React.JSX.Element => {
-  const { theme } = useAppTheme();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.75}
-      style={[
-        styles.filterChip,
-        {
-          backgroundColor: active ? theme.colors.primary : theme.colors.card,
-          borderColor: active ? theme.colors.primary : theme.colors.border,
-        },
-      ]}
-    >
-      <AppText
-        variant="caption"
-        color={active ? '#FFF' : theme.colors.text}
-        style={styles.filterChipText}
-      >
-        {label}
-      </AppText>
-    </TouchableOpacity>
-  );
-};
+const StatWidget = ({ emoji, label, sub, gradient, onPress, isLoading }: StatWidgetProps): React.JSX.Element => (
+  <Pressable
+    onPress={onPress}
+    style={({ pressed }: { pressed: boolean }) => [
+      styles.statWidget,
+      { backgroundColor: gradient[0], opacity: pressed ? 0.88 : 1 },
+    ]}
+    android_ripple={{ color: 'rgba(255,255,255,0.18)' }}
+  >
+    {/* Gradient layer */}
+    <View style={[styles.statWidgetGrad, { backgroundColor: gradient[1] }]} pointerEvents="none" />
+    <View style={styles.statWidgetInner}>
+      <AppText style={styles.statEmoji}>{emoji}</AppText>
+      <AppText style={styles.statLabel}>{label}</AppText>
+      {isLoading ? (
+        <View style={styles.statSubSkeleton} />
+      ) : (
+        sub !== null && <AppText style={styles.statSub} numberOfLines={1}>{sub}</AppText>
+      )}
+    </View>
+  </Pressable>
+);
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export const AgentDashboardScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const { t } = useTranslation();
+  const { pricing } = usePricingConfig();
   const user = state.session?.user;
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
-  const toast = useToast();
-  const qc = useQueryClient();
 
   const isAgent = user?.role === 'agent';
-
-  // Per-requirement wage input state
-  const [wageMap, setWageMap] = useState<Record<string, string>>({});
-
-  // Filters
-  const [filterWorkType, setFilterWorkType] = useState<string>('');
-  const [filterSubCat, setFilterSubCat] = useState<string>('');
-  const [filterState, setFilterState] = useState<string>('');
-  const [filterCity, setFilterCity] = useState<string>('');
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
-
-  const subCategories = useMemo(() => {
-    if (!filterWorkType) return [];
-    const cat = CATEGORIES.find((c) => c.label === filterWorkType);
-    return cat?.subcategories ?? [];
-  }, [filterWorkType]);
-
-  const hasActiveFilter = Boolean(filterWorkType || filterSubCat || filterState.trim() || filterCity.trim());
-
-  const clearFilters = (): void => {
-    setFilterWorkType('');
-    setFilterSubCat('');
-    setFilterState('');
-    setFilterCity('');
-  };
-
-  // ── Queries ─────────────────────────────────────────────────────────────────
-  const [statsQuery, leadsQuery, reqsQuery] = useQueries({
-    queries: [
-      {
-        queryKey: ['agent-stats'],
-        queryFn: agentApi.getStats,
-        staleTime: 2 * 60 * 1000,
-      },
-      {
-        queryKey: ['agent-leads-recent'],
-        queryFn: () => agentApi.getMyLeads({ page: 1 }),
-        staleTime: 60 * 1000,
-        enabled: isAgent,
-      },
-      {
-        // No district/serviceArea sent — backend uses req.user for priority sorting
-        // (district first → same state → all India). Explicit user filters override.
-        queryKey: ['agent-reqs', user?.id, filterWorkType, filterSubCat, filterState, filterCity],
-        queryFn: () =>
-          requirementsApi.listForRole({
-            role: isAgent ? 'agent' : 'selfworker',
-            userId: user?.id,
-            // Intentionally not passing district/serviceArea for the dashboard.
-            // The backend derives those from req.user and priority-sorts results.
-            workType: filterWorkType || undefined,
-            subCategory: filterSubCat || undefined,
-            state: filterState.trim() || undefined,
-            district: filterCity.trim() || undefined,
-            page: 1,
-            limit: 30,
-          }),
-        staleTime: 60 * 1000,
-      },
-    ],
-  });
-
-  const isRefreshing = statsQuery.isFetching || reqsQuery.isFetching;
-
-  const handleRefresh = (): void => {
-    void statsQuery.refetch();
-    void leadsQuery.refetch();
-    void reqsQuery.refetch();
-  };
-
-  // ── Accept / Reject assignment mutation ────────────────────────────────────
-  const [acceptingId, setAcceptingId] = useState<string | null>(null);
-
-  const acceptReject = useMutation({
-    mutationFn: ({ ern, decision }: { ern: string; decision: 'Yes' | 'No' }) =>
-      requirementsApi.unassignOrAccept({ agentId: userId, ern, isAgentAccepted: decision }),
-    onMutate: ({ ern }) => setAcceptingId(ern),
-    onSettled: () => setAcceptingId(null),
-    onSuccess: (_, vars) => {
-      toast.success(vars.decision === 'Yes' ? 'Assignment accepted!' : 'Assignment rejected.');
-      void qc.invalidateQueries({ queryKey: ['agent-reqs'] });
-    },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Action failed. Please try again.');
-    },
-  });
-
-  // ── Express interest mutation ────────────────────────────────────────────────
-  const expressInterest = useMutation({
-    mutationFn: ({ id, wage }: { id: string; wage: number }) =>
-      requirementsApi.expressInterestWithWage(id, wage),
-    onSuccess: (_, vars) => {
-      toast.success('Interest submitted! The employer has been notified.', 'Interest Shown');
-      setWageMap((prev) => {
-        const next = { ...prev };
-        delete next[vars.id];
-        return next;
-      });
-      void qc.invalidateQueries({ queryKey: ['agent-reqs'] });
-    },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to submit interest. Please try again.');
-    },
-  });
-
-  const handleShowInterest = (req: RawRequirement): void => {
-    const wage = parseInt(wageMap[req._id] ?? '0', 10);
-    if (!wage || isNaN(wage)) {
-      toast.warning('Please enter your per-head wage quote first.');
-      return;
-    }
-    const min = req.minBudgetPerWorker ?? 0;
-    if (wage < min) {
-      toast.warning(`Wage must be at least ₹${min}.`);
-      return;
-    }
-    expressInterest.mutate({ id: req._id, wage });
-  };
-
+  // Both 'SelfWorker' and 'Worker' backend roles map to 'worker' in the frontend — same dashboard
   const userId = user?.id ?? '';
 
-  const allReqs: RawRequirement[] = reqsQuery.data?.requirements ?? [];
+  // Verified badge popup — show once per install for unverified agents/selfworkers
+  const [badgeModalVisible, setBadgeModalVisible] = useState(false);
 
-  // Mirror CRM filter: exclude assigned reqs + this agent's own + Contract_Based + Office_Staff
-  const openReqs = allReqs.filter((r) =>
-    (r.status ?? '').toLowerCase() !== 'assigned' &&
-    String(r.assignedAgentId) !== String(userId) &&
-    r.req_type !== 'Contract_Based' &&
-    r.req_type !== 'Office_Staff',
-  );
+  useEffect(() => {
+    if (!userId || user?.role !== 'agent' || user?.veryfiedBage) return;
+    void AsyncStorage.getItem(VERIFIED_BADGE_SHOWN_KEY).then((shown) => {
+      if (!shown) {
+        setBadgeModalVisible(true);
+        void AsyncStorage.setItem(VERIFIED_BADGE_SHOWN_KEY, '1');
+      }
+    });
+  }, [userId, user?.role, user?.veryfiedBage]);
 
-  // Active work: requirements assigned to THIS agent
-  const assignedReqs = allReqs.filter(
-    (r) =>
-      (r.status ?? '').toLowerCase() === 'assigned' &&
-      String(r.assignedAgentId) === String(userId),
-  );
+  // ── Queries ─────────────────────────────────────────────────────────────────
+  // Single query: backend returns both totalCount (all reqs) and myInterestsCount in one response
+  const reqsQuery = useQuery({
+    queryKey: ['agent-reqs-dash', userId],
+    queryFn: () =>
+      requirementsApi.listForRole({
+        role: isAgent ? 'agent' : 'selfworker',
+        userId,
+        page: 1,
+        limit: 1,
+      }),
+    staleTime: 60 * 1000,
+    enabled: !!userId,
+  });
 
-  const stats = statsQuery.data;
-  const recentLeads = (leadsQuery.data?.leads ?? []).slice(0, 5);
+  const activityQuery = useQuery({
+    queryKey: ['agent-activity-dash', userId],
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; activities?: ActivityItem[] }>('/api/v1/activity/my', { params: { limit: 5 } });
+      return res.data.activities ?? [];
+    },
+    staleTime: 60 * 1000,
+    enabled: !!userId,
+  });
+
+  const isRefreshing = reqsQuery.isFetching || activityQuery.isFetching;
+
+  const handleRefresh = (): void => {
+    void reqsQuery.refetch();
+    void activityQuery.refetch();
+  };
+
+  const totalCount = reqsQuery.data?.pagination?.totalCount ?? 0;
+  const myInterestsCount = reqsQuery.data?.myInterestsCount ?? 0;
+
   const kycPending = user?.kycStatus === 'pending' || user?.kycStatus === 'rejected';
-  const myJobsCount = stats?.totalLeads ?? 0;
-  const needsWorkers = isAgent && myJobsCount < 10;
+  const greetKey = getGreetKey();
 
-  const openCount = reqsQuery.data?.pagination?.totalCount ?? openReqs.length;
+  // ── Stat widgets config ──────────────────────────────────────────────────────
+  const statWidgets: StatWidgetProps[] = [
+    {
+      emoji: '📋',
+      label: t('allRequirements'),
+      sub: reqsQuery.isLoading ? null : `${totalCount} ${t('openReqs')}`,
+      gradient: ['#1E3A8A', '#2563EB'] as const,
+      isLoading: reqsQuery.isLoading,
+      onPress: () => navigation.navigate('JobMarketplace'),
+    },
+    {
+      emoji: '❤️',
+      label: t('myInterests'),
+      sub: reqsQuery.isLoading ? null : `${myInterestsCount} ${t('applied')}`,
+      gradient: ['#7C2D12', '#EA580C'] as const,
+      isLoading: reqsQuery.isLoading,
+      onPress: () => navigation.navigate('JobMarketplace', { myInterests: true }),
+    },
+    ...(!isAgent ? [
+      {
+        emoji: '➕',
+        label: t('registerWorker'),
+        sub: t('findWorkNearYou'),
+        gradient: ['#064E3B', '#059669'] as const,
+        onPress: () => navigation.navigate('AddWorker'),
+      } as StatWidgetProps,
+      {
+        emoji: '🔍',
+        label: 'Browse Jobs',
+        sub: 'Find work near you',
+        gradient: ['#1E3A8A', '#2563EB'] as const,
+        onPress: () => navigation.navigate('JobMarketplace'),
+      } as StatWidgetProps,
+    ] : []),
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+
+      {/* ── Verified Badge Popup ────────────────────────────────── */}
+      <VerifiedBadgeModal
+        visible={badgeModalVisible}
+        onDismiss={() => setBadgeModalVisible(false)}
+        userRole={user?.role ?? ''}
+        userId={userId}
+        userName={user?.fullName ?? ''}
+        userEmail={user?.email ?? ''}
+        userPhone={user?.phone ?? ''}
+      />
+
+      {/* ── Hero Header ─────────────────────────────────────────── */}
+      <GradientHeader
+        subtitle={t(greetKey)}
         title={user?.fullName ?? (isAgent ? 'Agent' : 'Worker')}
+        caption={kycPending ? `⚠️ ${t('verificationPending')}` : `✓ Verified`}
+        avatarName={user?.fullName ?? 'U'}
+        avatarUri={user?.profileImage}
+        onAvatarPress={() => navigation.navigate('Profile')}
         rightIcon="🔔"
         onRightPress={() => navigation.navigate('Notifications')}
       />
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
-        />
-      }
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Commission strip */}
-      <View style={[styles.commStrip, { backgroundColor: '#1338B0' }]}>
-        <View style={styles.commItem}>
-          <AppText variant="micro" color="rgba(255,255,255,0.65)">
-            {isAgent ? 'Pending Commission' : 'Pending Earnings'}
-          </AppText>
-          <AppText variant="numeric" color="#FFFFFF" style={styles.commAmt}>
-            ₹{(stats?.pendingCommission ?? 0).toLocaleString('en-IN')}
-          </AppText>
-        </View>
-        <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-        <View style={styles.commItem}>
-          <AppText variant="micro" color="rgba(255,255,255,0.65)">Total Earned</AppText>
-          <AppText variant="numeric" color="#4ADE80" style={styles.commAmt}>
-            ₹{(stats?.totalCommission ?? 0).toLocaleString('en-IN')}
-          </AppText>
-        </View>
-        <View style={[styles.commDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-        <View style={styles.commItem}>
-          <AppText variant="micro" color="rgba(255,255,255,0.65)">Fulfilled</AppText>
-          <AppText variant="numeric" color="#FCD34D" style={styles.commAmt}>
-            {stats?.fulfilledRequirements ?? 0}
-          </AppText>
-        </View>
-      </View>
 
-      <View style={styles.body}>
-
-        {/* ── Alerts ──────────────────────────────────────────────────── */}
-        {kycPending && (
-          <Pressable
-            onPress={() => navigation.navigate('Kyc')}
-            style={[styles.alertBanner, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning }]}
-          >
-            <AppText style={styles.alertIcon}>⚠️</AppText>
-            <View style={styles.alertText}>
-              <AppText variant="labelSm" color={theme.colors.warning}>KYC Pending</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText}>
-                Complete KYC to unlock full {isAgent ? 'commission' : 'payment'} payouts. Tap to complete.
-              </AppText>
-            </View>
-          </Pressable>
-        )}
-        {needsWorkers && (
-          <Pressable
-            onPress={() => navigation.navigate('AddWorker')}
-            style={[styles.alertBanner, { backgroundColor: '#EEF2FF', borderColor: '#6366F1' }]}
-          >
-            <AppText style={styles.alertIcon}>💡</AppText>
-            <View style={styles.alertText}>
-              <AppText variant="labelSm" color="#6366F1">
-                Add more workers ({myJobsCount}/10)
-              </AppText>
-              <AppText variant="caption" color={theme.colors.mutedText}>
-                Register 10+ workers to unlock premium job matches. Tap to add.
-              </AppText>
-            </View>
-          </Pressable>
-        )}
-
-
-        {/* ── My Active Work ──────────────────────────────────────── */}
-        <SectionHeader
-          title="My Active Work"
-          subtitle={assignedReqs.length > 0 ? `${assignedReqs.length} assignment${assignedReqs.length > 1 ? 's' : ''}` : 'Requirements assigned to you'}
-          style={styles.section}
-        />
-        {reqsQuery.isLoading ? (
-          <SkeletonCard />
-        ) : assignedReqs.length === 0 ? (
-          <EmptyState
-            compact
-            icon="📋"
-            title="No active assignments"
-            message="Express interest in requirements below. Accepted assignments will appear here."
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
           />
-        ) : (
-          assignedReqs.map((req) => (
-            <AssignedCard
-              key={req._id}
-              req={req}
-              onPress={() => navigation.navigate('RequirementDetail', { requirementId: req._id })}
-              onAccept={() => acceptReject.mutate({ ern: String(req.ERN_NUMBER ?? ''), decision: 'Yes' })}
-              onReject={() => acceptReject.mutate({ ern: String(req.ERN_NUMBER ?? ''), decision: 'No' })}
-              accepting={acceptingId === String(req.ERN_NUMBER ?? '')}
-            />
-          ))
-        )}
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.body}>
 
-
-        {/* ── Available Requirements ────────────────────────────────── */}
-        <SectionHeader
-          title="Available Requirements"
-          subtitle={hasActiveFilter ? `Filtered · ${openCount} results` : `${openCount} near you · India-wide`}
-          actionLabel="All Jobs"
-          onAction={() => navigation.navigate('JobMarketplace')}
-          style={styles.section}
-        />
-
-        {/* Category grid — tap to filter requirements by work type */}
-        <WorkerCategoryGrid
-          activeCategory={filterWorkType || undefined}
-          onCategoryPress={(cat: WorkCategory) => {
-            const next = filterWorkType === cat.label ? '' : cat.label;
-            setFilterWorkType(next);
-            setFilterSubCat('');
-          }}
-        />
-
-        {/* Sub-category chips when a category is selected */}
-        {subCategories.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterBarContent}
-            style={[styles.filterBar, { marginTop: 4 }]}
-          >
-            <FilterChip
-              label="All Sub"
-              active={!filterSubCat}
-              onPress={() => setFilterSubCat('')}
-            />
-            {subCategories.map((sc) => (
-              <FilterChip
-                key={sc.value}
-                label={sc.label}
-                active={filterSubCat === sc.label}
-                onPress={() => setFilterSubCat(filterSubCat === sc.label ? '' : sc.label)}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* State / City filter row */}
-        <View style={styles.moreFilterRow}>
-          <TouchableOpacity
-            onPress={() => setShowMoreFilters((v) => !v)}
-            style={[styles.moreFilterBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
-          >
-            <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-              {showMoreFilters ? '▲ Less' : '▼ State & City'}
-            </AppText>
-          </TouchableOpacity>
-          {hasActiveFilter && (
-            <TouchableOpacity
-              onPress={clearFilters}
-              style={[styles.clearBtn, { borderColor: '#EF4444' }]}
+          {/* ── KYC alert ───────────────────────────────────────── */}
+          {kycPending && (
+            <Pressable
+              onPress={() => navigation.navigate('Kyc')}
+              style={[styles.alertBanner, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning }]}
             >
-              <AppText variant="caption" color="#EF4444" style={{ fontWeight: '700' }}>✕ Clear</AppText>
-            </TouchableOpacity>
+              <AppText style={styles.alertIcon}>⚠️</AppText>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText variant="labelSm" color={theme.colors.warning}>{t('kycPendingTitle')}</AppText>
+                <AppText variant="caption" color={theme.colors.mutedText}>{t('kycPendingMsg')}</AppText>
+              </View>
+            </Pressable>
           )}
-        </View>
 
-        {showMoreFilters && (
-          <View style={[styles.textFilterRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <View style={styles.textFilterItem}>
-              <AppText variant="micro" color={theme.colors.mutedText} style={styles.textFilterLabel}>State</AppText>
-              <TextInput
-                value={filterState}
-                onChangeText={(v) => setFilterState(v)}
-                placeholder="e.g. Maharashtra"
-                placeholderTextColor={theme.colors.mutedText}
-                style={[styles.textFilterInput, { color: theme.colors.text, borderColor: theme.colors.border }]}
-                returnKeyType="done"
-                autoCapitalize="words"
-              />
-            </View>
-            <View style={[styles.textFilterDivider, { backgroundColor: theme.colors.border }]} />
-            <View style={styles.textFilterItem}>
-              <AppText variant="micro" color={theme.colors.mutedText} style={styles.textFilterLabel}>City / District</AppText>
-              <TextInput
-                value={filterCity}
-                onChangeText={(v) => setFilterCity(v)}
-                placeholder="e.g. Pune"
-                placeholderTextColor={theme.colors.mutedText}
-                style={[styles.textFilterInput, { color: theme.colors.text, borderColor: theme.colors.border }]}
-                returnKeyType="done"
-                autoCapitalize="words"
-              />
-            </View>
+          {/* ── Verified badge upsell (agent only, not yet verified) ── */}
+          {isAgent && !user?.veryfiedBage && (
+            <Pressable
+              onPress={() => setBadgeModalVisible(true)}
+              style={styles.verifyBanner}
+            >
+              <View style={styles.verifyBannerLeft}>
+                <AppText style={styles.verifyBannerIcon}>🏆</AppText>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText variant="labelSm" color="#15803D">Become a Verified Agent</AppText>
+                  <AppText variant="caption" color={theme.colors.mutedText}>Just ₹{pricing.verifiedBadge.agent} · Boost your earnings & visibility</AppText>
+                </View>
+              </View>
+              <AppText style={styles.verifyBannerArrow}>→</AppText>
+            </Pressable>
+          )}
+
+          {/* ── 4 Stat Widgets (2×2 grid) ───────────────────────── */}
+          <View style={styles.widgetGrid}>
+            {statWidgets.map((w, i) => (
+              <StatWidget key={i} {...w} />
+            ))}
           </View>
-        )}
 
-        {/* Requirements list */}
-        {reqsQuery.isLoading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : openReqs.length === 0 ? (
-          <EmptyState
-            compact
-            icon="📭"
-            title={hasActiveFilter ? 'No matching requirements' : 'No requirements near you'}
-            message={
-              hasActiveFilter
-                ? 'Try clearing some filters or search all jobs.'
-                : 'No open requirements in your area yet. Requirements from across India will appear here when available.'
-            }
-            action={
-              hasActiveFilter ? (
-                <AppButton title="Clear Filters" onPress={clearFilters} size="sm" variant="outline" />
-              ) : undefined
-            }
+          {/* ── Browse Work Categories ───────────────────────────── */}
+          <SectionHeader
+            title={t('browseCategories')}
+            subtitle={t('browseCategoriesSubtitle')}
+            style={styles.sectionGap}
           />
-        ) : (
-          openReqs.slice(0, 10).map((req) => (
-            <OpenReqCard
-              key={req._id}
-              req={req}
-              userId={userId}
-              wage={wageMap[req._id] ?? ''}
-              onWageChange={(v) => setWageMap((prev) => ({ ...prev, [req._id]: v }))}
-              onSubmit={() => handleShowInterest(req)}
-              isPending={expressInterest.isPending}
+          {reqsQuery.isLoading ? (
+            <SkeletonCard />
+          ) : (
+            <WorkerCategoryGrid
+              onCategoryPress={(cat) => navigation.navigate('JobMarketplace', { workType: cat.label })}
+              columns={3}
+              cellHeight={100}
             />
-          ))
-        )}
+          )}
 
-        {openReqs.length > 10 && (
-          <AppButton
-            title={`See all ${openCount} requirements`}
-            onPress={() => navigation.navigate('JobMarketplace')}
-            variant="outline"
-            size="md"
-            fullWidth
-            style={styles.seeAllBtn}
-          />
-        )}
+          {/* ── Recent Activity ──────────────────────────────────── */}
+          <View style={[styles.actCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.actHeader}>
+              <AppText style={[styles.actTitle, { color: theme.colors.text }]}>Recent Activity</AppText>
+              <TouchableOpacity onPress={() => navigation.navigate('MyActivity')} activeOpacity={0.7}>
+                <AppText style={styles.actViewAll}>View All  ›</AppText>
+              </TouchableOpacity>
+            </View>
+            {activityQuery.isLoading ? (
+              <View style={styles.actLoadWrap}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              </View>
+            ) : (activityQuery.data?.length ?? 0) === 0 ? (
+              <View style={styles.actEmpty}>
+                <AppText style={styles.actEmptyIcon}>📋</AppText>
+                <AppText style={styles.actEmptyTxt}>No activity recorded yet.</AppText>
+              </View>
+            ) : (
+              <>
+                {(activityQuery.data ?? []).map((item, i) => (
+                  <AgentActivityRow
+                    key={item._id}
+                    item={item}
+                    isLast={i === (activityQuery.data!.length - 1)}
+                  />
+                ))}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('MyActivity')}
+                  style={styles.actFooter}
+                  activeOpacity={0.7}
+                >
+                  <AppText style={styles.actFooterTxt}>See full activity log  →</AppText>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
-      </View>
-    </ScrollView>
+          {/* ── Quick links row ──────────────────────────────────── */}
+          <View style={styles.quickRow}>
+            <Pressable
+              onPress={() => navigation.navigate('JobMarketplace')}
+              style={[styles.quickBtn, { backgroundColor: theme.colors.primaryLight }]}
+            >
+              <AppText style={[styles.quickBtnText, { color: theme.colors.primary }]}>
+                📋 {t('allRequirements')}
+              </AppText>
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate('JobMarketplace', { myInterests: true })}
+              style={[styles.quickBtn, { backgroundColor: '#FEF3F2', borderColor: '#FCA5A5' }]}
+            >
+              <AppText style={[styles.quickBtnText, { color: '#DC2626' }]}>
+                ❤️ {t('myInterests')}
+              </AppText>
+            </Pressable>
+          </View>
+
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -771,255 +383,86 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 40 },
-
-  commStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  commItem: { flex: 1, alignItems: 'center', gap: 2 },
-  commDivider: { width: 1, height: 32, marginHorizontal: 8 },
-  commAmt: { fontSize: 16, lineHeight: 22 },
-
   body: { padding: 16 },
 
+  // ── Alerts ────────────────────────────────────────────────────────────────
   alertBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    marginBottom: 12,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    borderRadius: 14, padding: 14, borderWidth: 1, marginBottom: 12,
   },
   alertIcon: { fontSize: 18, lineHeight: 22 },
-  alertText: { flex: 1, gap: 3 },
 
-  sectionFirst: { marginBottom: 12 },
-  section: { marginTop: 20, marginBottom: 0 },
+  verifyBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4', borderRadius: 14, borderWidth: 1, borderColor: '#86EFAC',
+    padding: 14, marginBottom: 16, gap: 10,
+  },
+  verifyBannerLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 },
+  verifyBannerIcon: { fontSize: 20, lineHeight: 24 },
+  verifyBannerArrow: { fontSize: 18, color: '#15803D', fontWeight: '700' },
 
-  statsGrid: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 14,
-    gap: 4,
-    borderWidth: 1,
-  },
-  statIcon: { fontSize: 22, lineHeight: 26 },
-  statValue: { fontSize: 20, lineHeight: 26 },
-
-  // ── Filter bar ────────────────────────────────────────────────────────────
-  filterBar: { marginTop: 10 },
-  filterBarContent: { paddingHorizontal: 0, paddingVertical: 4, gap: 6, flexDirection: 'row' },
-  filterChip: {
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    height: 30,
-    justifyContent: 'center',
-  },
-  filterChipText: { fontWeight: '600', fontSize: 11 },
-
-  moreFilterRow: {
+  // ── 2×2 stat widget grid ──────────────────────────────────────────────────
+  widgetGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  moreFilterBtn: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  clearBtn: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  textFilterRow: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  textFilterItem: { flex: 1, padding: 10, gap: 4 },
-  textFilterDivider: { width: 1 },
-  textFilterLabel: { fontWeight: '600', marginBottom: 2 },
-  textFilterInput: {
-    fontSize: 13,
-    borderBottomWidth: 1,
-    paddingVertical: 4,
-    fontWeight: '500',
-  },
-
-  // ── Open requirement card ─────────────────────────────────────────────────
-  reqCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 10,
-    overflow: 'hidden',
-  },
-  reqHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    paddingBottom: 8,
-  },
-  reqHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  reqCategoryBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
-  reqCategoryText: { fontSize: 11, fontWeight: '700' },
-  reqMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingBottom: 6 },
-  reqErn: { fontWeight: '700' },
-  reqInfoGrid: { paddingHorizontal: 14, paddingBottom: 12, gap: 4 },
-  reqInfoItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  reqInfoIcon: { fontSize: 13, width: 18, lineHeight: 18 },
-  interestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  wageInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  interestBtn: { flexShrink: 0 },
-  interestDoneWrap: {
-    flex: 1,
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-  },
-
-  // ── Active work card (CRM-matching dark style) ────────────────────────────
-  activeCard: {
-    borderRadius: 20,
-    marginTop: 10,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.18)',
-  },
-  activeCardHeader: {
-    padding: 14,
-    paddingBottom: 12,
-    backgroundColor: '#0f172a',
-    gap: 6,
-  },
-  activeCardErnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  ernBadge: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  ernBadgeText: { color: '#aeeaff', fontSize: 11, fontWeight: '700' },
-  statusPill: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusPillText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  activeCardTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  activeCardMeta: { marginTop: 2 },
-  activeCardMetaText: { color: 'rgba(255,255,255,0.72)', fontSize: 11, lineHeight: 16 },
-  activeCardBody: {
-    backgroundColor: '#ffffff',
-    padding: 14,
-    gap: 12,
-  },
-  activeInfoGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  activeInfoCell: { flex: 1, alignItems: 'center', gap: 4 },
-  activeInfoDivider: { width: 1, height: 32, backgroundColor: '#e2e8f0' },
-  activeInfoLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '600' },
-  activeInfoValue: { fontSize: 13, color: '#1e293b', fontWeight: '700' },
-  activeEmployerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 4,
   },
-  activeEmployerName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
-  callBtn: {
-    backgroundColor: '#22c55e',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  callBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  perksRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  perkChip: {
-    backgroundColor: 'rgba(34,197,94,0.12)',
+  statWidget: {
+    width: '47.5%',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.25)',
+    overflow: 'hidden',
+    minHeight: 110,
+    padding: 16,
+    position: 'relative',
   },
-  perkChipText: { fontSize: 11, fontWeight: '700', color: '#166534' },
-  activeCardActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 2,
+  statWidgetGrad: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.42,
+    borderRadius: 20,
   },
-  actionBtn: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
+  statWidgetInner: { gap: 6, zIndex: 1 },
+  statEmoji: { fontSize: 26, lineHeight: 30 },
+  statLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16 },
+  statSub: { color: 'rgba(255,255,255,0.80)', fontSize: 11, fontWeight: '500' },
+  statSubSkeleton: {
+    width: '60%', height: 10, borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 2,
   },
-  rejectBtn: {
-    borderWidth: 1.5,
-    borderColor: '#ef4444',
-    backgroundColor: 'transparent',
-  },
-  acceptBtn: { backgroundColor: '#2563eb' },
-  viewBtn: { backgroundColor: '#2563eb' },
-  actionBtnText: { fontSize: 13, fontWeight: '800' },
 
-  // ── Leads ─────────────────────────────────────────────────────────────────
-  leadCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 8,
-    gap: 12,
-    borderWidth: 1,
-  },
-  leadInfo: { flex: 1, gap: 3 },
+  sectionGap: { marginTop: 20, marginBottom: 10 },
 
-  seeAllBtn: { marginTop: 12 },
+  // ── Activity card ─────────────────────────────────────────────────────────
+  actCard:      { borderRadius: 20, overflow: 'hidden', marginTop: 20, marginBottom: 4 },
+  actHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12 },
+  actTitle:     { fontSize: 15, fontWeight: '800', color: '#0f172a' },
+  actViewAll:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  actLoadWrap:  { paddingVertical: 24, alignItems: 'center' },
+  actEmpty:     { paddingVertical: 20, alignItems: 'center', gap: 6 },
+  actEmptyIcon: { fontSize: 28, lineHeight: 34 },
+  actEmptyTxt:  { fontSize: 13, color: '#94a3b8' },
+  actFooter:    { paddingVertical: 12, alignItems: 'center' },
+  actFooterTxt: { fontSize: 13, fontWeight: '700', color: '#2563eb' },
+
+  // ── Quick links ───────────────────────────────────────────────────────────
+  quickRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  quickBtn: {
+    flex: 1, borderRadius: 14, padding: 12,
+    alignItems: 'center', borderWidth: 1, borderColor: 'transparent',
+  },
+  quickBtnText: { fontSize: 13, fontWeight: '700' },
+});
+
+// ── Activity section styles ───────────────────────────────────────────────────
+const agAct = StyleSheet.create({
+  row:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
+  dot:      { width: 32, height: 32, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  dotTxt:   { fontSize: 14, fontWeight: '700', lineHeight: 18 },
+  body:     { flex: 1, gap: 2 },
+  topRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  badge:    { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1 },
+  badgeTxt: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+  entity:   { fontSize: 13, fontWeight: '700', color: '#0f172a', flex: 1 },
+  desc:     { fontSize: 11, color: '#475569', lineHeight: 15 },
+  time:     { fontSize: 10, color: '#94a3b8' },
 });

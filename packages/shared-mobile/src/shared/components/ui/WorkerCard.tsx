@@ -15,23 +15,6 @@ interface WorkerCardProps {
   compact?: boolean;
 }
 
-const StarRating = ({ rating }: { rating: number }): React.JSX.Element => {
-  const full = Math.round(rating);
-  return (
-    <View style={sr.row}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <AppText key={i} style={[sr.star, { opacity: i <= full ? 1 : 0.22 }]}>★</AppText>
-      ))}
-      <AppText variant="micro" style={sr.num}>{rating.toFixed(1)}</AppText>
-    </View>
-  );
-};
-
-const sr = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-  star: { fontSize: 13, color: '#F59E0B', lineHeight: 17 },
-  num: { color: '#6B7280', marginLeft: 4, fontSize: 11 },
-});
 
 export const WorkerCard = ({ worker, onPress, actionSlot, compact = false }: WorkerCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -84,8 +67,6 @@ export const WorkerCard = ({ worker, onPress, actionSlot, compact = false }: Wor
             📍 {worker.district}, {worker.state}
           </AppText>
 
-          {/* Rating */}
-          {worker.rating > 0 && <StarRating rating={worker.rating} />}
         </View>
 
         {/* Availability badge */}
@@ -186,7 +167,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   info: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  name: { fontSize: 15, lineHeight: 20, flexShrink: 1 },
+  name: { fontSize: 15, lineHeight: 20, flexShrink: 1, textTransform: 'capitalize' },
   verifiedChip: {
     borderRadius: 999,
     paddingHorizontal: 7,
@@ -223,6 +204,6 @@ const miniStyles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  name: { textAlign: 'center' },
+  name: { textAlign: 'center', textTransform: 'capitalize' },
   rate: { color: '#059669', fontWeight: '700' },
 });

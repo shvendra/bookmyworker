@@ -177,7 +177,7 @@ export const RoleSelectionScreen = ({ navigation }: Props): React.JSX.Element =>
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* Header strip */}
       <View style={styles.headerStrip}>
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   headerStrip: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 28,
     overflow: 'hidden',

@@ -96,7 +96,7 @@ export const Badge = ({ label, variant = 'neutral', dot = false, size = 'md', ou
         color={text}
         style={[styles.text, isSm && styles.smText]}
       >
-        {label}
+        {label.charAt(0).toUpperCase() + label.slice(1)}
       </AppText>
     </View>
   );

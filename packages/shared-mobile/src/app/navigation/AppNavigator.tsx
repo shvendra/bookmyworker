@@ -4,7 +4,8 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import Constants from 'expo-constants';
 import { useAppTheme } from '../../core/theme';
 import { useAuth } from '../../state/auth/AuthContext';
 import { LoadingState } from '../../shared/components/feedback/LoadingState';
@@ -30,6 +31,7 @@ import { EditProfileScreen } from '../../features/profile/screens/EditProfileScr
 import { KycVerificationScreen } from '../../features/profile/screens/KycVerificationScreen';
 import { NotificationPreferencesScreen } from '../../features/profile/screens/NotificationPreferencesScreen';
 import { NotificationsScreen } from '../../features/profile/screens/NotificationsScreen';
+import { MyActivityScreen } from '../../features/profile/screens/MyActivityScreen';
 import { SupportScreen } from '../../features/profile/screens/SupportScreen';
 import { SwitchAccountScreen } from '../../features/profile/screens/SwitchAccountScreen';
 import { TermsPrivacyScreen } from '../../features/profile/screens/TermsPrivacyScreen';
@@ -63,6 +65,77 @@ export const AppNavigator = (): React.JSX.Element => {
       return () => clearTimeout(handle);
     }
     return undefined;
+  }, [state.status]);
+
+  // ── Push notification listeners (foreground + tap deep-link) ──────────────
+  const notifReceivedSub = useRef<{ remove: () => void } | null>(null);
+  const notifResponseSub = useRef<{ remove: () => void } | null>(null);
+
+  useEffect(() => {
+    if (state.status !== 'authenticated') return;
+    const isExpoGo = Constants.appOwnership === 'expo';
+    if (isExpoGo) return;
+
+    void (async () => {
+      const Notifications = await import('expo-notifications');
+
+      // Foreground: show alert + sound when app is open
+      await Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+
+      // Foreground received: invalidate notifications query so hub badge updates
+      notifReceivedSub.current = Notifications.addNotificationReceivedListener(() => {
+        // Badge refresh is handled by React Query polling on NotificationsScreen
+        // Nothing additional needed here
+      });
+
+      // Tap handler: user taps a push notification (background or quit state)
+      notifResponseSub.current = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
+        const type = (data.type as string | undefined) ?? 'system';
+
+        // Wait for nav container to be ready
+        const navigate = (): void => {
+          if (!navigationRef.isReady()) {
+            setTimeout(navigate, 150);
+            return;
+          }
+          switch (type) {
+            case 'newWorker':
+              navigationRef.navigate('WorkerSearch' as never);
+              break;
+            case 'kyc':
+              navigationRef.navigate('KycVerification' as never);
+              break;
+            case 'requirement':
+            case 'interest': {
+              const reqId = data.requirementId as string | undefined;
+              if (reqId) {
+                navigationRef.navigate('RequirementDetail' as never, { requirementId: reqId } as never);
+              } else {
+                navigationRef.navigate('Notifications' as never);
+              }
+              break;
+            }
+            default:
+              navigationRef.navigate('Notifications' as never);
+          }
+        };
+        navigate();
+      });
+    })();
+
+    return () => {
+      notifReceivedSub.current?.remove();
+      notifResponseSub.current?.remove();
+    };
   }, [state.status]);
 
   const navigationTheme = useMemo(
@@ -119,18 +192,19 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="PostRequirement" component={PostRequirementScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="AddWorker" component={AddWorkerScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WorkerSearch" component={WorkerSearchScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'KYC Verification' }} />
-            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Notification Preferences' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Notifications' }} />
-            <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Support & Help' }} />
-            <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Terms & Privacy' }} />
-            <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Switch Account' }} />
+            <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen
               name="ChatRoom"
-              options={({ route }) => ({ animation: 'slide_from_right', headerShown: true, title: route.params.roomName })}
+              options={{ animation: 'slide_from_right', headerShown: false }}
             >
               {({ route }) => (
                 <ChatRoomScreen

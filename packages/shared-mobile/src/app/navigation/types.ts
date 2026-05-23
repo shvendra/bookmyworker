@@ -37,7 +37,7 @@ export type RootStackParamList = {
   // ── Authenticated: tabs (root) + inner screens ───────────────
   Main: undefined;
   EditProfile: undefined;
-  JobMarketplace: { workType?: string; subCategory?: string } | undefined;
+  JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean } | undefined;
   JobDetail: { jobId: string };
   MyApplications: undefined;
   RequirementDetail: { requirementId: string };
@@ -50,6 +50,7 @@ export type RootStackParamList = {
   Support: undefined;
   TermsPrivacy: undefined;
   Notifications: undefined;
+  MyActivity: undefined;
   SwitchAccount: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   Subscription: { agentId?: string } | undefined;

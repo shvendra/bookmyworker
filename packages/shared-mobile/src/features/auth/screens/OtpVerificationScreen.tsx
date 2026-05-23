@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useAppTheme } from '../../../core/theme';
 import { authService } from '../services/authService';
 import { useToast } from '../../../shared/state/toast/ToastContext';
@@ -118,10 +119,33 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     setErrorMessage(null);
     try {
       const session = await authService.verifyOtp({ phone: route.params.phone, otp, roleHint: route.params.roleHint });
+
+      // Role mismatch — show a clear error instead of silently redirecting
+      const roleHint = route.params.roleHint;
+      const actualRole = session.user.role;
+      if (roleHint === 'employer' && actualRole !== 'employer') {
+        const msg = 'No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.';
+        setErrorMessage(msg);
+        shakeBoxes();
+        setDigits(Array(OTP_LENGTH).fill(''));
+        setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
+        return;
+      }
+      if (!roleHint && actualRole === 'employer') {
+        const msg = 'This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.';
+        setErrorMessage(msg);
+        shakeBoxes();
+        setDigits(Array(OTP_LENGTH).fill(''));
+        setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
+        return;
+      }
+
       toast.success('Welcome to BookMyWorker!', 'Login Successful');
       await signIn(session);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Invalid OTP. Please try again.';
+      const msg =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? (error instanceof Error ? error.message : 'Invalid OTP. Please try again.');
       setErrorMessage(msg);
       shakeBoxes();
       setDigits(Array(OTP_LENGTH).fill(''));
@@ -146,7 +170,9 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
       toast.success(`OTP resent to +91 ${route.params.phone}`, 'OTP Resent');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to resend OTP');
+      const resendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? (error instanceof Error ? error.message : 'Failed to resend OTP');
+      toast.error(resendMsg);
     } finally {
       setResendLoading(false);
     }
@@ -156,13 +182,13 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* Brand strip */}
       <View style={[styles.brandStrip, { paddingTop: insets.top + 12 }]}>
         <View style={styles.brandContent}>
           <View style={styles.brandLogoWrap}>
-            <Image source={require('../../../../assets/logo.png')} style={styles.brandLogoImg} resizeMode="contain" />
+            <BrandLogo style={styles.brandLogoImg} />
           </View>
           <View>
             <AppText style={styles.brandName}>BookMyWorker</AppText>
@@ -324,7 +350,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 28,
     overflow: 'hidden',

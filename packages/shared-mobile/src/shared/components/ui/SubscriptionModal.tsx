@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
+import { usePricingConfig, calcDiscount } from '../../../core/api/endpoints/pricingApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { apiClient } from '../../../core/api/client';
@@ -24,18 +26,9 @@ import { AppButton } from './AppButton';
 const FILE_BASE = ENV.API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = 90;
-const GST = 0.18;
-
 // ─── Subscription Pricing (matches CRM PricingPage.jsx) ────────────────────────
 type EmployerType = 'industry' | 'agency' | 'contractor' | 'individual';
 type PlanId = '1m' | '6m' | '12m';
-
-const EMPLOYER_PRICING: Record<EmployerType, Record<PlanId, number>> = {
-  individual: { '1m': 199, '6m': 999, '12m': 1999 },
-  contractor: { '1m': 599, '6m': 2900, '12m': 4999 },
-  agency:     { '1m': 599, '6m': 2900, '12m': 4999 },
-  industry:   { '1m': 999, '6m': 3999, '12m': 5999 },
-};
 
 interface Plan {
   id: PlanId;
@@ -143,7 +136,9 @@ export const SubscriptionModal = ({
   employerPhone,
 }: SubscriptionModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('1m');
+  const { pricing: pricingConfig, gstRate } = usePricingConfig();
 
   const { data: agentsData } = useQuery({
     queryKey: ['subscription-agents-preview'],
@@ -153,10 +148,11 @@ export const SubscriptionModal = ({
   });
 
   const agents = agentsData?.rawAgents ?? [];
-  const pricing = EMPLOYER_PRICING[employerType] ?? EMPLOYER_PRICING.individual;
+  const pricing    = pricingConfig.subscription[employerType]    ?? pricingConfig.subscription.individual;
+  const pricingMrp = pricingConfig.subscriptionMrp[employerType] ?? pricingConfig.subscriptionMrp.individual;
   const plan = PLANS.find((p) => p.id === selectedPlan) ?? PLANS[0]!;
   const baseAmount = pricing[plan.id];
-  const gstAmt = Number((baseAmount * GST).toFixed(2));
+  const gstAmt = Number((baseAmount * gstRate).toFixed(2));
   const totalAmt = Number((baseAmount + gstAmt).toFixed(2));
 
   const payMutation = useMutation({
@@ -205,7 +201,7 @@ export const SubscriptionModal = ({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
         {/* Header */}
-        <View style={[styles.topBar, { borderBottomColor: theme.colors.border }]}>
+        <View style={[styles.topBar, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
           <AppText variant="title" style={styles.title}>Unlock Full Access</AppText>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <AppText style={[styles.closeBtn, { color: theme.colors.mutedText }]}>✕</AppText>
@@ -234,8 +230,10 @@ export const SubscriptionModal = ({
           {/* Plan selection */}
           <AppText variant="label" style={styles.sectionTitle}>Choose a Plan</AppText>
           {PLANS.map((p) => {
-            const pBase = pricing[p.id];
-            const pTotal = Number((pBase * (1 + GST)).toFixed(0));
+            const pBase    = pricing[p.id];
+            const pMrp     = pricingMrp[p.id];
+            const pTotal   = Number((pBase * (1 + gstRate)).toFixed(0));
+            const discount = calcDiscount(pMrp, pBase);
             const isActive = selectedPlan === p.id;
             const benefits = PLAN_BENEFITS[p.id];
             return (
@@ -264,6 +262,16 @@ export const SubscriptionModal = ({
                     </AppText>
                   </View>
                   <View style={styles.planRight}>
+                    {pMrp > pBase && (
+                      <View style={styles.mrpRow}>
+                        <AppText style={styles.mrpText}>₹{pMrp}</AppText>
+                        {discount && (
+                          <View style={styles.discountBadge}>
+                            <AppText style={styles.discountBadgeText}>{discount}% OFF</AppText>
+                          </View>
+                        )}
+                      </View>
+                    )}
                     <AppText variant="label" color={isActive ? theme.colors.primary : theme.colors.text}>
                       ₹{pTotal}
                     </AppText>
@@ -288,7 +296,7 @@ export const SubscriptionModal = ({
             <AppText variant="label" style={styles.summaryTitle}>Fee Summary</AppText>
             {[
               ['Subscription Fee', `₹${baseAmount}`],
-              ['GST (18%)', `₹${gstAmt.toFixed(2)}`],
+              [`GST (${pricingConfig.gstPercentage}%)`, `₹${gstAmt.toFixed(2)}`],
             ].map(([label, val]) => (
               <View key={label} style={styles.summaryRow}>
                 <AppText variant="caption" color={theme.colors.mutedText}>{label}</AppText>
@@ -330,7 +338,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: { fontSize: 18 },
   closeBtn: { fontSize: 18, fontWeight: '600' },
@@ -349,6 +357,10 @@ const styles = StyleSheet.create({
   planBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   planBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
   perMonth: { fontSize: 10 },
+  mrpRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mrpText: { fontSize: 11, color: '#94A3B8', textDecorationLine: 'line-through' },
+  discountBadge: { backgroundColor: '#DCFCE7', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
+  discountBadgeText: { fontSize: 9, fontWeight: '800', color: '#15803D' },
   benefitsBox: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, gap: 4 },
   benefitItem: { fontSize: 12, lineHeight: 18 },
   summary: { borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 4, marginBottom: 12 },

@@ -1,76 +1,76 @@
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
+import type { TranslationKeys } from '../../../core/i18n/translations';
 
-// S3 bucket base URL for category images
 const FILE_BASE = 'https://bookmyworker.s3.eu-north-1.amazonaws.com';
 
 export interface WorkCategory {
-  label: string;
-  image: string;       // full URL
-  shortLabel: string;  // 2-line display label
+  label: string;         // English label — used for API filter calls, never changes
+  translationKey: TranslationKeys; // i18n key for display
+  image: string;
 }
 
-// Mirrors CRM ServiceBoxGrid — 12 active categories with S3 images
 export const WORK_CATEGORIES: WorkCategory[] = [
   {
     label: 'Manufacturing & Industrial Workers',
-    shortLabel: 'Manufacturing &\nIndustrial',
+    translationKey: 'cat_manufacturing',
     image: `${FILE_BASE}/ImagesWeb/Industrial_Workers.jpg`,
   },
   {
     label: 'Construction & Project Workers',
-    shortLabel: 'Construction &\nProject',
+    translationKey: 'cat_construction',
     image: `${FILE_BASE}/ImagesWeb/Construction_Workers.jpg`,
   },
   {
     label: 'Transport & Logistics Workers',
-    shortLabel: 'Transport &\nLogistics',
+    translationKey: 'cat_transport',
     image: `${FILE_BASE}/ImagesWeb/Logistics_Warehouse.jpg`,
   },
   {
     label: 'Agriculture & Farming Workers',
-    shortLabel: 'Agriculture &\nFarming',
+    translationKey: 'cat_agriculture',
     image: `${FILE_BASE}/ImagesWeb/Agriculture_Farm_Workers.jpg`,
   },
   {
     label: 'Household & Domestic Workers',
-    shortLabel: 'Household &\nDomestic',
+    translationKey: 'cat_household',
     image: `${FILE_BASE}/ImagesWeb/cleaning.png`,
   },
   {
     label: 'Automobile & Workshop Workers',
-    shortLabel: 'Automobile &\nWorkshop',
+    translationKey: 'cat_automobile',
     image: `${FILE_BASE}/ImagesWeb/automobile.png`,
   },
   {
     label: 'Retail & Shop Workers',
-    shortLabel: 'Retail &\nShop',
+    translationKey: 'cat_retail',
     image: `${FILE_BASE}/ImagesWeb/retail.png`,
   },
   {
     label: 'Hospitality & Service Workers',
-    shortLabel: 'Hospitality &\nService',
+    translationKey: 'cat_hospitality',
     image: `${FILE_BASE}/ImagesWeb/hospitality.png`,
   },
   {
     label: 'Healthcare Support Workers',
-    shortLabel: 'Healthcare\nSupport',
+    translationKey: 'cat_healthcare',
     image: `${FILE_BASE}/ImagesWeb/healthcare.png`,
   },
   {
     label: 'Security & Facility Worker',
-    shortLabel: 'Security &\nFacility',
+    translationKey: 'cat_security',
     image: `${FILE_BASE}/ImagesWeb/security.png`,
   },
   {
     label: 'Skilled Technical Workers',
-    shortLabel: 'Skilled\nTechnical',
+    translationKey: 'cat_technical',
     image: `${FILE_BASE}/ImagesWeb/Electrical_and_Wiring.jpg`,
   },
   {
     label: 'Event & Decoration Workers',
-    shortLabel: 'Event &\nDecoration',
+    translationKey: 'cat_event',
     image: `${FILE_BASE}/ImagesWeb/event_decor.png`,
   },
 ];
@@ -78,13 +78,23 @@ export const WORK_CATEGORIES: WorkCategory[] = [
 interface WorkerCategoryGridProps {
   onCategoryPress: (category: WorkCategory) => void;
   activeCategory?: string;
+  /** Number of columns (default 3) */
+  columns?: 2 | 3 | 4;
+  /** Cell height in px (default 90) */
+  cellHeight?: number;
 }
 
-export const WorkerCategoryGrid = ({ onCategoryPress, activeCategory }: WorkerCategoryGridProps): React.JSX.Element => {
-  // Render in rows of 3 (4 rows × 3 cols = 12), matching CRM xs=3-column layout
+export const WorkerCategoryGrid = ({
+  onCategoryPress,
+  activeCategory,
+  columns = 3,
+  cellHeight = 90,
+}: WorkerCategoryGridProps): React.JSX.Element => {
+  const { t } = useTranslation();
+
   const rows: WorkCategory[][] = [];
-  for (let i = 0; i < WORK_CATEGORIES.length; i += 3) {
-    rows.push(WORK_CATEGORIES.slice(i, i + 3));
+  for (let i = 0; i < WORK_CATEGORIES.length; i += columns) {
+    rows.push(WORK_CATEGORIES.slice(i, i + columns));
   }
 
   return (
@@ -98,7 +108,7 @@ export const WorkerCategoryGrid = ({ onCategoryPress, activeCategory }: WorkerCa
                 key={cat.label}
                 onPress={() => onCategoryPress(cat)}
                 activeOpacity={0.82}
-                style={[styles.cell, isActive && styles.cellActive]}
+                style={[styles.cell, { height: cellHeight }, isActive && styles.cellActive]}
               >
                 <Image
                   source={{ uri: cat.image }}
@@ -107,9 +117,13 @@ export const WorkerCategoryGrid = ({ onCategoryPress, activeCategory }: WorkerCa
                 />
                 <View style={[styles.overlay, isActive && styles.overlayActive]} />
                 <AppText style={styles.label} numberOfLines={2}>
-                  {cat.shortLabel}
+                  {t(cat.translationKey)}
                 </AppText>
-                {isActive && <View style={styles.activeTick}><AppText style={styles.activeTickText}>✓</AppText></View>}
+                {isActive && (
+                  <View style={styles.activeTick}>
+                    <AppText style={styles.activeTickText}>✓</AppText>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -124,7 +138,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 6 },
   cell: {
     flex: 1,
-    height: 90,
     borderRadius: 14,
     overflow: 'hidden',
     alignItems: 'center',

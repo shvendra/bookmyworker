@@ -22,6 +22,8 @@ export interface UserProfile {
   subscriptionExpiry?: string;
   remainingContacts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
+  // Verified badge (paid, agent-specific)
+  veryfiedBage?: boolean;
 }
 
 export interface AuthTokens {
@@ -108,6 +110,9 @@ export interface ChatMessage {
   text: string;
   createdAt: string;
   read: boolean;
+  mediaUrl?: string | null;
+  mediaType?: 'image' | 'file' | null;
+  fileName?: string | null;
 }
 
 export type TransactionDirection = 'credit' | 'debit';

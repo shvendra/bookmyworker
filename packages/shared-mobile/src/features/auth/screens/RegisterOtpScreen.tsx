@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useAppTheme } from '../../../core/theme';
 import { authService } from '../services/authService';
 import { useToast } from '../../../shared/state/toast/ToastContext';
@@ -180,7 +181,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
   return (
     <View style={[s.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* Brand strip */}
       <View style={[s.brandStrip, { paddingTop: insets.top + 12 }]}>
@@ -190,7 +191,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
           </TouchableOpacity>
           <View style={s.brandCenter}>
             <View style={s.brandLogoWrap}>
-              <Image source={require('../../../../assets/logo.png')} style={s.brandLogoImg} resizeMode="contain" />
+              <BrandLogo style={s.brandLogoImg} />
             </View>
             <View>
               <AppText style={s.brandName}>BookMyWorker</AppText>
@@ -355,7 +356,7 @@ const s = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 24,
     overflow: 'hidden',

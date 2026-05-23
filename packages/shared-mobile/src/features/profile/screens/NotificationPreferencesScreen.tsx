@@ -23,6 +23,8 @@ const DEFAULT_PREFS: NotificationPreferences = {
   kycUpdate: true,
   chat: true,
   promotions: true,
+  newWorkerInState: true,
+  callOutcome: true,
 };
 
 interface PrefRow {
@@ -32,13 +34,12 @@ interface PrefRow {
 }
 
 const PREF_ROWS: PrefRow[] = [
-  { key: 'newRequirement', label: 'New Requirements', description: 'When an employer posts a new job requirement' },
-  { key: 'expressedInterest', label: 'Interest Expressed', description: 'When a worker shows interest in your requirement' },
-  { key: 'paymentSuccess', label: 'Payment Success', description: 'When your payment is confirmed' },
-  { key: 'payoutApproved', label: 'Payout Approved', description: 'When your payout / commission is approved' },
-  { key: 'kycUpdate', label: 'KYC Status', description: 'When your KYC verification status changes' },
-  { key: 'chat', label: 'Chat Messages', description: 'New messages in your conversations' },
-  { key: 'promotions', label: 'Promotions & Updates', description: 'Offers, tips, and platform announcements' },
+  { key: 'newRequirement',   label: 'New Requirements',    description: 'When an employer posts a new job requirement' },
+  { key: 'expressedInterest',label: 'Interest Expressed',  description: 'When a worker shows interest in your requirement' },
+  { key: 'kycUpdate',        label: 'KYC Status',          description: 'When your KYC verification status changes' },
+  { key: 'chat',             label: 'Chat Messages',       description: 'New messages in your conversations' },
+  { key: 'callOutcome',      label: 'Call Outcome Updates',description: 'When an employer updates the outcome of a call with you' },
+  { key: 'promotions',       label: 'Promotions & Updates',description: 'Offers, tips, and platform announcements' },
 ];
 
 export const NotificationPreferencesScreen = (): React.JSX.Element => {
@@ -80,7 +81,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Notification Preferences" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}

@@ -1,10 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -12,11 +11,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { updateProfile } from '../../../core/api/endpoints/authApi';
+import { apiClient } from '../../../core/api/client';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
@@ -48,17 +49,19 @@ type EditProfileValues = z.infer<typeof editProfileSchema>;
 export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state, updateProfile: updateAuthProfile } = useAuth();
+  const toast = useToast();
   const user = state.session?.user;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [stateVal, setStateVal] = useState(user?.state ?? '');
   const [districtVal, setDistrictVal] = useState(user?.district ?? '');
   const [blockVal, setBlockVal] = useState('');
 
-  const { control, handleSubmit } = useForm<EditProfileValues>({
+  const { control, handleSubmit, reset } = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
       name: user?.fullName ?? '',
@@ -73,6 +76,45 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     },
   });
 
+  // Fetch full profile on mount to pre-populate all fields
+  useEffect(() => {
+    const load = async (): Promise<void> => {
+      try {
+        const res = await apiClient.get<{
+          user?: {
+            fullName?: string;
+            email?: string;
+            state?: string;
+            district?: string;
+            block?: string;
+            address?: string;
+            accountNumber?: string;
+            ifscCode?: string;
+            bankName?: string;
+          };
+        }>('/api/v1/user/getuser');
+        const u = res.data?.user;
+        if (!u) return;
+        reset({
+          name: u.fullName ?? user?.fullName ?? '',
+          email: u.email ?? user?.email ?? '',
+          address: u.address ?? '',
+          accountNumber: u.accountNumber ?? '',
+          ifscCode: u.ifscCode ?? '',
+          bankName: u.bankName ?? '',
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        if (u.state) setStateVal(u.state);
+        if (u.district) setDistrictVal(u.district);
+        if (u.block) setBlockVal(u.block);
+      } catch { /* keep defaults */ }
+    };
+    void load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pickPhoto = async (): Promise<void> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) { setError('Photo library permission is required.'); return; }
@@ -81,7 +123,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
       });
-      if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets[0]) { setPhotoUri(result.assets[0].uri); setImageError(false); }
     } finally { setPhotoLoading(false); }
   };
 
@@ -91,7 +133,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     setPhotoLoading(true);
     try {
       const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-      if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets[0]) { setPhotoUri(result.assets[0].uri); setImageError(false); }
     } finally { setPhotoLoading(false); }
   };
 
@@ -126,9 +168,12 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         district: updatedUser.district,
         profileImage: updatedUser.profileImage,
       });
-      Alert.alert('Success', 'Profile updated successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      toast.success('Your profile has been updated successfully.', 'Profile Saved');
+      navigation.goBack();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update profile');
+      const msg = e instanceof Error ? e.message : 'Failed to update profile';
+      setError(msg);
+      toast.error(msg, 'Update Failed');
     } finally {
       setLoading(false);
     }
@@ -138,7 +183,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Edit Profile" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -153,16 +198,31 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
       {/* Avatar */}
       <View style={styles.avatarSection}>
-        {currentPhotoUri ? (
-          <Image source={{ uri: currentPhotoUri }} style={styles.avatar} />
-        ) : (
-          <Avatar name={user?.fullName ?? 'User'} size={88} />
-        )}
-        {photoLoading && (
-          <View style={styles.avatarOverlay}>
-            <ActivityIndicator color="#fff" />
+        <TouchableOpacity onPress={pickPhoto} activeOpacity={0.88} style={styles.avatarTouchable}>
+          {currentPhotoUri && !imageError ? (
+            <Image
+              source={{ uri: currentPhotoUri }}
+              style={styles.avatar}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
+              <Avatar name={user?.fullName ?? 'User'} size={72} />
+            </View>
+          )}
+          {/* Camera edit badge */}
+          <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.primary }]}>
+            <AppText style={styles.avatarEditIcon}>📷</AppText>
           </View>
-        )}
+          {photoLoading && (
+            <View style={styles.avatarOverlay}>
+              <ActivityIndicator color="#fff" size="large" />
+            </View>
+          )}
+        </TouchableOpacity>
+        <AppText variant="caption" color={theme.colors.mutedText} style={styles.avatarHint}>
+          Tap photo to change · or use buttons below
+        </AppText>
         <View style={styles.photoButtons}>
           <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.primary }]}>
             <AppText variant="caption" color="#fff">📷 Gallery</AppText>
@@ -170,6 +230,9 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           <TouchableOpacity onPress={takePhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}>
             <AppText variant="caption" color={theme.colors.text}>📸 Camera</AppText>
           </TouchableOpacity>
+        </View>
+        <View style={styles.cropTipBanner}>
+          <AppText style={styles.cropTipText}>✂️ After selecting, you can crop &amp; rotate your photo</AppText>
         </View>
       </View>
 
@@ -231,14 +294,27 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 48 },
   subtitle: { marginTop: 4, marginBottom: 24 },
-  avatarSection: { alignItems: 'center', marginBottom: 24 },
-  avatar: { width: 88, height: 88, borderRadius: 44 },
-  avatarOverlay: {
-    position: 'absolute', top: 0, width: 88, height: 88, borderRadius: 44,
-    backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center',
+
+  avatarSection:    { alignItems: 'center', marginBottom: 24 },
+  avatarTouchable:  { position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  avatarPlaceholder:{ width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatar:           { width: 100, height: 100, borderRadius: 50 },
+  avatarEditBadge:  {
+    position: 'absolute', bottom: 2, right: 2,
+    width: 30, height: 30, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: '#fff',
   },
-  photoButtons: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  photoBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  avatarEditIcon:   { fontSize: 14 },
+  avatarOverlay:    {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 50,
+    backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
+  },
+  avatarHint:       { marginTop: 8, marginBottom: 4 },
+  photoButtons:     { flexDirection: 'row', gap: 10, marginTop: 8 },
+  photoBtn:         { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  cropTipBanner:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, borderWidth: 1, borderColor: '#BFDBFE' },
+  cropTipText:      { fontSize: 11, color: '#1D4ED8', fontWeight: '600' },
   readOnlyRow: {
     borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10, gap: 2,
   },

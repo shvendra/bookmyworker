@@ -13,7 +13,7 @@ export const lightColors = {
   primary: '#1A56DB',            // Deep premium blue (Cred / Razorpay grade)
   primaryLight: '#EBF1FF',       // Very light blue tint — chips, hover
   primaryMid: '#2563EB',         // Mid blue — gradients, pressed
-  primaryDark: '#1338B0',        // Deep blue — header, gradient end
+  primaryDark: '#1037A4',        // Deep blue — header, gradient end
   accent: '#F97316',             // Warm orange — high-energy CTAs
   accentLight: '#FFF3E6',        // Light orange tint
   secondary: '#7C3AED',          // Purple — employer role, secondary
@@ -58,7 +58,7 @@ export const lightColors = {
   roleWorkerLight: '#ECFDF5',
 
   // ── Special ──────────────────────────────────────────────────────────────────
-  headerBg: '#1338B0',           // Header background
+  headerBg: '#1037A4',           // Header background
   headerBg2: '#0F2888',          // Header gradient end (deeper)
   tabBarBg: '#FFFFFF',
   skeletonBase: '#DDE3F0',

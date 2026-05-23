@@ -4,6 +4,24 @@ import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
 import type { AppRole, UserProfile } from '../../../shared/types/domain';
 
+// Priority: Agent > SelfWorker > Worker. Applied when user has multiple roles on same phone.
+const ROLE_PRIORITY: Record<string, number> = { Agent: 3, SelfWorker: 2, Worker: 1, Employer: 0 };
+
+function pickBestRole(availableRoles: string[]): string {
+  return availableRoles.reduce((best, r) =>
+    (ROLE_PRIORITY[r] ?? 0) > (ROLE_PRIORITY[best] ?? 0) ? r : best
+  , availableRoles[0] ?? '');
+}
+
+function toCurrentBackendRole(frontendRole: string): string {
+  switch (frontendRole) {
+    case 'agent':    return 'Agent';
+    case 'worker':   return 'SelfWorker';
+    case 'employer': return 'Employer';
+    default:         return 'Worker';
+  }
+}
+
 const mockUser = (phone: string): UserProfile => ({
   id: 'dev-user-id',
   fullName: 'Demo Worker',
@@ -17,7 +35,7 @@ export const authService = {
   requestOtp: async (phone: string, roleHint?: AppRole): Promise<{ message: string }> =>
     requestOtp({ phone, roleHint }),
 
-  verifyOtp: async ({ phone, otp, roleHint }: { phone: string; otp: string; roleHint?: import('../../../shared/types/domain').AppRole }): Promise<AuthSession> => {
+  verifyOtp: async ({ phone, otp, roleHint }: { phone: string; otp: string; roleHint?: AppRole }): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();
 
     if (__DEV__ && otp === '123456') {
@@ -33,18 +51,34 @@ export const authService = {
     }
 
     const response = await verifyOtp({ phone, otp, roleHint });
+
+    // Auto-select highest priority role when no roleHint was given (normal login flow)
+    let finalResponse = response;
+    if (!roleHint && response.availableRoles && response.availableRoles.length > 1) {
+      const best = pickBestRole(response.availableRoles);
+      const current = toCurrentBackendRole(response.user.role);
+      if (best && best !== current) {
+        try {
+          finalResponse = await switchRoleApi(best, phone);
+          finalResponse.availableRoles = finalResponse.availableRoles ?? response.availableRoles;
+        } catch {
+          finalResponse = response;
+        }
+      }
+    }
+
     if (pushToken) {
       notificationApi.registerToken(pushToken).catch(() => {});
     }
     return {
       tokens: {
-        accessToken: response.token,
-        refreshToken: response.token,
+        accessToken: finalResponse.token,
+        refreshToken: finalResponse.token,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       },
-      user: response.user,
+      user: finalResponse.user,
       onboardingCompleted: true,
-      availableRoles: response.availableRoles,
+      availableRoles: finalResponse.availableRoles,
     };
   },
 
@@ -76,7 +110,6 @@ export const authService = {
     };
   },
 
-  // Switch to a different role account (same phone number)
   switchRole: async (backendRole: string, phone?: string): Promise<AuthSession> => {
     const response = await switchRoleApi(backendRole, phone);
     return {
@@ -93,17 +126,15 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     try {
-      // Remove push token from server
       await notificationApi.removeToken();
     } catch {
-      // ignore errors on token removal
+      // ignore
     }
     try {
-      // Clear server-side cookie
       const { apiClient } = await import('../../../core/api/client');
       await apiClient.get('/api/v1/user/logout');
     } catch {
-      // ignore errors — local session will be cleared anyway
+      // ignore — local session will be cleared anyway
     }
   },
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -9,11 +10,14 @@ import {
   View,
 } from 'react-native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { notificationApi, type NotificationItem } from '../../../core/api/endpoints/notificationApi';
+import { useToast } from '../../../shared/state/toast/ToastContext';
+import { buildPhotoUrl } from '../../../core/config/env';
 
 const TYPE_META: Record<string, { icon: string; bg: string; iconColor: string }> = {
   requirement: { icon: '📋', bg: '#EFF6FF', iconColor: '#1A56DB' },
@@ -23,6 +27,7 @@ const TYPE_META: Record<string, { icon: string; bg: string; iconColor: string }>
   kyc:         { icon: '🪪', bg: '#F0FFFE', iconColor: '#0891B2' },
   chat:        { icon: '💬', bg: '#F5F3FF', iconColor: '#7C3AED' },
   system:      { icon: '🔔', bg: '#F8FAFC', iconColor: '#64748B' },
+  newWorker:   { icon: '👷', bg: '#FFF7ED', iconColor: '#EA580C' },
 };
 
 const formatTime = (iso: string): string => {
@@ -46,6 +51,79 @@ const getDateGroup = (iso: string): string => {
   return 'Earlier';
 };
 
+// ── Worker mini-profile for newWorker notifications ────────────────────────────
+interface WorkerData {
+  workerName?: string;
+  workerPhoto?: string;
+  workerGender?: string;
+  workerAge?: number;
+  workerProfession?: string;
+  workerLocation?: string;
+}
+
+const genderAvatar = (gender?: string): { bg: string; textColor: string; initials: string } => {
+  const g = (gender ?? '').toLowerCase();
+  if (g === 'female' || g === 'f') return { bg: '#FCE7F3', textColor: '#BE185D', initials: '♀' };
+  if (g === 'male' || g === 'm') return { bg: '#DBEAFE', textColor: '#1D4ED8', initials: '♂' };
+  return { bg: '#F1F5F9', textColor: '#475569', initials: '?' };
+};
+
+const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element => {
+  const photoUri = data.workerPhoto ? buildPhotoUrl(data.workerPhoto) : null;
+  const avatar = genderAvatar(data.workerGender);
+  const initials = data.workerName ? data.workerName.charAt(0).toUpperCase() : avatar.initials;
+
+  return (
+    <View style={wp.row}>
+      {/* Avatar */}
+      <View style={[wp.avatarWrap, { backgroundColor: avatar.bg, borderColor: avatar.textColor + '30' }]}>
+        {photoUri ? (
+          <Image source={{ uri: photoUri }} style={wp.avatarImg} resizeMode="cover" />
+        ) : (
+          <AppText style={[wp.avatarInitial, { color: avatar.textColor }]}>{initials}</AppText>
+        )}
+      </View>
+
+      {/* Info */}
+      <View style={wp.info}>
+        {data.workerName ? (
+          <AppText style={wp.name} numberOfLines={1}>{data.workerName}</AppText>
+        ) : null}
+        <View style={wp.chips}>
+          {data.workerAge ? (
+            <View style={[wp.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+              <AppText style={[wp.chipTxt, { color: '#1D4ED8' }]}>{data.workerAge} yrs</AppText>
+            </View>
+          ) : null}
+          {data.workerProfession ? (
+            <View style={[wp.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+              <AppText style={[wp.chipTxt, { color: '#C2410C' }]} numberOfLines={1}>{data.workerProfession}</AppText>
+            </View>
+          ) : null}
+          {data.workerLocation ? (
+            <View style={[wp.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <AppText style={[wp.chipTxt, { color: '#15803D' }]} numberOfLines={1}>📍 {data.workerLocation}</AppText>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const wp = StyleSheet.create({
+  row:           { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
+  avatarWrap:    { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  avatarImg:     { width: 44, height: 44, borderRadius: 22 },
+  avatarInitial: { fontSize: 18, fontWeight: '700', lineHeight: 22 },
+  info:          { flex: 1, gap: 5 },
+  name:          { fontSize: 13, fontWeight: '800', color: '#0F172A', textTransform: 'capitalize' },
+  chips:         { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  chip:          { borderRadius: 6, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2 },
+  chipTxt:       { fontSize: 10, fontWeight: '700' },
+});
+
+// ── Notification card ───────────────────────────────────────────────────────────
 interface NotifCardProps {
   item: NotificationItem;
   onPress: (id: string) => void;
@@ -56,6 +134,8 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
   const { theme } = useAppTheme();
   const meta = TYPE_META[item.type] ?? TYPE_META.system!;
   const isUnread = !item.read;
+  const isNewWorker = item.type === 'newWorker';
+  const workerData = isNewWorker ? (item.data as WorkerData) : null;
 
   return (
     <TouchableOpacity
@@ -77,32 +157,41 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
         <View style={[styles.unreadBar, { backgroundColor: theme.colors.primary }]} />
       )}
 
-      {/* Icon circle */}
-      <View style={[styles.iconCircle, { backgroundColor: theme.mode === 'dark' ? theme.colors.surface1 : meta.bg }]}>
-        <AppText style={styles.iconEmoji}>{meta.icon}</AppText>
-        {isUnread && (
-          <View style={[styles.unreadDot, { backgroundColor: theme.colors.danger }]} />
-        )}
-      </View>
+      <View style={styles.cardInner}>
+        <View style={styles.topRow}>
+          {/* Icon circle */}
+          <View style={[styles.iconCircle, { backgroundColor: theme.mode === 'dark' ? theme.colors.surface1 : meta.bg }]}>
+            <AppText style={styles.iconEmoji}>{meta.icon}</AppText>
+            {isUnread && (
+              <View style={[styles.unreadDot, { backgroundColor: theme.colors.danger }]} />
+            )}
+          </View>
 
-      {/* Body */}
-      <View style={styles.body}>
-        <View style={styles.titleRow}>
-          <AppText
-            variant="label"
-            color={theme.colors.text}
-            numberOfLines={1}
-            style={[styles.titleText, isUnread && { fontWeight: '700' }]}
-          >
-            {item.title}
-          </AppText>
-          <AppText variant="micro" color={theme.colors.mutedText} style={styles.time}>
-            {formatTime(item.createdAt)}
-          </AppText>
+          {/* Body */}
+          <View style={styles.body}>
+            <View style={styles.titleRow}>
+              <AppText
+                variant="label"
+                color={theme.colors.text}
+                numberOfLines={1}
+                style={[styles.titleText, isUnread && { fontWeight: '700' }]}
+              >
+                {item.title}
+              </AppText>
+              <AppText variant="micro" color={theme.colors.mutedText} style={styles.time}>
+                {formatTime(item.createdAt)}
+              </AppText>
+            </View>
+            <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={2}>
+              {item.body}
+            </AppText>
+          </View>
         </View>
-        <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={2}>
-          {item.body}
-        </AppText>
+
+        {/* Worker mini-profile for newWorker type */}
+        {isNewWorker && workerData ? (
+          <WorkerMiniProfile data={workerData} />
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -126,7 +215,9 @@ const groupByDate = (items: NotificationItem[]): Section[] => {
 
 export const NotificationsScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -137,11 +228,16 @@ export const NotificationsScreen = (): React.JSX.Element => {
   const markRead = useMutation({
     mutationFn: (id: string) => notificationApi.markRead(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onError: () => toast.error('Could not mark notification as read.'),
   });
 
   const markAllRead = useMutation({
     mutationFn: () => notificationApi.markAllRead(),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('All notifications marked as read.', 'Done');
+    },
+    onError: () => toast.error('Could not mark all as read. Please try again.'),
   });
 
   if (isLoading) {
@@ -158,9 +254,10 @@ export const NotificationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
         title="Notifications"
+        onBack={() => navigation.goBack()}
         rightIcon={unreadCount > 0 ? '✓' : undefined}
         onRightPress={unreadCount > 0 ? () => markAllRead.mutate() : undefined}
       />
@@ -249,13 +346,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     position: 'relative',
   },
+  cardInner: { flexDirection: 'column' },
+  topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   unreadBar: {
     position: 'absolute',
     left: 0,

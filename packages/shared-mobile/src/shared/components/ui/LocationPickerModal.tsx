@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -106,6 +107,7 @@ export const LocationPickerModal = ({
   title = 'Pick Location',
 }: LocationPickerModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -194,7 +196,7 @@ export const LocationPickerModal = ({
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
 
         {/* ── Header ────────────────────────────────────────────────────── */}
-        <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+        <View style={[styles.header, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
           <AppText variant="title" style={styles.headerTitle}>{title}</AppText>
           <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <AppText style={[styles.closeBtn, { color: theme.colors.mutedText }]}>✕</AppText>
@@ -298,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: { fontSize: 18 },

@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useRef } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import type { AppRole } from '../../shared/types/domain';
 import { useAppTheme } from '../../core/theme';
 import { AppText } from '../../shared/components/ui/AppText';
@@ -14,7 +15,6 @@ import { WorkerDashboardScreen } from '../../features/worker/screens/WorkerDashb
 import { EmployerDashboardScreen } from '../../features/employer/screens/EmployerDashboardScreen';
 import { AgentDashboardScreen } from '../../features/agent/screens/AgentDashboardScreen';
 // ── Role-specific feature screens ─────────────────────────────────────────────
-import { MyWorkersScreen } from '../../features/agent/screens/MyWorkersScreen';
 import { PayoutScreen } from '../../features/wallet/screens/PayoutScreen';
 import { TransactionScreen } from '../../features/wallet/screens/TransactionScreen';
 
@@ -33,7 +33,8 @@ type TabComponent = React.ComponentType<any>;
 
 interface TabConfig {
   name: string;
-  label: string;
+  /** i18n key for tab label — translated at render time */
+  labelKey: string;
   component: TabComponent;
   icon: { outline: Icon; filled: Icon };
   /** Make this the center "action" tab (special styling) */
@@ -47,47 +48,46 @@ interface TabConfig {
 
 const roleTabConfigs: Record<AppRole, TabConfig[]> = {
   worker: [
-    { name: 'Home',       label: 'Home',       component: WorkerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
-    { name: 'Jobs',       label: 'Jobs',        component: JobMarketplaceScreen,  icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
-    { name: 'Attendance', label: 'Attendance',  component: AttendanceScreen,      icon: { outline: 'calendar-outline',   filled: 'calendar'   }, isAction: true },
-    { name: 'Chat',       label: 'Chat',        component: ChatNavigator,         icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
-    { name: 'Profile',    label: 'Profile',     component: ProfileScreen,         icon: { outline: 'person-outline',     filled: 'person'     } },
+    { name: 'Home',       labelKey: 'tab_home',       component: WorkerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Jobs',       labelKey: 'tab_jobs',        component: JobMarketplaceScreen,  icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
+    { name: 'Attendance', labelKey: 'tab_attendance',  component: AttendanceScreen,      icon: { outline: 'calendar-outline',   filled: 'calendar'   }, isAction: true },
+    { name: 'Chat',       labelKey: 'tab_chat',        component: ChatNavigator,         icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
+    { name: 'Profile',    labelKey: 'tab_profile',     component: ProfileScreen,         icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   employer: [
-    { name: 'Home',         label: 'Home',     component: EmployerDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'        } },
-    { name: 'Workers',      label: 'Workers',  component: WorkerSearchScreen,      icon: { outline: 'people-outline',    filled: 'people'      } },
-    { name: 'Post',         label: 'Post Job', component: PostRequirementScreen,   icon: { outline: 'add-circle-outline',filled: 'add-circle'  }, isAction: true },
-    { name: 'Transactions', label: 'History',  component: TransactionScreen,       icon: { outline: 'receipt-outline',   filled: 'receipt'     } },
-    { name: 'Profile',      label: 'Profile',  component: ProfileScreen,           icon: { outline: 'person-outline',    filled: 'person'      } },
+    { name: 'Home',         labelKey: 'tab_dashboard', component: EmployerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Workers',      labelKey: 'tab_workers',   component: WorkerSearchScreen,      icon: { outline: 'people-outline',     filled: 'people'     } },
+    { name: 'Post',         labelKey: 'tab_post',      component: PostRequirementScreen,   icon: { outline: 'add-circle-outline', filled: 'add-circle' }, isAction: true },
+    { name: 'Transactions', labelKey: 'tab_payments',  component: TransactionScreen,       icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
+    { name: 'Profile',      labelKey: 'tab_profile',   component: ProfileScreen,           icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   agent: [
-    { name: 'Home',    label: 'Home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
-    { name: 'Network', label: 'My Network', component: MyWorkersScreen,      icon: { outline: 'people-outline',     filled: 'people'     } },
-    { name: 'Add',     label: 'Add Worker', component: AddWorkerScreen,      icon: { outline: 'person-add-outline', filled: 'person-add' }, isAction: true },
-    { name: 'Payout',  label: 'Payout',     component: PayoutScreen,         icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
-    { name: 'Profile', label: 'Profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
+    { name: 'Home',    labelKey: 'tab_home',    component: AgentDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'      } },
+    { name: 'Browse',  labelKey: 'tab_browse',  component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline', filled: 'briefcase' } },
+    { name: 'Chat',    labelKey: 'tab_chat',    component: ChatNavigator,        icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
+    { name: 'Profile', labelKey: 'tab_profile', component: ProfileScreen,        icon: { outline: 'person-outline',    filled: 'person'    } },
   ],
   selfworker: [
-    { name: 'Home',     label: 'Home',     component: AgentDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'      } },
-    { name: 'Search',   label: 'Browse',   component: WorkerSearchScreen,   icon: { outline: 'search-outline',    filled: 'search'    } },
-    { name: 'Register', label: 'Register', component: AddWorkerScreen,      icon: { outline: 'person-add-outline',filled: 'person-add'}, isAction: true },
-    { name: 'Payout',   label: 'Payout',   component: PayoutScreen,         icon: { outline: 'wallet-outline',    filled: 'wallet'    } },
-    { name: 'Profile',  label: 'Profile',  component: ProfileScreen,        icon: { outline: 'person-outline',    filled: 'person'    } },
+    { name: 'Home',     labelKey: 'tab_home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Browse',   labelKey: 'tab_browse',     component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
+    { name: 'Register', labelKey: 'tab_register',   component: AddWorkerScreen,      icon: { outline: 'person-add-outline', filled: 'person-add' }, isAction: true },
+    { name: 'Payout',   labelKey: 'tab_payout',     component: PayoutScreen,         icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
+    { name: 'Profile',  labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   // Admin/SuperAdmin roles fall back to the employer tab set
   admin: [
-    { name: 'Home',         label: 'Home',     component: EmployerDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'        } },
-    { name: 'Workers',      label: 'Workers',  component: WorkerSearchScreen,      icon: { outline: 'people-outline',    filled: 'people'      } },
-    { name: 'Post',         label: 'Post Job', component: PostRequirementScreen,   icon: { outline: 'add-circle-outline',filled: 'add-circle'  }, isAction: true },
-    { name: 'Transactions', label: 'History',  component: TransactionScreen,       icon: { outline: 'receipt-outline',   filled: 'receipt'     } },
-    { name: 'Profile',      label: 'Profile',  component: ProfileScreen,           icon: { outline: 'person-outline',    filled: 'person'      } },
+    { name: 'Home',         labelKey: 'tab_dashboard', component: EmployerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Workers',      labelKey: 'tab_workers',   component: WorkerSearchScreen,      icon: { outline: 'people-outline',     filled: 'people'     } },
+    { name: 'Post',         labelKey: 'tab_post',      component: PostRequirementScreen,   icon: { outline: 'add-circle-outline', filled: 'add-circle' }, isAction: true },
+    { name: 'Transactions', labelKey: 'tab_payments',  component: TransactionScreen,       icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
+    { name: 'Profile',      labelKey: 'tab_profile',   component: ProfileScreen,           icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   superadmin: [
-    { name: 'Home',         label: 'Home',     component: EmployerDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'        } },
-    { name: 'Workers',      label: 'Workers',  component: WorkerSearchScreen,      icon: { outline: 'people-outline',    filled: 'people'      } },
-    { name: 'Post',         label: 'Post Job', component: PostRequirementScreen,   icon: { outline: 'add-circle-outline',filled: 'add-circle'  }, isAction: true },
-    { name: 'Transactions', label: 'History',  component: TransactionScreen,       icon: { outline: 'receipt-outline',   filled: 'receipt'     } },
-    { name: 'Profile',      label: 'Profile',  component: ProfileScreen,           icon: { outline: 'person-outline',    filled: 'person'      } },
+    { name: 'Home',         labelKey: 'tab_dashboard', component: EmployerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Workers',      labelKey: 'tab_workers',   component: WorkerSearchScreen,      icon: { outline: 'people-outline',     filled: 'people'     } },
+    { name: 'Post',         labelKey: 'tab_post',      component: PostRequirementScreen,   icon: { outline: 'add-circle-outline', filled: 'add-circle' }, isAction: true },
+    { name: 'Transactions', labelKey: 'tab_payments',  component: TransactionScreen,       icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
+    { name: 'Profile',      labelKey: 'tab_profile',   component: ProfileScreen,           icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
 };
 
@@ -106,6 +106,7 @@ interface TabItemProps {
 
 const TabItem = ({ tabCfg, isFocused, badgeCount, onPress, accessibilityLabel }: TabItemProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const scale = useRef(new Animated.Value(1)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
   const isDark = theme.mode === 'dark';
@@ -120,7 +121,7 @@ const TabItem = ({ tabCfg, isFocused, badgeCount, onPress, accessibilityLabel }:
   };
 
   const icons = tabCfg.icon;
-  const label = tabCfg.label;
+  const label = t(tabCfg.labelKey, tabCfg.labelKey);
   const iconColor = isFocused ? theme.colors.primary : (isDark ? theme.colors.mutedText : '#94A3B8');
 
   return (
@@ -191,6 +192,7 @@ interface ActionTabItemProps {
 
 const ActionTabItem = ({ tabCfg, isFocused, onPress, accessibilityLabel }: ActionTabItemProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = (): void => {
@@ -221,7 +223,7 @@ const ActionTabItem = ({ tabCfg, isFocused, onPress, accessibilityLabel }: Actio
           color="#FFFFFF"
         />
         <AppText variant="micro" color="#FFFFFF" style={tabStyles.actionLabel} numberOfLines={1}>
-          {tabCfg.label}
+          {t(tabCfg.labelKey, tabCfg.labelKey)}
         </AppText>
       </Pressable>
     </Animated.View>
@@ -261,7 +263,7 @@ const CustomTabBar = ({ state, descriptors, navigation, tabConfigs }: BottomTabB
         const tabCfg = tabConfigs.find((t) => t.name === route.name);
         const isFocused = state.index === index;
         const isAction = tabCfg?.isAction ?? false;
-        const accessibilityLabel = options.tabBarAccessibilityLabel ?? (tabCfg?.label ?? route.name);
+        const accessibilityLabel = options.tabBarAccessibilityLabel ?? (tabCfg?.labelKey ?? route.name);
 
         const onPress = (): void => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -319,7 +321,7 @@ export const RoleTabsNavigator = ({ role }: RoleTabsNavigatorProps): React.JSX.E
           key={tab.name}
           name={tab.name}
           component={tab.component}
-          options={{ title: tab.label }}
+          options={{ title: tab.labelKey }}
         />
       ))}
     </Tab.Navigator>

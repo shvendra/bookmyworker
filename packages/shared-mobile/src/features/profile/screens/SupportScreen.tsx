@@ -5,31 +5,40 @@ import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 
 const FAQS = [
   {
-    q: 'How do I post a requirement?',
-    a: 'Go to Home → Post Requirement. Fill in the job details including location and requirements. Workers nearby will be notified.',
+    q: 'How do I post a worker requirement?',
+    a: 'Go to Home → Post Requirement. Fill in your job details such as worker type, location, budget, and duration, then submit your requirement.',
   },
   {
-    q: 'How do I get verified (KYC)?',
-    a: 'Go to Profile → KYC Verification. Upload your Aadhaar card (front and back). Verification takes 24-48 hours.',
+    q: 'Why am I asked to subscribe before posting?',
+    a: 'BookMyWorker is a subscription-based marketplace. An active subscription is required to post worker requirements, search workers, and access premium features.',
   },
   {
-    q: 'How do agent commissions work?',
-    a: 'When a worker you registered completes a job, you earn a commission. Commissions are credited to your wallet and can be withdrawn.',
+    q: 'How do I subscribe to BookMyWorker?',
+    a: 'Go to Dashboard or Subscription section, choose a plan that fits your hiring needs, and complete the payment to activate your account.',
   },
   {
-    q: 'Why is my account showing "pending" status?',
-    a: 'Your KYC documents are under review. Please wait 24-48 hours. If delayed, contact support.',
+    q: 'How do I search for workers?',
+    a: 'Go to Search Workers and apply filters like category, location, skill type, and budget to find suitable workers for your requirement.',
   },
   {
-    q: 'How do I contact a worker / employer?',
-    a: 'Once you unlock a contact (uses contact credits), go to Chat to message them directly.',
+    q: 'How do I contact workers?',
+    a: 'With an active subscription, you can directly view worker details and connect with them through chat or contact options.',
   },
   {
-    q: 'How do I add contact credits?',
-    a: 'Go to Wallet → Add Credits. Choose a pack (50 or 100 contacts) and complete payment.',
+    q: 'How do I complete KYC verification?',
+    a: 'Go to Profile → KYC Verification and upload required documents such as Aadhaar card details. Verification usually takes 24-48 hours.',
+  },
+  {
+    q: 'Why is my account showing pending status?',
+    a: 'Your profile or KYC documents are currently under review. Please allow 24-48 hours for approval.',
+  },
+  {
+    q: 'How do I manage my subscription?',
+    a: 'Go to Profile → Subscription to view your active plan, expiry date, and renewal options.',
   },
 ];
 
@@ -61,10 +70,15 @@ const ContactCard = ({ icon, title, subtitle, onPress }: ContactCardProps): Reac
 export const SupportScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation();
+  const { config } = useAppConfig();
+  const { supportEmail, primaryPhone, whatsappNumber } = config.contact;
+
+  const waNumber = whatsappNumber.replace(/[^0-9]/g, '');
+  const phoneClean = primaryPhone.replace(/\s/g, '');
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Support & Help" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -82,19 +96,19 @@ export const SupportScreen = (): React.JSX.Element => {
         icon="💬"
         title="WhatsApp Support"
         subtitle="Chat with us on WhatsApp"
-        onPress={() => void Linking.openURL('https://wa.me/919876543210')}
+        onPress={() => void Linking.openURL(`https://wa.me/${waNumber}`)}
       />
       <ContactCard
         icon="📧"
         title="Email Support"
-        subtitle="support@bookmyworkers.com"
-        onPress={() => void Linking.openURL('mailto:support@bookmyworkers.com')}
+        subtitle={supportEmail}
+        onPress={() => void Linking.openURL(`mailto:${supportEmail}`)}
       />
       <ContactCard
         icon="📞"
         title="Call Us"
-        subtitle="+91 98765 43210 · Mon–Sat, 9am–6pm"
-        onPress={() => void Linking.openURL('tel:+919876543210')}
+        subtitle={`${primaryPhone} · Mon–Sat, 9am–6pm`}
+        onPress={() => void Linking.openURL(`tel:${phoneClean}`)}
       />
 
       {/* FAQ */}
@@ -109,7 +123,7 @@ export const SupportScreen = (): React.JSX.Element => {
       ))}
 
       <AppText variant="caption" color={theme.colors.mutedText} style={styles.footer}>
-        BookMyWorkers · v1.0.0{'\n'}support@bookmyworkers.com
+        BookMyWorkers · v1.0.0{'\n'}{supportEmail}
       </AppText>
     </ScrollView>
     </View>

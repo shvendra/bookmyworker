@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Modal,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
+import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { walletApi } from '../../../core/api/endpoints/walletApi';
 import type { RawPaymentTransaction } from '../../../core/api/endpoints/walletApi';
-import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
-import { AppButton } from '../../../shared/components/ui/AppButton';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -42,190 +43,195 @@ const statusColor = (s?: string): string => {
 };
 
 // ─── Invoice Modal ─────────────────────────────────────────────────────────────
+const { width: SCREEN_W } = Dimensions.get('window');
+
 interface InvoiceProps {
   txn: RawPaymentTransaction | null;
   userName: string;
   userKyc?: { firmName?: string; gstNumber?: string };
   userAddress?: string;
+  companyAddress: string;
+  supportEmail:   string;
+  gstNumber:      string;
+  gstLabel:       string;
   onClose: () => void;
 }
 
-const InvoiceModal = ({ txn, userName, userKyc, userAddress, onClose }: InvoiceProps): React.JSX.Element | null => {
+const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, supportEmail, gstNumber, gstLabel, onClose }: InvoiceProps): React.JSX.Element | null => {
+  const insets = useSafeAreaInsets();
   if (!txn) return null;
-  const base     = (txn.amount ?? 0) / 1.18;
+
   const platform = txn.platformCharges ?? 0;
-  const gst      = txn.amount ? txn.amount - txn.amount / 1.18 : 0;
-  const total    = (txn.amount ?? 0) + platform + (txn.gstCharges ?? 0);
+  const gst      = txn.gstCharges ?? 0;
+  const total    = (txn.amount ?? 0) + platform;
+  const base     = total - gst;
+
+  const lineItems: Array<{ label: string; value: string; isTotal?: boolean; isHeader?: boolean }> = [
+    { label: 'Description', value: 'Amount (₹)', isHeader: true },
+    { label: 'Payment', value: base.toFixed(2) },
+    ...(platform > 0 ? [{ label: 'Platform Charges', value: platform.toFixed(2) }] : []),
+    ...(gst > 0 ? [{ label: gstLabel, value: gst.toFixed(2) }] : []),
+    { label: 'Total', value: `₹${total.toFixed(2)}`, isTotal: true },
+  ];
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <ScrollView style={inv.scroll} contentContainerStyle={inv.content}>
-        <View style={inv.header}>
-          <AppText variant="title" color="#1976D2" style={{ fontSize: 22 }}>BookMyWorker</AppText>
-          <AppText variant="caption" color="#64748B" style={{ textAlign: 'center' }}>
-            Khasara No 34/1/33, Rewa Semariya Road, Karahiya, Rewa, MP - 486450
-          </AppText>
-          <AppText variant="caption" color="#64748B">support@bookmyworkers.com</AppText>
-          <AppText variant="caption" color="#1E293B" style={{ fontWeight: '700' }}>GSTIN: 23NBJPS3070R1ZQ</AppText>
+    <Modal visible animationType="slide" transparent={false} onRequestClose={onClose}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <View style={[inv.root, { paddingTop: insets.top }]}>
+        {/* Top bar */}
+        <View style={inv.topBar}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={inv.closeBtn}>
+            <AppText style={inv.closeTxt}>✕</AppText>
+          </TouchableOpacity>
+          <AppText style={inv.topTitle}>Invoice</AppText>
+          <View style={{ width: 36 }} />
         </View>
 
-        <View style={inv.meta}>
-          <View style={{ flex: 1.4, gap: 5 }}>
-            {([['Name', userName], ['Firm', userKyc?.firmName || 'N/A'], ['GST', userKyc?.gstNumber || 'N/A'], ['Address', userAddress || 'N/A']] as [string,string][]).map(([k, v]) => (
-              <View key={k} style={{ flexDirection: 'row', gap: 4 }}>
-                <AppText variant="caption" color="#64748B" style={{ fontWeight: '700', minWidth: 55 }}>{k}:</AppText>
-                <AppText variant="caption" color="#1E293B" style={{ fontWeight: '600', flex: 1 }}>{v}</AppText>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[inv.scroll, { paddingBottom: insets.bottom + 24 }]}
+        >
+          {/* Brand header */}
+          <View style={inv.brandCard}>
+            <View style={inv.brandAccent} />
+            <View style={inv.brandBody}>
+              <AppText style={inv.brandName}>BookMyWorker</AppText>
+              <AppText style={inv.brandAddr}>{companyAddress}</AppText>
+              <AppText style={inv.brandEmail}>{supportEmail}</AppText>
+              <View style={inv.gstPill}>
+                <AppText style={inv.gstTxt}>GSTIN: {gstNumber}</AppText>
+              </View>
+            </View>
+          </View>
+
+          {/* Bill to + Invoice meta */}
+          <View style={inv.metaRow}>
+            {/* Bill to */}
+            <View style={[inv.metaCard, { flex: 1.4 }]}>
+              <AppText style={inv.metaHead}>BILL TO</AppText>
+              {([
+                ['Name', userName],
+                ['Firm', userKyc?.firmName || 'N/A'],
+                ['GST', userKyc?.gstNumber || 'N/A'],
+                ['Address', userAddress || 'N/A'],
+              ] as [string, string][]).map(([k, v]) => (
+                <View key={k} style={inv.metaLine}>
+                  <AppText style={inv.metaKey}>{k}</AppText>
+                  <AppText style={inv.metaVal} numberOfLines={2}>{v}</AppText>
+                </View>
+              ))}
+            </View>
+
+            {/* Invoice details */}
+            <View style={[inv.metaCard, { flex: 1, alignItems: 'flex-end' }]}>
+              <AppText style={inv.metaHead}>INVOICE DETAILS</AppText>
+              <AppText style={inv.metaKey}>DATE</AppText>
+              <AppText style={[inv.metaVal, { textAlign: 'right' }]}>{fmtDate(txn.createdAt)}</AppText>
+              <AppText style={[inv.metaKey, { marginTop: 10 }]}>TXN ID</AppText>
+              <AppText style={[inv.metaVal, { textAlign: 'right', fontSize: 10 }]} numberOfLines={3}>
+                {txn.creditTransactionId || 'N/A'}
+              </AppText>
+            </View>
+          </View>
+
+          {/* Line items table */}
+          <View style={inv.table}>
+            {lineItems.map((item) => (
+              <View
+                key={item.label}
+                style={[
+                  inv.tableRow,
+                  item.isHeader && inv.tableHeaderRow,
+                  item.isTotal && inv.tableTotalRow,
+                ]}
+              >
+                <AppText
+                  style={[
+                    inv.tableLabel,
+                    item.isHeader && inv.tableHeaderTxt,
+                    item.isTotal && inv.tableTotalLabel,
+                  ]}
+                >
+                  {item.label}
+                </AppText>
+                <AppText
+                  style={[
+                    inv.tableValue,
+                    item.isHeader && inv.tableHeaderTxt,
+                    item.isTotal && inv.tableTotalValue,
+                  ]}
+                >
+                  {item.value}
+                </AppText>
               </View>
             ))}
           </View>
-          <View style={{ flex: 1, alignItems: 'flex-end', gap: 2 }}>
-            <AppText variant="caption" color="#94A3B8" style={{ fontSize: 10, fontWeight: '700' }}>DATE</AppText>
-            <AppText variant="caption" color="#1E293B" style={{ fontWeight: '600' }}>{fmtDate(txn.createdAt)}</AppText>
-            <AppText variant="caption" color="#94A3B8" style={{ fontSize: 10, fontWeight: '700', marginTop: 8 }}>TXN ID</AppText>
-            <AppText variant="caption" color="#1E293B" style={{ fontWeight: '600', textAlign: 'right' }}>{txn.creditTransactionId || 'N/A'}</AppText>
-          </View>
-        </View>
 
-        <View style={inv.table}>
-          {([
-            ['Description', 'Amount (₹)', true],
-            ['Payment', base.toFixed(2), false],
-            ...(platform > 0 ? [['Platform Charges', platform.toFixed(2), false] as [string,string,boolean]] : []),
-            ['GST Charges', gst.toFixed(2), false],
-            ['Total', total.toFixed(2), true],
-          ] as [string, string, boolean][]).map(([k, v, bold]) => (
-            <View key={k} style={[inv.row, bold && { backgroundColor: '#F8FAFC' }]}>
-              <AppText variant={bold ? 'label' : 'caption'} color="#1E293B" style={{ flex: 1 }}>{k}</AppText>
-              <AppText variant={bold ? 'label' : 'caption'} color={bold ? '#1976D2' : '#1E293B'}>{v}</AppText>
-            </View>
-          ))}
-        </View>
+          {/* Disclaimer */}
+          <AppText style={inv.disclaimer}>
+            This is a digitally generated invoice and does not require a physical signature.
+          </AppText>
 
-        <AppText variant="caption" color="#94A3B8" style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: 16 }}>
-          This is a digitally generated invoice and does not require a physical signature.
-        </AppText>
-        <AppButton title="Close" onPress={onClose} variant="secondary" />
-      </ScrollView>
+          {/* Close button */}
+          <TouchableOpacity onPress={onClose} style={inv.closeAction} activeOpacity={0.85}>
+            <AppText style={inv.closeActionTxt}>Close</AppText>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </Modal>
   );
 };
 
 const inv = StyleSheet.create({
-  scroll:  { flex: 1, backgroundColor: '#F1F5F9' },
-  content: { padding: 16, paddingBottom: 40 },
-  header:  { backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center', gap: 4 },
-  meta:    { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', gap: 12 },
-  table:   { backgroundColor: '#FFF', borderRadius: 16, overflow: 'hidden', marginBottom: 12 },
-  row:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E2E8F0' },
-});
+  root:    { flex: 1, backgroundColor: '#F8FAFC' },
+  topBar:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#F8FAFC', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E2E8F0' },
+  topTitle:{ fontSize: 16, fontWeight: '800', color: '#0F172A', letterSpacing: 0.2 },
+  closeBtn:{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+  closeTxt:{ fontSize: 13, color: '#64748B', fontWeight: '700' },
 
-// ─── Work History Tab ─────────────────────────────────────────────────────────
-interface WorkEntry {
-  _id: string;
-  assignedAgentName?: string;
-  ERN_NUMBER?: string | number;
-  finalAgentRequiredWage?: number;
-  createdAt?: string;
-}
+  scroll:  { paddingHorizontal: Math.max(16, (SCREEN_W - 480) / 2), paddingTop: 20 },
 
-const WorkHistoryTab = (): React.JSX.Element => {
-  const { theme } = useAppTheme();
-  const [search, setSearch] = useState('');
+  // Brand card
+  brandCard:  { backgroundColor: '#FFFFFF', borderRadius: 16, marginBottom: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' },
+  brandAccent:{ height: 5, backgroundColor: '#1037A4' },
+  brandBody:  { padding: 18, alignItems: 'center', gap: 4 },
+  brandName:  { fontSize: 20, fontWeight: '900', color: '#1037A4', letterSpacing: 0.3 },
+  brandAddr:  { fontSize: 11, color: '#64748B', textAlign: 'center', lineHeight: 16 },
+  brandEmail: { fontSize: 11, color: '#64748B' },
+  gstPill:    { backgroundColor: '#EFF6FF', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginTop: 4, borderWidth: 1, borderColor: '#BFDBFE' },
+  gstTxt:     { fontSize: 11, fontWeight: '800', color: '#1D4ED8' },
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['employer-work-history'],
-    queryFn: () => requirementsApi.getWorkHistory(),
-    staleTime: 2 * 60 * 1000,
-  });
+  // Meta row
+  metaRow:    { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  metaCard:   { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', gap: 3 },
+  metaHead:   { fontSize: 9, fontWeight: '900', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 },
+  metaLine:   { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+  metaKey:    { fontSize: 10, fontWeight: '700', color: '#64748B', minWidth: 50 },
+  metaVal:    { fontSize: 11, fontWeight: '600', color: '#1E293B', flex: 1 },
 
-  const all = (data?.history ?? []) as unknown as WorkEntry[];
-  const filtered = search.trim()
-    ? all.filter((r) => (r.assignedAgentName ?? '').toLowerCase().includes(search.toLowerCase()))
-    : all;
+  // Table
+  table:        { backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', marginBottom: 14, borderWidth: 1, borderColor: '#E2E8F0' },
+  tableRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 13, paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F1F5F9' },
+  tableHeaderRow:{ backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  tableTotalRow: { backgroundColor: '#EFF6FF', borderBottomWidth: 0 },
+  tableLabel:   { fontSize: 13, color: '#475569', flex: 1 },
+  tableValue:   { fontSize: 13, color: '#1E293B', fontWeight: '600' },
+  tableHeaderTxt:{ fontSize: 11, fontWeight: '800', color: '#334155', textTransform: 'uppercase', letterSpacing: 0.3 },
+  tableTotalLabel:{ fontSize: 14, fontWeight: '800', color: '#1037A4' },
+  tableTotalValue:{ fontSize: 16, fontWeight: '900', color: '#1037A4' },
 
-  return (
-    <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isFetching} onRefresh={() => void refetch()} tintColor={theme.colors.primary} />}
-    >
-      {/* Search */}
-      <View style={[wh.searchWrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <AppText style={{ fontSize: 14, color: theme.colors.mutedText }}>🔍</AppText>
-        <TextInput
-          style={[wh.searchInput, { color: theme.colors.text }]}
-          placeholder="Search by agent name…"
-          placeholderTextColor={theme.colors.mutedText}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <AppText style={{ color: theme.colors.mutedText, fontSize: 14 }}>✕</AppText>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {isLoading ? (
-        <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <AppText variant="caption" color={theme.colors.mutedText} style={{ marginTop: 10 }}>Loading work history…</AppText>
-        </View>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title={search ? 'No results' : 'No work history yet'}
-          message={search ? 'Try a different agent name.' : 'Completed work assignments will appear here.'}
-        />
-      ) : (
-        <AppCard style={{ padding: 0, overflow: 'hidden' }}>
-          {/* Header */}
-          <View style={[wh.row, { backgroundColor: '#f8fafc' }]}>
-            <AppText style={[wh.th, { flex: 1.4 }]}>Agent</AppText>
-            <AppText style={[wh.th, { flex: 1 }]}>ERN</AppText>
-            <AppText style={[wh.th, { flex: 0.8, textAlign: 'right' }]}>Wage</AppText>
-            <AppText style={[wh.th, { flex: 1, textAlign: 'right' }]}>Date</AppText>
-          </View>
-          {filtered.map((item, i) => (
-            <View
-              key={item._id}
-              style={[
-                wh.row,
-                { backgroundColor: i % 2 === 0 ? theme.colors.card : theme.colors.surface },
-                i < filtered.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
-              ]}
-            >
-              <AppText style={[wh.td, { flex: 1.4, color: '#1d4ed8', fontWeight: '700' }]} numberOfLines={1}>
-                {item.assignedAgentName || '—'}
-              </AppText>
-              <AppText style={[wh.td, { flex: 1 }]} numberOfLines={1}>
-                {item.ERN_NUMBER ? String(item.ERN_NUMBER) : '—'}
-              </AppText>
-              <AppText style={[wh.td, { flex: 0.8, textAlign: 'right', color: '#166534', fontWeight: '700' }]}>
-                {item.finalAgentRequiredWage != null ? `₹${item.finalAgentRequiredWage}` : '—'}
-              </AppText>
-              <AppText style={[wh.td, { flex: 1, textAlign: 'right', color: theme.colors.mutedText }]}>
-                {fmtDate(item.createdAt)}
-              </AppText>
-            </View>
-          ))}
-        </AppCard>
-      )}
-    </ScrollView>
-  );
-};
-
-const wh = StyleSheet.create({
-  searchWrap:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 8, marginBottom: 14 },
-  searchInput: { flex: 1, fontSize: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
-  th:  { fontSize: 11, fontWeight: '800', color: '#334155' },
-  td:  { fontSize: 12, color: '#1e293b' },
+  disclaimer:  { fontSize: 11, color: '#94A3B8', textAlign: 'center', fontStyle: 'italic', marginBottom: 20, lineHeight: 16, paddingHorizontal: 8 },
+  closeAction: { backgroundColor: '#1037A4', borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+  closeActionTxt:{ fontSize: 15, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 },
 });
 
 // ─── Payments Tab ──────────────────────────────────────────────────────────────
 const PaymentsTab = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const { config } = useAppConfig();
+  const { pricing } = usePricingConfig();
+  const gstLabel = `GST (${pricing.gstPercentage}%)`;
   const user   = state.session?.user;
   const userId = user?.id ?? '';
   const [selectedTxn, setSelectedTxn] = useState<RawPaymentTransaction | null>(null);
@@ -312,6 +318,10 @@ const PaymentsTab = (): React.JSX.Element => {
         userName={user?.fullName ?? ''}
         userKyc={u?.kyc}
         userAddress={userAddress}
+        companyAddress={config.contact.companyAddress}
+        supportEmail={config.contact.supportEmail}
+        gstNumber={config.contact.gstNumber}
+        gstLabel={gstLabel}
         onClose={() => setSelectedTxn(null)}
       />
     </ScrollView>
@@ -326,49 +336,20 @@ const pay = StyleSheet.create({
   td:        { fontSize: 12 },
 });
 
-// ─── Main Screen (tabs) ────────────────────────────────────────────────────────
-type Tab = 'history' | 'payments';
-
+// ─── Main Screen ───────────────────────────────────────────────────────────────
 export const TransactionScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation();
-  const [tab, setTab] = useState<Tab>('history');
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader title="History" onBack={() => navigation.goBack()} />
-
-      {/* Tab row */}
-      <View style={[styles.tabRow, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
-        {([
-          { value: 'history',  label: '📋 Work History' },
-          { value: 'payments', label: '💳 Payments' },
-        ] as { value: Tab; label: string }[]).map((t) => {
-          const active = tab === t.value;
-          return (
-            <TouchableOpacity
-              key={t.value}
-              onPress={() => setTab(t.value)}
-              style={[styles.tab, active && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2.5 }]}
-            >
-              <AppText style={[styles.tabTxt, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
-                {t.label}
-              </AppText>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Content */}
-      {tab === 'history' ? <WorkHistoryTab /> : <PaymentsTab />}
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <ScreenHeader title="Transactions" onBack={() => navigation.goBack()} />
+      <PaymentsTab />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  root:       { flex: 1 },
-  tabRow:     { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
-  tab:        { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabTxt:     { fontSize: 13, fontWeight: '700' },
+  root: { flex: 1 },
 });

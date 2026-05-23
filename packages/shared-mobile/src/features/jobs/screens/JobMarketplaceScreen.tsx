@@ -15,7 +15,7 @@ import {
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -46,6 +46,11 @@ const fmtDate = (d?: string): string => {
   catch { return d; }
 };
 
+const fmtLabel = (s?: string | null): string => {
+  if (!s) return '—';
+  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 const totalWorkers = (r: RawRequirement): number =>
   (r.workerQuantitySkilled ?? 0) + (r.workerQuantityUnskilled ?? 0);
 
@@ -68,23 +73,20 @@ const ReqCard = ({ req, isAgent, alreadyInterested, onInterest }: ReqCardProps):
         <View style={styles.cardHeader}>
           <View style={{ flex: 1, gap: 2 }}>
             <AppText variant="label" numberOfLines={1}>
-              {req.workType ?? '—'}{req.subCategory ? ` · ${req.subCategory}` : ''}
+              {fmtLabel(req.workType)}{req.subCategory ? ` · ${fmtLabel(req.subCategory)}` : ''}
             </AppText>
             <AppText variant="caption" color={theme.colors.mutedText}>
               {[req.district, req.state].filter(Boolean).join(', ') || '—'}
             </AppText>
           </View>
-          <Badge
-            label={req.status ?? 'Pending'}
-            variant={req.status?.toLowerCase() === 'assigned' ? 'success' : req.status?.toLowerCase() === 'closed' ? 'neutral' : 'warning'}
-          />
+          <Badge label="Approved" variant="success" />
         </View>
 
         {/* Key info chips */}
         <View style={styles.infoRow}>
           <View style={[styles.infoChip, { backgroundColor: theme.colors.primary + '15' }]}>
             <AppText variant="caption" color={theme.colors.primary} style={styles.infoChipText}>
-              ₹{req.minBudgetPerWorker ?? 0}–{req.maxBudgetPerWorker ?? 0}/day
+              ₹{req.minBudgetPerWorker ?? 0}–{req.maxBudgetPerWorker ?? 0}/{(req as any).salaryType?.toLowerCase() ?? 'day'}
             </AppText>
           </View>
           <View style={[styles.infoChip, { backgroundColor: '#10B98115' }]}>
@@ -164,7 +166,7 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
         <TouchableOpacity activeOpacity={1} style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}>
           <AppText variant="subtitle" style={styles.modalTitle}>Express Interest</AppText>
           <AppText variant="caption" color={theme.colors.mutedText} style={{ marginBottom: 14 }}>
-            {req?.workType ?? ''}{req?.subCategory ? ` · ${req.subCategory}` : ''} · {req?.district ?? ''}
+            {fmtLabel(req?.workType)}{req?.subCategory ? ` · ${fmtLabel(req.subCategory)}` : ''} · {req?.district ?? ''}
           </AppText>
 
           <AppText variant="caption" color={theme.colors.mutedText} style={styles.fieldLabel}>
@@ -217,7 +219,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(route.params?.workType ?? '');
   const [selectedSubCat, setSelectedSubCat] = useState<string>(route.params?.subCategory ?? '');
-  const [page, setPage] = useState(1);
+  const showMyInterests = route.params?.myInterests === true;
 
   // Debounce search
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -226,35 +228,52 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
       setDebouncedSearch(text);
-      setPage(1);
     }, 500);
   };
 
-  // Subcategories for selected category
+  // Subcategories for selected category (selectedCategory is now a value, not label)
   const subCategories = useMemo(() => {
     if (!selectedCategory) return [];
-    const cat = CATEGORIES.find((c) => c.label === selectedCategory);
+    const cat = CATEGORIES.find((c) => c.value === selectedCategory);
     return cat?.subcategories ?? [];
   }, [selectedCategory]);
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['requirements-role', role, user?.id, selectedCategory, selectedSubCat, debouncedSearch, page],
-    queryFn: () => requirementsApi.listForRole({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['requirements-role', role, user?.id, selectedCategory, selectedSubCat, debouncedSearch, showMyInterests],
+    queryFn: ({ pageParam = 1 }) => requirementsApi.listForRole({
       role,
       userId: user?.id,
-      serviceArea: user?.serviceArea,
-      district: user?.district,
+      // selectedCategory is now the category value (e.g. "construction_project_workers")
+      // which matches exactly what CategorySelector stores in the DB
       workType: selectedCategory || undefined,
       subCategory: selectedSubCat || undefined,
       search: debouncedSearch || undefined,
-      page,
-      limit: 20,
+      myInterests: showMyInterests || undefined,
+      page: pageParam as number,
+      limit: 50,
     }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const { currentPage, totalPages } = lastPage.pagination;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
     staleTime: 30_000,
   });
 
-  const requirements: RawRequirement[] = data?.requirements ?? [];
-  const totalPages = data?.pagination.totalPages ?? 1;
+  const requirements: RawRequirement[] = useMemo(
+    () => data?.pages.flatMap((p) => p.requirements) ?? [],
+    [data],
+  );
+  const totalCount = data?.pages[0]?.pagination.totalCount ?? 0;
 
   // Track interested requirements locally (optimistic)
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
@@ -280,11 +299,10 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     interestedIds.has(req._id) ||
     Boolean(req.intrestedAgents?.some((a) => a.agentId === user?.id));
 
-  const handleCategorySelect = (label: string): void => {
-    const next = selectedCategory === label ? '' : label;
+  const handleCategorySelect = (value: string): void => {
+    const next = selectedCategory === value ? '' : value;
     setSelectedCategory(next);
     setSelectedSubCat('');
-    setPage(1);
   };
 
   if (isLoading) return <LoadingState message="Loading requirements…" />;
@@ -292,8 +310,8 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
-      <ScreenHeader title="Job Marketplace" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <ScreenHeader title={showMyInterests ? 'My Interests' : selectedCategory ? (CATEGORIES.find((c) => c.value === selectedCategory)?.label?.replace(/ Workers?$/, '').trim() ?? selectedCategory) : 'Job Marketplace'} />
       {/* Search bar */}
       <View style={[styles.searchRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <View style={[styles.searchBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
@@ -301,13 +319,13 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           <TextInput
             value={search}
             onChangeText={handleSearchChange}
-            placeholder="Search work type, location…"
+            placeholder="Search work type, sub-category, district, state…"
             placeholderTextColor={theme.colors.mutedText}
             style={[styles.searchInput, { color: theme.colors.text }]}
             returnKeyType="search"
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); setPage(1); }}>
+            <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); }}>
               <AppText variant="caption" color={theme.colors.mutedText}>✕</AppText>
             </TouchableOpacity>
           )}
@@ -333,15 +351,15 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat.value}
-            onPress={() => handleCategorySelect(cat.label)}
+            onPress={() => handleCategorySelect(cat.value)}
             style={[styles.filterChip, {
-              backgroundColor: selectedCategory === cat.label ? theme.colors.primary : theme.colors.card,
-              borderColor: selectedCategory === cat.label ? theme.colors.primary : theme.colors.border,
+              backgroundColor: selectedCategory === cat.value ? theme.colors.primary : theme.colors.card,
+              borderColor: selectedCategory === cat.value ? theme.colors.primary : theme.colors.border,
             }]}
           >
             <AppText
               variant="caption"
-              color={selectedCategory === cat.label ? '#FFF' : theme.colors.text}
+              color={selectedCategory === cat.value ? '#FFF' : theme.colors.text}
               style={styles.chipText}
               numberOfLines={1}
             >
@@ -360,7 +378,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           contentContainerStyle={styles.filterBarContent}
         >
           <TouchableOpacity
-            onPress={() => { setSelectedSubCat(''); setPage(1); }}
+            onPress={() => { setSelectedSubCat(''); }}
             style={[styles.filterChip, styles.subChip, {
               backgroundColor: !selectedSubCat ? '#6366F1' : theme.colors.card,
               borderColor: !selectedSubCat ? '#6366F1' : theme.colors.border,
@@ -371,13 +389,13 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           {subCategories.map((sc) => (
             <TouchableOpacity
               key={sc.value}
-              onPress={() => { setSelectedSubCat(sc.label); setPage(1); }}
+              onPress={() => { setSelectedSubCat(sc.value); }}
               style={[styles.filterChip, styles.subChip, {
-                backgroundColor: selectedSubCat === sc.label ? '#6366F1' : theme.colors.card,
-                borderColor: selectedSubCat === sc.label ? '#6366F1' : theme.colors.border,
+                backgroundColor: selectedSubCat === sc.value ? '#6366F1' : theme.colors.card,
+                borderColor: selectedSubCat === sc.value ? '#6366F1' : theme.colors.border,
               }]}
             >
-              <AppText variant="caption" color={selectedSubCat === sc.label ? '#FFF' : theme.colors.text} style={styles.chipText} numberOfLines={1}>
+              <AppText variant="caption" color={selectedSubCat === sc.value ? '#FFF' : theme.colors.text} style={styles.chipText} numberOfLines={1}>
                 {sc.label}
               </AppText>
             </TouchableOpacity>
@@ -388,9 +406,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       {/* Result count + refresh indicator */}
       <View style={styles.resultHeader}>
         <AppText variant="caption" color={theme.colors.mutedText}>
-          {data?.pagination.totalCount ?? requirements.length} requirements found
+          {totalCount > 0 ? `${totalCount} requirements found` : `${requirements.length} requirements found`}
         </AppText>
-        {isFetching && <ActivityIndicator size="small" color={theme.colors.primary} />}
+        {isFetching && !isFetchingNextPage && <ActivityIndicator size="small" color={theme.colors.primary} />}
       </View>
 
       {/* Requirements list */}
@@ -405,7 +423,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           keyExtractor={(item, i) => item._id || String(i)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => { setPage(1); void refetch(); }} />}
+          refreshControl={<RefreshControl refreshing={isFetching && !isLoading && !isFetchingNextPage} onRefresh={() => void refetch()} />}
+          onEndReached={() => { if (hasNextPage && !isFetchingNextPage) void fetchNextPage(); }}
+          onEndReachedThreshold={0.3}
           renderItem={({ item }) => (
             <ReqCard
               req={item}
@@ -415,25 +435,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             />
           )}
           ListFooterComponent={
-            totalPages > 1 ? (
-              <View style={styles.pagination}>
-                <TouchableOpacity
-                  onPress={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  style={[styles.pageBtn, { opacity: page <= 1 ? 0.4 : 1, borderColor: theme.colors.border }]}
-                >
-                  <AppText variant="caption" color={theme.colors.primary}>← Prev</AppText>
-                </TouchableOpacity>
-                <AppText variant="caption" color={theme.colors.mutedText}>
-                  {page} / {totalPages}
-                </AppText>
-                <TouchableOpacity
-                  onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  style={[styles.pageBtn, { opacity: page >= totalPages ? 0.4 : 1, borderColor: theme.colors.border }]}
-                >
-                  <AppText variant="caption" color={theme.colors.primary}>Next →</AppText>
-                </TouchableOpacity>
+            isFetchingNextPage ? (
+              <View style={styles.loadMore}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
               </View>
             ) : null
           }
@@ -489,8 +493,7 @@ const styles = StyleSheet.create({
   perk: { borderRadius: 6, backgroundColor: '#6366F115', paddingHorizontal: 8, paddingVertical: 4 },
   perkText: { fontSize: 11, fontWeight: '600' },
   interestBtn: { marginTop: 8 },
-  pagination: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  pageBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
+  loadMore: { paddingVertical: 20, alignItems: 'center' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalBox: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },

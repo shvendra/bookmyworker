@@ -21,6 +21,7 @@ interface AppTextProps extends TextProps {
   weight?: TextStyle['fontWeight'];
   color?: string;
   center?: boolean;
+  children?: React.ReactNode;
 }
 
 const variantStyles = StyleSheet.create({

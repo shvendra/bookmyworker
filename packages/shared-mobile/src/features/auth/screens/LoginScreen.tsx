@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '../../../shared/components/ui/AppText';
+import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useAppTheme } from '../../../core/theme';
 import { ROUTES } from '../../../shared/constants/routes';
 import { OtpLoginForm } from './OtpLoginForm';
@@ -43,14 +44,12 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* Brand strip */}
       <View style={[styles.brandStrip, { paddingTop: insets.top + 16 }]}>
         <View style={styles.brandContent}>
-          <View style={styles.brandLogoWrap}>
-            <Image source={require('../../../../assets/logo.png')} style={styles.brandLogoImg} resizeMode="contain" />
-          </View>
+          <BrandLogo style={styles.brandLogoImg} />
           <View style={styles.brandTextWrap}>
             <AppText variant="heading" color="#FFFFFF" style={styles.brandName}>
               BookMyWorker
@@ -144,7 +143,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 32,
     overflow: 'hidden',
@@ -155,15 +154,7 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 8,
   },
-  brandLogoWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandLogoImg: { width: 60, height: 60 },
+  brandLogoImg: { width: 52, height: 52 },
   brandTextWrap:  { gap: 2 },
   brandName:      { lineHeight: 28 },
 

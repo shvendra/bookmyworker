@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
@@ -26,6 +27,7 @@ const formatTime = (iso?: string): string => {
 
 export const AttendanceScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const toast = useToast();
   const queryClient = useQueryClient();
 
   const { data: records, isLoading, isError, refetch } = useQuery({
@@ -56,9 +58,9 @@ export const AttendanceScreen = (): React.JSX.Element => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['attendance-my'] });
       void queryClient.invalidateQueries({ queryKey: ['worker-dashboard'] });
-      Alert.alert('Checked In', 'Your attendance has been recorded.');
+      toast.success('Your check-in has been recorded for today.', 'Checked In ✓');
     },
-    onError: () => Alert.alert('Error', 'Could not mark attendance. Try again.'),
+    onError: () => toast.error('Could not mark attendance. Please try again.', 'Check-In Failed'),
   });
 
   const checkOutMutation = useMutation({
@@ -66,9 +68,9 @@ export const AttendanceScreen = (): React.JSX.Element => {
       workerApi.markAttendance({ requirementId, type: 'check-out' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['attendance-my'] });
-      Alert.alert('Checked Out', 'Your check-out has been recorded.');
+      toast.success('Your check-out has been recorded for today.', 'Checked Out ✓');
     },
-    onError: () => Alert.alert('Error', 'Could not mark check-out. Try again.'),
+    onError: () => toast.error('Could not mark check-out. Please try again.', 'Check-Out Failed'),
   });
 
   const attendanceList: AttendanceRecord[] = records ?? [];
@@ -84,7 +86,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Attendance" />
     <FlatList
       style={{ flex: 1, backgroundColor: theme.colors.background }}

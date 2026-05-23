@@ -12,23 +12,27 @@ import {
 } from 'react-native';
 import { ROUTES } from '../../../shared/constants/routes';
 import { AppButton } from '../../../shared/components/ui/AppButton';
+import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
+import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 const { width: W, height: H } = Dimensions.get('window');
 
-const FEATURES = [
-  { icon: '👷', title: 'Hire Workers Fast',     desc: 'Connect with 5 lakh+ skilled & unskilled workers across India' },
-  { icon: '📋', title: 'Manage Requirements',   desc: 'Post, track and close job requirements in minutes' },
-  { icon: '💼', title: 'Agent Network',         desc: 'Agents bring pre-verified workers from your district' },
-  { icon: '💳', title: 'Digital Payments',      desc: 'Transparent wage tracking with wallet & payout system' },
-];
-
 export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { config } = useAppConfig();
+  const workerLabel = formatStat(config.stats.workerCount);
+
+  const FEATURES = [
+    { icon: '👷', title: 'Hire Workers Fast',     desc: `Connect with ${workerLabel} skilled & unskilled workers across India` },
+    { icon: '📋', title: 'Manage Requirements',   desc: 'Post, track and close job requirements in minutes' },
+    { icon: '💼', title: 'Agent Network',         desc: 'Agents bring pre-verified workers from your district' },
+    { icon: '💳', title: 'Digital Payments',      desc: 'Transparent wage tracking with wallet & payout system' },
+  ];
 
   const heroAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
@@ -44,7 +48,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#1338B0" />
+      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
       {/* ── Hero header ─────────────────────────────────────────────── */}
       <View style={styles.hero}>
@@ -61,13 +65,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
               },
             ]}
           >
-            <View style={styles.logoMark}>
-               <Image
-    source={require('../../../../assets/logo.png')} // update path
-    style={styles.logoImage}
-    resizeMode="contain"
-  />
-            </View>
+            <BrandLogo style={styles.logoImage} />
             <AppText variant="display" color="#FFFFFF" style={styles.heroTitle}>
               BookMyWorker
             </AppText>
@@ -81,7 +79,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
                 ))}
               </View>
               <AppText variant="micro" color="rgba(255,255,255,0.9)" style={styles.proofText}>
-                5 Lakh+ workers active today
+                {workerLabel} workers active today
               </AppText>
             </View>
           </Animated.View>
@@ -158,7 +156,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   hero: {
-    backgroundColor: '#1338B0',
+    backgroundColor: '#1037A4',
     paddingHorizontal: 24,
     paddingBottom: 44,
     overflow: 'hidden',
@@ -169,11 +167,6 @@ const styles = StyleSheet.create({
   decoCircle1: { width: 280, height: 280, top: -120, right: -80 },
   decoCircle2: { width: 160, height: 160, bottom: -40, left: W * 0.3 },
   heroContent: { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 20 : 20 },
-  logoMark: {
-    width: 64, height: 64, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
   logoEmoji: { fontSize: 34, lineHeight: 38 },
   heroTitle: { fontSize: 30, lineHeight: 38, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 },
   heroSubtitle: { lineHeight: 24, marginBottom: 20 },
@@ -183,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, alignSelf: 'flex-start',
   },
   proofDots: { flexDirection: 'row', alignItems: 'center' },
-  proofDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#1338B0' },
+  proofDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#1037A4' },
   proofText: { marginLeft: 8 },
 
   body: {
@@ -200,7 +193,8 @@ const styles = StyleSheet.create({
   registerBtn: { backgroundColor: 'transparent' },
   terms: { marginTop: 6, lineHeight: 16 },
   logoImage: {
-  width: 100,
-  height: 100,
-},
+    width: 100,
+    height: 100,
+    marginBottom: 14,
+  },
 });
