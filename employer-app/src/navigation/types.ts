@@ -35,6 +35,7 @@ export type EmployerStackParamList = {
   KycVerification: undefined;
   NotificationPreferences: undefined;
   Notifications: undefined;
+  MyActivity: undefined;
   Support: undefined;
   TermsPrivacy: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };

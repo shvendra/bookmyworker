@@ -117,7 +117,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
   });
 
   const isDark  = theme.mode === 'dark';
-  const purple  = '#1338b0';
+  const purple  = '#1037A4';
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F9F5FF' }]}>

@@ -30,9 +30,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.bookmyworkers.employer",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used for uploading KYC documents.",
-        "NSPhotoLibraryUsageDescription": "Used for uploading profile and KYC photos.",
-        "NSLocationWhenInUseUsageDescription": "Used to show nearby workers."
+        "NSCameraUsageDescription": "Used for uploading KYC and profile documents.",
+        "NSPhotoLibraryUsageDescription": "Used for uploading profile and KYC photos."
       }
     },
     "android": {
