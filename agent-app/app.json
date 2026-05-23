@@ -59,8 +59,9 @@
     "extra": {
       "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
       "eas": {
-        "projectId": "bookmyworker-agent"
+        "projectId": "ed89ef54-3e18-46f1-af1a-fe038fd6fc84"
       }
-    }
+    },
+    "owner": "singh2495shivendra"
   }
 }

@@ -6,11 +6,33 @@ const sharedRoot = path.resolve(projectRoot, '..', 'packages', 'shared-mobile');
 
 const config = getDefaultConfig(projectRoot);
 
+// Watch the shared package source
 config.watchFolders = [sharedRoot];
 
-// Only resolve from this app's node_modules.
+// Always resolve node_modules from THIS app only — prevents duplicate React
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
 ];
+
+// Force singleton packages to always resolve from this app's node_modules.
+// This is the definitive fix for "multiple copies of React" in a monorepo
+// where the shared package has its own node_modules installed.
+const appModules = path.resolve(projectRoot, 'node_modules');
+config.resolver.extraNodeModules = {
+  'react':                                    path.resolve(appModules, 'react'),
+  'react-native':                             path.resolve(appModules, 'react-native'),
+  'react-native-safe-area-context':           path.resolve(appModules, 'react-native-safe-area-context'),
+  'react-native-screens':                     path.resolve(appModules, 'react-native-screens'),
+  'react-native-reanimated':                  path.resolve(appModules, 'react-native-reanimated'),
+  'react-native-gesture-handler':             path.resolve(appModules, 'react-native-gesture-handler'),
+  '@react-navigation/native':                 path.resolve(appModules, '@react-navigation/native'),
+  '@tanstack/react-query':                    path.resolve(appModules, '@tanstack/react-query'),
+  '@tanstack/query-core':                     path.resolve(appModules, '@tanstack/query-core'),
+  '@tanstack/react-query-persist-client':     path.resolve(appModules, '@tanstack/react-query-persist-client'),
+  '@tanstack/query-async-storage-persister':  path.resolve(appModules, '@tanstack/query-async-storage-persister'),
+  'expo':                                     path.resolve(appModules, 'expo'),
+  'axios':                                    path.resolve(appModules, 'axios'),
+  'socket.io-client':                         path.resolve(appModules, 'socket.io-client'),
+};
 
 module.exports = config;

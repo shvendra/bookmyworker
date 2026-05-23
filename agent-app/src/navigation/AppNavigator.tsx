@@ -11,8 +11,8 @@ import { useAuth } from '../../../packages/shared-mobile/src/state/auth/AuthCont
 import { LoadingState } from '../../../packages/shared-mobile/src/shared/components/feedback/LoadingState';
 import { navigationRef, resetToWelcome } from '../../../packages/shared-mobile/src/core/navigation/navigationRef';
 
-// Auth screens (shared)
-import { WelcomeScreen } from '../../../packages/shared-mobile/src/features/auth/screens/WelcomeScreen';
+// Auth screens — agent-specific welcome + shared auth flow
+import { AgentWelcomeScreen } from '../screens/auth/AgentWelcomeScreen';
 import { LoginScreen } from '../../../packages/shared-mobile/src/features/auth/screens/LoginScreen';
 import { OtpVerificationScreen } from '../../../packages/shared-mobile/src/features/auth/screens/OtpVerificationScreen';
 import { RegisterOtpScreen } from '../../../packages/shared-mobile/src/features/auth/screens/RegisterOtpScreen';
@@ -20,6 +20,7 @@ import { ForgotPasswordScreen } from '../../../packages/shared-mobile/src/featur
 
 // Agent-specific register screen (no Employer option)
 import { AgentRegisterScreen } from '../screens/auth/AgentRegisterScreen';
+import { SwitchAccountScreen } from '../../../packages/shared-mobile/src/features/profile/screens/SwitchAccountScreen';
 
 // Onboarding — KYC only, no role selection (role is set at registration)
 import { KycScreen } from '../../../packages/shared-mobile/src/features/onboarding/screens/KycScreen';
@@ -32,6 +33,7 @@ import { EditProfileScreen } from '../../../packages/shared-mobile/src/features/
 import { KycVerificationScreen } from '../../../packages/shared-mobile/src/features/profile/screens/KycVerificationScreen';
 import { NotificationPreferencesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/NotificationPreferencesScreen';
 import { NotificationsScreen } from '../../../packages/shared-mobile/src/features/profile/screens/NotificationsScreen';
+import { MyActivityScreen } from '../../../packages/shared-mobile/src/features/profile/screens/MyActivityScreen';
 import { SupportScreen } from '../../../packages/shared-mobile/src/features/profile/screens/SupportScreen';
 import { TermsPrivacyScreen } from '../../../packages/shared-mobile/src/features/profile/screens/TermsPrivacyScreen';
 import { JobMarketplaceScreen } from '../../../packages/shared-mobile/src/features/jobs/screens/JobMarketplaceScreen';
@@ -42,6 +44,8 @@ import { WorkerProfileScreen } from '../../../packages/shared-mobile/src/feature
 import { WorkerSearchScreen } from '../../../packages/shared-mobile/src/features/search/screens/WorkerSearchScreen';
 import { AddWorkerScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AddWorkerScreen';
 import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/chat/screens/ChatRoomScreen';
+import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
+import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 
 import type { AgentStackParamList } from './types';
 
@@ -92,7 +96,7 @@ export const AppNavigator = (): React.JSX.Element => {
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────
           <>
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Welcome" component={AgentWelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="Register" component={AgentRegisterScreen} />
@@ -118,18 +122,22 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WorkerSearch" component={WorkerSearchScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="AddWorker" component={AddWorkerScreen} options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'KYC Verification' }} />
-            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Notification Preferences' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Notifications' }} />
-            <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Support & Help' }} />
-            <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: true, title: 'Terms & Privacy' }} />
+            <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
-              options={({ route }) => ({
+              options={{
                 animation: 'slide_from_right',
-                headerShown: true,
-                title: route.params.roomName,
-              })}
+                headerShown: false,
+              }}
             >
               {({ route }) => (
                 <ChatRoomScreen

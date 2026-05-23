@@ -139,16 +139,16 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   });
 
   const isDark = theme.mode === 'dark';
-  const teal = '#0891B2';
+  const primary = theme.colors.primary;
 
   // ── Step 1: Role selection ──────────────────────────────────────────────────
   if (step === 1) {
     return (
-      <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F0FDFF' }]}>
-        <StatusBar barStyle="light-content" backgroundColor={teal} />
+      <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
+        <StatusBar barStyle="light-content" backgroundColor={primary} />
 
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: teal }]}>
+        <View style={[styles.header, { backgroundColor: primary }]}>
           <SafeAreaView>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
               <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
@@ -203,7 +203,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                     },
                   ]}
                 >
-                  <View style={[styles.roleIconWrap, { backgroundColor: teal + '18' }]}>
+                  <View style={[styles.roleIconWrap, { backgroundColor: primary + '18' }]}>
                     <AppText style={styles.roleIcon}>{opt.icon}</AppText>
                   </View>
                   <View style={styles.roleTextWrap}>
@@ -214,7 +214,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                       {opt.description}
                     </AppText>
                   </View>
-                  <AppText style={[styles.roleArrow, { color: teal }]}>›</AppText>
+                  <AppText style={[styles.roleArrow, { color: primary }]}>›</AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -225,7 +225,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               Already have an account?{' '}
             </AppText>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <AppText variant="body" color={teal} style={styles.loginLink}>
+              <AppText variant="body" color={primary} style={styles.loginLink}>
                 Sign In
               </AppText>
             </TouchableOpacity>
@@ -239,11 +239,11 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   const isWorker = role === 'SelfWorker';
 
   return (
-    <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F0FDFF' }]}>
-      <StatusBar barStyle="light-content" backgroundColor={teal} />
+    <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
+      <StatusBar barStyle="light-content" backgroundColor={primary} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: teal }]}>
+      <View style={[styles.header, { backgroundColor: primary }]}>
         <SafeAreaView>
           <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
             <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
@@ -572,7 +572,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               Already have an account?{' '}
             </AppText>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <AppText variant="body" color={teal} style={styles.loginLink}>
+              <AppText variant="body" color={primary} style={styles.loginLink}>
                 Sign In
               </AppText>
             </TouchableOpacity>
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   roleScroll: { padding: 20, paddingBottom: 40 },
   roleCard: { borderRadius: 24, padding: 24, marginTop: -12 },
   cardShadow: {
-    shadowColor: '#0891B2',
+    shadowColor: '#1037A4',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 20,

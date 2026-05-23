@@ -30,8 +30,8 @@ const AppErrorFallback = ({ error, resetErrorBoundary }: FallbackProps): React.J
 const App = (): React.JSX.Element => (
   <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
-      {/* Teal brand for agent/worker app */}
-      <ThemeProvider primaryOverride="#0891B2">
+      {/* Blue brand for agent/worker app */}
+      <ThemeProvider primaryOverride="#1037A4">
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{ persister: asyncStoragePersister }}
