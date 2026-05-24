@@ -39,6 +39,8 @@ export type EmployerStackParamList = {
   Support: undefined;
   TermsPrivacy: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
+  // Pipeline overview
+  EmployerPipeline: undefined;
   // Wallet (for Transactions tab)
   Transactions: undefined;
   // Subscription + payment flow

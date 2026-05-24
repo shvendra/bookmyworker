@@ -21,8 +21,8 @@ import { ForgotPasswordScreen } from '../../../packages/shared-mobile/src/featur
 // Employer-specific register screen
 import { EmployerRegisterScreen } from '../screens/auth/EmployerRegisterScreen';
 
-// Onboarding — employers go straight to KYC after registration
-import { KycScreen } from '../../../packages/shared-mobile/src/features/onboarding/screens/KycScreen';
+// Onboarding — employer-specific KYC with GST collection
+import { EmployerKycScreen } from '../../../packages/shared-mobile/src/features/onboarding/screens/EmployerKycScreen';
 
 // Employer tabs (employer role only)
 import { RoleTabsNavigator } from '../../../packages/shared-mobile/src/app/navigation/RoleTabsNavigator';
@@ -43,6 +43,7 @@ import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/cha
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
 import { TransactionScreen } from '../../../packages/shared-mobile/src/features/wallet/screens/TransactionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
+import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
 
 import type { EmployerStackParamList } from './types';
 
@@ -101,7 +102,7 @@ export const AppNavigator = (): React.JSX.Element => {
         ) : !state.session?.onboardingCompleted ? (
           // ── Onboarding — just KYC, no role selection ─────────────
           <>
-            <Stack.Screen name="Kyc" component={KycScreen} />
+            <Stack.Screen name="Kyc" component={EmployerKycScreen} />
           </>
         ) : (
           // ── Authenticated ─────────────────────────────────────────
@@ -124,6 +125,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}
