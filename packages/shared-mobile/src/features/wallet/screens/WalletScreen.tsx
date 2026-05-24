@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Linking,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -9,9 +10,9 @@ import {
   View,
 } from 'react-native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
-import { walletApi, type RawPaymentTransaction, type WithdrawalPayload } from '../../../core/api/endpoints/walletApi';
+import { walletApi, type RawPaymentTransaction } from '../../../core/api/endpoints/walletApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
@@ -36,9 +37,26 @@ const txStatusColor = (s?: string): string => {
   return '#F59E0B';
 };
 
-const WalletTxRow = ({ tx, isLast }: { tx: RawPaymentTransaction; isLast: boolean }): React.JSX.Element => {
+const isCompletedTx = (tx: RawPaymentTransaction): boolean => {
+  const completed = ['completed', 'done'];
+  return (
+    completed.includes((tx.creditStatus ?? '').toLowerCase()) ||
+    completed.includes((tx.paymentStatus ?? '').toLowerCase())
+  );
+};
+
+const WalletTxRow = ({
+  tx,
+  isLast,
+  onDownloadInvoice,
+}: {
+  tx: RawPaymentTransaction;
+  isLast: boolean;
+  onDownloadInvoice?: () => void;
+}): React.JSX.Element => {
   const { theme } = useAppTheme();
   const status = tx.creditStatus ?? tx.paymentStatus ?? tx.withdrawalStatus ?? 'pending';
+  const showInvoice = !!onDownloadInvoice && isCompletedTx(tx);
   return (
     <View style={[styles.txRow, { borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }]}>
       <AppText variant="caption" color={theme.colors.mutedText} style={styles.colDate}>{fmtDate(tx.createdAt)}</AppText>
@@ -51,6 +69,13 @@ const WalletTxRow = ({ tx, isLast }: { tx: RawPaymentTransaction; isLast: boolea
       <AppText variant="label" color={theme.colors.success} style={[styles.colAmt, { textAlign: 'right' }]}>
         {fmtAmt(tx.amount)}
       </AppText>
+      {showInvoice ? (
+        <TouchableOpacity onPress={onDownloadInvoice} style={styles.invoiceBtn} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <AppText style={styles.invoiceIcon}>🧾</AppText>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.invoiceBtn} />
+      )}
     </View>
   );
 };
@@ -94,36 +119,18 @@ export const WalletScreen = (): React.JSX.Element => {
     enabled: !!userId,
   });
 
-  const payoutMutation = useMutation({
-    mutationFn: (amount: number) => walletApi.requestWithdrawal({ amount } as unknown as WithdrawalPayload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
-      void queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
-      Alert.alert('Success', 'Withdrawal request submitted. You will receive funds within 24 hours.');
-    },
-    onError: () => Alert.alert('Error', 'Could not process withdrawal request. Try again.'),
-  });
-
-  const handlePayout = (): void => {
-    const bal = balance ?? 0;
-    if (bal < 100) {
-      Alert.alert('Insufficient Balance', 'Minimum payout amount is ₹100.');
-      return;
-    }
-    Alert.alert(
-      'Request Payout',
-      `Withdraw ₹${bal.toLocaleString('en-IN')} to your linked bank account?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm', onPress: () => payoutMutation.mutate(bal) },
-      ]
-    );
-  };
-
   const isLoading = balanceLoading || txLoading;
 
   const handleRefresh = (): void => {
     void refetchTx();
+  };
+
+  const handleDownloadInvoice = (tx: RawPaymentTransaction): void => {
+    void walletApi.getInvoiceUrl(tx._id).then((url) => {
+      void Linking.openURL(url);
+    }).catch(() => {
+      Alert.alert('Error', 'Could not open invoice. Please try again.');
+    });
   };
 
   const allTransactions: RawPaymentTransaction[] = txList ?? [];
@@ -134,13 +141,12 @@ export const WalletScreen = (): React.JSX.Element => {
 
   const balanceDisplay = balance ?? 0;
 
-  const walletTitle = role === 'employer' ? 'Business Wallet' : role === 'agent' ? 'Commission Wallet' : 'My Wallet';
-  const payoutLabel = role === 'employer' ? 'Add Funds' : 'Request Payout';
+  const walletTitle = role === 'employer' ? 'My Payments' : 'My Payments';
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Wallet" />
+      <ScreenHeader title="My Payments" />
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.content}
@@ -154,18 +160,8 @@ export const WalletScreen = (): React.JSX.Element => {
           ₹{balanceDisplay.toLocaleString('en-IN')}
         </AppText>
         <AppText variant="caption" color="rgba(255,255,255,0.7)" style={styles.balanceSub}>
-          Available Balance
+          Subscription Credits
         </AppText>
-
-        {(role === 'agent' || role === 'worker') && (
-          <AppButton
-            title={payoutLabel}
-            onPress={handlePayout}
-            loading={payoutMutation.isPending}
-            variant="ghost"
-            style={styles.payoutBtn}
-          />
-        )}
       </View>
 
       {/* Role-specific info */}
@@ -173,15 +169,15 @@ export const WalletScreen = (): React.JSX.Element => {
         <AppCard style={[styles.infoCard, { backgroundColor: theme.colors.warning + '15' }]}>
           <AppText variant="label">💳 Subscription & Payments</AppText>
           <AppText variant="caption" color={theme.colors.mutedText} style={styles.infoText}>
-            Your subscription charges and requirement payment history are shown below.
+            Your subscription charges and payment history are shown below.
           </AppText>
         </AppCard>
       )}
       {role === 'agent' && (
-        <AppCard style={[styles.infoCard, { backgroundColor: theme.colors.success + '15' }]}>
-          <AppText variant="label">💰 Commission Earnings</AppText>
+        <AppCard style={[styles.infoCard, { backgroundColor: '#EFF6FF' }]}>
+          <AppText variant="label">📋 Subscription History</AppText>
           <AppText variant="caption" color={theme.colors.mutedText} style={styles.infoText}>
-            Earn commission for every worker you successfully place in a job.
+            Your BookMyWorker subscription charges and platform payments.
           </AppText>
         </AppCard>
       )}
@@ -241,6 +237,7 @@ export const WalletScreen = (): React.JSX.Element => {
               key={tx._id || i}
               tx={tx}
               isLast={i === transactions.length - 1}
+              onDownloadInvoice={role === 'employer' ? () => handleDownloadInvoice(tx) : undefined}
             />
           ))}
         </AppCard>
@@ -281,4 +278,6 @@ const styles = StyleSheet.create({
   colStatus: { flex: 1.1, fontSize: 11 },
   colMethod: { flex: 0.9, fontSize: 11 },
   colAmt: { flex: 1, fontSize: 12, fontWeight: '700' },
+  invoiceBtn: { width: 28, alignItems: 'center' },
+  invoiceIcon: { fontSize: 16 },
 });

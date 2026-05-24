@@ -21,6 +21,7 @@ import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeM
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
+import { useTranslation } from 'react-i18next';
 import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
@@ -103,6 +104,7 @@ const MenuSection = ({ label, children }: MenuSectionProps): React.JSX.Element =
 };
 
 export const ProfileScreen = (): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme, setThemeMode } = useAppTheme();
   const { state, signOut, setLanguage } = useAuth();
   const navigation = useNavigation<ProfileNav>();
@@ -222,7 +224,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           style={styles.editProfileBtn}
           activeOpacity={0.8}
         >
-          <AppText style={styles.editProfileTxt}>Edit Public Profile</AppText>
+          <AppText style={styles.editProfileTxt}>{t('profile_editPublicProfile')}</AppText>
         </TouchableOpacity>
       </View>
 
@@ -236,11 +238,11 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           >
             <AppText style={styles.switchIcon}>🔄</AppText>
             <View style={styles.switchText}>
-              <AppText variant="labelSm" color="#FFFFFF">Switch Account</AppText>
+              <AppText variant="labelSm" color="#FFFFFF">{t('profile_switchAccount')}</AppText>
               <AppText variant="micro" color="rgba(255,255,255,0.75)">
                 {availableRoles.length > 1
                   ? `${availableRoles.length} accounts · Active: ${currentBackendRole}`
-                  : 'Manage your linked accounts'}
+                  : t('profile_manageAccounts')}
               </AppText>
             </View>
             <AppText style={[styles.switchArrow, { color: 'rgba(255,255,255,0.7)' }]}>›</AppText>
@@ -248,16 +250,16 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         )}
 
         {/* Verification & Trust */}
-        <MenuSection label="VERIFICATION & TRUST">
+        <MenuSection label={t('profile_sectionVerification')}>
           <MenuItem
             icon="🛡️"
-            label="KYC Verification"
+            label={t('profile_kycVerification')}
             onPress={() => navigation.navigate('KycVerification')}
             badge={user?.kycStatus === 'pending' ? '!' : undefined}
             right={
               user?.kycStatus === 'verified' ? (
                 <View style={styles.approvedBadge}>
-                  <AppText style={styles.approvedBadgeTxt}>✓ Approved</AppText>
+                  <AppText style={styles.approvedBadgeTxt}>{t('profile_approved')}</AppText>
                 </View>
               ) : undefined
             }
@@ -265,7 +267,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           {(user?.role === 'agent' || user?.role === 'selfworker' || user?.role === 'worker') && (
             <MenuItem
               icon="🏆"
-              label="Become a Verified Agent"
+              label={t('becomeVerifiedAgent')}
               onPress={() => setVerifiedModalVisible(true)}
               isLast
               right={
@@ -282,11 +284,11 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         </MenuSection>
 
         {/* Account Settings */}
-        <MenuSection label="ACCOUNT SETTINGS">
+        <MenuSection label={t('profile_sectionAccount')}>
           {user?.role !== 'employer' && (
             <MenuItem
               icon="🌐"
-              label="Language"
+              label={t('profile_language')}
               onPress={() => setLangModalVisible(true)}
               right={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -300,26 +302,26 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           )}
           <MenuItem
             icon="🔔"
-            label="Notifications Hub"
+            label={t('profile_notificationsHub')}
             onPress={() => navigation.navigate('Notifications')}
             right={
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <AppText variant="micro" color={theme.colors.mutedText}>All activity alerts</AppText>
+                <AppText variant="micro" color={theme.colors.mutedText}>{t('profile_allActivityAlerts')}</AppText>
                 <AppText style={[styles.menuChevron, { color: theme.colors.mutedText }]}>›</AppText>
               </View>
             }
           />
-          <MenuItem icon="🛡️" label="Security & Privacy" onPress={() => navigation.navigate('TermsPrivacy')} />
-          <MenuItem icon="💳" label="Payments & Billing" onPress={() => navigation.navigate('Subscription')} />
-          <MenuItem icon="🧾" label="Payment History" onPress={() => navigation.navigate('Transactions')} />
-          <MenuItem icon="⚙️" label="Notification Settings" onPress={() => navigation.navigate('NotificationPreferences')} isLast />
+          <MenuItem icon="🛡️" label={t('profile_securityPrivacy')} onPress={() => navigation.navigate('TermsPrivacy')} />
+          <MenuItem icon="💳" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
+          <MenuItem icon="🧾" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+          <MenuItem icon="⚙️" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 
         {/* Appearance Section */}
-        <MenuSection label="APPEARANCE">
+        <MenuSection label={t('profile_sectionAppearance')}>
           <MenuItem
             icon="🌙"
-            label="Dark Mode / Theme"
+            label={t('profile_darkMode')}
             onPress={() => {}}
             isLast
             right={
@@ -335,10 +337,10 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
 
         {/* Workers Section — employer only */}
         {user?.role === 'employer' && (
-          <MenuSection label="WORKERS">
+          <MenuSection label={t('profile_sectionWorkers')}>
             <MenuItem
               icon="👷"
-              label="Browse Workers & Agents"
+              label={t('profile_browseWorkers')}
               onPress={() => navigation.navigate('WorkerSearch')}
               isLast
             />
@@ -355,7 +357,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         >
           <AppText style={styles.signOutIcon}>🚪</AppText>
           <AppText variant="label" color={theme.colors.danger} style={styles.signOutText}>
-            Sign Out
+            {t('profile_signOut')}
           </AppText>
         </TouchableOpacity>
 {/* Delete Account Accordion */}
@@ -396,7 +398,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           },
         ]}
       >
-        Want to remove or delete account?
+        {t('profile_deleteAccountHint')}
       </AppText>
 
       <AppText
@@ -464,7 +466,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 fontSize: 13,
               }}
             >
-              Delete Account
+              {t('profile_deleteAccount')}
             </AppText>
 
             <AppText
@@ -476,7 +478,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 fontSize: 10,
               }}
             >
-              Permanently remove your account
+              {t('profile_deleteAccountDesc')}
             </AppText>
           </View>
         </TouchableOpacity>
@@ -485,7 +487,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
   </View>
 </View>
         <AppText variant="micro" color={theme.colors.mutedText} style={styles.version}>
-          BookMyWorkers v1.0.0
+          {t('profile_version')}
         </AppText>
       </View>
 
@@ -507,10 +509,10 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           >
             <View style={[styles.modalHandle, { backgroundColor: theme.colors.border }]} />
             <AppText variant="heading" color={theme.colors.text} style={styles.modalTitle}>
-              Choose Language
+              {t('profile_chooseLanguage')}
             </AppText>
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.modalSub}>
-              Select your preferred language
+              {t('selectLanguage')}
             </AppText>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.langGrid}>
@@ -567,9 +569,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         <View style={styles.signOutOverlay}>
           <View style={[styles.signOutDialog, { backgroundColor: theme.colors.card }]}>
             <AppText style={styles.signOutEmoji}>🚪</AppText>
-            <AppText variant="subtitle" style={styles.signOutTitle}>Sign Out?</AppText>
+            <AppText variant="subtitle" style={styles.signOutTitle}>{t('profile_signOutTitle')}</AppText>
             <AppText variant="body" color={theme.colors.mutedText} style={styles.signOutMessage}>
-              Are you sure you want to sign out of your account?
+              {t('profile_signOutMessage')}
             </AppText>
             <View style={styles.signOutActions}>
               <TouchableOpacity
@@ -577,14 +579,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                 activeOpacity={0.8}
               >
-                <AppText variant="label" color={theme.colors.text}>Cancel</AppText>
+                <AppText variant="label" color={theme.colors.text}>{t('cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={confirmSignOut}
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.danger }]}
                 activeOpacity={0.8}
               >
-                <AppText variant="label" color="#FFFFFF">Sign Out</AppText>
+                <AppText variant="label" color="#FFFFFF">{t('profile_signOut')}</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -601,10 +603,10 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           <View style={[styles.signOutDialog, { backgroundColor: theme.colors.card }]}>
             <AppText style={styles.signOutEmoji}>⚠️</AppText>
             <AppText variant="subtitle" color={theme.colors.danger} style={styles.signOutTitle}>
-              Delete Account?
+              {t('profile_deleteAccountTitle')}
             </AppText>
             <AppText variant="body" color={theme.colors.mutedText} style={styles.signOutMessage}>
-              This will permanently remove your account and all personal data from our servers. Active requirements and payment records may be retained for legal compliance.{'\n\n'}This action cannot be undone.
+              {t('profile_deleteAccountMessage')}
             </AppText>
             <View style={styles.signOutActions}>
               <TouchableOpacity
@@ -613,7 +615,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: isDeletingAccount ? 0.5 : 1 }]}
                 activeOpacity={0.8}
               >
-                <AppText variant="label" color={theme.colors.text}>Cancel</AppText>
+                <AppText variant="label" color={theme.colors.text}>{t('cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => void confirmDeleteAccount()}
@@ -624,7 +626,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 {isDeletingAccount ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <AppText variant="label" color="#FFFFFF">Delete</AppText>
+                  <AppText variant="label" color="#FFFFFF">{t('profile_deleteBtn')}</AppText>
                 )}
               </TouchableOpacity>
             </View>

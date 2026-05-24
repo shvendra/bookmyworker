@@ -12,6 +12,7 @@ export interface PricingConfig {
     contractor:  { '1m': number; '6m': number; '12m': number };
     agency:      { '1m': number; '6m': number; '12m': number };
     industry:    { '1m': number; '6m': number; '12m': number };
+    agent:       { '1m': number; '6m': number; '12m': number };
   };
   // Original (MRP/strikethrough) prices — display only, never used in payment logic
   subscriptionMrp: {
@@ -19,6 +20,7 @@ export interface PricingConfig {
     contractor:  { '1m': number; '6m': number; '12m': number };
     agency:      { '1m': number; '6m': number; '12m': number };
     industry:    { '1m': number; '6m': number; '12m': number };
+    agent:       { '1m': number; '6m': number; '12m': number };
   };
   topup: {
     contacts50: number;
@@ -34,12 +36,14 @@ const DEFAULTS: PricingConfig = {
     contractor:  { '1m': 599,  '6m': 2900, '12m': 4999 },
     agency:      { '1m': 599,  '6m': 2900, '12m': 4999 },
     industry:    { '1m': 999,  '6m': 3999, '12m': 5999 },
+    agent:       { '1m': 299,  '6m': 1499, '12m': 2499 },
   },
   subscriptionMrp: {
     individual: { '1m': 498,  '6m': 1998,  '12m': 2999 },
     contractor:  { '1m': 1499, '6m': 5800,  '12m': 9999 },
     agency:      { '1m': 1499, '6m': 5800,  '12m': 9999 },
     industry:    { '1m': 2499, '6m': 7999,  '12m': 11999 },
+    agent:       { '1m': 599,  '6m': 2999,  '12m': 4999 },
   },
   topup: { contacts50: 199, contacts100: 349 },
 };
@@ -51,8 +55,20 @@ async function fetchPricingConfig(): Promise<PricingConfig> {
   return {
     ...DEFAULTS,
     ...remote,
-    subscription:    { ...DEFAULTS.subscription,    ...remote.subscription },
-    subscriptionMrp: { ...DEFAULTS.subscriptionMrp, ...remote.subscriptionMrp },
+    verifiedBadge: {
+      ...DEFAULTS.verifiedBadge,
+      ...remote.verifiedBadge,
+    },
+    subscription: {
+      ...DEFAULTS.subscription,
+      ...remote.subscription,
+      agent: { ...DEFAULTS.subscription.agent, ...remote.subscription?.agent },
+    },
+    subscriptionMrp: {
+      ...DEFAULTS.subscriptionMrp,
+      ...remote.subscriptionMrp,
+      agent: { ...DEFAULTS.subscriptionMrp.agent, ...remote.subscriptionMrp?.agent },
+    },
   };
 }
 

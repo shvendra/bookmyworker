@@ -30,6 +30,11 @@ interface ActivityPage {
   totalPages: number;
 }
 
+const fmtDesc = (s?: string): string => {
+  if (!s) return '';
+  return s.replace(/_/g, ' ');
+};
+
 const timeAgo = (date: string): string => {
   const diff = Date.now() - new Date(date).getTime();
   const mins = Math.floor(diff / 60000);
@@ -66,7 +71,7 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
           </View>
           <AppText style={[s.entity, { color: theme.colors.text }]}>{item.entity}</AppText>
         </View>
-        <AppText style={s.desc} numberOfLines={2}>{item.description ?? item.action}</AppText>
+        <AppText style={s.desc} numberOfLines={2}>{fmtDesc(item.description) || item.action}</AppText>
         <AppText style={s.time}>{timeAgo(item.createdAt)}</AppText>
       </View>
     </View>

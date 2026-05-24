@@ -27,6 +27,9 @@ interface GradientHeaderProps {
   /** Optional second right icon */
   rightIcon2?: string;
   onRightPress2?: () => void;
+  /** Optional third right icon */
+  rightIcon3?: string;
+  onRightPress3?: () => void;
   showBack?: boolean;
   onBack?: () => void;
   children?: React.ReactNode;
@@ -49,6 +52,8 @@ export const GradientHeader = ({
   onRightPress,
   rightIcon2,
   onRightPress2,
+  rightIcon3,
+  onRightPress3,
   showBack,
   onBack,
   children,
@@ -127,6 +132,15 @@ export const GradientHeader = ({
 
         {/* Right section */}
         <View style={styles.rightSection}>
+          {rightIcon3 && onRightPress3 && (
+            <TouchableOpacity
+              onPress={onRightPress3}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <AppText style={styles.iconBtnText}>{rightIcon3}</AppText>
+            </TouchableOpacity>
+          )}
           {rightIcon2 && onRightPress2 && (
             <TouchableOpacity
               onPress={onRightPress2}

@@ -1,4 +1,6 @@
 import { apiClient } from '../client';
+import { getAccessToken } from '../../storage/authStorage';
+import { ENV } from '../../config/env';
 import type { WalletTransaction } from '../../../shared/types/domain';
 
 export interface AddTransactionPayload {
@@ -145,4 +147,11 @@ export const walletApi = {
     creditTransactionId?: string;
   }) =>
     apiClient.put(`/api/v1/payment/approve-payout/${id}`, data).then((r) => r.data),
+
+  // Returns a URL the app can open via Linking.openURL() — token appended for auth
+  getInvoiceUrl: async (transactionId: string): Promise<string> => {
+    const token = await getAccessToken();
+    const base = ENV.API_BASE_URL.replace(/\/$/, '');
+    return `${base}/api/v1/payment/invoice/${transactionId}?token=${encodeURIComponent(token ?? '')}`;
+  },
 };

@@ -3,15 +3,17 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
@@ -31,18 +33,27 @@ import type { AgentStackParamList } from '../../navigation/types';
 type Props = NativeStackScreenProps<AgentStackParamList, 'Register'>;
 type Role = 'Agent' | 'SelfWorker';
 
-const ROLE_OPTIONS: Array<{ value: Role; label: string; description: string; icon: string }> = [
+const BRAND  = '#1037A4';
+const ORANGE = '#F97316';
+
+const ROLE_OPTIONS: Array<{ value: Role; label: string; description: string; icon: string; color: string; bg: string; border: string }> = [
   {
     value: 'Agent',
-    label: 'Agent',
-    description: 'Connect workers with employers & earn commission',
+    label: 'Agent / Supplier',
+    description: 'Build your worker network. Get paid every time one of your workers gets placed.',
     icon: '🤝',
+    color: BRAND,
+    bg: '#EBF1FF',
+    border: '#C3D3F5',
   },
   {
     value: 'SelfWorker',
     label: 'Job Seeker',
-    description: 'Find work opportunities & earn daily wages',
+    description: 'Browse nearby job openings. Get hired quickly. Earn every day.',
     icon: '👷',
+    color: ORANGE,
+    bg: '#FFF3E8',
+    border: '#FDD5B0',
   },
 ];
 
@@ -140,94 +151,92 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
   const isDark = theme.mode === 'dark';
   const primary = theme.colors.primary;
+  const insets = useSafeAreaInsets();
 
   // ── Step 1: Role selection ──────────────────────────────────────────────────
   if (step === 1) {
     return (
-      <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-        <StatusBar barStyle="light-content" backgroundColor={primary} />
+      <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: primary }]}>
-          <SafeAreaView>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
-            </TouchableOpacity>
-            <View style={styles.headerContent}>
-              <View style={styles.headerIconWrap}>
-                <AppText style={styles.headerIcon}>📋</AppText>
-              </View>
-              <View style={styles.headerTextWrap}>
-                <AppText variant="heading" color="#FFFFFF" style={styles.headerTitle}>
-                  Join BookMyWorker
-                </AppText>
-                <AppText variant="caption" color="rgba(255,255,255,0.75)">
-                  Choose how you want to participate
-                </AppText>
-              </View>
+        {/* Hero header */}
+        <View style={[styles.regHero, { paddingTop: insets.top + 12 }]}>
+          <View style={[styles.circle, styles.circle1]} />
+          <View style={[styles.circle, styles.circle2]} />
+          <View style={[styles.circle, styles.circle3]} />
+          <View style={styles.orangeStrip} />
+
+          {/* Back button */}
+        
+
+          {/* Brand row */}
+          <View style={styles.brandRow}>
+            <View style={styles.logoBox}>
+              <Image
+                source={require('../../../../packages/shared-mobile/assets/logo.png')}
+                style={styles.logoImg}
+                resizeMode="contain"
+              />
             </View>
-          </SafeAreaView>
-          <View style={[styles.deco, styles.deco1]} />
-          <View style={[styles.deco, styles.deco2]} />
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.roleScroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <View
-            style={[
-              styles.roleCard,
-              { backgroundColor: theme.colors.card },
-              !isDark && styles.cardShadow,
-            ]}
-          >
-            <AppText variant="subtitle" color={theme.colors.text} style={styles.roleTitle}>
-              I want to...
-            </AppText>
-            <AppText variant="body" color={theme.colors.mutedText} style={styles.roleSub}>
-              Select the role that describes you best
-            </AppText>
-
-            <View style={styles.roleOptions}>
-              {ROLE_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => onSelectRole(opt.value)}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.roleOption,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
-                    },
-                  ]}
-                >
-                  <View style={[styles.roleIconWrap, { backgroundColor: primary + '18' }]}>
-                    <AppText style={styles.roleIcon}>{opt.icon}</AppText>
-                  </View>
-                  <View style={styles.roleTextWrap}>
-                    <AppText variant="label" color={theme.colors.text}>
-                      {opt.label}
-                    </AppText>
-                    <AppText variant="caption" color={theme.colors.mutedText} style={styles.roleDesc}>
-                      {opt.description}
-                    </AppText>
-                  </View>
-                  <AppText style={[styles.roleArrow, { color: primary }]}>›</AppText>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.brandTextWrap}>
+              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+              <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">
+                India's #1 Workforce Platform
+              </AppText>
             </View>
           </View>
 
-          <View style={styles.loginRow}>
-            <AppText variant="body" color={theme.colors.mutedText}>
-              Already have an account?{' '}
+          {/* Page headline */}
+          <View style={styles.heroBlock}>
+            <View style={styles.heroBadge}>
+              <View style={styles.heroBadgeDot} />
+              <AppText style={styles.heroBadgeText} color={ORANGE}>CREATE ACCOUNT</AppText>
+            </View>
+            <AppText style={styles.regHeroTitle} color="#FFFFFF">Join BookMyWorker</AppText>
+            <AppText style={styles.regHeroSub} color="rgba(255,255,255,0.70)">
+              Register workers & earn commission
             </AppText>
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.roleScroll} showsVerticalScrollIndicator={false}>
+          <AppText variant="label" color={theme.colors.text} style={styles.rolePrompt}>
+            Who are you?
+          </AppText>
+          <AppText variant="body" color={theme.colors.mutedText} style={styles.roleSub}>
+            Select the role that best describes you
+          </AppText>
+
+          <View style={styles.roleOptions}>
+            {ROLE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => onSelectRole(opt.value)}
+                activeOpacity={0.88}
+                style={[styles.roleCard, { backgroundColor: opt.bg, borderColor: opt.border }]}
+              >
+                {/* Top row: icon + text + arrow — use marginLeft instead of gap for RN compatibility */}
+                <View style={styles.roleCardTop}>
+                  <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(255,255,255,0.75)' }]}>
+                    <AppText style={styles.roleIcon}>{opt.icon}</AppText>
+                  </View>
+                  <View style={styles.roleTextWrap}>
+                    <AppText style={[styles.roleLabel, { color: opt.color }]}>{opt.label}</AppText>
+                  </View>
+                  <Text style={[styles.roleArrow, { color: opt.color }]}>›</Text>
+                </View>
+                {/* Description */}
+                <AppText style={[styles.roleDesc, { color: isDark ? theme.colors.mutedText : '#64748B' }]}>
+                  {opt.description}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.loginRow}>
+            <AppText variant="body" color={theme.colors.mutedText}>Already have an account? </AppText>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <AppText variant="body" color={primary} style={styles.loginLink}>
-                Sign In
-              </AppText>
+              <AppText variant="body" color={BRAND} style={styles.loginLink}>Sign In</AppText>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -239,35 +248,46 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   const isWorker = role === 'SelfWorker';
 
   return (
-    <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-      <StatusBar barStyle="light-content" backgroundColor={primary} />
+    <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: primary }]}>
-        <SafeAreaView>
-          <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
-            <AppText style={styles.backArrow} color="#FFFFFF">‹</AppText>
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <View style={styles.headerIconWrap}>
-              <AppText style={styles.headerIcon}>
-                {role === 'Agent' ? '🤝' : '👷'}
-              </AppText>
-            </View>
-            <View style={styles.headerTextWrap}>
-              <AppText variant="heading" color="#FFFFFF" style={styles.headerTitle}>
-                {role === 'Agent' ? 'Agent Registration' : 'Job Seeker Registration'}
-              </AppText>
-              <AppText variant="caption" color="rgba(255,255,255,0.75)">
-                {role === 'Agent'
-                  ? 'Register as an agent to earn commissions'
-                  : 'Register to find work opportunities'}
-              </AppText>
-            </View>
+      {/* Hero header */}
+      <View style={[styles.regHero, { paddingTop: insets.top + 12 }]}>
+        <View style={[styles.circle, styles.circle1]} />
+        <View style={[styles.circle, styles.circle2]} />
+        <View style={[styles.circle, styles.circle3]} />
+        <View style={styles.orangeStrip} />
+
+        {/* Brand row */}
+        <View style={styles.brandRow}>
+          <View style={styles.logoBox}>
+            <Image
+              source={require('../../../../packages/shared-mobile/assets/logo.png')}
+              style={styles.logoImg}
+              resizeMode="contain"
+            />
           </View>
-        </SafeAreaView>
-        <View style={[styles.deco, styles.deco1]} />
-        <View style={[styles.deco, styles.deco2]} />
+          <View style={styles.brandTextWrap}>
+            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+            <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">
+              {role === 'Agent' ? 'Agent Registration' : 'Worker Registration'}
+            </AppText>
+          </View>
+        </View>
+
+        {/* Page headline */}
+        <View style={styles.heroBlock}>
+          <View style={styles.heroBadge}>
+            <View style={styles.heroBadgeDot} />
+            <AppText style={styles.heroBadgeText} color={ORANGE}>STEP 2 OF 2</AppText>
+          </View>
+          <AppText style={styles.regHeroTitle} color="#FFFFFF">Your Details</AppText>
+          <AppText style={styles.regHeroSub} color="rgba(255,255,255,0.70)">
+            {role === 'Agent'
+              ? 'Register workers & earn on every placement'
+              : 'Find daily wage work near your area'}
+          </AppText>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -585,34 +605,100 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: {
+
+  // Shared hero
+  regHero: {
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
-    paddingBottom: 28,
+    paddingBottom: 34,
     overflow: 'hidden',
-    minHeight: 160,
-    justifyContent: 'flex-end',
   },
-  backBtn: { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 8 : 8, paddingBottom: 4 },
-  backArrow: { fontSize: 28, lineHeight: 32, fontWeight: '300' },
-  headerContent: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 8 },
-  headerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  circle: { position: 'absolute', borderRadius: 999 },
+  circle1: { width: 260, height: 260, top: -110, right: -80, backgroundColor: 'rgba(255,255,255,0.055)' },
+  circle2: { width: 140, height: 140, bottom: -50, right: 25,  backgroundColor: 'rgba(249,115,22,0.09)' },
+  circle3: { width: 90,  height: 90,  top: 30,   left: -30,   backgroundColor: 'rgba(255,255,255,0.04)' },
+  orangeStrip: {
+    position: 'absolute', bottom: 0, left: 0,
+    width: '38%', height: 4,
+    backgroundColor: ORANGE, borderTopRightRadius: 999,
   },
-  headerIcon: { fontSize: 26, lineHeight: 30 },
-  headerTextWrap: { gap: 2, flex: 1 },
-  headerTitle: { lineHeight: 26 },
-  deco: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)' },
-  deco1: { width: 180, height: 180, top: -60, right: -40 },
-  deco2: { width: 100, height: 100, bottom: -20, right: 80 },
+  backBtn: { alignSelf: 'flex-start', marginBottom: 18 },
+  backCircle: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  backArrow: { fontSize: 26, lineHeight: 30, fontWeight: '300', marginTop: -2 },
+
+  // Brand row (logo + name)
+  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 14 },
+  logoBox: {
+    width: 56, height: 56, borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoImg: { width: 56, height: 56 },
+  brandTextWrap: { flex: 1 },
+  brandName: { fontSize: 19, fontWeight: '800', lineHeight: 24, letterSpacing: -0.3 },
+  brandSub: { fontSize: 12, marginTop: 3, letterSpacing: 0.2 },
+
+  // Hero headline block
+  heroBlock: { gap: 7 },
+  heroBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(249,115,22,0.14)',
+    borderWidth: 1, borderColor: 'rgba(249,115,22,0.25)',
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 999, marginBottom: 2,
+  },
+  heroBadgeDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: ORANGE },
+  heroBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  regHeroTitle: { fontSize: 26, fontWeight: '900', lineHeight: 33, letterSpacing: -0.5 },
+  regHeroSub: { fontSize: 13, lineHeight: 19 },
 
   // Role selection
-  roleScroll: { padding: 20, paddingBottom: 40 },
-  roleCard: { borderRadius: 24, padding: 24, marginTop: -12 },
+  roleScroll: { padding: 20, paddingBottom: 40, marginTop: -18 },
+  rolePrompt: { marginBottom: 4, fontSize: 18, fontWeight: '800' },
+  roleSub: { marginBottom: 18, lineHeight: 20 },
+  roleOptions: { gap: 14, marginBottom: 4 },
+  roleCard: {
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  roleCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roleIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  roleIcon: { fontSize: 28, lineHeight: 34 },
+  roleTextWrap: { flex: 1, marginLeft: 14 },
+  roleLabel: { fontSize: 17, fontWeight: '800', lineHeight: 23 },
+  roleTagline: { fontSize: 12, fontWeight: '600', lineHeight: 17, marginTop: 2 },
+  roleDesc: { fontSize: 13, lineHeight: 19, paddingLeft: 2 },
+  roleArrow: { fontSize: 24, lineHeight: 30, fontWeight: '200', marginLeft: 8, flexShrink: 0 },
+
+  // Form step
   cardShadow: {
     shadowColor: '#1037A4',
     shadowOffset: { width: 0, height: 4 },
@@ -620,27 +706,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 8,
   },
-  roleTitle: { marginBottom: 6 },
-  roleSub: { marginBottom: 20, lineHeight: 20 },
-  roleOptions: { gap: 12 },
-  roleOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
-  },
-  roleIconWrap: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  roleIcon: { fontSize: 24, lineHeight: 28 },
-  roleTextWrap: { flex: 1, gap: 3 },
-  roleDesc: { lineHeight: 18 },
-  roleArrow: { fontSize: 24, lineHeight: 28, fontWeight: '300' },
-
-  // Form
   kav: { flex: 1 },
   scroll: { padding: 20, paddingBottom: 40 },
-  card: { borderRadius: 24, padding: 24, marginTop: -12 },
+  card: { borderRadius: 24, padding: 24, marginTop: -16, backgroundColor: '#fff' },
   cardTitle: { marginBottom: 20 },
 
   field: { marginBottom: 16, gap: 6 },

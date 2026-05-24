@@ -1631,10 +1631,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         )}
       </View>
 
-      <ResultBar
+      {/* <ResultBar
         total={searchQuery.trim() ? filteredAgents.length : totalCount}
         visible={!isLoading && !isError && allAgents.length > 0}
-      />
+      /> */}
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       {isLoading ? (

@@ -1,8 +1,10 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Linking,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -17,10 +19,15 @@ import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { buildPhotoUrl } from '../../../core/config/env';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { shortlistStorage } from '../../../core/storage/shortlistStorage';
+import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
+import type { MappingStatus, OpenRequirement } from '../../../core/api/endpoints/workerMappingApi';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
@@ -180,6 +187,203 @@ interface FullUserProfile {
   employerType?: string;
 }
 
+// ─── Status meta ──────────────────────────────────────────────────────────────
+const STATUS_META: Record<MappingStatus, { label: string; color: string; bg: string }> = {
+  Shortlisted: { label: 'Shortlist',   color: '#2563eb', bg: '#eff6ff' },
+  Selected:    { label: 'Select',      color: '#6d28d9', bg: '#f5f3ff' },
+  Joined:      { label: 'Mark Joined', color: '#15803d', bg: '#f0fdf4' },
+};
+
+// ─── Requirement Picker Modal ─────────────────────────────────────────────────
+interface RequirementPickerProps {
+  visible: boolean;
+  onClose: () => void;
+  workerName: string;
+  workerPhone: string;
+  workerId?: string | null;
+  workerSkill?: string;
+  status: MappingStatus;
+  onSuccess: () => void;
+  toast: ReturnType<typeof useToast>;
+}
+
+const RequirementPickerModal = ({
+  visible, onClose, workerName, workerPhone, workerId, workerSkill, status, onSuccess, toast,
+}: RequirementPickerProps): React.JSX.Element => {
+  const navPicker = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const [requirements, setRequirements] = useState<OpenRequirement[]>([]);
+  const [selected,     setSelected]     = useState<string[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [saving,       setSaving]       = useState(false);
+
+  const meta = STATUS_META[status];
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const reqs = await workerMappingApi.getEmployerOpenRequirements();
+      setRequirements(reqs);
+    } catch {
+      toast.error('Could not load requirements');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (visible) { setSelected([]); void load(); }
+  }, [visible, load]);
+
+  const toggle = (id: string) =>
+    setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+
+  const handleSave = async () => {
+    if (selected.length === 0) { toast.error('Select at least one requirement'); return; }
+    setSaving(true);
+    try {
+      await workerMappingApi.mapWorker({
+        workerId:       workerId || null,
+        workerName,
+        workerPhone,
+        workerSkill:    workerSkill || '',
+        requirementIds: selected,
+        status,
+      });
+      toast.success(`${workerName} ${meta.label}ed for ${selected.length} requirement(s)`);
+      onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={pm.overlay}>
+        <View style={pm.sheet}>
+          {/* Header */}
+          <View style={[pm.header, { backgroundColor: meta.color }]}>
+            <View style={{ flex: 1 }}>
+              <AppText style={pm.headerTitle}>{meta.label} Worker</AppText>
+              <AppText style={pm.headerSub}>{workerName}{workerPhone ? ` · ${workerPhone}` : ''}</AppText>
+            </View>
+            <TouchableOpacity onPress={onClose} style={pm.closeBtn}>
+              <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
+            </TouchableOpacity>
+          </View>
+
+          <AppText style={pm.hint}>
+            Select requirement(s) to link this worker:
+          </AppText>
+
+          {loading ? (
+            <View style={pm.center}><ActivityIndicator color={meta.color} size="small" /></View>
+          ) : requirements.length === 0 ? (
+            <View style={pm.emptyBox}>
+              <View style={pm.emptyIcon}>
+                <AppText style={{ fontSize: 30 }}>📋</AppText>
+              </View>
+              <AppText style={pm.emptyTitle}>No Open Requirements</AppText>
+              <AppText style={pm.emptyDesc}>
+                You need to post a requirement before adding workers to your pipeline.
+              </AppText>
+              <TouchableOpacity
+                onPress={() => { onClose(); navPicker.navigate('PostRequirement'); }}
+                style={[pm.postBtn, { backgroundColor: meta.color }]}
+                activeOpacity={0.85}
+              >
+                <AppText style={pm.postBtnTxt}>+ Post a Requirement</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={requirements}
+              keyExtractor={(r) => r._id}
+              style={pm.list}
+              renderItem={({ item: r }) => {
+                const isChk = selected.includes(r._id);
+                return (
+                  <TouchableOpacity
+                    onPress={() => toggle(r._id)}
+                    style={[pm.reqRow, isChk && { backgroundColor: meta.bg }]}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[pm.checkbox, isChk && { backgroundColor: meta.color, borderColor: meta.color }]}>
+                      {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <AppText style={pm.reqTitle} numberOfLines={1}>
+                        {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
+                      </AppText>
+                      <AppText style={pm.reqSub}>
+                        ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}
+                      </AppText>
+                    </View>
+                    {r.status ? (
+                      <View style={pm.statusTag}>
+                        <AppText style={[pm.statusTxt, { color: meta.color }]}>{r.status}</AppText>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
+
+          {/* Footer */}
+          <View style={pm.footer}>
+            <TouchableOpacity onPress={onClose} style={pm.cancelBtn}>
+              <AppText style={pm.cancelTxt}>Cancel</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => void handleSave()}
+              disabled={saving || selected.length === 0}
+              style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || selected.length === 0) && { opacity: 0.5 }]}
+              activeOpacity={0.85}
+            >
+              {saving
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <AppText style={pm.saveTxt}>{meta.label} ({selected.length})</AppText>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const pm = StyleSheet.create({
+  overlay:    { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
+  sheet:      { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '85%', overflow: 'hidden' },
+  header:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 },
+  headerTitle:{ fontSize: 16, fontWeight: '800', color: '#fff' },
+  headerSub:  { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  closeBtn:   { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  hint:       { fontSize: 12.5, fontWeight: '600', color: '#475569', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
+  center:     { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+  emptyBox:   { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, gap: 8 },
+  emptyIcon:  { width: 64, height: 64, borderRadius: 18, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', textAlign: 'center' },
+  emptyDesc:  { fontSize: 12.5, color: '#64748b', textAlign: 'center', lineHeight: 19 },
+  postBtn:    { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 4 },
+  postBtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  list:       { maxHeight: 320 },
+  reqRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
+  checkbox:   { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  reqTitle:   { fontSize: 13.5, fontWeight: '700', color: '#0f172a' },
+  reqSub:     { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
+  statusTag:  { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#f1f5f9', flexShrink: 0 },
+  statusTxt:  { fontSize: 10, fontWeight: '700' },
+  footer:     { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
+  cancelBtn:  { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingVertical: 14, alignItems: 'center' },
+  cancelTxt:  { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  saveBtn:    { flex: 2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveTxt:    { fontSize: 14, fontWeight: '800', color: '#fff' },
+});
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -192,6 +396,30 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
   const [unlocking,     setUnlocking]     = useState(false);
+
+  // ── Local shortlist (bookmark) state ────────────────────────────────────
+  const [isShortlisted, setIsShortlisted] = useState(false);
+  const [shortlistBusy, setShortlistBusy] = useState(false);
+
+  // ── Pipeline action modal (Shortlist / Select / Joined) ─────────────────
+  const [pickerModal, setPickerModal] = useState<MappingStatus | null>(null);
+
+  useEffect(() => {
+    if (!isEmployer) return;
+    void shortlistStorage.isShortlisted(workerId).then(setIsShortlisted);
+  }, [isEmployer, workerId]);
+
+  const handleToggleShortlist = (): void => {
+    if (shortlistBusy) return;
+    setShortlistBusy(true);
+    void shortlistStorage.toggle(workerId).then((added) => {
+      setIsShortlisted(added);
+      toast[added ? 'success' : 'info'](
+        added ? 'Added to your shortlist.' : 'Removed from shortlist.',
+        added ? 'Shortlisted ❤️' : 'Removed',
+      );
+    }).finally(() => setShortlistBusy(false));
+  };
 
   // ── Worker data from new endpoint ────────────────────────────────────────
   const { data: worker, isLoading, isError, refetch } = useQuery<WorkerDetail>({
@@ -304,7 +532,12 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Worker Profile" onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title="Worker Profile"
+        onBack={() => navigation.goBack()}
+        rightIcon={isEmployer ? (isShortlisted ? '❤️' : '🤍') : undefined}
+        onRightPress={isEmployer ? handleToggleShortlist : undefined}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -434,6 +667,51 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             )}
           </Section>
 
+          {/* Hire Again — employer only */}
+          {isEmployer && areas.length > 0 && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('PostRequirement', { workType: areas[0], reqType: 'Daily_Wages' })}
+              style={s.hireAgainBtn}
+              activeOpacity={0.85}
+            >
+              <AppText style={s.hireAgainTxt}>⚡  Hire Again for {areas[0]}</AppText>
+            </TouchableOpacity>
+          )}
+
+          {/* Pipeline actions — employer only */}
+          {isEmployer && (
+            <View style={s.pipelineRow}>
+              {(['Shortlisted', 'Selected', 'Joined'] as MappingStatus[]).map((st) => {
+                const m = STATUS_META[st];
+                return (
+                  <TouchableOpacity
+                    key={st}
+                    onPress={() => setPickerModal(st)}
+                    style={[s.pipelineBtn, { backgroundColor: m.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <AppText style={[s.pipelineTxt, { color: m.color }]}>{m.label}</AppText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Requirement picker modal */}
+          {pickerModal && (
+            <RequirementPickerModal
+              visible={Boolean(pickerModal)}
+              onClose={() => setPickerModal(null)}
+              workerName={displayName}
+              workerPhone={unlockedPhone || worker.phone || ''}
+              workerId={workerId}
+              workerSkill={areas[0] || ''}
+              status={pickerModal}
+              onSuccess={() => setPickerModal(null)}
+              toast={toast}
+            />
+          )}
+
           {/* Contact — employer only */}
           {isEmployer && (
             <Section title="Contact Worker" accent={C.green}>
@@ -561,6 +839,15 @@ const s = StyleSheet.create({
   // Contact — subscribed not unlocked
   viewContactBtn: { backgroundColor: '#2563eb', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   viewContactTxt: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+
+  // Hire Again
+  hireAgainBtn:  { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+  hireAgainTxt:  { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
+
+  // Pipeline action buttons
+  pipelineRow:   { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  pipelineBtn:   { flex: 1, minWidth: 90, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  pipelineTxt:   { fontSize: 13, fontWeight: '800' },
 
   // Contact — not subscribed
   lockBox:       { alignItems: 'center', gap: 14 },

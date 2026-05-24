@@ -52,9 +52,24 @@ const workerName = (w: RawWorker): string => w.fullName ?? w.name ?? '—';
 const workerStatus = (w: RawWorker): string => w.status?.toLowerCase() ?? 'pending';
 const workerLocation = (w: RawWorker): string =>
   [w.district, w.state].filter(Boolean).join(', ') || '—';
-const workerWork = (w: RawWorker): string => {
-  const arr = w.categories ?? w.areasOfWork ?? [];
-  return Array.isArray(arr) ? arr.slice(0, 2).join(', ') || '—' : '—';
+const workerWork = (worker) => {
+  const data = worker?.areasOfWork || worker?.skills; // Or however you pull it
+  if (!data) return '—';
+  
+  if (Array.isArray(data)) {
+    return data.join(', ');
+  }
+  
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      return parsed.join(', ');
+    }
+  } catch {
+    // If it's a comma-separated string already, just clean up loose brackets/quotes
+  }
+  
+  return String(data).replace(/[\[\]"']/g, '').trim() || '—';
 };
 
 export const MyWorkersScreen = (): React.JSX.Element => {
@@ -165,11 +180,27 @@ export const MyWorkersScreen = (): React.JSX.Element => {
                   <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
                     {w.phone ?? '—'} · {workerLocation(w)}
                   </AppText>
-                  {workerWork(w) !== '—' && (
-                    <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
-                      {workerWork(w)}
-                    </AppText>
-                  )}
+                 {workerWork(w) !== '—' && (
+  <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+    {(() => {
+      const rawValue = workerWork(w);
+      try {
+        // If it's a JSON string representation of an array, parse it
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => String(item).trim()).join(', ');
+        }
+      } catch (e) {
+        // Fallback if it's already a standard comma-separated string or plain text
+      }
+      
+      // Clean up loose brackets or quotes just in case parsing was skipped
+      return String(rawValue)
+        .replace(/[\[\]"']/g, '')
+        .trim();
+    })()}
+  </AppText>
+)}
                 </View>
                 <Badge
                   label={status === 'verified' ? 'Verified' : 'Pending'}

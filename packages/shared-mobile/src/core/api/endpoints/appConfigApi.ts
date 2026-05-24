@@ -29,9 +29,10 @@ export interface AppConfig {
     refundPolicyLink:  string;
   };
   stats: {
-    workerCount:   number;
-    agentCount:    number;
-    employerCount: number;
+    workerCount:      number;
+    agentCount:       number;
+    employerCount:    number;
+    requirementCount: number;
   };
 }
 
@@ -75,9 +76,10 @@ const DEFAULTS: AppConfig = {
     refundPolicyLink:  '',
   },
   stats: {
-    workerCount:   620000,
-    agentCount:    10000,
-    employerCount: 8000,
+    workerCount:      600000,
+    agentCount:       10000,
+    employerCount:    8000,
+    requirementCount: 56000,
   },
 };
 
@@ -87,7 +89,7 @@ async function fetchAppConfig(): Promise<AppConfig> {
   const b = (d.brand   ?? {}) as Record<string, string>;
   const c = (d.contact ?? {}) as Record<string, string>;
   const l = (d.legal   ?? {}) as Record<string, string>;
-  const s = (d.stats   ?? {}) as Record<string, number>;
+  const ps = (d.platformStats ?? {}) as Record<string, number>;
   return {
     brand: {
       appLogo:     b.appLogo     || '',
@@ -116,9 +118,10 @@ async function fetchAppConfig(): Promise<AppConfig> {
       refundPolicyLink:  l.refundPolicyLink  || '',
     },
     stats: {
-      workerCount:   s.workerCount   ?? DEFAULTS.stats.workerCount,
-      agentCount:    s.agentCount    ?? DEFAULTS.stats.agentCount,
-      employerCount: s.employerCount ?? DEFAULTS.stats.employerCount,
+      workerCount:      ps.workers      ?? DEFAULTS.stats.workerCount,
+      agentCount:       ps.agents       ?? DEFAULTS.stats.agentCount,
+      employerCount:    ps.employers    ?? DEFAULTS.stats.employerCount,
+      requirementCount: ps.requirements ?? DEFAULTS.stats.requirementCount,
     },
   };
 }

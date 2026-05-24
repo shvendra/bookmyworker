@@ -39,6 +39,8 @@ const FALLBACK_PRICING: Record<EmployerTypeKey, Record<string, number>> = {
   industry:   { '1m': 999,  '6m': 3999, '12m': 5999 },
 };
 
+const AGENT_FALLBACK: Record<string, number> = { '1m': 299, '6m': 1499, '12m': 2499 };
+
 const EMPLOYER_PRIORITY: EmployerTypeKey[] = ['industry', 'agency', 'contractor', 'individual'];
 
 interface Plan {
@@ -109,6 +111,52 @@ function buildPlans(employerType: EmployerTypeKey, subscriptionPricing?: Record<
   ];
 }
 
+function buildAgentPlans(agentPricing?: Record<string, number>): Plan[] {
+  const p = { ...AGENT_FALLBACK, ...(agentPricing ?? {}) };
+  return [
+    {
+      id: '1m',
+      label: 'Monthly Plan',
+      duration: '1 Month',
+      price: p['1m']!,
+      workers: 0,
+      posts: 0,
+      benefits: [
+        'Show interest in employer requirements',
+        'Propose workers for assigned requirements',
+        'Manage worker assignments on the go',
+      ],
+    },
+    {
+      id: '6m',
+      label: 'Half-Yearly Plan',
+      duration: '6 Months',
+      price: p['6m']!,
+      workers: 0,
+      posts: 0,
+      popular: true,
+      benefits: [
+        'All Monthly features',
+        'Priority assignment by employers',
+        'Faster support response',
+      ],
+    },
+    {
+      id: '12m',
+      label: 'Yearly Plan',
+      duration: '12 Months',
+      price: p['12m']!,
+      workers: 0,
+      posts: 0,
+      benefits: [
+        'All Half-Yearly features',
+        'Dedicated account support',
+        'Early access to new agent tools',
+      ],
+    },
+  ];
+}
+
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   navy:   '#0f172a',
@@ -133,6 +181,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const { pricing, gstRate } = usePricingConfig();
+  const isAgent = user?.role === 'agent';
 
   // Fetch fresh profile — session user is stale after contacts are consumed
   const profileQuery = useQuery({
@@ -163,7 +212,9 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const employerType = resolveEmployerType(
     (profile?.employerType ?? user?.employerType) as Parameters<typeof resolveEmployerType>[0],
   );
-  const plans = buildPlans(employerType, pricing.subscription as unknown as Record<string, Record<string, number>>);
+  const plans = isAgent
+    ? buildAgentPlans((pricing.subscription as unknown as Record<string, Record<string, number>>)?.['agent'])
+    : buildPlans(employerType, pricing.subscription as unknown as Record<string, Record<string, number>>);
 
   const handleBuyPlan = async (plan: Plan): Promise<void> => {
     if (!user) return;
@@ -177,12 +228,12 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         employerId: user.id,
         firstName: user.fullName,
         email: user.email ?? '',
-        employerType,
+        employerType: (isAgent ? 'agent' : employerType) as string,
         employer_phone: user.phone,
         paymentType: 'subscription',
         amount: totalAmount,
         gstCharges,
-        productName: `Subscription Plan - ${plan.duration}`,
+        productName: `${isAgent ? 'Agent' : 'Employer'} Subscription Plan - ${plan.duration}`,
         planId: plan.id,
       });
 
@@ -249,8 +300,9 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         <View style={s.hero}>
           <AppText style={[s.heroTitle, { color: theme.colors.text }]}>BookMyWorker Subscription</AppText>
           <AppText style={s.heroSub}>
-            Get access to verified workers across India.{'\n'}
-            Plans built for employers, contractors & industries.
+            {isAgent
+              ? 'Unlock platform features for agents.\nAssign workers, manage requirements & grow your business.'
+              : 'Get access to verified workers across India.\nPlans built for employers, contractors & industries.'}
           </AppText>
         </View>
 
@@ -306,16 +358,18 @@ export const SubscriptionScreen = (): React.JSX.Element => {
                 </View>
               </View>
 
-              <View style={s.statsRow}>
-                <View style={s.statChip}>
-                  <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.workers}+</AppText>
-                  <AppText style={s.statKey}>Workers</AppText>
+              {!isAgent && (
+                <View style={s.statsRow}>
+                  <View style={s.statChip}>
+                    <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.workers}+</AppText>
+                    <AppText style={s.statKey}>Workers</AppText>
+                  </View>
+                  <View style={s.statChip}>
+                    <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.posts}</AppText>
+                    <AppText style={s.statKey}>Posts</AppText>
+                  </View>
                 </View>
-                <View style={s.statChip}>
-                  <AppText style={[s.statVal, { color: theme.colors.text }]}>{plan.posts}</AppText>
-                  <AppText style={s.statKey}>Posts</AppText>
-                </View>
-              </View>
+              )}
 
               <View style={s.benefitsList}>
                 {plan.benefits.map((b, i) => (
@@ -340,8 +394,8 @@ export const SubscriptionScreen = (): React.JSX.Element => {
           );
         })}
 
-        {/* Topup section — only show if already subscribed */}
-        {isSubscribed && (
+        {/* Topup section — only show for employers who are already subscribed */}
+        {isSubscribed && !isAgent && (
           <View style={s.topupSection}>
             <AppText style={[s.sectionLabel, { color: theme.colors.text }]}>Contact Top-up</AppText>
             <AppText style={s.topupDesc}>

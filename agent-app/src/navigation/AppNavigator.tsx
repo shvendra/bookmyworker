@@ -11,9 +11,9 @@ import { useAuth } from '../../../packages/shared-mobile/src/state/auth/AuthCont
 import { LoadingState } from '../../../packages/shared-mobile/src/shared/components/feedback/LoadingState';
 import { navigationRef, resetToWelcome } from '../../../packages/shared-mobile/src/core/navigation/navigationRef';
 
-// Auth screens — agent-specific welcome + shared auth flow
+// Auth screens — agent-specific welcome + login + shared auth flow
 import { AgentWelcomeScreen } from '../screens/auth/AgentWelcomeScreen';
-import { LoginScreen } from '../../../packages/shared-mobile/src/features/auth/screens/LoginScreen';
+import { AgentLoginScreen } from '../screens/auth/AgentLoginScreen';
 import { OtpVerificationScreen } from '../../../packages/shared-mobile/src/features/auth/screens/OtpVerificationScreen';
 import { RegisterOtpScreen } from '../../../packages/shared-mobile/src/features/auth/screens/RegisterOtpScreen';
 import { ForgotPasswordScreen } from '../../../packages/shared-mobile/src/features/auth/screens/ForgotPasswordScreen';
@@ -22,8 +22,8 @@ import { ForgotPasswordScreen } from '../../../packages/shared-mobile/src/featur
 import { AgentRegisterScreen } from '../screens/auth/AgentRegisterScreen';
 import { SwitchAccountScreen } from '../../../packages/shared-mobile/src/features/profile/screens/SwitchAccountScreen';
 
-// Onboarding — KYC only, no role selection (role is set at registration)
-import { KycScreen } from '../../../packages/shared-mobile/src/features/onboarding/screens/KycScreen';
+// Onboarding — agent-specific KYC (name + language + ID card, no GST)
+import { AgentKycScreen } from '../screens/onboarding/AgentKycScreen';
 
 // Role-based tab navigator — handles agent / worker / selfworker
 import { RoleTabsNavigator } from '../../../packages/shared-mobile/src/app/navigation/RoleTabsNavigator';
@@ -43,6 +43,7 @@ import { RequirementDetailScreen } from '../../../packages/shared-mobile/src/fea
 import { WorkerProfileScreen } from '../../../packages/shared-mobile/src/features/search/screens/WorkerProfileScreen';
 import { WorkerSearchScreen } from '../../../packages/shared-mobile/src/features/search/screens/WorkerSearchScreen';
 import { AddWorkerScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AddWorkerScreen';
+import { AgentWorkersScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AgentWorkersScreen';
 import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
@@ -97,7 +98,7 @@ export const AppNavigator = (): React.JSX.Element => {
           // ── Auth screens ──────────────────────────────────────────
           <>
             <Stack.Screen name="Welcome" component={AgentWelcomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Login" component={AgentLoginScreen} />
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="Register" component={AgentRegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
@@ -106,7 +107,7 @@ export const AppNavigator = (): React.JSX.Element => {
         ) : !state.session?.onboardingCompleted ? (
           // ── Onboarding — KYC only ─────────────────────────────────
           <>
-            <Stack.Screen name="Kyc" component={KycScreen} />
+            <Stack.Screen name="Kyc" component={AgentKycScreen} />
           </>
         ) : (
           // ── Authenticated ─────────────────────────────────────────
@@ -122,6 +123,8 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WorkerSearch" component={WorkerSearchScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="AddWorker" component={AddWorkerScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="AgentWorkers" component={AgentWorkersScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Kyc" component={AgentKycScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

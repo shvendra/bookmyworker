@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -10,8 +10,8 @@ import {
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RequirementType } from '../../../core/api/endpoints/requirementsApi';
@@ -30,6 +30,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
+type RouteParams = NativeStackScreenProps<MainStackParamList, 'PostRequirement'>['route'];
 
 // ─── Requirement Types ─────────────────────────────────────────────────────────
 interface ReqTypeOption {
@@ -175,9 +176,10 @@ const TypeSelectionStep = ({ onSelect, onBack }: TypeSelectionProps): React.JSX.
 interface FormStepProps {
   reqType: RequirementType;
   onBack: () => void;
+  initialWorkType?: string;
 }
 
-const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Element => {
+const RequirementFormStep = ({ reqType, onBack, initialWorkType }: FormStepProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<Nav>();
   const { state: authState } = useAuth();
@@ -245,6 +247,14 @@ const RequirementFormStep = ({ reqType, onBack }: FormStepProps): React.JSX.Elem
       workLocation: '',
     },
   });
+
+  // Pre-fill workType when navigating from "Hire Again"
+  useEffect(() => {
+    if (initialWorkType) {
+      setValue('workType', initialWorkType, { shouldValidate: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialWorkType]);
 
   const stateVal = watch('state');
   const districtVal = watch('district');
@@ -656,9 +666,15 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const PostRequirementScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<RouteParams>();
   const { state: authState } = useAuth();
   const user = authState.session?.user;
-  const [reqType, setReqType] = useState<RequirementType | null>(null);
+
+  const paramReqType = (route.params?.reqType ?? null) as RequirementType | null;
+  const paramWorkType = route.params?.workType ?? '';
+
+  // If "Hire Again" passed a reqType, skip type selection
+  const [reqType, setReqType] = useState<RequirementType | null>(paramReqType);
 
   const isEmployer = user?.role === 'employer';
   const isSubscribed = isEmployer
@@ -699,6 +715,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
       <RequirementFormStep
         reqType={reqType}
         onBack={() => setReqType(null)}
+        initialWorkType={paramWorkType || undefined}
       />
     </View>
   );

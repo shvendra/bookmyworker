@@ -28,10 +28,10 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
   const workerLabel = formatStat(config.stats.workerCount);
 
   const FEATURES = [
-    { icon: '👷', title: 'Hire Workers Fast',     desc: `Connect with ${workerLabel} skilled & unskilled workers across India` },
-    { icon: '📋', title: 'Manage Requirements',   desc: 'Post, track and close job requirements in minutes' },
-    { icon: '💼', title: 'Agent Network',         desc: 'Agents bring pre-verified workers from your district' },
-    { icon: '💳', title: 'Digital Payments',      desc: 'Transparent wage tracking with wallet & payout system' },
+    { icon: '👷', title: 'Direct Worker Hiring',     desc: `Access ${workerLabel} verified skilled & unskilled workers across India. Connect and call them directly with zero middlemen.` },
+    { icon: '📋', title: 'Smart Manpower CRM',   desc: 'Post job requirements, track prospects, and manage your workforce pipeline using our advanced built-in CRM.' },
+    { icon: '💼', title: 'Local Agent Network',         desc: 'Connect directly with district-level agents sourcing pre-verified bulk manpower. Pay them directly with no platform cuts.' },
+    { icon: '💳', title: 'Fixed Subscription Pricing',      desc: 'No commission on worker wages or agent fees. Pay one simple subscription to unlock access and job posting.' },
   ];
 
   const heroAnim = useRef(new Animated.Value(0)).current;

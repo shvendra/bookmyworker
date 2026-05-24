@@ -20,6 +20,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { apiClient } from '../../../core/api/client';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
@@ -435,6 +436,76 @@ const sow = StyleSheet.create({
   approveBtnTxt: { color: WHITE, fontSize: 11, fontWeight: '700' },
 });
 
+// ─── Status Pipeline ──────────────────────────────────────────────────────────
+const PIPE_LABELS = ['Posted', 'Responding', 'Shortlisted', 'Hired', 'Completed'] as const;
+
+function deriveStageIdx(
+  req: RawRequirement,
+  grouped?: { Shortlisted: unknown[]; Selected: unknown[]; Joined: unknown[] },
+): number {
+  const s = (req.status ?? '').toLowerCase();
+  if (s === 'completed') return 4;
+  if ((grouped?.Joined.length ?? 0) > 0) return 3;
+  if (s === 'active' && !grouped) return 3;
+  if ((grouped?.Shortlisted.length ?? 0) > 0 || (grouped?.Selected.length ?? 0) > 0) return 2;
+  if (req.assignedAgentId && !grouped) return 2;
+  if ((req.intrestedAgents ?? []).length > 0) return 1;
+  return 0;
+}
+
+function StatusPipeline({ req, grouped }: {
+  req: RawRequirement;
+  grouped?: { Shortlisted: unknown[]; Selected: unknown[]; Joined: unknown[] };
+}): React.JSX.Element {
+  const statusRaw   = (req.status ?? '').toLowerCase();
+  const isCancelled = statusRaw === 'cancelled';
+  const activeIdx   = isCancelled ? -1 : deriveStageIdx(req, grouped);
+
+  return (
+    <View style={pipe.wrap}>
+      <View style={pipe.stepsRow}>
+        {PIPE_LABELS.map((label, i) => {
+          const done    = activeIdx >= 0 && i < activeIdx;
+          const current = activeIdx >= 0 && i === activeIdx;
+          const filled  = done || current;
+
+          const circleColor = filled ? BRAND : WHITE;
+          const ringColor   = filled ? BRAND : isCancelled ? '#9CA3AF' : '#CBD5E1';
+          const labelColor  = current ? BRAND : done ? '#475569' : isCancelled ? '#9CA3AF' : '#94A3B8';
+          const leftLine    = i > 0 ? (done || current ? BRAND : '#CBD5E1') : 'transparent';
+          const rightLine   = i < PIPE_LABELS.length - 1 ? (done ? BRAND : '#CBD5E1') : 'transparent';
+
+          return (
+            <View key={label} style={pipe.step}>
+              <View style={pipe.connRow}>
+                <View style={[pipe.connLine, { backgroundColor: leftLine }]} />
+                <View style={[pipe.circle, { backgroundColor: circleColor, borderColor: ringColor }]}>
+                  <AppText style={[pipe.circleNum, { color: filled ? WHITE : ringColor }]}>
+                    {done ? '✓' : String(i + 1)}
+                  </AppText>
+                </View>
+                <View style={[pipe.connLine, { backgroundColor: rightLine }]} />
+              </View>
+              <AppText
+                style={[pipe.stepLabel, { color: labelColor, fontWeight: current ? '800' : '600' }]}
+                numberOfLines={2}
+              >
+                {label}
+              </AppText>
+            </View>
+          );
+        })}
+      </View>
+
+      {isCancelled && (
+        <View style={pipe.cancelRow}>
+          <AppText style={pipe.cancelTxt}>✕  This requirement was cancelled</AppText>
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -447,6 +518,15 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   const [showSOW, setShowSOW] = useState(false);
   const [wageInput, setWageInput] = useState('');
   const [badgeModalVisible, setBadgeModalVisible] = useState(false);
+
+  // Propose-worker modal (agent)
+  const [showProposeModal, setShowProposeModal] = useState(false);
+  const [proposeWorkerName, setProposeWorkerName] = useState('');
+  const [proposeWorkerPhone, setProposeWorkerPhone] = useState('');
+
+  // Respond-to-proposal state (employer)
+  const [rejectReasonInputId, setRejectReasonInputId] = useState<string | null>(null);
+  const [rejectReasonText, setRejectReasonText] = useState('');
 
   const userRole = user?.role ?? '';
   const isAgentOrWorker = userRole === 'agent' || userRole === 'selfworker' || userRole === 'worker';
@@ -489,6 +569,38 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onError: () => toast.error('Failed to close requirement. Please try again.', 'Error'),
   });
 
+  const proposeWorkerMutation = useMutation({
+    mutationFn: ({ workerName, workerPhone }: { workerName: string; workerPhone: string }) =>
+      apiClient.post(`/api/v1/mobile/requirements/${requirementId}/propose-worker`, { workerName, workerPhone }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
+      setShowProposeModal(false);
+      setProposeWorkerName('');
+      setProposeWorkerPhone('');
+      toast.success('Worker proposed successfully. Waiting for employer approval.', 'Proposed');
+    },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message ?? 'Failed to propose worker.', 'Error');
+    },
+  });
+
+  const respondProposalMutation = useMutation({
+    mutationFn: ({ workerKey, isPhone, status, rejectionReason }: { workerKey: string; isPhone: boolean; status: 'approved' | 'rejected'; rejectionReason?: string }) =>
+      apiClient.put(`/api/v1/mobile/requirements/${requirementId}/worker-response`, {
+        ...(isPhone ? { workerPhone: workerKey } : { workerId: workerKey }),
+        status,
+        rejectionReason,
+      }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
+      setRejectReasonInputId(null);
+      setRejectReasonText('');
+      toast.success(`Worker ${vars.status} successfully.`, vars.status === 'approved' ? 'Approved' : 'Rejected');
+    },
+    onError: () => toast.error('Failed to update worker status. Please try again.', 'Error'),
+  });
+
   // Employer subscription — shares the same cache key as EmployerDashboardScreen
   // so if the dashboard already loaded the profile, this screen gets it instantly (no spinner).
   const { data: employerProfile, isSuccess: profileLoaded, isError: profileError } = useQuery({
@@ -501,6 +613,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnMount: true,
+  });
+
+  // Pipeline mapping counts for this requirement — drives the progress stepper
+  const { data: mappingData } = useQuery({
+    queryKey: ['requirement-mappings', requirementId],
+    queryFn: () => workerMappingApi.getRequirementMappings(requirementId),
+    enabled: isEmployer,
+    staleTime: 60 * 1000,
   });
 
   const isSubscribed = (() => {
@@ -652,6 +772,9 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         contentContainerStyle={pg.content}
         style={[pg.scroll, { backgroundColor: theme.colors.background }]}
       >
+        {/* ── Status Pipeline ──────────────────────────────────────────── */}
+        <StatusPipeline req={req} grouped={mappingData?.grouped} />
+
         {/* ── Info Grid ────────────────────────────────────────────────── */}
         <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <SecHead title="Job Overview" />
@@ -747,6 +870,107 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={pg.assignedBadgeTxt}>✓ Assigned</AppText>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* ── Proposed Workers (employer view — after agent assigned) ─── */}
+        {isEmployer && isAssigned && (
+          <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <View style={pg.interestedHeader}>
+              <SecHead title="Proposed Workers" accent={GREEN} />
+              {(req.proposedWorkers ?? []).length > 0 && (
+                <View style={[pg.countBadge, { backgroundColor: GREEN }]}>
+                  <AppText style={pg.countBadgeTxt}>{(req.proposedWorkers ?? []).length}</AppText>
+                </View>
+              )}
+            </View>
+
+            {(req.proposedWorkers ?? []).length === 0 ? (
+              <View style={pg.noAgentsWrap}>
+                <View style={pg.noAgentsIconWrap}>
+                  <AppText style={{ fontSize: 28 }}>👷</AppText>
+                </View>
+                <AppText style={[pg.noAgentsTitle, { color: theme.colors.text }]}>No workers proposed yet</AppText>
+                <AppText style={[pg.noAgentsSub, { color: theme.colors.mutedText }]}>
+                  Your assigned agent will propose workers for your approval.
+                </AppText>
+              </View>
+            ) : (
+              (req.proposedWorkers ?? []).map((pw, idx) => {
+                const statusColor = pw.status === 'approved' ? GREEN : pw.status === 'rejected' ? RED : AMBER;
+                const statusBg    = pw.status === 'approved' ? GREEN_SOFT : pw.status === 'rejected' ? '#FEF2F2' : AMBER_SOFT;
+                const statusLabel = pw.status === 'approved' ? '✓ Approved' : pw.status === 'rejected' ? '✗ Rejected' : '● Pending';
+                const isPhone     = !pw.workerId;
+                const workerKey   = pw.workerId ?? pw.workerPhone ?? String(idx);
+                const showRejectInput = rejectReasonInputId === workerKey;
+
+                return (
+                  <View key={workerKey} style={pws.row}>
+                    <View style={pws.avatar}>
+                      <AppText style={pws.initials}>{(pw.workerName ?? 'W').slice(0, 2).toUpperCase()}</AppText>
+                    </View>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <AppText style={pws.name}>{pw.workerName ?? '—'}</AppText>
+                      <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
+                      {pw.status === 'rejected' && pw.rejectionReason ? (
+                        <AppText style={pws.reason}>Reason: {pw.rejectionReason}</AppText>
+                      ) : null}
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      <View style={[pws.statusChip, { backgroundColor: statusBg }]}>
+                        <AppText style={[pws.statusTxt, { color: statusColor }]}>{statusLabel}</AppText>
+                      </View>
+
+                      {pw.status === 'pending' && !showRejectInput && (
+                        <View style={pws.actionBtns}>
+                          <TouchableOpacity
+                            style={pws.approveBtn}
+                            onPress={() => respondProposalMutation.mutate({ workerKey, isPhone, status: 'approved' })}
+                            disabled={respondProposalMutation.isPending}
+                            activeOpacity={0.8}
+                          >
+                            <AppText style={pws.approveTxt}>Approve</AppText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={pws.rejectBtn}
+                            onPress={() => { setRejectReasonInputId(workerKey); setRejectReasonText(''); }}
+                            activeOpacity={0.8}
+                          >
+                            <AppText style={pws.rejectTxt}>Reject</AppText>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+
+                    {showRejectInput && (
+                      <View style={pws.rejectInputWrap}>
+                        <TextInput
+                          style={pws.rejectInput}
+                          value={rejectReasonText}
+                          onChangeText={setRejectReasonText}
+                          placeholder="Reason for rejection (optional)"
+                          placeholderTextColor={SLATE}
+                          autoFocus
+                        />
+                        <View style={pws.rejectConfirmRow}>
+                          <TouchableOpacity onPress={() => setRejectReasonInputId(null)} style={pws.rejectCancelChip} activeOpacity={0.8}>
+                            <AppText style={{ fontSize: 12, color: SLATE, fontWeight: '600' }}>Cancel</AppText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={pws.rejectConfirmBtn}
+                            onPress={() => respondProposalMutation.mutate({ workerKey, isPhone, status: 'rejected', rejectionReason: rejectReasonText.trim() })}
+                            disabled={respondProposalMutation.isPending}
+                            activeOpacity={0.85}
+                          >
+                            <AppText style={{ fontSize: 12, color: WHITE, fontWeight: '700' }}>{respondProposalMutation.isPending ? '…' : 'Confirm Reject'}</AppText>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            )}
           </View>
         )}
 
@@ -916,18 +1140,61 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
         {/* ── Assigned to Me (agent view) ───────────────────────────────── */}
         {isAgentOrWorker && isAssignedToMe && (
-          <View style={[pg.section, { backgroundColor: '#F0FDF4', borderColor: GREEN_BDR }]}>
-            <View style={pg.assignedMeWrap}>
-              <AppText style={{ fontSize: 36 }}>🏆</AppText>
-              <AppText style={pg.assignedMeTitle}>You're Assigned!</AppText>
-              <AppText style={[pg.assignedMeSub, { color: SLATE }]}>
-                Agreed wage: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{(req as any).salaryType?.toLowerCase() ?? 'day'}
-              </AppText>
-              <TouchableOpacity style={pg.sowBtn2} onPress={() => setShowSOW(true)} activeOpacity={0.85}>
-                <AppText style={pg.sowBtnTxt}>📋  View Statement of Work</AppText>
-              </TouchableOpacity>
+          <>
+            <View style={[pg.section, { backgroundColor: '#F0FDF4', borderColor: GREEN_BDR }]}>
+              <View style={pg.assignedMeWrap}>
+                <AppText style={{ fontSize: 36 }}>🏆</AppText>
+                <AppText style={pg.assignedMeTitle}>You're Assigned!</AppText>
+                <AppText style={[pg.assignedMeSub, { color: SLATE }]}>
+                  Agreed wage: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{(req as any).salaryType?.toLowerCase() ?? 'day'}
+                </AppText>
+                <TouchableOpacity style={pg.sowBtn2} onPress={() => setShowSOW(true)} activeOpacity={0.85}>
+                  <AppText style={pg.sowBtnTxt}>📋  View Statement of Work</AppText>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+
+            {/* Propose Workers panel */}
+            <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <View style={[pg.interestedHeader, { marginBottom: 8 }]}>
+                <SecHead title="Proposed Workers" accent={BRAND} />
+                <TouchableOpacity style={pws.proposeBtn} onPress={() => setShowProposeModal(true)} activeOpacity={0.85}>
+                  <AppText style={pws.proposeBtnTxt}>+ Propose</AppText>
+                </TouchableOpacity>
+              </View>
+
+              {(req.proposedWorkers ?? []).length === 0 ? (
+                <AppText style={{ fontSize: 12, color: SLATE, textAlign: 'center', paddingVertical: 16 }}>
+                  No workers proposed yet. Tap "+ Propose" to add one.
+                </AppText>
+              ) : (
+                (req.proposedWorkers ?? []).map((pw, idx) => {
+                  const statusColor = pw.status === 'approved' ? GREEN : pw.status === 'rejected' ? RED : AMBER;
+                  const statusBg    = pw.status === 'approved' ? GREEN_SOFT : pw.status === 'rejected' ? '#FEF2F2' : AMBER_SOFT;
+                  const statusLabel = pw.status === 'approved' ? '✓ Approved' : pw.status === 'rejected' ? '✗ Rejected' : '● Pending';
+                  const workerKey   = pw.workerId ?? pw.workerPhone ?? String(idx);
+
+                  return (
+                    <View key={workerKey} style={[pws.row, { flexWrap: 'nowrap' }]}>
+                      <View style={pws.avatar}>
+                        <AppText style={pws.initials}>{(pw.workerName ?? 'W').slice(0, 2).toUpperCase()}</AppText>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={pws.name}>{pw.workerName ?? '—'}</AppText>
+                        <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
+                        {pw.status === 'rejected' && pw.rejectionReason ? (
+                          <AppText style={pws.reason}>Reason: {pw.rejectionReason}</AppText>
+                        ) : null}
+                      </View>
+                      <View style={[pws.statusChip, { backgroundColor: statusBg }]}>
+                        <AppText style={[pws.statusTxt, { color: statusColor }]}>{statusLabel}</AppText>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </>
         )}
 
         {/* ── Action Buttons (employer only) ────────────────────────────── */}
@@ -958,9 +1225,74 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       </ScrollView>
 
       <SOWModal visible={showSOW} onClose={() => setShowSOW(false)} requirementId={requirementId} employerId={user?.id} />
+
+      {/* ── Propose Worker Modal (agent) ──────────────────────────────── */}
+      <Modal
+        visible={showProposeModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowProposeModal(false)}
+      >
+        <View style={pw.backdrop}>
+          <View style={[pw.sheet, { backgroundColor: WHITE }]}>
+            <View style={pw.sheetHandle} />
+            <AppText style={pw.sheetTitle}>Propose a Worker</AppText>
+            <AppText style={pw.sheetSub}>Enter the worker's details. We'll link their account automatically if they're registered.</AppText>
+
+            <AppText style={pw.fieldLabel}>Worker Name</AppText>
+            <TextInput
+              style={pw.input}
+              value={proposeWorkerName}
+              onChangeText={setProposeWorkerName}
+              placeholder="Full name"
+              placeholderTextColor={SLATE}
+              autoCapitalize="words"
+            />
+
+            <AppText style={pw.fieldLabel}>Mobile Number</AppText>
+            <TextInput
+              style={pw.input}
+              value={proposeWorkerPhone}
+              onChangeText={setProposeWorkerPhone}
+              placeholder="10-digit mobile number"
+              placeholderTextColor={SLATE}
+              keyboardType="phone-pad"
+              maxLength={10}
+            />
+
+            <View style={pw.btnRow}>
+              <TouchableOpacity style={pw.cancelBtn} onPress={() => setShowProposeModal(false)} activeOpacity={0.8}>
+                <AppText style={pw.cancelTxt}>Cancel</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[pw.submitBtn, (proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10) && { opacity: 0.55 }]}
+                onPress={() => proposeWorkerMutation.mutate({ workerName: proposeWorkerName.trim(), workerPhone: proposeWorkerPhone.trim() })}
+                disabled={proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10}
+                activeOpacity={0.85}
+              >
+                <AppText style={pw.submitTxt}>{proposeWorkerMutation.isPending ? 'Submitting…' : 'Submit'}</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+// ─── Status Pipeline styles ────────────────────────────────────────────────────
+const pipe = StyleSheet.create({
+  wrap:       { borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: WHITE, padding: 14 },
+  stepsRow:   { flexDirection: 'row' },
+  step:       { flex: 1, alignItems: 'center' },
+  connRow:    { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 6 },
+  connLine:   { flex: 1, height: 2 },
+  circle:     { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  circleNum:  { fontSize: 9, fontWeight: '900', lineHeight: 12 },
+  stepLabel:  { fontSize: 9, textAlign: 'center', lineHeight: 13, letterSpacing: 0.1 },
+  cancelRow:  { marginTop: 10, backgroundColor: '#FEF2F2', borderRadius: 10, borderWidth: 1, borderColor: '#FECACA', padding: 8, alignItems: 'center' },
+  cancelTxt:  { fontSize: 12, fontWeight: '800', color: RED },
+});
 
 // ─── Hero styles ───────────────────────────────────────────────────────────────
 const hero = StyleSheet.create({
@@ -1070,4 +1402,44 @@ const pg = StyleSheet.create({
   sowBtnLabel:{ color: WHITE, fontSize: 15, fontWeight: '800' },
   closeBtn:   { borderWidth: 1.5, borderColor: RED, borderRadius: 16, padding: 16, alignItems: 'center' },
   closeBtnTxt:{ color: RED, fontSize: 14, fontWeight: '700' },
+});
+
+// ─── Proposed Workers styles ───────────────────────────────────────────────────
+const pws = StyleSheet.create({
+  row:           { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER, flexWrap: 'wrap' },
+  avatar:        { width: 40, height: 40, borderRadius: 20, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  initials:      { fontSize: 14, fontWeight: '800', color: BRAND_MID },
+  name:          { fontSize: 13, fontWeight: '700', color: NAVY, textTransform: 'capitalize' },
+  phone:         { fontSize: 11, color: SLATE, marginTop: 1 },
+  reason:        { fontSize: 11, color: RED, marginTop: 2 },
+  statusChip:    { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  statusTxt:     { fontSize: 11, fontWeight: '700' },
+  actionBtns:    { flexDirection: 'row', gap: 6 },
+  approveBtn:    { backgroundColor: GREEN, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  approveTxt:    { color: WHITE, fontSize: 11, fontWeight: '700' },
+  rejectBtn:     { backgroundColor: '#FEF2F2', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#FECACA' },
+  rejectTxt:     { color: RED, fontSize: 11, fontWeight: '700' },
+  rejectInputWrap:   { width: '100%', gap: 8, paddingTop: 8 },
+  rejectInput:       { borderWidth: 1.5, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: NAVY },
+  rejectConfirmRow:  { flexDirection: 'row', gap: 8 },
+  rejectCancelChip:  { borderWidth: 1, borderColor: BORDER, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, alignItems: 'center', justifyContent: 'center' },
+  rejectConfirmBtn:  { flex: 1, backgroundColor: RED, borderRadius: 8, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
+  proposeBtn:    { backgroundColor: BRAND, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  proposeBtnTxt: { color: WHITE, fontSize: 12, fontWeight: '800' },
+});
+
+// ─── Propose-worker modal styles ──────────────────────────────────────────────
+const pw = StyleSheet.create({
+  backdrop:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet:       { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, gap: 8 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: BORDER, alignSelf: 'center', marginBottom: 8 },
+  sheetTitle:  { fontSize: 18, fontWeight: '900', color: NAVY },
+  sheetSub:    { fontSize: 12, color: SLATE, lineHeight: 18, marginBottom: 8 },
+  fieldLabel:  { fontSize: 11, fontWeight: '700', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.4 },
+  input:       { borderWidth: 1.5, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: NAVY, backgroundColor: '#F8FAFC' },
+  btnRow:      { flexDirection: 'row', gap: 10, marginTop: 8 },
+  cancelBtn:   { flex: 1, borderWidth: 1.5, borderColor: BORDER, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  cancelTxt:   { fontSize: 14, fontWeight: '700', color: SLATE },
+  submitBtn:   { flex: 2, backgroundColor: BRAND, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  submitTxt:   { fontSize: 14, fontWeight: '800', color: WHITE },
 });

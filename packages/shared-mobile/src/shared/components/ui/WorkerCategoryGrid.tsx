@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
 import type { TranslationKeys } from '../../../core/i18n/translations';
 
-const FILE_BASE = 'https://bookmyworker.s3.eu-north-1.amazonaws.com';
 
 export interface WorkCategory {
   label: string;         // English label — used for API filter calls, never changes
@@ -16,62 +15,62 @@ export const WORK_CATEGORIES: WorkCategory[] = [
   {
     label: 'Manufacturing & Industrial Workers',
     translationKey: 'cat_manufacturing',
-    image: `${FILE_BASE}/ImagesWeb/Industrial_Workers.jpg`,
+    image: 'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Construction & Project Workers',
     translationKey: 'cat_construction',
-    image: `${FILE_BASE}/ImagesWeb/Construction_Workers.jpg`,
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Transport & Logistics Workers',
     translationKey: 'cat_transport',
-    image: `${FILE_BASE}/ImagesWeb/Logistics_Warehouse.jpg`,
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Agriculture & Farming Workers',
     translationKey: 'cat_agriculture',
-    image: `${FILE_BASE}/ImagesWeb/Agriculture_Farm_Workers.jpg`,
+    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Household & Domestic Workers',
     translationKey: 'cat_household',
-    image: `${FILE_BASE}/ImagesWeb/cleaning.png`,
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Automobile & Workshop Workers',
     translationKey: 'cat_automobile',
-    image: `${FILE_BASE}/ImagesWeb/automobile.png`,
+    image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Retail & Shop Workers',
     translationKey: 'cat_retail',
-    image: `${FILE_BASE}/ImagesWeb/retail.png`,
+    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Hospitality & Service Workers',
     translationKey: 'cat_hospitality',
-    image: `${FILE_BASE}/ImagesWeb/hospitality.png`,
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Healthcare Support Workers',
     translationKey: 'cat_healthcare',
-    image: `${FILE_BASE}/ImagesWeb/healthcare.png`,
+    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Security & Facility Worker',
     translationKey: 'cat_security',
-    image: `${FILE_BASE}/ImagesWeb/security.png`,
+    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Skilled Technical Workers',
     translationKey: 'cat_technical',
-    image: `${FILE_BASE}/ImagesWeb/Electrical_and_Wiring.jpg`,
+    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=600&q=70',
   },
   {
     label: 'Event & Decoration Workers',
     translationKey: 'cat_event',
-    image: `${FILE_BASE}/ImagesWeb/event_decor.png`,
+    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=70',
   },
 ];
 

@@ -22,6 +22,7 @@ import { TransactionScreen } from '../../features/wallet/screens/TransactionScre
 import { WorkerSearchScreen } from '../../features/search/screens/WorkerSearchScreen';
 import { PostRequirementScreen } from '../../features/jobs/screens/PostRequirementScreen';
 import { AddWorkerScreen } from '../../features/agent/screens/AddWorkerScreen';
+import { AgentWorkersScreen } from '../../features/agent/screens/AgentWorkersScreen';
 import { AttendanceScreen } from '../../features/attendance/screens/AttendanceScreen';
 import { JobMarketplaceScreen } from '../../features/jobs/screens/JobMarketplaceScreen';
 import { ChatNavigator } from './ChatNavigator';
@@ -62,16 +63,17 @@ const roleTabConfigs: Record<AppRole, TabConfig[]> = {
     { name: 'Profile',      labelKey: 'tab_profile',   component: ProfileScreen,           icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   agent: [
-    { name: 'Home',    labelKey: 'tab_home',    component: AgentDashboardScreen, icon: { outline: 'home-outline',      filled: 'home'      } },
-    { name: 'Browse',  labelKey: 'tab_browse',  component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline', filled: 'briefcase' } },
-    { name: 'Chat',    labelKey: 'tab_chat',    component: ChatNavigator,        icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
-    { name: 'Profile', labelKey: 'tab_profile', component: ProfileScreen,        icon: { outline: 'person-outline',    filled: 'person'    } },
+    { name: 'Home',    labelKey: 'tab_home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
+    { name: 'Browse',  labelKey: 'tab_browse',     component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
+    { name: 'Workers', labelKey: 'tab_workers',    component: AgentWorkersScreen,   icon: { outline: 'people-outline',     filled: 'people'     }, isAction: true },
+    { name: 'Chat',    labelKey: 'tab_chat',       component: ChatNavigator,        icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
+    { name: 'Profile', labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   selfworker: [
     { name: 'Home',     labelKey: 'tab_home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
     { name: 'Browse',   labelKey: 'tab_browse',     component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
     { name: 'Register', labelKey: 'tab_register',   component: AddWorkerScreen,      icon: { outline: 'person-add-outline', filled: 'person-add' }, isAction: true },
-    { name: 'Payout',   labelKey: 'tab_payout',     component: PayoutScreen,         icon: { outline: 'wallet-outline',     filled: 'wallet'     } },
+    { name: 'Chat',     labelKey: 'tab_chat',       component: ChatNavigator,        icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
     { name: 'Profile',  labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   // Admin/SuperAdmin roles fall back to the employer tab set

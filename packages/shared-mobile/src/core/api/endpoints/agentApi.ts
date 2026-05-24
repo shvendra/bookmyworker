@@ -1,6 +1,18 @@
 import { apiClient } from '../client';
 import type { AgentStats, Lead } from '../../../shared/types/domain';
 
+export interface WorkerItem {
+  _id: string;
+  name: string;
+  phone: string;
+  district?: string;
+  state?: string;
+  status: 'Verified' | 'Unverified' | 'Block';
+  areasOfWork?: string[];
+  profilePhoto?: string;
+  createdAt: string;
+}
+
 export const agentApi = {
   getStats: () =>
     apiClient.get<AgentStats>('/api/v1/user/agent/stats').then((r) => r.data),
@@ -33,11 +45,10 @@ export const agentApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then((r) => r.data),
 
-  // Returns SelfWorker users registered by this agent (postedBy = agent _id)
-  getMyWorkers: (params?: { page?: number }) =>
+  getMyWorkers: (params?: { page?: number; limit?: number }) =>
     apiClient
-      .get<{ success?: boolean; myJobs?: unknown[]; workers?: unknown[]; data?: unknown[]; total?: number }>(
-        '/api/v1/job/getmyjobs',
+      .get<{ success: boolean; workers: WorkerItem[]; total: number; page: number; pages: number }>(
+        '/api/v1/user/my-workers',
         { params },
       )
       .then((r) => r.data),

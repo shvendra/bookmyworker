@@ -45,6 +45,8 @@ import { AddWorkerScreen } from '../../features/agent/screens/AddWorkerScreen';
 import { WorkerSearchScreen } from '../../features/search/screens/WorkerSearchScreen';
 import { ChatRoomScreen } from '../../features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../features/payment/screens/SubscriptionScreen';
+import { ShortlistScreen } from '../../features/employer/screens/ShortlistScreen';
+import { PipelineScreen } from '../../features/employer/screens/PipelineScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
 
 import type { RootStackParamList } from './types';
@@ -202,6 +204,8 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="Shortlist" component={ShortlistScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

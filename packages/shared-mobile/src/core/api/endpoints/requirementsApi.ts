@@ -69,6 +69,7 @@ export interface RequirementFilters {
 export interface RawRequirement {
   _id: string;
   ERN_NUMBER?: string;
+  likedBy?: string[];
   workType?: string;
   subCategory?: string;
   district?: string;
@@ -109,6 +110,17 @@ export interface RawRequirement {
   latitude?: number;
   longitude?: number;
   createdAt?: string;
+  proposedWorkers?: Array<{
+    workerId?: string;
+    workerName?: string;
+    workerPhone?: string;
+    proposedBy?: string;
+    proposedByName?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    rejectionReason?: string;
+    proposedAt?: string;
+    respondedAt?: string;
+  }>;
 }
 
 export interface RoleAwareFilters {
@@ -198,6 +210,24 @@ export const requirementsApi = {
     apiClient
       .put(`/api/v1/application/update-status?id=${id}&status=Closed`)
       .then((r) => r.data),
+
+  // Toggle like on a requirement — returns { liked: boolean, likeCount: number }
+  toggleLike: (requirementId: string) =>
+    apiClient
+      .post<{ success: boolean; liked: boolean; likeCount: number }>(`/api/v1/mobile/requirements/${requirementId}/like`)
+      .then((r) => r.data),
+
+  // Get all requirements the current user has liked
+  getLiked: (page = 1, limit = 50) =>
+    apiClient
+      .get<{
+        requirements: RawRequirement[];
+        pagination: { totalPages: number; currentPage: number; totalCount: number };
+      }>('/api/v1/mobile/requirements/liked', { params: { page, limit } })
+      .then((r) => ({
+        requirements: r.data.requirements ?? [],
+        pagination: r.data.pagination ?? { totalPages: 1, currentPage: page, totalCount: 0 },
+      })),
 
   // Matches CRM: POST /api/v1/application/:req_id/express-interest with { wage }
   expressInterestWithWage: (requirementId: string, wage: number) =>
@@ -307,4 +337,21 @@ export const requirementsApi = {
           total: body.total ?? 0,
         };
       }),
+
+  getHiredWorkers: () =>
+    apiClient
+      .get<{ workers: PastWorker[] }>('/api/v1/mobile/employer/hired-workers')
+      .then((r) => r.data.workers ?? []),
 };
+
+export interface PastWorker {
+  workerId:     string | null;
+  workerName:   string;
+  workerPhone:  string;
+  lastHireDate: string;
+  workType:     string;
+  subCategory?: string;
+  profilePhoto?: string | null;
+  workerStatus?: string | null;
+  areasOfWork?:  string[];
+}

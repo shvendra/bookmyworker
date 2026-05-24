@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -21,11 +22,14 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import type { ChatMessage } from '../../../shared/types/domain';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 
 interface ChatRoomScreenProps {
   roomId: string;
   roomName: string;
   roomAvatar?: string;
+  hideBack?: boolean;
+  onBack?: () => void;
 }
 
 const formatTime = (iso: string): string => {
@@ -43,13 +47,12 @@ const MessageBubble = React.memo(({
   textColor: string; bubbleBg: string; bubbleBorder: string; mutedColor: string;
 }): React.JSX.Element => (
   <View style={[styles.bubble, isMe ? styles.bubbleRight : styles.bubbleLeft]}>
+    {!isMe && item.senderName ? (
+      <AppText style={styles.senderName} numberOfLines={1}>{item.senderName}</AppText>
+    ) : null}
     <View style={[styles.bubbleInner, { backgroundColor: bubbleBg, borderColor: bubbleBorder }]}>
       {item.mediaUrl && item.mediaType === 'image' ? (
-        <Image
-          source={{ uri: item.mediaUrl }}
-          style={styles.mediaImage}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: item.mediaUrl }} style={styles.mediaImage} resizeMode="cover" />
       ) : item.mediaUrl ? (
         <View style={styles.fileAttachment}>
           <AppText style={{ fontSize: 20 }}>📎</AppText>
@@ -71,11 +74,12 @@ const MessageBubble = React.memo(({
 ));
 MessageBubble.displayName = 'MessageBubble';
 
-export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React.JSX.Element => {
+export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomScreenProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const navigation = useNavigation();
   const userId = state.session?.user.id ?? '';
+  const token  = state.session?.tokens.accessToken ?? '';
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
@@ -85,13 +89,16 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const flatRef = useRef<FlatList>(null);
+  // Track local optimistic IDs to avoid duplicates from socket echo
+  const localIds = useRef<Set<string>>(new Set());
 
-  // Load initial messages (page 1 = most recent 10)
+  // Load initial messages (page 1 = most recent)
   useEffect(() => {
     const load = async (): Promise<void> => {
       try {
-        const data = await chatApi.getMessages(roomId, 1, 10);
-        setMessages(data.messages);
+        const data = await chatApi.getMessages(roomId, 1, 20);
+        // Backend returns oldest-first; for inverted FlatList we need newest-first
+        setMessages([...data.messages].reverse());
         setTotalPages(data.pages);
         setCurrentPage(1);
       } catch { /* ignore */ }
@@ -100,58 +107,65 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
     void load();
   }, [roomId]);
 
-  // Socket setup
+  // Socket setup — connect, join room, listen for messages
   useEffect(() => {
-    const token = state.session?.tokens.accessToken;
     if (!token || !roomId) return;
 
     socketService.connect(token);
     socketService.joinRoom(roomId);
+    socketService.markMessagesRead(roomId, userId);
 
-    const handler = (msg: ChatMessage): void => {
-      if (msg.roomId === roomId) {
-        setMessages((prev) => [msg, ...prev]);
-      }
+    const handler = (msg: Record<string, unknown>): void => {
+      if ((msg.roomId as string) !== roomId) return;
+      // Skip echo of our own optimistic messages
+      const msgId = (msg._id ?? `${msg.sender}-${msg.timestamp}`) as string;
+      if (localIds.current.has(msgId)) return;
+
+      const newMsg: ChatMessage = {
+        id: msgId,
+        roomId: msg.roomId as string,
+        senderId: msg.sender as string,
+        senderName: msg.senderName as string | undefined,
+        text: (msg.message as string) ?? '',
+        createdAt: (msg.timestamp as string) ?? new Date().toISOString(),
+        read: false,
+        mediaUrl: (msg.mediaUrl as string | null) ?? null,
+        mediaType: (msg.mediaType as 'image' | 'file' | null) ?? null,
+        fileName: (msg.fileName as string | null) ?? null,
+      };
+      setMessages((prev) => [newMsg, ...prev]);
+      socketService.markMessagesRead(roomId, userId);
     };
-    socketService.onMessage(handler);
+
+    socketService.onMessage(handler as Parameters<typeof socketService.onMessage>[0]);
 
     return () => {
-      socketService.offMessage(handler);
+      socketService.offMessage(handler as Parameters<typeof socketService.offMessage>[0]);
       socketService.leaveRoom(roomId);
     };
-  }, [roomId, state.session?.tokens.accessToken]);
+  }, [roomId, token, userId]);
 
   const handleLoadOlder = useCallback(async (): Promise<void> => {
     if (loadingOlder || currentPage >= totalPages) return;
     setLoadingOlder(true);
     try {
       const nextPage = currentPage + 1;
-      const data = await chatApi.getMessages(roomId, nextPage, 10);
-      setMessages((prev) => [...prev, ...data.messages]);
+      const data = await chatApi.getMessages(roomId, nextPage, 20);
+      // Older messages go to end of array (bottom of inverted list = top of visible)
+      setMessages((prev) => [...prev, ...[...data.messages].reverse()]);
       setCurrentPage(nextPage);
     } catch { /* ignore */ }
     finally { setLoadingOlder(false); }
   }, [loadingOlder, currentPage, totalPages, roomId]);
 
-  const handlePickMedia = useCallback(async (): Promise<void> => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const ext = asset.uri.split('.').pop() ?? 'jpg';
+  const uploadAndSend = useCallback(async (file: { uri: string; name: string; type: string }): Promise<void> => {
     setUploadingMedia(true);
     try {
-      const uploaded = await chatApi.uploadMedia({
-        uri: asset.uri,
-        name: `chat_image_${Date.now()}.${ext}`,
-        type: asset.mimeType ?? `image/${ext}`,
-      });
+      const uploaded = await chatApi.uploadMedia(file);
+      const localId = `local-${Date.now()}`;
+      localIds.current.add(localId);
       const optimistic: ChatMessage = {
-        id: `local-${Date.now()}`,
+        id: localId,
         roomId,
         senderId: userId,
         text: '',
@@ -162,11 +176,43 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
         fileName: uploaded.fileName,
       };
       setMessages((prev) => [optimistic, ...prev]);
-      socketService.sendMessage(roomId, userId, '');
-      await chatApi.sendMessage(roomId, userId, '', uploaded);
-    } catch { /* ignore */ }
-    finally { setUploadingMedia(false); }
+      // Send via socket only — backend saves it and broadcasts to room
+      socketService.sendMessage(roomId, userId, '', {
+        mediaUrl: uploaded.url,
+        mediaType: uploaded.mediaType,
+        fileName: uploaded.fileName,
+      });
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload file. Please try again.');
+    } finally { setUploadingMedia(false); }
   }, [roomId, userId]);
+
+  const handleAttach = useCallback((): void => {
+    Alert.alert('Attach', 'Choose attachment type', [
+      {
+        text: '📷  Photo / Image',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission denied', 'Allow photo access to send images.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+          if (result.canceled || !result.assets[0]) return;
+          const asset = result.assets[0];
+          const ext = asset.uri.split('.').pop() ?? 'jpg';
+          await uploadAndSend({ uri: asset.uri, name: `chat_image_${Date.now()}.${ext}`, type: asset.mimeType ?? `image/${ext}` });
+        },
+      },
+      {
+        text: '📄  File / Document',
+        onPress: async () => {
+          const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+          if (result.canceled || !result.assets?.[0]) return;
+          const asset = result.assets[0];
+          await uploadAndSend({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? 'application/octet-stream' });
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [uploadAndSend]);
 
   const handleSend = useCallback(async (): Promise<void> => {
     const text = draft.trim();
@@ -174,8 +220,10 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
     setSending(true);
     setDraft('');
 
+    const localId = `local-${Date.now()}`;
+    localIds.current.add(localId);
     const optimistic: ChatMessage = {
-      id: `local-${Date.now()}`,
+      id: localId,
       roomId,
       senderId: userId,
       text,
@@ -183,12 +231,9 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
       read: false,
     };
     setMessages((prev) => [optimistic, ...prev]);
+    // Send via socket only — backend handles DB save and broadcasts receive_message
     socketService.sendMessage(roomId, userId, text);
-
-    try {
-      await chatApi.sendMessage(roomId, userId, text);
-    } catch { /* socket already sent */ }
-    finally { setSending(false); }
+    setSending(false);
   }, [draft, roomId, sending, userId]);
 
   if (initialLoading) return <LoadingState message="Loading messages…" />;
@@ -202,7 +247,10 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
       keyboardVerticalOffset={90}
     >
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title={roomName} onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title={roomName}
+        onBack={hideBack && !onBack ? undefined : (onBack ?? (() => navigation.goBack()))}
+      />
 
       <FlatList
         ref={flatRef}
@@ -245,7 +293,7 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
       {/* Composer */}
       <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity
-          onPress={() => void handlePickMedia()}
+          onPress={handleAttach}
           disabled={uploadingMedia || sending}
           style={[styles.attachBtn, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
         >
@@ -286,6 +334,8 @@ export const ChatRoomScreen = ({ roomId, roomName }: ChatRoomScreenProps): React
 const styles = StyleSheet.create({
   container:   { flex: 1 },
   messageList: { padding: 16, paddingBottom: 8 },
+
+  senderName: { fontSize: 11, fontWeight: '700', color: '#2563eb', marginBottom: 2, marginLeft: 14 },
 
   bubble:      { marginBottom: 8 },
   bubbleLeft:  { alignItems: 'flex-start' },

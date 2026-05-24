@@ -42,6 +42,7 @@ export type AgentStackParamList = {
   WorkerProfile: { workerId: string };
   WorkerSearch: { workType?: string } | undefined;
   AddWorker: undefined;
+  AgentWorkers: undefined;
   SwitchAccount: undefined;
   KycVerification: undefined;
   NotificationPreferences: undefined;

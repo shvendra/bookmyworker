@@ -37,13 +37,14 @@ export type RootStackParamList = {
   // ── Authenticated: tabs (root) + inner screens ───────────────
   Main: undefined;
   EditProfile: undefined;
-  JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean } | undefined;
+  JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean; likedOnly?: boolean } | undefined;
   JobDetail: { jobId: string };
   MyApplications: undefined;
   RequirementDetail: { requirementId: string };
   WorkerProfile: { workerId: string };
-  PostRequirement: undefined;
+  PostRequirement: { workType?: string; reqType?: string } | undefined;
   AddWorker: undefined;
+  AgentWorkers: undefined;
   WorkerSearch: { workType?: string } | undefined;
   KycVerification: undefined;
   NotificationPreferences: undefined;
@@ -56,6 +57,8 @@ export type RootStackParamList = {
   Subscription: { agentId?: string } | undefined;
   PaymentWebView: { url: string; merchantOrderId: string; returnTo?: keyof RootStackParamList };
   TopupWebView: { url: string; merchantOrderId: string };
+  Shortlist: undefined;
+  EmployerPipeline: undefined;
 };
 
 // Aliases so existing imports don't need updating

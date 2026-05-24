@@ -7,23 +7,26 @@ import {
   Modal,
   Platform,
   RefreshControl,
+  ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { shortlistStorage } from '../../../core/storage/shortlistStorage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
-import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
+import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
-import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
+import type { RawRequirement, PastWorker } from '../../../core/api/endpoints/requirementsApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { Avatar } from '../../../shared/components/ui/Avatar';
@@ -561,6 +564,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const [closeTarget, setCloseTarget] = useState<RawRequirement | null>(null);
   const [closingId, setClosingId]     = useState<string | null>(null);
   const [subModalVisible, setSubModalVisible] = useState(false);
+  const [shortlistCount, setShortlistCount] = useState(0);
 
 
   // ── Network Queries ───────────────────────────────────────────────────────
@@ -647,6 +651,25 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     gcTime: 10 * 60 * 1000,
   });
 
+  const pastWorkersQuery = useQuery<PastWorker[]>({
+    queryKey: ['employer-past-workers'],
+    queryFn: () => requirementsApi.getHiredWorkers(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    enabled: !!user?.id,
+  });
+
+  const pipelineQuery = useQuery({
+    queryKey: ['employer-pipeline-totals'],
+    queryFn: async () => {
+      const res = await workerMappingApi.getEmployerPipelineOverview();
+      return res.totals;
+    },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    enabled: isSubscribed,
+  });
+
   const closeMutation = useMutation({
     mutationFn: (id: string) => requirementsApi.close(id),
     onMutate: (id) => setClosingId(id),
@@ -680,11 +703,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     [all],
   );
 
-  const totalWorkersDisplay = useMemo(() => {
-    const raw = dashQuery.data?.totalWorkerCount;
-    if (raw != null) return (600000 + raw).toLocaleString('en-IN');
-    return '6,00,000+';
-  }, [dashQuery.data]);
+  const totalWorkersDisplay = formatStat(config.stats.workerCount);
 
   const isRefreshing = reqQuery.isFetching || profileQuery.isFetching;
 
@@ -696,6 +715,13 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         void profileQuery.refetch();
       }
     }, [profileQuery]),
+  );
+
+  // Refresh shortlist badge count on every focus
+  useFocusEffect(
+    useCallback(() => {
+      void shortlistStorage.getAll().then((ids) => setShortlistCount(ids.length));
+    }, []),
   );
 
   // Auto-show subscription modal once for non-subscribed employers
@@ -716,7 +742,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     void nearbyQuery.refetch();
     void dashQuery.refetch();
     void activityQuery.refetch();
-  }, [reqQuery, profileQuery, nearbyQuery, dashQuery, activityQuery]);
+    void pastWorkersQuery.refetch();
+    if (isSubscribed) void pipelineQuery.refetch();
+  }, [reqQuery, profileQuery, nearbyQuery, dashQuery, activityQuery, pastWorkersQuery, pipelineQuery, isSubscribed]);
 
   const handlePost = useCallback(() => {
     if (profileQuery.isLoading) return;
@@ -728,6 +756,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   }, [isSubscribed, remainingContacts, profileQuery.isLoading, navigation]);
 
   const handleWorkerSearchNavigate = useCallback(() => navigation.navigate('WorkerSearch'), [navigation]);
+  const handlePipelineNavigate = useCallback(() => navigation.navigate('EmployerPipeline'), [navigation]);
   const handleSubscriptionNavigate = useCallback(() => navigation.navigate('Subscription'), [navigation]);
   const handleOpenSubModal = useCallback(() => setSubModalVisible(true), []);
   const handleKycNavigate = useCallback(() => navigation.navigate('KycVerification'), [navigation]);
@@ -813,19 +842,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <View style={[styles.qaIconWrap, styles.qaIconWrapGreen]}>
               <AppText style={styles.qaIcon}>👷</AppText>
             </View>
-            {dashQuery.isLoading ? (
-              <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
-                <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>LOADING…</AppText>
-              </View>
-            ) : (
-              <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
-                <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>AVAILABLE</AppText>
-              </View>
-            )}
+            <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
+              <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>AVAILABLE</AppText>
+            </View>
           </View>
-          <AppText style={[styles.qaCount, styles.qaCountGreen]}>
-            {dashQuery.isLoading ? '—' : totalWorkersDisplay}
-          </AppText>
+          <AppText style={[styles.qaCount, styles.qaCountGreen]}>{totalWorkersDisplay}</AppText>
           <AppText style={[styles.qaTitle, styles.qaTitleGreen]}>Browse Workers</AppText>
           <AppText style={[styles.qaSub, styles.qaSubGreen]}>Explore verified{'\n'}workers & agents</AppText>
           <View style={[styles.qaArrow, styles.qaArrowGreen]}>
@@ -854,6 +875,31 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      {/* ── Hiring Pipeline strip (subscribed only) ── */}
+      {isSubscribed && (
+        <TouchableOpacity onPress={handlePipelineNavigate} activeOpacity={0.85} style={pip.card}>
+          <View style={pip.header}>
+            <AppText style={pip.title}>Hiring Pipeline</AppText>
+            <AppText style={pip.viewAll}>View All  ›</AppText>
+          </View>
+          <View style={pip.row}>
+            {([
+              { key: 'Shortlisted' as const, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🔖' },
+              { key: 'Selected'    as const, color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe', emoji: '✅' },
+              { key: 'Joined'      as const, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', emoji: '🤝' },
+            ] as const).map((s) => (
+              <View key={s.key} style={[pip.cell, { backgroundColor: s.bg, borderColor: s.border }]}>
+                <AppText style={{ fontSize: 16, marginBottom: 2 }}>{s.emoji}</AppText>
+                <AppText style={[pip.count, { color: s.color }]}>
+                  {pipelineQuery.isLoading ? '—' : String(pipelineQuery.data?.[s.key] ?? 0)}
+                </AppText>
+                <AppText style={[pip.label, { color: s.color }]}>{s.key}</AppText>
+              </View>
+            ))}
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* ── Pending Tasks ── */}
@@ -972,7 +1018,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         })}
       </View>
     </View>
-  ), [theme, user, isSubscribed, remainingContacts, profile, handleSubscriptionNavigate, handleOpenSubModal, kycUnverified, handleKycNavigate, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, profileQuery.isLoading, dashQuery.isSuccess, dashQuery.isLoading, totalWorkersDisplay, navigation]);
+  ), [theme, user, isSubscribed, remainingContacts, profile, handleSubscriptionNavigate, handleOpenSubModal, kycUnverified, handleKycNavigate, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, profileQuery.isLoading, dashQuery.isSuccess, dashQuery.isLoading, totalWorkersDisplay, navigation, shortlistCount, handlePipelineNavigate, pipelineQuery.isLoading, pipelineQuery.data]);
 
   const renderFooter = useMemo(() => (
     <View>
@@ -1041,6 +1087,73 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </View>
       )}
 
+      {/* ── Past Workers ── */}
+      {(pastWorkersQuery.isLoading || (pastWorkersQuery.data?.length ?? 0) > 0) && (
+        <View style={[pw.card, { backgroundColor: theme.colors.card }]}>
+          <View style={pw.header}>
+            <View style={pw.headerLeft}>
+              <AppText style={[pw.title, { color: theme.colors.text }]}>Past Workers</AppText>
+              {(pastWorkersQuery.data?.length ?? 0) > 0 && (
+                <View style={pw.countPill}>
+                  <AppText style={pw.countPillTxt}>{pastWorkersQuery.data!.length}</AppText>
+                </View>
+              )}
+            </View>
+            <AppText style={pw.sub}>Workers you've hired before</AppText>
+          </View>
+
+          {pastWorkersQuery.isLoading ? (
+            <View style={pw.loadWrap}>
+              <ActivityIndicator size="small" color="#1037A4" />
+            </View>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={pw.listContent}>
+              {(pastWorkersQuery.data ?? []).map((worker, idx) => {
+                const initials = (worker.workerName || 'W')
+                  .split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+                const skill = worker.areasOfWork?.[0] || worker.workType || '—';
+                const hireDate = worker.lastHireDate
+                  ? new Date(worker.lastHireDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : '—';
+                const PALETTES = [
+                  { bg: '#EBF1FF', text: '#1A56DB' },
+                  { bg: '#F5F3FF', text: '#7C3AED' },
+                  { bg: '#ECFDF5', text: '#059669' },
+                  { bg: '#FFF7ED', text: '#EA580C' },
+                ];
+                const pal = PALETTES[idx % PALETTES.length]!;
+
+                return (
+                  <TouchableOpacity
+                    key={worker.workerId ?? worker.workerPhone ?? String(idx)}
+                    style={pw.workerCard}
+                    onPress={() => worker.workerId
+                      ? navigation.navigate('WorkerProfile', { workerId: worker.workerId })
+                      : undefined
+                    }
+                    activeOpacity={worker.workerId ? 0.85 : 1}
+                  >
+                    <View style={[pw.avatar, { backgroundColor: pal.bg }]}>
+                      <AppText style={[pw.initials, { color: pal.text }]}>{initials}</AppText>
+                    </View>
+                    <AppText style={[pw.workerName, { color: theme.colors.text }]} numberOfLines={1}>
+                      {(worker.workerName || 'Unknown').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
+                    </AppText>
+                    <AppText style={pw.workerSkill} numberOfLines={1}>{skill}</AppText>
+                    <AppText style={pw.workerDate}>{hireDate}</AppText>
+                    {worker.workerId && (
+                      <View style={pw.viewBtn}>
+                        <AppText style={pw.viewBtnTxt}>View</AppText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      )}
+
       {/* ── Support Footer ── */}
       <View style={sf.card}>
         {[
@@ -1058,7 +1171,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         ))}
       </View>
     </View>
-  ), [theme, activityQuery.isLoading, activityQuery.data, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation]);
+  ), [theme, activityQuery.isLoading, activityQuery.data, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation, pastWorkersQuery.isLoading, pastWorkersQuery.data]);
 
   const renderEmptyComponent = useCallback(() => (
     <View>
@@ -1101,9 +1214,33 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <BrandLogo style={fh.brandLogoImg} />
             <AppText style={fh.brandLogo}>BookMyWorker</AppText>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
-            <Avatar name={user?.fullName ?? 'E'} size={38} uri={buildPhotoUrl(profile?.profilePhoto)} ring ringColor="rgba(255,255,255,0.55)" />
-          </TouchableOpacity>
+          <View style={fh.headerActions}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('EmployerPipeline')}
+              style={fh.shortlistBtn}
+              activeOpacity={0.8}
+            >
+              <AppText style={fh.shortlistIcon}>❤️</AppText>
+              {shortlistCount > 0 && (
+                <View style={fh.shortlistBadge}>
+                  <AppText style={fh.shortlistBadgeTxt}>{shortlistCount}</AppText>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ChatRoom', {
+                roomId: `support_${user?.id ?? ''}`,
+                roomName: 'Support Chat',
+              })}
+              style={fh.shortlistBtn}
+              activeOpacity={0.8}
+            >
+              <AppText style={fh.shortlistIcon}>💬</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
+              <Avatar name={user?.fullName ?? 'E'} size={38} uri={buildPhotoUrl(profile?.profilePhoto)} ring ringColor="rgba(255,255,255,0.55)" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -1137,17 +1274,31 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <Modal visible={!!closeTarget} animationType="fade" transparent onRequestClose={() => setCloseTarget(null)}>
         <View style={confirm.overlay}>
           <View style={[confirm.dialog, { backgroundColor: theme.colors.card }]}>
-            <AppText style={confirm.emoji}>⚠️</AppText>
-            <AppText variant="subtitle" style={confirm.title}>Close Requirement?</AppText>
-            <AppText variant="body" color={theme.colors.mutedText} style={confirm.msg}>
-              Close &quot;{closeTarget?.workType ?? 'this requirement'}&quot;? This cannot be undone.
-            </AppText>
+            {/* Red warning header */}
+            <View style={confirm.header}>
+              <View style={confirm.iconWrap}>
+                <AppText style={confirm.iconEmoji}>⚠️</AppText>
+              </View>
+              <AppText style={confirm.headerTitle}>Close Requirement?</AppText>
+            </View>
+
+            {/* Body */}
+            <View style={confirm.body}>
+              <AppText style={[confirm.reqName, { color: theme.colors.text }]}>
+                "{closeTarget?.workType ?? 'This requirement'}"
+              </AppText>
+              <AppText style={[confirm.bodyMsg, { color: theme.colors.mutedText }]}>
+                This will permanently close the requirement. Interested agents will no longer be able to apply. This action cannot be undone.
+              </AppText>
+            </View>
+
+            {/* Actions */}
             <View style={confirm.actions}>
               <TouchableOpacity
                 onPress={() => setCloseTarget(null)}
                 style={[confirm.btn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               >
-                <AppText variant="label" color={theme.colors.text}>Cancel</AppText>
+                <AppText style={[confirm.btnTxt, { color: theme.colors.text }]}>Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -1155,9 +1306,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                   closeMutation.mutate(closeTarget._id);
                   setCloseTarget(null);
                 }}
-                style={[confirm.btn, { backgroundColor: '#EF4444' }]}
+                style={[confirm.btn, confirm.btnDanger]}
               >
-                <AppText variant="label" color="#fff">Close Req</AppText>
+                <AppText style={[confirm.btnTxt, { color: '#fff' }]}>Yes, Close It</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -1288,6 +1439,26 @@ const ub = StyleSheet.create({
 });
 
 // ─── Support Footer Styles ─────────────────────────────────────────────────────
+const pw = StyleSheet.create({
+  card:        { borderRadius: 18, borderWidth: 1, borderColor: '#e2e8f0', paddingTop: 16, paddingBottom: 4, marginBottom: 12, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  header:      { paddingHorizontal: 16, marginBottom: 12 },
+  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  title:       { fontSize: 15, fontWeight: '800', color: '#0f172a' },
+  countPill:   { backgroundColor: '#1037A4', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
+  countPillTxt:{ color: '#fff', fontSize: 11, fontWeight: '800' },
+  sub:         { fontSize: 11, color: '#64748b', fontWeight: '500' },
+  loadWrap:    { paddingVertical: 24, alignItems: 'center' },
+  listContent: { paddingHorizontal: 12, paddingBottom: 16, gap: 10 },
+  workerCard:  { width: 120, borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', padding: 12, alignItems: 'center', gap: 6, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  avatar:      { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  initials:    { fontSize: 18, fontWeight: '800' },
+  workerName:  { fontSize: 12, fontWeight: '800', textAlign: 'center', textTransform: 'capitalize' },
+  workerSkill: { fontSize: 10, color: '#64748b', textAlign: 'center', fontWeight: '600' },
+  workerDate:  { fontSize: 9, color: '#94a3b8', textAlign: 'center' },
+  viewBtn:     { backgroundColor: '#1037A4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, marginTop: 2 },
+  viewBtnTxt:  { color: '#fff', fontSize: 10, fontWeight: '800' },
+});
+
 const sf = StyleSheet.create({
   card:  { borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', paddingVertical: 4, marginBottom: 8 },
   row:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f8fafc' },
@@ -1298,13 +1469,19 @@ const sf = StyleSheet.create({
 });
 
 const confirm = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  dialog:  { width: '100%', borderRadius: 20, padding: 24, alignItems: 'center', gap: 8, elevation: 12 },
-  emoji:   { fontSize: 36, lineHeight: 44, marginBottom: 4 },
-  title:   { fontWeight: '700', fontSize: 18 },
-  msg:     { textAlign: 'center', paddingHorizontal: 8, marginBottom: 8 },
-  actions: { flexDirection: 'row', gap: 12, width: '100%' },
-  btn:     { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dialog:      { width: '100%', borderRadius: 20, overflow: 'hidden', elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 20 },
+  header:      { backgroundColor: '#B91C1C', paddingVertical: 20, paddingHorizontal: 24, alignItems: 'center', gap: 10 },
+  iconWrap:    { width: 52, height: 52, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
+  iconEmoji:   { fontSize: 26, lineHeight: 32 },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  body:        { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16, gap: 6, alignItems: 'center' },
+  reqName:     { fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  bodyMsg:     { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  actions:     { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 4 },
+  btn:         { flex: 1, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  btnDanger:   { backgroundColor: '#DC2626', borderColor: 'transparent', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  btnTxt:      { fontSize: 14, fontWeight: '700' },
 });
 
 // ─── Subscription Upsell Banner ───────────────────────────────────────────────
@@ -1318,15 +1495,32 @@ const subBanner = StyleSheet.create({
   arrow:   { fontSize: 18, color: 'rgba(255,255,255,0.8)', fontWeight: '700' },
 });
 
+// ─── Pipeline Strip Styles ─────────────────────────────────────────────────────
+const pip = StyleSheet.create({
+  card:   { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', padding: 14, marginBottom: 14, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  title:  { fontSize: 14, fontWeight: '800', color: '#0f172a' },
+  viewAll:{ fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  row:    { flexDirection: 'row', gap: 8 },
+  cell:   { flex: 1, borderRadius: 12, borderWidth: 1, paddingVertical: 10, alignItems: 'center', gap: 2 },
+  count:  { fontSize: 20, fontWeight: '900', lineHeight: 24 },
+  label:  { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+});
+
 const fh = StyleSheet.create({
   wrap:          { backgroundColor: '#1037A4', paddingHorizontal: 20, paddingBottom: 32, overflow: 'hidden' },
   circle1:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 220, height: 220, top: -80, right: -60 },
   circle2:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 140, height: 140, bottom: -45, left: -30 },
-  // Brand bar: logo + avatar
-  brandRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  brandLeft:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandLogoImg:  { width: 28, height: 28, borderRadius: 6 },
-  brandLogo:     { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
+  // Brand bar: logo + actions + avatar
+  brandRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  brandLeft:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandLogoImg:      { width: 28, height: 28, borderRadius: 6 },
+  brandLogo:         { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
+  headerActions:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  shortlistBtn:      { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  shortlistIcon:     { fontSize: 19, lineHeight: 22 },
+  shortlistBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#1037A4' },
+  shortlistBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900', lineHeight: 12 },
   // User + verification status
   userBar:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name:          { fontSize: 17, fontWeight: '800', color: '#fff', flex: 1 },

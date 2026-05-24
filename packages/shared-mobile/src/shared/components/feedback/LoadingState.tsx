@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Image, StyleSheet, View } from 'react-native';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
+
+const LOGO = require('../../../../assets/logo.png') as number;
 
 interface LoadingStateProps {
   label?: string;
@@ -45,10 +47,7 @@ export const LoadingState = ({ label, message, fullscreen = true }: LoadingState
         !fullscreen && styles.inline,
       ]}
     >
-      {/* Logo mark */}
-      <View style={[styles.logoMark, { backgroundColor: theme.colors.primaryLight }]}>
-        <AppText style={styles.logoEmoji}>🏗️</AppText>
-      </View>
+      <Image source={LOGO} style={styles.logo} resizeMode="cover" />
 
       {/* Bouncing dots */}
       <View style={styles.dotsRow}>
@@ -84,14 +83,7 @@ const styles = StyleSheet.create({
     flex: 0,
     paddingVertical: 40,
   },
-  logoMark: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoEmoji: { fontSize: 30, lineHeight: 36 },
+  logo: { width: 64, height: 64, borderRadius: 20 },
   dotsRow: {
     flexDirection: 'row',
     gap: 8,
