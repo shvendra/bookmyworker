@@ -264,7 +264,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               ) : undefined
             }
           />
-          {(user?.role === 'agent' || user?.role === 'selfworker' || user?.role === 'worker') && (
+          {user?.role === 'agent' && (
             <MenuItem
               icon="🏆"
               label={t('becomeVerifiedAgent')}
@@ -312,8 +312,12 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             }
           />
           <MenuItem icon="🛡️" label={t('profile_securityPrivacy')} onPress={() => navigation.navigate('TermsPrivacy')} />
-          <MenuItem icon="💳" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
-          <MenuItem icon="🧾" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+          {user?.role === 'employer' && (
+            <MenuItem icon="💳" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
+          )}
+          {user?.role === 'employer' && (
+            <MenuItem icon="🧾" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+          )}
           <MenuItem icon="⚙️" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 

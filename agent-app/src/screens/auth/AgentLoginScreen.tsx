@@ -75,21 +75,20 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
               resizeMode="contain"
             />
           </View>
-          <View style={styles.brandTextWrap}>
+         
+        </View>
+
+        {/* welcome headline */}
+        <View style={styles.welcomeBlock}>
+           <View style={styles.brandTextWrap}>
             <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
             <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">
               Kaam Dhundo · Paise Kamao
             </AppText>
           </View>
-        </View>
-
-        {/* welcome headline */}
-        <View style={styles.welcomeBlock}>
-          <View style={styles.welcomeBadge}>
-            <AppText style={styles.welcomeBadgeText} color={ORANGE}>{'👋  WELCOME BACK'}</AppText>
-          </View>
+       
           <AppText style={styles.heroHeadline} color="#FFFFFF">
-            {'Log In to Your\nAccount'}
+            {'Log In to Your Account'}
           </AppText>
           <AppText style={styles.heroSub} color="rgba(255,255,255,0.70)">
             Find work or manage your worker network
@@ -102,19 +101,28 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
         style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          
           <Animated.View
-            style={[
-              styles.card,
-              { backgroundColor: theme.colors.card },
-              !isDark && styles.cardShadow,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
+  style={[
+    styles.card,
+    { backgroundColor: theme.colors.card },
+    !isDark && styles.cardShadow,
+    {
+      opacity: fadeAnim,
+      transform: [{ translateY: slideAnim }],
+      marginTop: 2,
+    },
+  ]}
+>
+               <View style={[styles.welcomeBadge, { marginBottom: 16 }]}>
+            <AppText style={styles.welcomeBadgeText} color={ORANGE}>{'👋  WELCOME BACK'}</AppText>
+          </View>
             {/* Login mode tabs */}
             <View style={[
               styles.modeTabs,
@@ -123,7 +131,7 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
                 backgroundColor: isDark ? theme.colors.surface : '#F1F5F9',
               },
             ]}>
-              {(['otp', 'password'] as const).map((m) => (
+              {(['password', 'otp'] as const).map((m) => (
                 <TouchableOpacity
                   key={m}
                   onPress={() => setMode(m)}

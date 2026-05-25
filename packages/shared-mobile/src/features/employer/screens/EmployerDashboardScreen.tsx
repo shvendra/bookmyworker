@@ -629,10 +629,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   });
 
   const nearbyQuery = useQuery({
-    queryKey: ['nearby-agents', user?.state],
+    queryKey: ['nearby-agents', user?.state, user?.district],
     queryFn: () => workerApi.getAllAgents({
       state: user?.state || undefined,
-      status: 'Verified',
+      district: user?.district || undefined,
       workerGroup: 'individual',
       page: 1,
       limit: 20,
@@ -695,7 +695,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   }, [all, reqTab]);
 
   const nearbyAgents: RawAgent[] = nearbyQuery.data?.rawAgents ?? [];
-  const nearbyTotal = (nearbyQuery.data?.total ?? 0) + 300;
+  const nearbyTotal = (nearbyQuery.data?.total ?? 0) + 150;
   const displayedNearby = useMemo(() => nearbyAgents.slice(0, NEARBY_SHOW), [nearbyAgents]);
 
   const interestedCount = useMemo(

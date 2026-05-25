@@ -121,7 +121,7 @@ export const GradientHeader = ({
             numberOfLines={1}
             style={[styles.titleText, compact && styles.titleCompact]}
           >
-            {title}
+            {title.replace(/\b\w/g, (c) => c.toUpperCase())}
           </AppText>
           {caption ? (
             <AppText variant="caption" color="rgba(255,255,255,0.65)" style={styles.captionText}>
@@ -308,6 +308,7 @@ const styles = StyleSheet.create({
   },
   avatarWrap: {},
   childrenWrap: {
-    marginTop: 16,
+    marginTop: 14,
+    marginBottom: -6,
   },
 });

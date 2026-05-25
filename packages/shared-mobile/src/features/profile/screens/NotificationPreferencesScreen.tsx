@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -33,18 +33,27 @@ interface PrefRow {
   description: string;
 }
 
-const PREF_ROWS: PrefRow[] = [
+const AGENT_PREF_ROWS: PrefRow[] = [
   { key: 'newRequirement',   label: 'New Requirements',    description: 'When an employer posts a new job requirement' },
+  { key: 'kycUpdate',        label: 'KYC Status',          description: 'When your KYC verification status changes' },
+  { key: 'chat',             label: 'Chat Messages',       description: 'New messages in your conversations' },
+  { key: 'promotions',       label: 'Promotions & Updates',description: 'Offers, tips, and platform announcements' },
+];
+
+const EMPLOYER_PREF_ROWS: PrefRow[] = [
+  { key: 'callOutcome',      label: 'Call Outcome Updates',description: 'When an employer updates the outcome of a call with you' },
   { key: 'expressedInterest',label: 'Interest Expressed',  description: 'When a worker shows interest in your requirement' },
   { key: 'kycUpdate',        label: 'KYC Status',          description: 'When your KYC verification status changes' },
   { key: 'chat',             label: 'Chat Messages',       description: 'New messages in your conversations' },
-  { key: 'callOutcome',      label: 'Call Outcome Updates',description: 'When an employer updates the outcome of a call with you' },
   { key: 'promotions',       label: 'Promotions & Updates',description: 'Offers, tips, and platform announcements' },
 ];
 
 export const NotificationPreferencesScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation();
+  const route = useRoute();
+  const appType = (route.params as { appType?: string } | undefined)?.appType;
+  const PREF_ROWS = appType === 'agent' ? AGENT_PREF_ROWS : EMPLOYER_PREF_ROWS;
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFS);
   const [loading, setLoading] = useState(true);

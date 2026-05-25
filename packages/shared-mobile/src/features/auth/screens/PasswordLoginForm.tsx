@@ -80,12 +80,7 @@ export const PasswordLoginForm = ({ navigation, roleHint }: Props): React.JSX.El
 
   return (
     <>
-      <View style={styles.header}>
-        <AppText variant="heading" color={theme.colors.text}>Login with Password 🔑</AppText>
-        <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
-          Forgot password? Verify your number via WhatsApp OTP.
-        </AppText>
-      </View>
+     
 
       <View style={styles.inputGroup}>
         <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>

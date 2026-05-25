@@ -1,4 +1,6 @@
 import { apiClient } from '../client';
+import { getAccessToken } from '../../storage/authStorage';
+import { ENV } from '../../config/env';
 import type { WorkerProfile, AttendanceRecord } from '../../../shared/types/domain';
 
 export interface WorkerSearchParams {
@@ -16,6 +18,7 @@ export interface WorkerSearchParams {
   status?: string | string[];
   page?: number;
   limit?: number;
+  qualification?: string;
 }
 
 export interface RawAgent {
@@ -38,6 +41,9 @@ export interface RawAgent {
   dob?: string | number;
   gender?: string;
   veryfiedBage?: boolean;
+  workerSubType?: string;
+  agentType?: string;
+  resumeUrl?: string;
 }
 
 export interface GetAllAgentsResponse {
@@ -114,6 +120,7 @@ export const workerApi = {
         minAge: params.minAge || undefined,
         maxAge: params.maxAge || undefined,
         status: params.status || undefined,
+        qualification: params.qualification || undefined,
         page: params.page ?? 1,
         limit: params.limit ?? 25,
       },
@@ -195,4 +202,38 @@ export const workerApi = {
 
   markAttendance: (data: { requirementId: string; type: 'check-in' | 'check-out'; location?: string }) =>
     apiClient.post<AttendanceRecord>('/api/v1/attendance/add-attendance', data).then((r) => r.data),
+
+  uploadResume: async (fileUri: string, fileName: string): Promise<string> => {
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? 'pdf';
+    const mime = ext === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const form = new FormData();
+
+    if (fileUri.startsWith('blob:') || fileUri.startsWith('data:')) {
+      // Web/browser: expo-document-picker returns a blob: URI on web.
+      // form.append with a plain object sends "[object Object]" — not a file.
+      // Must fetch the actual blob and wrap it as a File so the browser builds
+      // a proper multipart part that express-fileupload can parse.
+      const blobResponse = await fetch(fileUri);
+      const blob = await blobResponse.blob();
+      form.append('resume', new File([blob], fileName, { type: mime }), fileName);
+    } else {
+      // React Native (device & emulator): expo-document-picker returns a file:// URI.
+      // RN's native XHR layer understands { uri, name, type } and builds the
+      // multipart part correctly — native fetch auto-sets the boundary header.
+      form.append('resume', { uri: fileUri, name: fileName, type: mime } as unknown as Blob);
+    }
+
+    const token = await getAccessToken();
+    const response = await fetch(`${ENV.API_BASE_URL}/api/v1/user/upload-resume`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({})) as { message?: string };
+      throw new Error(err.message ?? 'Upload failed');
+    }
+    const data = await response.json() as { success: boolean; resumeUrl: string };
+    return data.resumeUrl;
+  },
 };

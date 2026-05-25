@@ -8,22 +8,28 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://www.bookmyworkers.com",
-        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://www.bookmyworkers.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://bookmyworkers.com",
+        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://bookmyworkers.com"
       }
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://www.bookmyworkers.com",
-        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://www.bookmyworkers.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://bookmyworkers.com",
+        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://bookmyworkers.com"
       }
     },
     "production": {
       "autoIncrement": true,
+      "android": {
+        "credentialsSource": "local"
+      },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://www.bookmyworkers.com",
-        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://www.bookmyworkers.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://bookmyworkers.com",
+        "EXPO_PUBLIC_SOCKET_BASE_URL": "https://bookmyworkers.com"
       }
     }
   },

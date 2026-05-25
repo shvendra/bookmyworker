@@ -23,6 +23,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useAppTheme } from '../../../core/theme';
 import { authService } from '../services/authService';
+import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { otpSchema, type OtpFormValues } from '../validation/authSchemas';
 import type { AuthStackParamList } from '../../../app/navigation/types';
@@ -133,6 +134,8 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
           fixedSalary: params.fixedSalary ? Number(params.fixedSalary) : undefined,
           salaryFrom: params.salaryFrom ? Number(params.salaryFrom) : undefined,
           salaryTo: params.salaryTo ? Number(params.salaryTo) : undefined,
+          workerSubType: params.workerSubType,
+          agentType: params.agentType,
         });
         toast.success('Account created!', 'Registration Successful');
         await authService.requestOtp(params.phone);
@@ -143,8 +146,15 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
       } else {
         const roleHint = params.role === 'Employer' ? 'employer' : params.role === 'Agent' ? 'agent' : 'worker';
         const session = await authService.loginAfterRegister(params.phone, otp, roleHint);
-        toast.success('Welcome to BookMyWorker!', 'Login Successful');
         await signIn(session);
+        if (params.resumeUri && params.resumeName) {
+          try {
+            await workerApi.uploadResume(params.resumeUri, params.resumeName);
+          } catch {
+            // resume upload failure is non-fatal
+          }
+        }
+        toast.success('Welcome to BookMyWorker!', 'Registration Successful');
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : (phase === 'register' ? 'Registration failed.' : 'Login failed.');

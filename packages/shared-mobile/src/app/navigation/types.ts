@@ -29,6 +29,10 @@ export type RootStackParamList = {
     fixedSalary?: string;
     salaryFrom?: string;
     salaryTo?: string;
+    workerSubType?: string;
+    agentType?: string;
+    resumeUri?: string;
+    resumeName?: string;
   };
   ForgotPassword: { roleHint?: AppRole } | undefined;
   // ── Onboarding ────────────────────────────────────────────────
@@ -59,6 +63,7 @@ export type RootStackParamList = {
   TopupWebView: { url: string; merchantOrderId: string };
   Shortlist: undefined;
   EmployerPipeline: undefined;
+  PdfViewer: { url: string; title?: string };
 };
 
 // Aliases so existing imports don't need updating

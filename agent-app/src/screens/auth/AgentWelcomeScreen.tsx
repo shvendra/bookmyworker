@@ -82,21 +82,17 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
                 resizeMode="contain"
               />
             </View>
-            <View style={styles.brandTextWrap}>
-              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
-              <View style={styles.tagPill}>
-                <View style={styles.tagDot} />
-                <AppText style={styles.tagText} color={ORANGE}>INDIA'S WORKFORCE PLATFORM</AppText>
-              </View>
-            </View>
+           
           </View>
 
           {/* Headline */}
+         {/* Headline */}
+         {/* Headline */}
           <View style={styles.headlineBlock}>
-            <AppText style={styles.headline} color="#FFFFFF">Kaam Dhundo,{'\n'}</AppText>
-            <AppText style={[styles.headline, { color: ORANGE }]}>Paise Kamao</AppText>
+<AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+<AppText style={styles.headline} color="#FFFFFF">Kaam Dhundo,</AppText>
             <AppText style={styles.heroSub} color="rgba(255,255,255,0.72)">
-              Find work near you. Register workers.{'\n'}Earn commissions. Grow your network.
+              Find work near you. Register workers.{'\n'}Earn. Grow your network.
             </AppText>
           </View>
 
@@ -158,9 +154,6 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
 
           {/* Work categories */}
           <View style={styles.section}>
-            <AppText style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Jobs available in your area
-            </AppText>
             <View style={styles.chipRow}>
               {WORK_TYPES.map((w) => (
                 <View
@@ -191,7 +184,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
                 <AppText style={styles.roleEmoji}>🤝</AppText>
               </View>
               <AppText style={[styles.roleTitle, { color: BRAND }]}>Agent</AppText>
-              <AppText style={[styles.roleDesc, { color: BRAND }]}>Register workers{'\n'}& earn commission</AppText>
+              <AppText style={[styles.roleDesc, { color: BRAND }]}>Send workers to jobs{'\n'}Earn on placement.</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -203,7 +196,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
                 <AppText style={styles.roleEmoji}>👷</AppText>
               </View>
               <AppText style={[styles.roleTitle, { color: ORANGE }]}>Job Seeker</AppText>
-              <AppText style={[styles.roleDesc, { color: ORANGE }]}>Find{'\n'}work near you</AppText>
+              <AppText style={[styles.roleDesc, { color: ORANGE }]}>Find suitable work{'\n'}near your location</AppText>
             </TouchableOpacity>
           </View>
 
@@ -254,7 +247,7 @@ const styles = StyleSheet.create({
   },
 
   // Brand row
-  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   logoBox: {
     width: 56, height: 56,
     borderRadius: 16,
@@ -328,7 +321,8 @@ const styles = StyleSheet.create({
   // Role boxes
   rolesRow: { flexDirection: 'row', marginBottom: 22, gap: 12 },
   roleBox: {
-    flex: 1, borderRadius: 20, padding: 18,
+    flex: 1, borderRadius: 20,
+    paddingVertical: 18, paddingHorizontal: 10,
     borderWidth: 1.5, alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -341,8 +335,15 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 10,
   },
+  companyName: {
+    fontSize: 14,
+    fontFamily: 'System', // Replace 'System' with your custom font family name if you have one (e.g., 'Inter-Bold', 'Roboto')
+    fontWeight: 'bold',    // Ensures the text renders bold
+    letterSpacing: 0.5,    // Optional: gives a clean, modern brand look
+    marginBottom: 4,       // Creates a small gap right above "Kaam Dhundo"
+  },
   roleEmoji: { fontSize: 28, lineHeight: 34 },
-  roleTitle: { fontSize: 15, fontWeight: '800', lineHeight: 21, marginBottom: 4 },
+  roleTitle: { fontSize: 15, fontWeight: '800', lineHeight: 21, marginBottom: 4, textAlign: 'center' },
   roleDesc: { fontSize: 12, fontWeight: '500', textAlign: 'center', lineHeight: 17 },
 
   // CTA

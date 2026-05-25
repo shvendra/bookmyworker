@@ -16,7 +16,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { Controller, useForm } from 'react-hook-form';
 import { ScreenHeader } from '../../../../packages/shared-mobile/src/shared/components/ui/GradientHeader';
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
-import { apiClient } from '../../../../packages/shared-mobile/src/core/api/client';
+import { getAccessToken } from '../../../../packages/shared-mobile/src/core/storage/authStorage';
+import { ENV } from '../../../../packages/shared-mobile/src/core/config/env';
+import { resetToMain } from '../../../../packages/shared-mobile/src/core/navigation/navigationRef';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { Badge } from '../../../../packages/shared-mobile/src/shared/components/ui/Badge';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
@@ -55,7 +57,7 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'Kyc'>;
 
 export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { state, setLanguage, updateProfile, completeOnboarding } = useAuth();
+  const { state, setLanguage, updateProfile, completeOnboarding, signOut } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [idFront, setIdFront] = useState<DocState | null>(null);
@@ -91,13 +93,22 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
       }
       await Promise.all(ops);
 
-      const formData = new FormData();
-      formData.append('aadharFront', { uri: idFront.uri, name: idFront.name, type: idFront.type } as unknown as Blob);
-      await apiClient.put('/api/v1/user/update', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // ID card upload is non-fatal — admin reviews it async, user can proceed
+      try {
+        const formData = new FormData();
+        formData.append('aadharFront', { uri: idFront.uri, name: idFront.name, type: idFront.type } as unknown as Blob);
+        const token = await getAccessToken();
+        await fetch(`${ENV.API_BASE_URL}/api/v1/user/update`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+      } catch {
+        // silently ignore — KYC status stays pending, admin can request re-upload
+      }
 
       await completeOnboarding();
+      resetToMain();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
     } finally {
@@ -108,7 +119,16 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-      <ScreenHeader title="Complete Your Profile" onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title="Complete Your Profile"
+        onBack={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            signOut();
+          }
+        }}
+      />
 
       <ScrollView
         style={{ flex: 1 }}

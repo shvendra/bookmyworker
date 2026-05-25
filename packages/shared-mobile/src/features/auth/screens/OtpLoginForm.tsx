@@ -49,13 +49,7 @@ export const OtpLoginForm = ({ navigation, roleHint }: Props): React.JSX.Element
 
   return (
     <>
-      <View style={styles.header}>
-        <AppText variant="heading" color={theme.colors.text}>Welcome back 👋</AppText>
-        <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
-          Enter your mobile number to receive an OTP via WhatsApp
-        </AppText>
-      </View>
-
+    
       <View style={styles.inputGroup}>
         <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
           Mobile Number

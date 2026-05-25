@@ -32,6 +32,9 @@ interface BackendUser {
   remainingContacts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
   veryfiedBage?: boolean;
+  workerSubType?: string;
+  agentType?: string;
+  resumeUrl?: string;
 }
 
 export interface VerifyOtpResponse {
@@ -44,7 +47,7 @@ export interface VerifyOtpResponse {
 function mapRole(backendRole: string): AppRole {
   switch (backendRole) {
     case 'Employer': return 'employer';
-    case 'SelfWorker':
+    case 'SelfWorker': return 'selfworker';
     case 'Worker': return 'worker';
     case 'Agent': return 'agent';
     case 'Admin': return 'admin';
@@ -70,6 +73,9 @@ function mapBackendUser(u: BackendUser): UserProfile {
     remainingContacts: u.remainingContacts,
     employerType: u.employerType,
     veryfiedBage: u.veryfiedBage,
+    workerSubType: u.workerSubType,
+    agentType: u.agentType,
+    resumeUrl: u.resumeUrl,
   };
 }
 
@@ -115,6 +121,8 @@ export interface RegisterPayload {
   fixedSalary?: number;
   salaryFrom?: number;
   salaryTo?: number;
+  workerSubType?: string;
+  agentType?: string;
 }
 
 export const registerUser = async (payload: RegisterPayload): Promise<{ message: string }> => {

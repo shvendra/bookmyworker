@@ -40,7 +40,12 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
       });
     }
 
-    const token = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+    const token = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
     return token.data;
   } catch (_) {
     return null;

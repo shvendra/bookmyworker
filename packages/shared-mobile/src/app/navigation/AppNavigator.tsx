@@ -48,6 +48,7 @@ import { SubscriptionScreen } from '../../features/payment/screens/SubscriptionS
 import { ShortlistScreen } from '../../features/employer/screens/ShortlistScreen';
 import { PipelineScreen } from '../../features/employer/screens/PipelineScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
+import { PdfViewerScreen } from '../../features/profile/screens/PdfViewerScreen';
 
 import type { RootStackParamList } from './types';
 
@@ -206,6 +207,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="Shortlist" component={ShortlistScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

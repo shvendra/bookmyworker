@@ -24,6 +24,12 @@ export interface UserProfile {
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
   // Verified badge (paid, agent-specific)
   veryfiedBage?: boolean;
+  // Worker sub-type (ITI/Diploma, Graduate, Skilled, Unskilled)
+  workerSubType?: string;
+  // Agent type (Group worker supplier, etc.)
+  agentType?: string;
+  // Public S3 URL of the uploaded resume (PDF/Word)
+  resumeUrl?: string;
 }
 
 export interface AuthTokens {

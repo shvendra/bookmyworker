@@ -104,7 +104,14 @@ const getVisual = (workType?: string | null, subCategory?: string | null): WorkV
 };
 
 const getSalaryType = (req: RawRequirement): string => {
-  if (req.salaryType) return req.salaryType.toLowerCase();
+  const raw = (req.salaryType ?? '').trim().toLowerCase();
+  if (!raw) {
+    return (req.minBudgetPerWorker ?? 0) >= 1500 ? 'month' : 'day';
+  }
+  if (raw.startsWith('month') || raw === 'pm' || raw === 'per month') return 'month';
+  if (raw.startsWith('week') || raw === 'pw' || raw === 'per week') return 'week';
+  if (raw.startsWith('day') || raw === 'daily' || raw === 'pd' || raw === 'per day') return 'day';
+  if (raw.startsWith('hour') || raw === 'hourly' || raw === 'ph' || raw === 'per hour') return 'hour';
   return (req.minBudgetPerWorker ?? 0) >= 1500 ? 'month' : 'day';
 };
 
@@ -161,7 +168,8 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
         ].filter(Boolean).join(' · ')}` : null,
         req.workerNeedDate ? `📅 Start: ${fmtDate(req.workerNeedDate)}` : null,
         '',
-        'Apply on BookMyWorker App',
+        '📲 Apply on BookMyWorker App:',
+        'https://play.google.com/store/apps/details?id=com.app.myworker&pcampaignid=web_share',
       ].filter((l) => l !== null).join('\n');
       await Share.share({ message: msg, title: `Job: ${jobTitle}` });
     } catch {
@@ -187,8 +195,8 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
           </View>
         </View>
         <View style={[styles.salaryPill, { backgroundColor: isDark ? theme.colors.card : visual.color }]}>
-          <AppText style={styles.salaryText}>{salaryText}</AppText>
-          <AppText style={styles.salaryPer}>/{salaryType}</AppText>
+          <AppText style={styles.salaryText} numberOfLines={1}>{salaryText}</AppText>
+          <AppText style={styles.salaryPer} numberOfLines={1}>/{salaryType.charAt(0).toUpperCase() + salaryType.slice(1)}</AppText>
         </View>
       </View>
 
@@ -262,10 +270,11 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
           {/* Share button */}
           <TouchableOpacity
             onPress={() => { void handleShare(); }}
-            style={[styles.iconBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
+            style={[styles.shareBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
             activeOpacity={0.75}
           >
             <AppText style={styles.iconBtnText}>📤</AppText>
+            <AppText style={[styles.shareBtnLabel, { color: theme.colors.mutedText }]}>Share</AppText>
           </TouchableOpacity>
 
           {/* Apply button */}
@@ -275,7 +284,7 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
               activeOpacity={alreadyInterested ? 1 : 0.8}
               style={[styles.applyBtn, { backgroundColor: alreadyInterested ? '#10B981' : visual.color }]}
             >
-              <AppText style={styles.applyBtnText}>
+              <AppText style={styles.applyBtnText} numberOfLines={1}>
                 {alreadyInterested ? 'Applied ✓' : 'Apply Now'}
               </AppText>
             </TouchableOpacity>
@@ -373,6 +382,10 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const [selectedCategory, setSelectedCategory] = useState<string>(route.params?.workType ?? '');
   const [selectedSubCat, setSelectedSubCat] = useState<string>(route.params?.subCategory ?? '');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  // Pending state — holds draft selections while the sheet is open.
+  // Applied to actual state only when user taps "Apply Filters".
+  const [pendingCategory, setPendingCategory] = useState<string>('');
+  const [pendingSubCat, setPendingSubCat] = useState<string>('');
   const showMyInterests = route.params?.myInterests === true;
   const showLikedOnly = route.params?.likedOnly === true;
 
@@ -386,12 +399,27 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     }, 500);
   };
 
-  // Subcategories for selected category
+  // Sync pending state with applied state whenever the sheet opens
+  useEffect(() => {
+    if (filterSheetVisible) {
+      setPendingCategory(selectedCategory);
+      setPendingSubCat(selectedSubCat);
+    }
+  }, [filterSheetVisible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Subcategories for the applied filter (drives the query)
   const subCategories = useMemo(() => {
     if (!selectedCategory) return [];
     const cat = CATEGORIES.find((c) => c.value === selectedCategory);
     return cat?.subcategories ?? [];
   }, [selectedCategory]);
+
+  // Subcategories shown inside the filter sheet (driven by pending selection)
+  const pendingSubCategories = useMemo(() => {
+    if (!pendingCategory) return [];
+    const cat = CATEGORIES.find((c) => c.value === pendingCategory);
+    return cat?.subcategories ?? [];
+  }, [pendingCategory]);
 
   // ── Liked-only mode: flat query ─────────────────────────────────────────────
   const likedQuery = useInfiniteQuery({
@@ -661,8 +689,8 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           {/* Header */}
           <View style={styles.sheetHeader}>
             <AppText style={[styles.sheetTitle, { color: theme.colors.text }]}>Filter Jobs</AppText>
-            {(selectedCategory || selectedSubCat) && (
-              <TouchableOpacity onPress={() => { setSelectedCategory(''); setSelectedSubCat(''); }}>
+            {(pendingCategory || pendingSubCat) && (
+              <TouchableOpacity onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}>
                 <AppText style={styles.sheetClear}>Clear All</AppText>
               </TouchableOpacity>
             )}
@@ -672,20 +700,20 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             {/* Work Category */}
             <AppText style={[styles.sheetSection, { color: theme.colors.mutedText }]}>WORK CATEGORY</AppText>
             <TouchableOpacity
-              onPress={() => { setSelectedCategory(''); setSelectedSubCat(''); }}
+              onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}
               style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
             >
               <AppText style={styles.sheetRowEmoji}>🔍</AppText>
               <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>All Categories</AppText>
-              {!selectedCategory && <AppText style={styles.sheetRowCheck}>✓</AppText>}
+              {!pendingCategory && <AppText style={styles.sheetRowCheck}>✓</AppText>}
             </TouchableOpacity>
             {CATEGORIES.map((cat) => {
               const v = WORK_TYPE_VISUALS[cat.value] ?? DEFAULT_VISUAL;
-              const active = selectedCategory === cat.value;
+              const active = pendingCategory === cat.value;
               return (
                 <TouchableOpacity
                   key={cat.value}
-                  onPress={() => { setSelectedCategory(active ? '' : cat.value); setSelectedSubCat(''); }}
+                  onPress={() => { setPendingCategory(active ? '' : cat.value); setPendingSubCat(''); }}
                   style={[styles.sheetRow, { borderBottomColor: theme.colors.divider, backgroundColor: active ? theme.colors.primaryLight : 'transparent' }]}
                 >
                   <AppText style={styles.sheetRowEmoji}>{v.emoji}</AppText>
@@ -698,22 +726,22 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             })}
 
             {/* Sub-category */}
-            {subCategories.length > 0 && (
+            {pendingSubCategories.length > 0 && (
               <>
                 <AppText style={[styles.sheetSection, { color: theme.colors.mutedText, marginTop: 16 }]}>SUB CATEGORY</AppText>
                 <TouchableOpacity
-                  onPress={() => setSelectedSubCat('')}
+                  onPress={() => setPendingSubCat('')}
                   style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
                 >
                   <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>All Sub-categories</AppText>
-                  {!selectedSubCat && <AppText style={styles.sheetRowCheck}>✓</AppText>}
+                  {!pendingSubCat && <AppText style={styles.sheetRowCheck}>✓</AppText>}
                 </TouchableOpacity>
-                {subCategories.map((sc) => {
-                  const active = selectedSubCat === sc.value;
+                {pendingSubCategories.map((sc) => {
+                  const active = pendingSubCat === sc.value;
                   return (
                     <TouchableOpacity
                       key={sc.value}
-                      onPress={() => setSelectedSubCat(active ? '' : sc.value)}
+                      onPress={() => setPendingSubCat(active ? '' : sc.value)}
                       style={[styles.sheetRow, { borderBottomColor: theme.colors.divider, backgroundColor: active ? '#EDE9FE' : 'transparent' }]}
                     >
                       <AppText style={[styles.sheetRowLabel, { color: active ? '#6366F1' : theme.colors.text, fontWeight: active ? '700' : '500' }]}>
@@ -729,7 +757,15 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           </ScrollView>
 
           <View style={[styles.sheetFooter, { borderTopColor: theme.colors.border }]}>
-            <AppButton title="Apply Filters" onPress={() => setFilterSheetVisible(false)} fullWidth />
+            <AppButton
+              title="Apply Filters"
+              onPress={() => {
+                setSelectedCategory(pendingCategory);
+                setSelectedSubCat(pendingSubCat);
+                setFilterSheetVisible(false);
+              }}
+              fullWidth
+            />
           </View>
         </View>
       </Modal>
@@ -843,9 +879,9 @@ const styles = StyleSheet.create({
   bannerEmoji: { fontSize: 36, lineHeight: 44 },
   bannerTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20 },
   bannerSub: { fontSize: 11, fontWeight: '500', marginTop: 1 },
-  salaryPill: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
-  salaryText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 17 },
-  salaryPer: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontWeight: '500', lineHeight: 13 },
+  salaryPill: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center', minWidth: 86, flexShrink: 0 },
+  salaryText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 18 },
+  salaryPer: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600', lineHeight: 15 },
 
   // Meta row — location + workers always on same line
   metaRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, gap: 6 },
@@ -869,8 +905,10 @@ const styles = StyleSheet.create({
   actionBtns: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   iconBtnText: { fontSize: 16, lineHeight: 20 },
-  applyBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
-  applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
+  shareBtnLabel: { fontSize: 12, fontWeight: '600' },
+  applyBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 96 },
+  applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
   // Load more
   loadMore: { paddingVertical: 20, alignItems: 'center' },

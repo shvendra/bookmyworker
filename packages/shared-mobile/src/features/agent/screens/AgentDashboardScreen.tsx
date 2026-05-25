@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -33,6 +34,7 @@ import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { SkeletonCard } from '../../../shared/components/ui/Skeleton';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
+import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = Math.min(220, SCREEN_W * 0.58);
@@ -70,6 +72,107 @@ const WORK_VISUALS: Record<string, WorkVisual> = {
   'Security & Facility Worker':         { emoji: '👮', color: '#0F172A', bg: '#F1F5F9', accent: '#475569' },
 };
 const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: '#1037A4', bg: '#EBF1FF', accent: '#3B82F6' };
+
+// ── Worker Banner Slider ──────────────────────────────────────────────────────
+const BANNER_SLIDE_W = 130;
+const BANNER_SLIDE_H = 78;
+const BANNER_SLIDE_GAP = 8;
+
+interface BannerSlide {
+  uri: string;
+  label: string;
+  emoji: string;
+  accent: string;
+}
+
+const BANNER_SLIDES: BannerSlide[] = [
+  {
+    uri: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=240&h=120&fit=crop&q=70',
+    label: 'Construction', emoji: '🏗️', accent: '#1E3A8A',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1500595046743-cd271d694e30?w=240&h=120&fit=crop&q=70',
+    label: 'Agriculture', emoji: '🌾', accent: '#14532D',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=240&h=120&fit=crop&q=70',
+    label: 'Manufacturing', emoji: '⚙️', accent: '#92400E',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=240&h=120&fit=crop&q=70',
+    label: 'Cleaning', emoji: '🧹', accent: '#0E7490',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=240&h=120&fit=crop&q=70',
+    label: 'Hospitality', emoji: '🛎️', accent: '#831843',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=240&h=120&fit=crop&q=70',
+    label: 'Electrician', emoji: '⚡', accent: '#78350F',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=240&h=120&fit=crop&q=70',
+    label: 'Security', emoji: '👮', accent: '#1C1917',
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=240&h=120&fit=crop&q=70',
+    label: 'Delivery', emoji: '🚛', accent: '#1E40AF',
+  },
+];
+
+const WorkerBannerSlider = (): React.JSX.Element => {
+  const scrollRef = useRef<ScrollView>(null);
+  const posRef = useRef(0);
+  const itemW = BANNER_SLIDE_W + BANNER_SLIDE_GAP;
+  const total = BANNER_SLIDES.length;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      posRef.current += 1;
+      if (posRef.current >= total) {
+        // Silent jump to start — seamless because slides are duplicated
+        scrollRef.current?.scrollTo({ x: 0, animated: false });
+        posRef.current = 0;
+      } else {
+        scrollRef.current?.scrollTo({ x: posRef.current * itemW, animated: true });
+      }
+    }, 2400);
+    return () => clearInterval(timer);
+  }, [itemW, total]);
+
+  // Duplicate slides for seamless loop
+  const loopSlides = [...BANNER_SLIDES, ...BANNER_SLIDES];
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      scrollEnabled={false}
+      showsHorizontalScrollIndicator={false}
+      style={bannerSlider.root}
+      contentContainerStyle={bannerSlider.content}
+    >
+      {loopSlides.map((slide, idx) => (
+        <View key={idx} style={bannerSlider.card}>
+          <Image
+            source={{ uri: slide.uri }}
+            style={bannerSlider.img}
+            resizeMode="cover"
+          />
+          {/* Dark scrim */}
+          <View style={bannerSlider.scrim} />
+          {/* Accent bar at bottom */}
+          <View style={[bannerSlider.accentBar, { backgroundColor: slide.accent }]} />
+          {/* Label */}
+          <View style={bannerSlider.labelRow}>
+            <AppText style={bannerSlider.labelEmoji}>{slide.emoji}</AppText>
+            <AppText style={bannerSlider.labelTxt} numberOfLines={1}>{slide.label}</AppText>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+};
 
 // Subcategory keyword → emoji overrides (applied on top of work-type base visual)
 const SUB_EMOJI_RULES: Array<{ pattern: RegExp; emoji: string }> = [
@@ -410,9 +513,10 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const queryClient = useQueryClient();
 
-  const isAgent = user?.role === 'agent';
+  const normalizedRole = (user?.role ?? '').toLowerCase();
+  const isAgent = normalizedRole === 'agent';
   const userId = user?.id ?? '';
-  const role = user?.role ?? 'worker';
+  const role = normalizedRole || 'worker';
 
   const [badgeModalVisible, setBadgeModalVisible] = useState(false);
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
@@ -455,7 +559,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   };
 
   useEffect(() => {
-    if (!userId || user?.role !== 'agent' || user?.veryfiedBage) return;
+    if (!userId || !isAgent || user?.veryfiedBage) return;
     void AsyncStorage.getItem(VERIFIED_BADGE_SHOWN_KEY).then((shown) => {
       if (!shown) {
         setBadgeModalVisible(true);
@@ -616,7 +720,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
       <VerifiedBadgeModal
         visible={badgeModalVisible}
         onDismiss={() => setBadgeModalVisible(false)}
-        userRole={user?.role ?? ''}
+        userRole={normalizedRole}
         userId={userId}
         userName={user?.fullName ?? ''}
         userEmail={user?.email ?? ''}
@@ -634,7 +738,9 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         onRightPress={() => navigation.navigate('Notifications')}
         rightIcon3="❤️"
         onRightPress3={() => navigation.navigate('JobMarketplace', { likedOnly: true })}
-      />
+      >
+        <WorkerBannerSlider />
+      </GradientHeader>
 
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -650,6 +756,9 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.body}>
+
+          {/* Promotional Banner Slider */}
+          <PromoBannerSlider onPress={() => navigation.navigate('JobMarketplace')} />
 
           {/* ── KYC alert ─────────────────────────────────────── */}
           {kycPending && (
@@ -755,7 +864,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
             <SkeletonCard />
           ) : (
             <WorkerCategoryGrid
-              onCategoryPress={(cat) => navigation.navigate('JobMarketplace', { workType: cat.label })}
+              onCategoryPress={(cat) => navigation.navigate('JobMarketplace', { workType: cat.value })}
               columns={3}
               cellHeight={100}
             />
@@ -1083,4 +1192,65 @@ const agAct = StyleSheet.create({
   entity: { fontSize: 13, fontWeight: '700', color: '#0f172a', flex: 1 },
   desc: { fontSize: 11, color: '#475569', lineHeight: 15 },
   time: { fontSize: 10, color: '#94a3b8' },
+});
+
+// ── Banner slider styles ──────────────────────────────────────────────────────
+const bannerSlider = StyleSheet.create({
+  root: {
+    marginHorizontal: -20, // bleed to header edge (cancels paddingHorizontal: 20)
+  },
+  content: {
+    gap: BANNER_SLIDE_GAP,
+    paddingHorizontal: 20,
+  },
+  card: {
+    width: BANNER_SLIDE_W,
+    height: BANNER_SLIDE_H,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  img: {
+    width: BANNER_SLIDE_W,
+    height: BANNER_SLIDE_H,
+  },
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5,10,28,0.42)',
+  },
+  accentBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+  },
+  labelRow: {
+    position: 'absolute',
+    bottom: 9,
+    left: 8,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  labelEmoji: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  labelTxt: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    flex: 1,
+  },
 });

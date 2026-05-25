@@ -4,6 +4,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -29,6 +30,7 @@ const AppErrorFallback = ({ error, resetErrorBoundary }: FallbackProps): React.J
 
 const App = (): React.JSX.Element => (
   <GestureHandlerRootView style={{ flex: 1 }}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <SafeAreaProvider>
       {/* Blue brand for agent/worker app */}
       <ThemeProvider primaryOverride="#1037A4">
@@ -47,6 +49,7 @@ const App = (): React.JSX.Element => (
         </PersistQueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+    </KeyboardAvoidingView>
   </GestureHandlerRootView>
 );
 

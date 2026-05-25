@@ -99,6 +99,7 @@ interface WorkerFilters {
   workerGroup: string;
   ageMin: string;
   ageMax: string;
+  qualification: string;
 }
 const EMPTY_FILTERS: WorkerFilters = {
   workerType: '',
@@ -110,6 +111,7 @@ const EMPTY_FILTERS: WorkerFilters = {
   workerGroup: '',
   ageMin: '',
   ageMax: '',
+  qualification: '',
 };
 
 const CALL_OUTCOMES = [
@@ -208,6 +210,7 @@ function countActive(f: WorkerFilters): number {
     f.workerGroup,
     f.ageMin,
     f.ageMax,
+    f.qualification,
   ].filter(Boolean).length;
 }
 
@@ -674,6 +677,44 @@ const FilterSheet = ({
             </View>
           </View>
 
+          {/* ── Qualification ─────────────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+            <View style={fsh.cardHeader}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#FFF8EC' }]}>
+                <AppText style={{ fontSize: 14 }}>🎓</AppText>
+              </View>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Qualification</AppText>
+            </View>
+            <View style={fsh.typeGrid}>
+              {[
+                { label: 'ITI / Diploma', sub: 'Certificate holders', val: 'ITI/Diploma', icon: '🎓' },
+                { label: 'Graduate',      sub: "Bachelor's & above",  val: 'Graduate',    icon: '📜' },
+              ].map((opt) => {
+                const active = f.qualification === opt.val;
+                return (
+                  <TouchableOpacity
+                    key={opt.val}
+                    onPress={() => set('qualification', active ? '' : opt.val)}
+                    activeOpacity={0.8}
+                    style={[fsh.typeCard, {
+                      backgroundColor: active ? '#F97316' : theme.colors.background,
+                      borderColor: active ? '#F97316' : BORDER,
+                    }]}
+                  >
+                    <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : NAVY }]} numberOfLines={1}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : SLATE }]} numberOfLines={1}>{opt.sub}</AppText>
+                    {active && (
+                      <View style={fsh.typeCheck}>
+                        <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
         </ScrollView>
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
@@ -971,9 +1012,6 @@ const AgentCard = ({
   const wageText    = wage
     ? `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}/day`
     : null;
-  const ratingHash = agent._id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const rating = (4.0 + (ratingHash % 10) / 10).toFixed(1);
-
   return (
     <View
       style={[
@@ -1011,7 +1049,7 @@ const AgentCard = ({
 
           {/* Text block */}
           <View style={{ flex: 1 }}>
-            {/* Name + role badge + star rating */}
+            {/* Name + role badge */}
             <View style={wc.nameRow}>
               <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
                 {formatName(agent.name ?? 'Unknown')}
@@ -1019,11 +1057,6 @@ const AgentCard = ({
               <View style={[wc.rolePill, { backgroundColor: accentBg, borderColor: accentColor + '50' }]}>
                 <AppText style={[wc.roleTxt, { color: accentColor }]}>{roleLabel}</AppText>
               </View>
-            </View>
-            {/* Star rating */}
-            <View style={wc.ratingRow}>
-              <AppText style={wc.ratingStar}>★</AppText>
-              <AppText style={wc.ratingVal}>{rating}</AppText>
             </View>
 
             {/* Location — show applied district filter if set, else worker's own district (mirrors CRM finalCitySearch logic) */}
@@ -1057,6 +1090,13 @@ const AgentCard = ({
                 </View>
               )}
             </View>
+
+            {/* workerSubType / agentType badge */}
+            {!!(agent.workerSubType || agent.agentType) && (
+              <View style={wc.subTypeBadge}>
+                <AppText style={wc.subTypeTxt}>{agent.workerSubType ?? agent.agentType}</AppText>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
 
@@ -1078,6 +1118,19 @@ const AgentCard = ({
           </ScrollView>
         )}
 
+        {/* Resume button */}
+        {!!agent.resumeUrl && (
+          <TouchableOpacity
+            onPress={() => void Linking.openURL(agent.resumeUrl!)}
+            style={[wc.resumeBtn, { borderTopColor: BORDER }]}
+            activeOpacity={0.8}
+          >
+            <AppText style={wc.resumeIcon}>📄</AppText>
+            <AppText style={wc.resumeTxt}>View Resume / CV</AppText>
+            <AppText style={{ color: BRAND, fontSize: 16 }}>›</AppText>
+          </TouchableOpacity>
+        )}
+
         {/* ── Contact CTA ── */}
         <View style={[wc.ctaSection, { borderTopColor: BORDER }]}>
           {unlockedPhone ? (
@@ -1085,18 +1138,17 @@ const AgentCard = ({
             <View style={wc.unlockedRow}>
               <TouchableOpacity
                 onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
-                style={wc.callAgentBtn}
+                style={wc.callBtn}
                 activeOpacity={0.85}
               >
-                <AppText style={wc.callAgentIcon}>💬</AppText>
-                <AppText style={wc.callAgentTxt}>Call Agent  {unlockedPhone}</AppText>
+                <AppText style={wc.callBtnTxt}>📞 {unlockedPhone}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
                 style={wc.waBtn}
                 activeOpacity={0.85}
               >
-                <AppText style={wc.waBtnTxt}>WA</AppText>
+                <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
               </TouchableOpacity>
             </View>
           ) : isContactsExhausted ? (
@@ -1164,60 +1216,64 @@ const AgentCard = ({
 };
 
 const wc = StyleSheet.create({
-  card:          { flexDirection: 'row', borderRadius: 14, marginBottom: 10, overflow: 'hidden', elevation: 3, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12 },
-  accentBar:     { width: 4 },
+  card:          { flexDirection: 'row', borderRadius: 14, marginBottom: 8, overflow: 'hidden', elevation: 3, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: BORDER },
+  accentBar:     { width: 4, opacity: 0.35 },
 
-  infoSection:   { flexDirection: 'row', padding: 16, gap: 14 },
+  infoSection:   { flexDirection: 'row', padding: 12, gap: 12 },
 
   avatarWrap:    { position: 'relative', alignSelf: 'flex-start' },
-  avatar:        { width: 70, height: 70, borderRadius: 35, borderWidth: 2.5 },
-  avatarFallback:{ width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5 },
-  initials:      { fontSize: 24, fontWeight: '800' },
-  verifiedBadge: { position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: WHITE },
-  verifiedTxt:   { color: WHITE, fontSize: 9, fontWeight: '900' },
+  avatar:        { width: 58, height: 58, borderRadius: 29, borderWidth: 2 },
+  avatarFallback:{ width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  initials:      { fontSize: 20, fontWeight: '800' },
+  verifiedBadge: { position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: WHITE },
+  verifiedTxt:   { color: WHITE, fontSize: 8, fontWeight: '900' },
 
-  nameRow:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  name:          { fontSize: 16, fontWeight: '800', flex: 1 },
-  rolePill:      { borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  roleTxt:       { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  ratingRow:     { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 4 },
-  ratingStar:    { fontSize: 13, color: '#F59E0B', lineHeight: 17 },
-  ratingVal:     { fontSize: 12, fontWeight: '700', color: '#92400e' },
-  location:      { fontSize: 12, fontWeight: '500', color: SLATE, marginBottom: 7 },
-  metaRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  metaChip:      { backgroundColor: SLATE_LT, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 4, borderWidth: 1, borderColor: BORDER },
-  metaChipTxt:   { fontSize: 11, fontWeight: '600', color: SLATE },
-  wageChip:      { backgroundColor: GREEN_SOFT, borderColor: '#bbf7d0' },
-  wageTxt:       { color: GREEN, fontWeight: '700' },
+  nameRow:       { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
+  name:          { fontSize: 15, fontWeight: '800', flex: 1, letterSpacing: 0.1 },
+  rolePill:      { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  roleTxt:       { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  location:      { fontSize: 11, fontWeight: '500', color: SLATE, marginBottom: 5 },
+  metaRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  metaChip:      { backgroundColor: SLATE_LT, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: BORDER },
+  metaChipTxt:   { fontSize: 10.5, fontWeight: '700', color: SLATE },
+  wageChip:      { backgroundColor: GREEN_SOFT, borderColor: '#bbf7d0', borderRadius: 6 },
+  wageTxt:       { color: GREEN, fontWeight: '800' },
+
+  subTypeBadge:  { marginTop: 4, alignSelf: 'flex-start', backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa' },
+  subTypeTxt:    { fontSize: 9.5, fontWeight: '700', color: '#d97706' },
+
+  resumeBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth },
+  resumeIcon:    { fontSize: 13 },
+  resumeTxt:     { flex: 1, fontSize: 11.5, fontWeight: '700', color: BRAND },
 
   skillsStrip:   { borderTopWidth: StyleSheet.hairlineWidth },
-  skillsContent: { paddingHorizontal: 14, paddingVertical: 10, gap: 6, flexDirection: 'row' },
-  skillChip:     { backgroundColor: BRAND_SOFT, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  skillChipTxt:  { fontSize: 10, fontWeight: '700', color: BRAND },
+  skillsContent: { paddingHorizontal: 12, paddingVertical: 7, gap: 5, flexDirection: 'row' },
+  skillChip:     { backgroundColor: BRAND_SOFT, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: BRAND + '25' },
+  skillChipTxt:  { fontSize: 10.5, fontWeight: '700', color: BRAND },
 
-  ctaSection:    { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  unlockedRow:   { flexDirection: 'row', gap: 8 },
-  callBtn:       { flex: 1, backgroundColor: NAVY, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  callBtnTxt:    { color: WHITE, fontSize: 14, fontWeight: '800' },
-  waBtn:         { width: 52, backgroundColor: GREEN, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  ctaSection:    { paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  unlockedRow:   { flexDirection: 'row', gap: 7 },
+  callBtn:       { flex: 1, backgroundColor: NAVY, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  callBtnTxt:    { color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
+  waBtn:         { flex: 1, backgroundColor: '#25D366', borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
   waBtnTxt:      { color: WHITE, fontSize: 13, fontWeight: '800' },
-  callAgentBtn:  { flex: 1, flexDirection: 'row', backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  callAgentIcon: { fontSize: 16, color: WHITE },
-  callAgentTxt:  { color: WHITE, fontSize: 14, fontWeight: '800' },
-  viewContactBtn:{ backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  viewContactTxt:{ color: WHITE, fontSize: 14, fontWeight: '800' },
-  lockCta:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: AMBER_SOFT, borderRadius: 12, borderWidth: 1, borderColor: '#fde68a', paddingHorizontal: 12, paddingVertical: 11 },
-  lockIconBox:   { width: 38, height: 38, borderRadius: 10, borderWidth: 1, borderColor: '#fde68a', backgroundColor: AMBER_SOFT, alignItems: 'center', justifyContent: 'center' },
-  lockTitle:     { fontSize: 13, fontWeight: '700', color: '#92400e' },
-  lockSub:       { fontSize: 11, fontWeight: '500', marginTop: 1, color: SLATE },
-  lockChevron:   { fontSize: 22, fontWeight: '300', color: AMBER },
-  topupCta:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff7ed', borderRadius: 12, borderWidth: 1, borderColor: '#fed7aa', paddingHorizontal: 12, paddingVertical: 11 },
-  topupTitle:    { fontSize: 13, fontWeight: '700', color: '#c2410c' },
-  topupSub:      { fontSize: 11, fontWeight: '500', marginTop: 1, color: SLATE },
+  callAgentBtn:  { flex: 1, flexDirection: 'row', backgroundColor: BRAND, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', gap: 7 },
+  callAgentIcon: { fontSize: 14, color: WHITE },
+  callAgentTxt:  { color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
+  viewContactBtn:{ backgroundColor: BRAND, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  viewContactTxt:{ color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
+  lockCta:       { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: AMBER_SOFT, borderRadius: 10, borderWidth: 1, borderColor: '#fde68a', paddingHorizontal: 10, paddingVertical: 9 },
+  lockIconBox:   { width: 34, height: 34, borderRadius: 9, borderWidth: 1, borderColor: '#fde68a', backgroundColor: AMBER_SOFT, alignItems: 'center', justifyContent: 'center' },
+  lockTitle:     { fontSize: 12, fontWeight: '700', color: '#92400e' },
+  lockSub:       { fontSize: 10.5, fontWeight: '500', marginTop: 1, color: SLATE },
+  lockChevron:   { fontSize: 20, fontWeight: '300', color: AMBER },
+  topupCta:      { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff7ed', borderRadius: 10, borderWidth: 1, borderColor: '#fed7aa', paddingHorizontal: 10, paddingVertical: 9 },
+  topupTitle:    { fontSize: 12, fontWeight: '700', color: '#c2410c' },
+  topupSub:      { fontSize: 10.5, fontWeight: '500', marginTop: 1, color: SLATE },
 
-  remarkRow:     { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
-  agentBanner:   { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1, backgroundColor: AGENT_SOFT },
-  agentBannerTxt:{ fontSize: 12, fontWeight: '600', flex: 1, color: '#4c1d95' },
+  remarkRow:     { paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth },
+  agentBanner:   { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 7, borderTopWidth: 1, backgroundColor: AGENT_SOFT },
+  agentBannerTxt:{ fontSize: 11, fontWeight: '600', flex: 1, color: '#4c1d95' },
 });
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
@@ -1399,16 +1455,17 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     queryKey: ['workers-infinite', appliedFilters],
     queryFn: ({ pageParam = 1 }: { pageParam: number }) =>
       workerApi.getAllAgents({
-        workerType:  (appliedFilters.subCategory || appliedFilters.workerType) || undefined,
-        state:       appliedFilters.state       || undefined,
-        district:    appliedFilters.district    || undefined,
-        block:       appliedFilters.tehsil      || undefined,
-        gender:      appliedFilters.gender      || undefined,
-        workerGroup: appliedFilters.workerGroup || undefined,
-        minAge:      appliedFilters.ageMin ? Number(appliedFilters.ageMin) : undefined,
-        maxAge:      appliedFilters.ageMax ? Number(appliedFilters.ageMax) : undefined,
-        page:        pageParam,
-        limit:       PAGE_LIMIT,
+        workerType:    (appliedFilters.subCategory || appliedFilters.workerType) || undefined,
+        state:         appliedFilters.state         || undefined,
+        district:      appliedFilters.district      || undefined,
+        block:         appliedFilters.tehsil        || undefined,
+        gender:        appliedFilters.gender        || undefined,
+        workerGroup:   appliedFilters.workerGroup   || undefined,
+        qualification: appliedFilters.qualification || undefined,
+        minAge:        appliedFilters.ageMin ? Number(appliedFilters.ageMin) : undefined,
+        maxAge:        appliedFilters.ageMax ? Number(appliedFilters.ageMax) : undefined,
+        page:          pageParam,
+        limit:         PAGE_LIMIT,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -1542,6 +1599,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       label:
         appliedFilters.workerGroup === 'group' ? 'Group / Agent' : 'Individual',
       onRemove: () => setAppliedFilters((p) => ({ ...p, workerGroup: '' })),
+    },
+    appliedFilters.qualification && {
+      key: 'ql',
+      label: `🎓 ${appliedFilters.qualification}`,
+      onRemove: () => setAppliedFilters((p) => ({ ...p, qualification: '' })),
     },
     (appliedFilters.ageMin || appliedFilters.ageMax) && {
       key: 'age',

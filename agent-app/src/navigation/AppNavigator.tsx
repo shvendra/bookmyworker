@@ -47,8 +47,10 @@ import { AgentWorkersScreen } from '../../../packages/shared-mobile/src/features
 import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
+import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 
 import type { AgentStackParamList } from './types';
+import type { AppRole } from '../../../packages/shared-mobile/src/shared/types/domain';
 
 const Stack = createNativeStackNavigator<AgentStackParamList>();
 
@@ -85,8 +87,9 @@ export const AppNavigator = (): React.JSX.Element => {
   }
 
   // Only allow agent / worker / selfworker roles in this app
-  const userRole = state.session?.user.role;
-  const agentAppRole =
+  // Normalize to lowercase so DB values like "SelfWorker", "Agent", "Worker" are handled correctly
+  const userRole = (state.session?.user.role ?? '').toLowerCase() as AppRole;
+  const agentAppRole: AppRole =
     userRole === 'agent' || userRole === 'worker' || userRole === 'selfworker'
       ? userRole
       : 'worker';
@@ -126,7 +129,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="AgentWorkers" component={AgentWorkersScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Kyc" component={AgentKycScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} initialParams={{ appType: 'agent' }} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
@@ -135,6 +138,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{

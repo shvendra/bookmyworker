@@ -11,3 +11,12 @@ export const resetToWelcome = (): void => {
     );
   }
 };
+
+/** Force-navigate to Main (dashboard) after onboarding completes. Safe to call from anywhere. */
+export const resetToMain = (): void => {
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Main' }] })
+    );
+  }
+};

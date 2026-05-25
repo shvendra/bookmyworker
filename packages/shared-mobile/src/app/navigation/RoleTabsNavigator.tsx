@@ -25,6 +25,7 @@ import { AddWorkerScreen } from '../../features/agent/screens/AddWorkerScreen';
 import { AgentWorkersScreen } from '../../features/agent/screens/AgentWorkersScreen';
 import { AttendanceScreen } from '../../features/attendance/screens/AttendanceScreen';
 import { JobMarketplaceScreen } from '../../features/jobs/screens/JobMarketplaceScreen';
+import { MyApplicationsScreen } from '../../features/jobs/screens/MyApplicationsScreen';
 import { ChatNavigator } from './ChatNavigator';
 import { ProfileScreen } from '../../features/profile/screens/ProfileScreen';
 
@@ -45,6 +46,8 @@ interface TabConfig {
    * 'notifications' reads from the ['notifications'] query cache.
    */
   badgeKey?: 'notifications';
+  /** Initial route params forwarded to the screen */
+  initialParams?: Record<string, unknown>;
 }
 
 const roleTabConfigs: Record<AppRole, TabConfig[]> = {
@@ -70,11 +73,11 @@ const roleTabConfigs: Record<AppRole, TabConfig[]> = {
     { name: 'Profile', labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   selfworker: [
-    { name: 'Home',     labelKey: 'tab_home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
-    { name: 'Browse',   labelKey: 'tab_browse',     component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
-    { name: 'Register', labelKey: 'tab_register',   component: AddWorkerScreen,      icon: { outline: 'person-add-outline', filled: 'person-add' }, isAction: true },
-    { name: 'Chat',     labelKey: 'tab_chat',       component: ChatNavigator,        icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
-    { name: 'Profile',  labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',     filled: 'person'     } },
+    { name: 'Home',    labelKey: 'tab_home',     component: WorkerDashboardScreen,  icon: { outline: 'home-outline',        filled: 'home'        } },
+    { name: 'Jobs',    labelKey: 'tab_jobs',     component: JobMarketplaceScreen,   icon: { outline: 'briefcase-outline',   filled: 'briefcase'   } },
+    { name: 'Saved',   labelKey: 'tab_saved',    component: JobMarketplaceScreen,   icon: { outline: 'heart-outline',       filled: 'heart'       }, isAction: true, initialParams: { likedOnly: true } },
+    { name: 'Chat',    labelKey: 'tab_chat',     component: ChatNavigator,          icon: { outline: 'chatbubbles-outline', filled: 'chatbubbles' } },
+    { name: 'Profile', labelKey: 'tab_profile',  component: ProfileScreen,          icon: { outline: 'person-outline',      filled: 'person'      } },
   ],
   // Admin/SuperAdmin roles fall back to the employer tab set
   admin: [
@@ -311,7 +314,8 @@ interface RoleTabsNavigatorProps {
 }
 
 export const RoleTabsNavigator = ({ role }: RoleTabsNavigatorProps): React.JSX.Element => {
-  const tabs = roleTabConfigs[role] ?? roleTabConfigs.worker;
+  const normalizedRole = role?.toLowerCase() as AppRole;
+  const tabs = roleTabConfigs[normalizedRole] ?? roleTabConfigs.worker;
 
   return (
     <Tab.Navigator
@@ -323,6 +327,7 @@ export const RoleTabsNavigator = ({ role }: RoleTabsNavigatorProps): React.JSX.E
           key={tab.name}
           name={tab.name}
           component={tab.component}
+          initialParams={tab.initialParams}
           options={{ title: tab.labelKey }}
         />
       ))}
