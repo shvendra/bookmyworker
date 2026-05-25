@@ -44,6 +44,7 @@ import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features
 import { TransactionScreen } from '../../../packages/shared-mobile/src/features/wallet/screens/TransactionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
+import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 
 import type { EmployerStackParamList } from './types';
 
@@ -60,7 +61,7 @@ export const AppNavigator = (): React.JSX.Element => {
     }
     // If somehow a non-employer session is stored (e.g. stale Agent session),
     // sign out so the user can log in with their employer account.
-    if (state.status === 'authenticated' && state.session?.user.role !== 'employer') {
+    if (state.status === 'authenticated' && (state.session?.user.role ?? '').toLowerCase() !== 'employer') {
       signOut();
     }
     return undefined;
@@ -116,7 +117,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WorkerSearch" component={WorkerSearchScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} initialParams={{ appType: 'employer' }} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
@@ -126,6 +127,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

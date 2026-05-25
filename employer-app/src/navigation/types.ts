@@ -47,6 +47,7 @@ export type EmployerStackParamList = {
   Subscription: { agentId?: string } | undefined;
   PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };
   TopupWebView: { url: string; merchantOrderId: string };
+  PdfViewer: { url: string; title?: string };
 };
 
 // Keep MainStackParamList alias so employer screens can be typed with it
