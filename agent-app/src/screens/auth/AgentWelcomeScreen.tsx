@@ -30,11 +30,17 @@ const ORANGE = '#F97316';
 
 const WORK_TYPES = [
   { icon: '🏗️', label: 'Construction' },
-  { icon: '🏭', label: 'Factory' },
+  { icon: '🏭', label: 'Manufacturing' },
   { icon: '🚜', label: 'Agriculture' },
-  { icon: '🔧', label: 'Technician' },
+  { icon: '🔧', label: 'Maintenance' },
   { icon: '🏠', label: 'Household' },
-  { icon: '🚚', label: 'Delivery' },
+  { icon: '🚚', label: 'Logistics' },
+  { icon: '🛠️', label: 'Industrial' },
+  { icon: '🛡️', label: 'Security' },
+  { icon: '🧹', label: 'Cleaning' },
+  { icon: '🧑‍🍳', label: 'Hospitality' },
+  { icon: '👔', label: 'Apparel' },
+  { icon: '🛍️', label: 'Retail' },
 ];
 
 export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
@@ -119,38 +125,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-          {/* Stats card */}
-          <View style={[
-            styles.statsCard,
-            {
-              borderColor: isDark ? theme.colors.border : '#DDE8F8',
-              backgroundColor: isDark ? theme.colors.surface : '#F4F8FF',
-            },
-          ]}>
-            {configLoading ? (
-              <View style={styles.statsLoading}>
-                <ActivityIndicator size="small" color={BRAND} />
-              </View>
-            ) : (
-              <View style={styles.statsRow}>
-                {stats.map((s, i) => (
-                  <View
-                    key={s.label}
-                    style={[
-                      styles.statItem,
-                      i < stats.length - 1 && {
-                        borderRightWidth: 1,
-                        borderRightColor: isDark ? theme.colors.border : '#D0DDEF',
-                      },
-                    ]}
-                  >
-                    <AppText style={styles.statValue}>{s.value}</AppText>
-                    <AppText style={styles.statLabel} color={theme.colors.mutedText}>{s.label}</AppText>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+        
 
           {/* Work categories */}
           <View style={styles.section}>
@@ -195,8 +170,8 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
               <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
                 <AppText style={styles.roleEmoji}>👷</AppText>
               </View>
-              <AppText style={[styles.roleTitle, { color: ORANGE }]}>Job Seeker</AppText>
-              <AppText style={[styles.roleDesc, { color: ORANGE }]}>Find suitable work{'\n'}near your location</AppText>
+              <AppText style={[styles.roleTitle, { color: ORANGE }]}>Worker</AppText>
+              <AppText style={[styles.roleDesc, { color: ORANGE }]}>Find jobs near you.{'\n'}Get hired. Earn daily.</AppText>
             </TouchableOpacity>
           </View>
 

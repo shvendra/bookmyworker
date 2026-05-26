@@ -55,7 +55,7 @@ import type { AppRole } from '../../../packages/shared-mobile/src/shared/types/d
 const Stack = createNativeStackNavigator<AgentStackParamList>();
 
 export const AppNavigator = (): React.JSX.Element => {
-  const { state } = useAuth();
+  const { state, signOut } = useAuth();
   const { theme } = useAppTheme();
 
   useEffect(() => {
@@ -63,8 +63,15 @@ export const AppNavigator = (): React.JSX.Element => {
       const handle = setTimeout(() => { resetToWelcome(); }, 50);
       return () => clearTimeout(handle);
     }
+    // If a non-agent/worker/selfworker session is stored (e.g. stale Employer session), sign out.
+    if (state.status === 'authenticated') {
+      const role = (state.session?.user.role ?? '').toLowerCase();
+      if (role !== 'agent' && role !== 'worker' && role !== 'selfworker') {
+        signOut();
+      }
+    }
     return undefined;
-  }, [state.status]);
+  }, [state.status, state.session?.user.role, signOut]);
 
   const navigationTheme = useMemo(
     () => ({

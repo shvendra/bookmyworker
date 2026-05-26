@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker",
     "slug": "bookmyworker-agent",
-    "version": "1.0.0",
+    "version": "12.3.3",
     "orientation": "portrait",
     "scheme": "bookmyworker-agent",
     "icon": "./assets/icon.png",
@@ -36,7 +36,8 @@
       }
     },
     "android": {
-      "package": "com.bookmyworkers.agent",
+      "package": "com.app.myworker",
+      "versionCode": 1233,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0891B2"

@@ -32,8 +32,7 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
   const { theme }  = useAppTheme();
   const insets     = useSafeAreaInsets();
   const { config } = useAppConfig();
-  const [mode, setMode] = useState<'otp' | 'password'>('otp');
-
+const [mode, setMode] = useState<'otp' | 'password'>('password');
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
 
@@ -150,8 +149,8 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
             </View>
 
             {mode === 'otp'
-              ? <OtpLoginForm    key="otp"      navigation={navigation as any} roleHint={roleHint} />
-              : <PasswordLoginForm key="password" navigation={navigation as any} roleHint={roleHint} />
+              ? <OtpLoginForm    key="otp"      navigation={navigation as any} roleHint={roleHint} appContext="agent-app" />
+              : <PasswordLoginForm key="password" navigation={navigation as any} roleHint={roleHint} appContext="agent-app" />
             }
           </Animated.View>
 

@@ -4,8 +4,8 @@ import type { AppRole } from '../../../packages/shared-mobile/src/shared/types/d
 export type AgentStackParamList = {
   // Auth
   Welcome: undefined;
-  Login: { roleHint?: AppRole } | undefined;
-  OtpVerification: { phone: string; roleHint?: AppRole };
+  Login: { roleHint?: AppRole; appContext?: 'agent-app' } | undefined;
+  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'agent-app' };
   Register: undefined;
   RegisterOtp: {
     phone: string;

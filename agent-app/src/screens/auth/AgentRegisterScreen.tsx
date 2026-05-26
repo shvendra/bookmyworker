@@ -44,6 +44,22 @@ interface CatItem {
 }
 const ALL_CATS = categoriesData as CatItem[];
 
+const CAT_SHORT_LABELS: Record<string, string> = {
+  construction_project_workers:    'Construction',
+  manufacturing_industrial_workers:'Manufacturing',
+  agriculture_farming_workers:     'Agriculture',
+  event_decoration_workers:        'Events',
+  household_domestic_workers:      'Household',
+  hospitality_service_workers:     'Hospitality',
+  transport_logistics_workers:     'Transport',
+  retail_shop_workers:             'Retail',
+  skilled_technical_workers:       'Technical',
+  specialized_creative_workers:    'Creative',
+  'Automobile & Workshop Workers': 'Automobile',
+  'Healthcare Support Workers':    'Healthcare',
+  'Security & Facility Workers':   'Security',
+};
+
 const ROLE_OPTIONS: Array<{ value: Role; label: string; description: string; icon: string; color: string; bg: string; border: string }> = [
   {
     value: 'SelfWorker',
@@ -627,7 +643,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                 theme={theme}
               />
               <MultiSelectChips
-                items={ALL_CATS.map(c => ({ label: c.label, value: c.value }))}
+                items={ALL_CATS.map(c => ({ label: CAT_SHORT_LABELS[c.value] ?? c.label, value: c.value }))}
                 selected={selectedCategories}
                 onToggle={handleCategoryToggle}
                 color={accentColor}
