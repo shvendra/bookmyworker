@@ -94,7 +94,7 @@ export const AppNavigator = (): React.JSX.Element => {
           // ── Auth screens ──────────────────────────────────────────
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer' }} />
+            <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer', appContext: 'employer-app' }} />
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="Register" component={EmployerRegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />

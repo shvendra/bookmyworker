@@ -4,8 +4,8 @@ import type { AppRole } from '../../shared/types/domain';
 export type RootStackParamList = {
   // ── Auth ──────────────────────────────────────────────────────
   Welcome: undefined;
-  Login: { roleHint?: AppRole } | undefined;
-  OtpVerification: { phone: string; roleHint?: AppRole };
+  Login: { roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app' } | undefined;
+  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app' };
   Register: undefined;
   RegisterOtp: {
     phone: string;

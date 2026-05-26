@@ -2,9 +2,12 @@ import { apiClient } from '../client';
 import { buildPhotoUrl } from '../../config/env';
 import type { AppRole, UserProfile } from '../../../shared/types/domain';
 
+export type AppContext = 'employer-app' | 'agent-app';
+
 export interface RequestOtpPayload {
   phone: string;
   roleHint?: AppRole;
+  appContext?: AppContext;
 }
 
 export interface VerifyOtpPayload {
@@ -12,6 +15,7 @@ export interface VerifyOtpPayload {
   otp: string;
   pushToken?: string;
   roleHint?: AppRole;
+  appContext?: AppContext;
 }
 
 // Raw user shape returned by backend
@@ -94,6 +98,7 @@ export const requestOtp = async (payload: RequestOtpPayload): Promise<{ message:
   const response = await apiClient.post('/api/v1/otp/send-otp-user', {
     phone: payload.phone,
     role: toBackendRole(payload.roleHint),
+    ...(payload.appContext ? { appContext: payload.appContext } : {}),
   });
   const body = response.data as { message?: string };
   return { message: body.message ?? 'OTP sent successfully' };
@@ -141,6 +146,7 @@ export const verifyOtp = async (payload: VerifyOtpPayload): Promise<VerifyOtpRes
     otp: payload.otp,
     loginMethod: 'otp',
     ...(payload.roleHint ? { role: toBackendRole(payload.roleHint) } : {}),
+    ...(payload.appContext ? { appContext: payload.appContext } : {}),
   });
   const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };
 
@@ -175,6 +181,7 @@ export const loginWithPassword = async (payload: {
   email?: string;
   password: string;
   roleHint?: AppRole;
+  appContext?: AppContext;
 }): Promise<VerifyOtpResponse> => {
   const backendRole = payload.roleHint ? toBackendRole(payload.roleHint) : undefined;
   const response = await apiClient.post('/api/v1/user/login', {
@@ -183,6 +190,7 @@ export const loginWithPassword = async (payload: {
     password: payload.password,
     loginMethod: 'password',
     ...(backendRole ? { role: backendRole } : {}),
+    ...(payload.appContext ? { appContext: payload.appContext } : {}),
   });
   const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };
   if (!body.token || !body.user) throw new Error('Invalid auth response from server.');

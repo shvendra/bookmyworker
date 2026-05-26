@@ -2,8 +2,8 @@
 export type EmployerStackParamList = {
   // Auth
   Welcome: undefined;
-  Login: { roleHint?: 'employer' } | undefined;
-  OtpVerification: { phone: string; roleHint?: 'employer' };
+  Login: { roleHint?: 'employer'; appContext?: 'employer-app' } | undefined;
+  OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app' };
   Register: undefined;
   RegisterOtp: {
     phone: string;

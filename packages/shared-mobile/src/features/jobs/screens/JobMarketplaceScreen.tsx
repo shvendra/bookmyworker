@@ -3,7 +3,9 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   Share,
@@ -13,16 +15,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
-import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { AppText } from '../../../shared/components/ui/AppText';
-import { AppCard } from '../../../shared/components/ui/AppCard';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
@@ -103,17 +104,14 @@ const getVisual = (workType?: string | null, subCategory?: string | null): WorkV
   return base;
 };
 
-const getSalaryType = (req: RawRequirement): string => {
-  const raw = (req.salaryType ?? '').trim().toLowerCase();
-  if (!raw) {
-    return (req.minBudgetPerWorker ?? 0) >= 1500 ? 'month' : 'day';
-  }
-  if (raw.startsWith('month') || raw === 'pm' || raw === 'per month') return 'month';
-  if (raw.startsWith('week') || raw === 'pw' || raw === 'per week') return 'week';
-  if (raw.startsWith('day') || raw === 'daily' || raw === 'pd' || raw === 'per day') return 'day';
-  if (raw.startsWith('hour') || raw === 'hourly' || raw === 'ph' || raw === 'per hour') return 'hour';
-  return (req.minBudgetPerWorker ?? 0) >= 1500 ? 'month' : 'day';
+const inferPeriod = (amount: number): string => {
+  if (amount < 2000) return 'day';
+  if (amount <= 4000) return 'week';
+  return 'month';
 };
+
+const getSalaryType = (req: RawRequirement): string =>
+  inferPeriod(req.minBudgetPerWorker ?? 0);
 
 const fmtDate = (d?: string): string => {
   if (!d) return '—';
@@ -145,12 +143,13 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
   const visual = getVisual(req.workType, req.subCategory);
   const isDark = theme.mode === 'dark';
 
-  const hasPerks = req.accommodationAvailable || req.foodAvailable || req.transportProvided || req.bonus || req.incentive;
   const locationStr = [req.district, req.state].filter(Boolean).join(', ') || '—';
   const workers = totalWorkers(req);
   const salaryText = `₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0}`;
   const salaryType = getSalaryType(req);
+  const salaryPeriod = salaryType.charAt(0).toUpperCase() + salaryType.slice(1);
   const jobTitle = req.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req.workType);
+  const categoryLabel = fmtLabel(req.workType).replace(/ Workers?$/i, '');
 
   const handleShare = async (): Promise<void> => {
     try {
@@ -159,73 +158,99 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
         `📍 ${locationStr}`,
         `💰 ${salaryText} per ${salaryType}`,
         workers > 0 ? `👷 ${workers} workers needed` : null,
-        hasPerks ? `✅ Benefits: ${[
-          req.accommodationAvailable && '🏠 Stay',
-          req.foodAvailable && '🍱 Food',
-          req.transportProvided && '🚌 Transport',
-          req.bonus && '🎁 Bonus',
-          req.incentive && '⭐ Incentive',
-        ].filter(Boolean).join(' · ')}` : null,
         req.workerNeedDate ? `📅 Start: ${fmtDate(req.workerNeedDate)}` : null,
         '',
         '📲 Apply on BookMyWorker App:',
         'https://play.google.com/store/apps/details?id=com.app.myworker&pcampaignid=web_share',
       ].filter((l) => l !== null).join('\n');
       await Share.share({ message: msg, title: `Job: ${jobTitle}` });
-    } catch {
-      // user dismissed
-    }
+    } catch { /* user dismissed */ }
   };
 
+  const cardBg = isDark ? theme.colors.card : '#FFFFFF';
+  const borderCol = isDark ? theme.colors.border : '#E8EEF6';
+
   return (
-    <AppCard style={styles.reqCard}>
-      {/* ── Coloured banner ─────────────────────────────────── */}
-      <View style={[styles.banner, { backgroundColor: isDark ? theme.colors.surface : visual.bg }]}>
-        <View style={styles.bannerLeft}>
-          <AppText style={styles.bannerEmoji}>{visual.emoji}</AppText>
-          <View style={{ flex: 1 }}>
-            <AppText style={[styles.bannerTitle, { color: isDark ? theme.colors.text : visual.color }]} numberOfLines={1}>
-              {jobTitle}
-            </AppText>
-            {req.subCategory && (
-              <AppText style={[styles.bannerSub, { color: isDark ? theme.colors.mutedText : visual.color + 'BB' }]} numberOfLines={1}>
-                {fmtLabel(req.workType)}
-              </AppText>
-            )}
-          </View>
+    <View style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }]}>
+
+      {/* ── Top: logo + title + like ─────────────────────────── */}
+      <View style={styles.cardTop}>
+        <View style={[styles.logoBox, { backgroundColor: isDark ? theme.colors.surface : visual.bg }]}>
+          <AppText style={styles.logoEmoji}>{visual.emoji}</AppText>
         </View>
-        <View style={[styles.salaryPill, { backgroundColor: isDark ? theme.colors.card : visual.color }]}>
-          <AppText style={styles.salaryText} numberOfLines={1}>{salaryText}</AppText>
-          <AppText style={styles.salaryPer} numberOfLines={1}>/{salaryType.charAt(0).toUpperCase() + salaryType.slice(1)}</AppText>
+
+        <View style={styles.titleBlock}>
+          <AppText style={[styles.cardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+            {jobTitle}
+          </AppText>
+          <AppText style={[styles.cardCategory, { color: theme.colors.mutedText }]} numberOfLines={1}>
+            {categoryLabel}
+          </AppText>
         </View>
+
+        <TouchableOpacity
+          onPress={() => onLike(req._id)}
+          activeOpacity={0.75}
+          style={[styles.likeBtn, { backgroundColor: isLiked ? '#FEE2E2' : (isDark ? theme.colors.surface : '#F8FAFC') }]}
+        >
+          <AppText style={styles.likeBtnIcon}>{isLiked ? '❤️' : '🤍'}</AppText>
+        </TouchableOpacity>
       </View>
 
-      {/* ── Location + workers on one line ─────────────────── */}
-      <View style={styles.metaRow}>
-        <AppText style={styles.metaIcon}>📍</AppText>
-        <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1} style={{ flex: 1 }}>
+      {/* ── Location row ─────────────────────────────────────── */}
+      <View style={styles.infoRow}>
+        <AppText style={styles.infoRowIcon}>📍</AppText>
+        <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]} numberOfLines={1}>
           {locationStr}
         </AppText>
+      </View>
+
+      {/* ── Salary row ───────────────────────────────────────── */}
+      <View style={styles.infoRow}>
+        <AppText style={styles.infoRowIcon}>💼</AppText>
+        <AppText style={[styles.salaryAmt, { color: visual.color }]}>{salaryText} *</AppText>
+        <AppText style={[styles.salarySlash, { color: theme.colors.mutedText }]}>/{salaryPeriod}</AppText>
         {workers > 0 && (
-          <View style={styles.workersBadge}>
-            <AppText style={styles.metaIcon}>👷</AppText>
-            <AppText variant="caption" color={theme.colors.mutedText}>{workers} needed</AppText>
-          </View>
+          <>
+            <AppText style={[styles.dot, { color: theme.colors.mutedText }]}> · </AppText>
+            <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]}>👷 {workers} needed</AppText>
+          </>
         )}
       </View>
 
-      {/* ── Perks (always visible if any) ──────────────────── */}
-      {hasPerks && (
-        <View style={[styles.perksRow, { borderTopColor: theme.colors.border }]}>
-          {req.accommodationAvailable && <View style={[styles.perk, { backgroundColor: isDark ? theme.colors.card : '#F0FDF4' }]}><AppText style={styles.perkText}>🏠 Stay</AppText></View>}
-          {req.foodAvailable && <View style={[styles.perk, { backgroundColor: isDark ? theme.colors.card : '#FFF7ED' }]}><AppText style={styles.perkText}>🍱 Food</AppText></View>}
-          {req.transportProvided && <View style={[styles.perk, { backgroundColor: isDark ? theme.colors.card : '#EFF6FF' }]}><AppText style={styles.perkText}>🚌 Transport</AppText></View>}
-          {req.bonus && <View style={[styles.perk, { backgroundColor: isDark ? theme.colors.card : '#FDF4FF' }]}><AppText style={styles.perkText}>🎁 Bonus</AppText></View>}
-          {req.incentive && <View style={[styles.perk, { backgroundColor: isDark ? theme.colors.card : '#FFFBEB' }]}><AppText style={styles.perkText}>⭐ Incentive</AppText></View>}
+      {/* ── Chips row ────────────────────────────────────────── */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContent}>
+        <View style={[styles.chip, { backgroundColor: isDark ? theme.colors.surface : visual.bg + 'CC', borderColor: visual.color + '33' }]}>
+          <AppText style={[styles.chipText, { color: visual.color }]}>{categoryLabel}</AppText>
         </View>
-      )}
+        {req.accommodationAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <AppText style={[styles.chipText, { color: '#15803D' }]}>🏠 Stay</AppText>
+          </View>
+        )}
+        {req.foodAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]}>🍱 Food</AppText>
+          </View>
+        )}
+        {req.transportProvided && (
+          <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🚌 Transport</AppText>
+          </View>
+        )}
+        {req.bonus && (
+          <View style={[styles.chip, { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' }]}>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🎁 Bonus</AppText>
+          </View>
+        )}
+        {req.incentive && (
+          <View style={[styles.chip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+            <AppText style={[styles.chipText, { color: '#92400E' }]}>⭐ Incentive</AppText>
+          </View>
+        )}
+      </ScrollView>
 
-      {/* ── Details (expandable) ────────────────────────────── */}
+      {/* ── Expanded details ─────────────────────────────────── */}
       {expanded && (
         <View style={[styles.expandedBlock, { borderTopColor: theme.colors.border }]}>
           {[
@@ -244,54 +269,42 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
         </View>
       )}
 
-      {/* ── Action row ─────────────────────────────────────── */}
-      <View style={[styles.actionRow, { borderTopColor: theme.colors.border }]}>
-        {/* Expand toggle */}
+      {/* ── Action row ───────────────────────────────────────── */}
+      <View style={[styles.actionRow, { borderTopColor: isDark ? theme.colors.border : '#F1F5F9' }]}>
         <TouchableOpacity
           onPress={() => setExpanded((v) => !v)}
           style={styles.detailsBtn}
           activeOpacity={0.7}
         >
-          <AppText variant="caption" color={theme.colors.mutedText} style={styles.detailsBtnText}>
+          <AppText style={[styles.detailsBtnText, { color: theme.colors.mutedText }]}>
             {expanded ? 'Hide details ▲' : 'See details ▼'}
           </AppText>
         </TouchableOpacity>
 
-        <View style={styles.actionBtns}>
-          {/* Like button */}
-          <TouchableOpacity
-            onPress={() => onLike(req._id)}
-            activeOpacity={0.75}
-            style={[styles.iconBtn, { backgroundColor: isLiked ? '#FEE2E2' : theme.colors.card, borderColor: isLiked ? '#FCA5A5' : theme.colors.border }]}
-          >
-            <AppText style={styles.iconBtnText}>{isLiked ? '❤️' : '🤍'}</AppText>
-          </TouchableOpacity>
-
-          {/* Share button */}
+        <View style={styles.actionRight}>
           <TouchableOpacity
             onPress={() => { void handleShare(); }}
-            style={[styles.shareBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
+            style={[styles.shareBtn, { borderColor: isDark ? theme.colors.border : '#E2E8F0', backgroundColor: isDark ? theme.colors.surface : '#F8FAFC' }]}
             activeOpacity={0.75}
           >
-            <AppText style={styles.iconBtnText}>📤</AppText>
+            <AppText style={styles.shareBtnIcon}>📤</AppText>
             <AppText style={[styles.shareBtnLabel, { color: theme.colors.mutedText }]}>Share</AppText>
           </TouchableOpacity>
 
-          {/* Apply button */}
           {isAgent && (
             <TouchableOpacity
               onPress={() => !alreadyInterested && onInterest(req)}
               activeOpacity={alreadyInterested ? 1 : 0.8}
               style={[styles.applyBtn, { backgroundColor: alreadyInterested ? '#10B981' : visual.color }]}
             >
-              <AppText style={styles.applyBtnText} numberOfLines={1}>
-                {alreadyInterested ? 'Applied ✓' : 'Apply Now'}
+              <AppText style={styles.applyBtnText}>
+                {alreadyInterested ? 'Applied ✓' : 'Apply →'}
               </AppText>
             </TouchableOpacity>
           )}
         </View>
       </View>
-    </AppCard>
+    </View>
   );
 };
 
@@ -306,60 +319,71 @@ interface WageModalProps {
 
 const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [wage, setWage] = useState('');
   const visual = getVisual(req?.workType, req?.subCategory);
 
   useEffect(() => { if (visible) setWage(''); }, [visible]);
 
   const minWage = req?.minBudgetPerWorker ?? 0;
+  const period = req ? getSalaryType(req) : 'day';
+  const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}>
-          {/* Job banner inside modal */}
-          <View style={[styles.modalBanner, { backgroundColor: visual.bg }]}>
-            <AppText style={styles.modalBannerEmoji}>{visual.emoji}</AppText>
-            <View style={{ flex: 1 }}>
-              <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={1}>
-                {req?.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req?.workType)}
-              </AppText>
-              <AppText variant="caption" style={{ color: visual.color + '99' }}>
-                {req?.district ?? ''} · ₹{minWage}+ per {req ? getSalaryType(req) : 'day'}
-              </AppText>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalBox, { backgroundColor: theme.colors.surface, paddingBottom: Math.max(insets.bottom, 16) + 16 }]}
+          >
+            {/* Job banner inside modal */}
+            <View style={[styles.modalBanner, { backgroundColor: visual.bg }]}>
+              <AppText style={styles.modalBannerEmoji}>{visual.emoji}</AppText>
+              <View style={{ flex: 1 }}>
+                <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={1}>
+                  {req?.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req?.workType)}
+                </AppText>
+                <AppText variant="caption" style={{ color: visual.color + '99' }}>
+                  {req?.district ?? ''} · ₹{minWage}+ per {period}
+                </AppText>
+              </View>
             </View>
-          </View>
 
-          <AppText variant="caption" color={theme.colors.mutedText} style={[styles.fieldLabel, { marginTop: 16 }]}>
-            Your Required Wage per Worker/Day (min ₹{minWage})
-          </AppText>
-          <TextInput
-            value={wage}
-            onChangeText={setWage}
-            keyboardType="numeric"
-            placeholder={`Enter amount (≥ ₹${minWage})`}
-            placeholderTextColor={theme.colors.mutedText}
-            style={[styles.wageInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
-          />
-
-          <View style={styles.modalActions}>
-            <AppButton title="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
-            <AppButton
-              title="Submit Application"
-              loading={loading}
-              onPress={() => {
-                const n = Number(wage);
-                if (!n || n < minWage) {
-                  Alert.alert('Invalid Wage', `Minimum wage is ₹${minWage}`);
-                  return;
-                }
-                if (req?._id) onSubmit(req._id, n);
-              }}
-              style={{ flex: 1 }}
+            <AppText variant="caption" color={theme.colors.mutedText} style={[styles.fieldLabel, { marginTop: 16 }]}>
+              Your Required Wage per Worker/{periodLabel} (min ₹{minWage})
+            </AppText>
+            <TextInput
+              value={wage}
+              onChangeText={setWage}
+              keyboardType="numeric"
+              placeholder={`Enter amount (≥ ₹${minWage})`}
+              placeholderTextColor={theme.colors.mutedText}
+              style={[styles.wageInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
             />
-          </View>
+
+            <View style={styles.modalActions}>
+              <AppButton title="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <AppButton
+                title="Submit Application"
+                loading={loading}
+                onPress={() => {
+                  const n = Number(wage);
+                  if (!n || n < minWage) {
+                    Alert.alert('Invalid Wage', `Minimum wage is ₹${minWage}`);
+                    return;
+                  }
+                  if (req?._id) onSubmit(req._id, n);
+                }}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -367,6 +391,8 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export const JobMarketplaceScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const insets = useSafeAreaInsets();
   const { state: authState } = useAuth();
   const queryClient = useQueryClient();
   const route = useRoute<RouteProps>();
@@ -483,6 +509,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [wageModalReq, setWageModalReq] = useState<RawRequirement | null>(null);
+  const [sortMode, setSortMode] = useState<'default' | 'salary' | 'new'>('default');
 
   // Seed liked IDs from server data (likedBy field on each requirement)
   useEffect(() => {
@@ -543,57 +570,90 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     setSelectedSubCat('');
   };
 
+  const sortedRequirements = useMemo(() => {
+    if (sortMode === 'salary') return [...requirements].sort((a, b) => (b.minBudgetPerWorker ?? 0) - (a.minBudgetPerWorker ?? 0));
+    if (sortMode === 'new') return [...requirements].sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+    return requirements;
+  }, [requirements, sortMode]);
+
   if (isLoading) return <LoadingState message="Loading jobs…" />;
   if (isError) return <ErrorState title="Unable to Load Jobs" message="Could not fetch jobs. Please check your connection and try again." onRetry={() => void refetch()} />;
 
+  const pageTitle = showLikedOnly ? 'Saved Jobs ❤️' : showMyInterests ? 'My Applications' : 'Find Work Near You';
+  const hasFilters = !!(selectedCategory || selectedSubCat);
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? theme.colors.background : '#F1F5F9' }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader
-        title={
-          showLikedOnly ? 'Liked Jobs ❤️' :
-          showMyInterests ? 'My Applications' :
-          selectedCategory ? (CATEGORIES.find((c) => c.value === selectedCategory)?.label?.replace(/ Workers?$/, '').trim() ?? selectedCategory) :
-          'Find Work Near You'
-        }
-        onBack={() => navigation.goBack()}
-      />
-      {/* Search bar + Filter button */}
-      <View style={[styles.searchRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.searchBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <AppText variant="body" style={styles.searchIcon}>🔍</AppText>
+
+      {/* ── Green header ─────────────────────────────────────────── */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
+            <AppText style={styles.backIcon}>←</AppText>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.headerTitle}>{pageTitle}</AppText>
+            <AppText style={styles.headerSub}>
+              {(totalCount > 0 ? totalCount : requirements.length)} jobs found near you
+            </AppText>
+          </View>
+          {isFetching && !isFetchingNextPage && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
+        </View>
+
+        {/* Search bar */}
+        <View style={styles.searchBar}>
+          <AppText style={styles.searchBarIcon}>🔍</AppText>
           <TextInput
             value={search}
             onChangeText={handleSearchChange}
             placeholder="Search work type, location…"
-            placeholderTextColor={theme.colors.mutedText}
-            style={[styles.searchInput, { color: theme.colors.text }]}
+            placeholderTextColor="rgba(255,255,255,0.55)"
+            style={styles.searchBarInput}
             returnKeyType="search"
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); }}>
-              <AppText variant="caption" color={theme.colors.mutedText}>✕</AppText>
+            <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); }} hitSlop={8}>
+              <AppText style={styles.searchBarClear}>✕</AppText>
+            </TouchableOpacity>
+          )}
+          {!showLikedOnly && (
+            <TouchableOpacity
+              onPress={() => setFilterSheetVisible(true)}
+              style={[styles.filterIconBtn, { backgroundColor: hasFilters ? '#F97316' : 'rgba(255,255,255,0.18)' }]}
+              activeOpacity={0.8}
+            >
+              <AppText style={styles.filterIconText}>⚙️</AppText>
+              {hasFilters && <View style={styles.filterActiveDot} />}
             </TouchableOpacity>
           )}
         </View>
-        {!showLikedOnly && (
-          <TouchableOpacity
-            onPress={() => setFilterSheetVisible(true)}
-            style={[styles.filterIconBtn, {
-              backgroundColor: (selectedCategory || selectedSubCat) ? theme.colors.primary : theme.colors.card,
-              borderColor: (selectedCategory || selectedSubCat) ? theme.colors.primary : theme.colors.border,
-            }]}
-            activeOpacity={0.8}
-          >
-            <AppText style={styles.filterIconText}>⚙️</AppText>
-            {(selectedCategory || selectedSubCat) && <View style={styles.filterActiveDot} />}
-          </TouchableOpacity>
+
+        {/* Quick sort chips */}
+        {!showLikedOnly && !showMyInterests && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
+            {([
+              { id: 'default', label: '✦ All Jobs' },
+              { id: 'salary',  label: '💰 High Salary' },
+              { id: 'new',     label: '⚡ New Jobs' },
+            ] as const).map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                onPress={() => setSortMode(s.id)}
+                style={[styles.sortChip, sortMode === s.id && styles.sortChipActive]}
+              >
+                <AppText style={[styles.sortChipText, sortMode === s.id && styles.sortChipTextActive]}>
+                  {s.label}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
       </View>
 
       {/* Active filter chips summary */}
-      {!showLikedOnly && (selectedCategory || selectedSubCat) && (
-        <View style={[styles.activeFiltersRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+      {!showLikedOnly && hasFilters && (
+        <View style={[styles.activeFiltersRow, { backgroundColor: isDark ? theme.colors.surface : '#FFFFFF', borderBottomColor: theme.colors.border }]}>
           {selectedCategory && (
             <View style={[styles.activeChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}>
               <AppText style={[styles.activeChipText, { color: theme.colors.primary }]}>
@@ -617,19 +677,11 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         </View>
       )}
 
-      {/* Result count */}
-      <View style={styles.resultHeader}>
-        <AppText variant="caption" color={theme.colors.mutedText}>
-          {totalCount > 0 ? `${totalCount} jobs found` : `${requirements.length} jobs found`}
-        </AppText>
-        {isFetching && !isFetchingNextPage && !likedQuery.isFetchingNextPage && <ActivityIndicator size="small" color={theme.colors.primary} />}
-      </View>
-
       {/* Job list */}
-      {requirements.length === 0 ? (
+      {sortedRequirements.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
-            title={showLikedOnly ? 'No liked jobs yet' : 'No jobs found'}
+            title={showLikedOnly ? 'No saved jobs yet' : 'No jobs found'}
             message={
               showLikedOnly
                 ? 'Tap ❤️ on any job to save it here.'
@@ -641,7 +693,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         </View>
       ) : (
         <FlatList
-          data={requirements}
+          data={sortedRequirements}
           keyExtractor={(item, i) => item._id || String(i)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -785,39 +837,54 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Search
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  // ── Header ──────────────────────────────────────────────────────────────────
+  header: {
+    backgroundColor: '#1037A4',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
   },
-  searchBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  backIcon: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+  headerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', lineHeight: 22 },
+  headerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 1 },
 
-  // Filter button in search row
+  // ── Search bar (inside header) ───────────────────────────────────────────────
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10,
+    gap: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+  },
+  searchBarIcon: { fontSize: 16, lineHeight: 20 },
+  searchBarInput: { flex: 1, fontSize: 15, color: '#FFFFFF', paddingVertical: 0 },
+  searchBarClear: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '700' },
   filterIconBtn: {
-    width: 44, height: 44, borderRadius: 12, borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
+    width: 34, height: 34, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
   },
-  filterIconText: { fontSize: 18, lineHeight: 22 },
+  filterIconText: { fontSize: 16, lineHeight: 20 },
   filterActiveDot: {
-    position: 'absolute', top: 6, right: 6,
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444',
+    position: 'absolute', top: 4, right: 4,
+    width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#EF4444',
   },
 
-  // Active filter summary row
+  // ── Sort chips ───────────────────────────────────────────────────────────────
+  sortChips: { flexDirection: 'row', gap: 8, paddingTop: 12, paddingBottom: 2 },
+  sortChip: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 999, borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.30)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  sortChipActive: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderColor: 'rgba(255,255,255,0.95)',
+  },
+  sortChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
+  sortChipTextActive: { color: '#1037A4', fontWeight: '800' },
+
+  // ── Active filter chips ──────────────────────────────────────────────────────
   activeFiltersRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8,
     paddingHorizontal: 14, paddingVertical: 8,
@@ -831,7 +898,7 @@ const styles = StyleSheet.create({
   activeChipText: { fontSize: 12, fontWeight: '700' },
   activeChipX: { fontSize: 11, fontWeight: '800' },
 
-  // Filter bottom sheet
+  // ── Filter bottom sheet ──────────────────────────────────────────────────────
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheetContainer: {
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -860,38 +927,52 @@ const styles = StyleSheet.create({
   sheetRowEmoji: { fontSize: 20, lineHeight: 24, width: 28, textAlign: 'center' },
   sheetRowLabel: { flex: 1, fontSize: 14 },
   sheetRowCheck: { fontSize: 16, fontWeight: '800', color: '#1037A4' },
-  sheetFooter: {
-    padding: 16, borderTopWidth: StyleSheet.hairlineWidth,
-  },
+  sheetFooter: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 
-  // Result header
-  resultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
-
-  // List
+  // ── List ────────────────────────────────────────────────────────────────────
   list: { padding: 12, paddingBottom: 40 },
 
-  // Card
-  reqCard: { padding: 0, marginBottom: 12, overflow: 'hidden', borderRadius: 16 },
+  // ── Card ────────────────────────────────────────────────────────────────────
+  reqCard: {
+    marginBottom: 10, borderRadius: 16, borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  cardTop: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 14, gap: 12,
+  },
+  logoBox: {
+    width: 50, height: 50, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  logoEmoji: { fontSize: 26, lineHeight: 32 },
+  titleBlock: { flex: 1 },
+  cardTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20, letterSpacing: -0.2 },
+  cardCategory: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  likeBtn: {
+    width: 34, height: 34, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  likeBtnIcon: { fontSize: 17, lineHeight: 22 },
 
-  // Banner
-  banner: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  bannerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bannerEmoji: { fontSize: 36, lineHeight: 44 },
-  bannerTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20 },
-  bannerSub: { fontSize: 11, fontWeight: '500', marginTop: 1 },
-  salaryPill: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center', minWidth: 86, flexShrink: 0 },
-  salaryText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 18 },
-  salaryPer: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600', lineHeight: 15 },
+  // Info rows (location, salary)
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, marginBottom: 5, gap: 5 },
+  infoRowIcon: { fontSize: 12, lineHeight: 16 },
+  infoRowText: { fontSize: 12.5, lineHeight: 17 },
+  salaryAmt: { fontSize: 13.5, fontWeight: '800', lineHeight: 18 },
+  salarySlash: { fontSize: 12, fontWeight: '500' },
+  dot: { fontSize: 12 },
 
-  // Meta row — location + workers always on same line
-  metaRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, gap: 6 },
-  metaIcon: { fontSize: 12, lineHeight: 16, flexShrink: 0 },
-  workersBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, flexShrink: 0 },
-
-  // Perks
-  perksRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 14, paddingBottom: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  perk: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
-  perkText: { fontSize: 11, fontWeight: '600', color: '#374151' },
+  // Chips
+  chipsScroll: { paddingHorizontal: 14, marginVertical: 8 },
+  chipsContent: { flexDirection: 'row', gap: 7 },
+  chip: {
+    borderRadius: 999, borderWidth: 1,
+    paddingHorizontal: 11, paddingVertical: 5,
+  },
+  chipText: { fontSize: 11.5, fontWeight: '600' },
 
   // Expanded
   expandedBlock: { borderTopWidth: StyleSheet.hairlineWidth, padding: 14, gap: 8 },
@@ -899,13 +980,16 @@ const styles = StyleSheet.create({
   detailKey: { minWidth: 90, fontWeight: '600', fontSize: 12 },
 
   // Action row
-  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  actionRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 4,
+  },
   detailsBtn: { paddingVertical: 4, paddingHorizontal: 4 },
   detailsBtnText: { fontSize: 11, fontWeight: '600' },
-  actionBtns: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 16, lineHeight: 20 },
+  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
+  shareBtnIcon: { fontSize: 13, lineHeight: 17 },
   shareBtnLabel: { fontSize: 12, fontWeight: '600' },
   applyBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 96 },
   applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
@@ -915,11 +999,11 @@ const styles = StyleSheet.create({
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBox: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 },
+  modalBox: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   modalBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, marginBottom: 4 },
   modalBannerEmoji: { fontSize: 30, lineHeight: 38 },
   modalBannerTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20 },
-  fieldLabel: { marginBottom: 6, fontWeight: '600' },
+  fieldLabel: { marginTop: 14, marginBottom: 6, fontWeight: '600' },
   wageInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, marginBottom: 16 },
   modalActions: { flexDirection: 'row', gap: 10 },
 });

@@ -14,6 +14,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { ROUTES } from '../../../shared/constants/routes';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import type { AppRole } from '../../../shared/types/domain';
+import type { AppContext } from '../../../core/api/endpoints/authApi';
 
 const schema = z.object({
   phone: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
@@ -24,9 +25,10 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   navigation: NativeStackNavigationProp<AuthStackParamList>;
   roleHint?: AppRole;
+  appContext?: AppContext;
 }
 
-export const PasswordLoginForm = ({ navigation, roleHint }: Props): React.JSX.Element => {
+export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -45,15 +47,25 @@ export const PasswordLoginForm = ({ navigation, roleHint }: Props): React.JSX.El
         phone: values.phone,
         password: values.password,
         roleHint,
+        appContext,
       });
 
-      // Role mismatch — show a clear error instead of silently redirecting
+      // Role mismatch — block wrong roles per app
       const actualRole = response.user.role;
-      if (roleHint === 'employer' && actualRole !== 'employer') {
+      if (appContext === 'employer-app' && actualRole !== 'employer') {
+        setErrorMessage('Only Employer accounts can login to the Employer App. Please use the Worker App if you have a Worker or Agent account.');
+        return;
+      }
+      if (appContext === 'agent-app' && actualRole === 'employer') {
+        setErrorMessage('Employer accounts cannot login to the Worker App. Please use the BookMyWorker Employer App.');
+        return;
+      }
+      // Legacy checks (no appContext)
+      if (!appContext && roleHint === 'employer' && actualRole !== 'employer') {
         setErrorMessage('No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.');
         return;
       }
-      if (!roleHint && actualRole === 'employer') {
+      if (!appContext && !roleHint && actualRole === 'employer') {
         setErrorMessage('This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.');
         return;
       }

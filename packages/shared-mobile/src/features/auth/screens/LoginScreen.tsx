@@ -26,6 +26,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const roleHint = route.params?.roleHint;
+  const appContext = route.params?.appContext;
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'otp' | 'password'>('otp');
@@ -107,9 +108,9 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
 
             {/* Each form gets a unique key so React fully remounts when switching */}
             {mode === 'otp' ? (
-              <OtpLoginForm key="otp" navigation={navigation} roleHint={roleHint} />
+              <OtpLoginForm key="otp" navigation={navigation} roleHint={roleHint} appContext={appContext} />
             ) : (
-              <PasswordLoginForm key="password" navigation={navigation} roleHint={roleHint} />
+              <PasswordLoginForm key="password" navigation={navigation} roleHint={roleHint} appContext={appContext} />
             )}
           </Animated.View>
 

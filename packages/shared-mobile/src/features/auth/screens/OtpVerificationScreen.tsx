@@ -118,25 +118,35 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const session = await authService.verifyOtp({ phone: route.params.phone, otp, roleHint: route.params.roleHint });
+      const session = await authService.verifyOtp({ phone: route.params.phone, otp, roleHint: route.params.roleHint, appContext: route.params.appContext });
 
-      // Role mismatch — show a clear error instead of silently redirecting
+      // Role enforcement — block wrong roles per app
+      const appContext = route.params.appContext;
       const roleHint = route.params.roleHint;
       const actualRole = session.user.role;
-      if (roleHint === 'employer' && actualRole !== 'employer') {
-        const msg = 'No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.';
+
+      const showRoleError = (msg: string) => {
         setErrorMessage(msg);
         shakeBoxes();
         setDigits(Array(OTP_LENGTH).fill(''));
         setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
+      };
+
+      if (appContext === 'employer-app' && actualRole !== 'employer') {
+        showRoleError('Only Employer accounts can login to the Employer App. Please use the Worker App if you have a Worker or Agent account.');
         return;
       }
-      if (!roleHint && actualRole === 'employer') {
-        const msg = 'This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.';
-        setErrorMessage(msg);
-        shakeBoxes();
-        setDigits(Array(OTP_LENGTH).fill(''));
-        setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
+      if (appContext === 'agent-app' && actualRole === 'employer') {
+        showRoleError('Employer accounts cannot login to the Worker App. Please use the BookMyWorker Employer App.');
+        return;
+      }
+      // Legacy checks (no appContext)
+      if (!appContext && roleHint === 'employer' && actualRole !== 'employer') {
+        showRoleError('No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.');
+        return;
+      }
+      if (!appContext && !roleHint && actualRole === 'employer') {
+        showRoleError('This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.');
         return;
       }
 
@@ -164,7 +174,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     if (countdown > 0) return;
     setResendLoading(true);
     try {
-      await authService.requestOtp(route.params.phone);
+      await authService.requestOtp(route.params.phone, route.params.roleHint, route.params.appContext);
       startCountdown();
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);

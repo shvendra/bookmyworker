@@ -1,4 +1,4 @@
-import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, type RegisterPayload } from '../../../core/api/endpoints/authApi';
+import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
 import { registerForPushNotifications } from '../../../core/notifications/pushService';
 import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
@@ -32,10 +32,10 @@ const mockUser = (phone: string): UserProfile => ({
 });
 
 export const authService = {
-  requestOtp: async (phone: string, roleHint?: AppRole): Promise<{ message: string }> =>
-    requestOtp({ phone, roleHint }),
+  requestOtp: async (phone: string, roleHint?: AppRole, appContext?: AppContext): Promise<{ message: string }> =>
+    requestOtp({ phone, roleHint, appContext }),
 
-  verifyOtp: async ({ phone, otp, roleHint }: { phone: string; otp: string; roleHint?: AppRole }): Promise<AuthSession> => {
+  verifyOtp: async ({ phone, otp, roleHint, appContext }: { phone: string; otp: string; roleHint?: AppRole; appContext?: AppContext }): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();
 
     if (__DEV__ && otp === '123456') {
@@ -50,7 +50,7 @@ export const authService = {
       };
     }
 
-    const response = await verifyOtp({ phone, otp, roleHint });
+    const response = await verifyOtp({ phone, otp, roleHint, appContext });
 
     // Auto-select highest priority role when no roleHint was given (normal login flow)
     let finalResponse = response;

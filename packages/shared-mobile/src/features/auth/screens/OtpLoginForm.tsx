@@ -14,13 +14,15 @@ import { ROUTES } from '../../../shared/constants/routes';
 import { phoneSchema, type PhoneFormValues } from '../validation/authSchemas';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import type { AppRole } from '../../../shared/types/domain';
+import type { AppContext } from '../../../core/api/endpoints/authApi';
 
 interface Props {
   navigation: NativeStackNavigationProp<AuthStackParamList>;
   roleHint?: AppRole;
+  appContext?: AppContext;
 }
 
-export const OtpLoginForm = ({ navigation, roleHint }: Props): React.JSX.Element => {
+export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -35,9 +37,9 @@ export const OtpLoginForm = ({ navigation, roleHint }: Props): React.JSX.Element
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      await authService.requestOtp(values.phone, roleHint);
+      await authService.requestOtp(values.phone, roleHint, appContext);
       toast.success(`OTP sent to +91 ${values.phone}`, 'OTP Sent');
-      navigation.navigate(ROUTES.AUTH.OTP_VERIFICATION, { phone: values.phone, roleHint });
+      navigation.navigate(ROUTES.AUTH.OTP_VERIFICATION, { phone: values.phone, roleHint, appContext });
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unable to send OTP. Please try again.';
       setErrorMessage(msg);
