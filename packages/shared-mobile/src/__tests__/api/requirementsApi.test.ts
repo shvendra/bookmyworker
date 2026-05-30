@@ -387,23 +387,6 @@ describe('requirementsApi.getWorkHistory', () => {
   });
 });
 
-// ── getHiredWorkers ───────────────────────────────────────────────────────────
-
-describe('requirementsApi.getHiredWorkers', () => {
-  it('returns list of hired workers', async () => {
-    const workers = [{ workerId: 'w1', workerName: 'A', workerPhone: '9000000000', lastHireDate: '', workType: '' }];
-    mock.onGet('/api/v1/mobile/employer/hired-workers').reply(200, { workers });
-    const res = await requirementsApi.getHiredWorkers();
-    expect(res).toHaveLength(1);
-  });
-
-  it('returns empty array when workers is missing', async () => {
-    mock.onGet('/api/v1/mobile/employer/hired-workers').reply(200, {});
-    const res = await requirementsApi.getHiredWorkers();
-    expect(res).toEqual([]);
-  });
-});
-
 // ── revealEmployerPhone ───────────────────────────────────────────────────────
 
 describe('requirementsApi.revealEmployerPhone', () => {

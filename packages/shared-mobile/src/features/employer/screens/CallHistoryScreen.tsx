@@ -144,10 +144,10 @@ function WorkerCard({
               )}
             </View>
             {!!location && (
-              <AppText style={wc.location} numberOfLines={1}>📍 {location}</AppText>
+              <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {location}</AppText>
             )}
             {entry.workerSkills.length > 0 && (
-              <AppText style={wc.skills} numberOfLines={1}>
+              <AppText style={[wc.skills, { color: theme.colors.mutedText }]} numberOfLines={1}>
                 🔧 {formatSkills(entry.workerSkills)}
               </AppText>
             )}
@@ -160,7 +160,7 @@ function WorkerCard({
             <AppText style={wc.statusEmoji}>{meta.emoji}</AppText>
             <AppText style={[wc.statusTxt, { color: meta.color }]}>{meta.label}</AppText>
           </View>
-          <AppText style={wc.time}>{formatRelative(entry.lastContactedAt)}</AppText>
+          <AppText style={[wc.time, { color: theme.colors.mutedText }]}>{formatRelative(entry.lastContactedAt)}</AppText>
         </View>
       </View>
     </TouchableOpacity>
@@ -179,13 +179,13 @@ const wc = StyleSheet.create({
   name:         { fontSize: 14, fontWeight: '800', flexShrink: 1 },
   ratePill:     { backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#6EE7B7' },
   rateTxt:      { fontSize: 10, fontWeight: '700', color: GREEN },
-  location:     { fontSize: 11.5, color: SLATE, marginTop: 2 },
-  skills:       { fontSize: 11.5, color: SLATE, marginTop: 1 },
+  location:     { fontSize: 11.5, marginTop: 2 },
+  skills:       { fontSize: 11.5, marginTop: 1 },
   bottomRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   statusEmoji:  { fontSize: 12 },
   statusTxt:    { fontSize: 11, fontWeight: '700' },
-  time:         { fontSize: 11, color: SLATE, fontWeight: '600' },
+  time:         { fontSize: 11, fontWeight: '600' },
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -234,38 +234,38 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
 
       {/* ── Summary bar ─────────────────────────────────────────────────── */}
       {allEntries.length > 0 && (
-        <View style={[sc.summaryBar, { borderBottomColor: BORDER }]}>
-          <View style={[sc.summaryCell, { backgroundColor: '#EBF1FF' }]}>
-            <AppText style={[sc.summaryNum, { color: BRAND }]}>{allEntries.length}</AppText>
-            <AppText style={sc.summaryLabel}>{t('filterAll')}</AppText>
+        <View style={[sc.summaryBar, { borderBottomColor: theme.colors.border }]}>
+          <View style={[sc.summaryCell, { backgroundColor: theme.colors.primaryLight }]}>
+            <AppText style={[sc.summaryNum, { color: theme.colors.primary }]}>{allEntries.length}</AppText>
+            <AppText style={[sc.summaryLabel, { color: theme.colors.mutedText }]}>{t('filterAll')}</AppText>
           </View>
-          <View style={[sc.summaryCell, { backgroundColor: '#ECFDF5' }]}>
-            <AppText style={[sc.summaryNum, { color: GREEN }]}>{counts.relevant ?? 0}</AppText>
-            <AppText style={sc.summaryLabel}>{t('callStatusRelevant')}</AppText>
+          <View style={[sc.summaryCell, { backgroundColor: theme.colors.successLight }]}>
+            <AppText style={[sc.summaryNum, { color: theme.colors.success }]}>{counts.relevant ?? 0}</AppText>
+            <AppText style={[sc.summaryLabel, { color: theme.colors.mutedText }]}>{t('callStatusRelevant')}</AppText>
           </View>
-          <View style={[sc.summaryCell, { backgroundColor: '#FFFBEB' }]}>
-            <AppText style={[sc.summaryNum, { color: '#D97706' }]}>{counts.call_later ?? 0}</AppText>
-            <AppText style={sc.summaryLabel}>{t('callStatusCallLater')}</AppText>
+          <View style={[sc.summaryCell, { backgroundColor: theme.colors.warningLight }]}>
+            <AppText style={[sc.summaryNum, { color: theme.colors.warning }]}>{counts.call_later ?? 0}</AppText>
+            <AppText style={[sc.summaryLabel, { color: theme.colors.mutedText }]}>{t('callStatusCallLater')}</AppText>
           </View>
-          <View style={[sc.summaryCell, { backgroundColor: '#F1F5F9' }]}>
-            <AppText style={[sc.summaryNum, { color: SLATE }]}>
+          <View style={[sc.summaryCell, { backgroundColor: theme.colors.surface1 }]}>
+            <AppText style={[sc.summaryNum, { color: theme.colors.mutedText }]}>
               {(counts.not_picked ?? 0) + (counts.switched_off ?? 0)}
             </AppText>
-            <AppText style={sc.summaryLabel}>{t('callStatusNotPicked')}</AppText>
+            <AppText style={[sc.summaryLabel, { color: theme.colors.mutedText }]}>{t('callStatusNotPicked')}</AppText>
           </View>
         </View>
       )}
 
       {/* ── Filter chips ─────────────────────────────────────────────────── */}
-      <View style={[sc.filterBar, { borderBottomColor: BORDER }]}>
+      <View style={[sc.filterBar, { borderBottomColor: theme.colors.border }]}>
         {FILTER_OPTIONS.map((opt) => (
           <TouchableOpacity
             key={opt.key}
             onPress={() => setFilter(opt.key as FilterKey)}
-            style={[sc.chip, filter === opt.key && sc.chipActive]}
+            style={[sc.chip, { backgroundColor: theme.colors.surface1 }, filter === opt.key && sc.chipActive]}
             activeOpacity={0.75}
           >
-            <AppText style={[sc.chipTxt, filter === opt.key && sc.chipTxtActive]}>
+            <AppText style={[sc.chipTxt, { color: theme.colors.mutedText }, filter === opt.key && sc.chipTxtActive]}>
               {opt.label}
               {counts[opt.key] != null ? ` (${counts[opt.key]})` : ''}
             </AppText>
@@ -294,10 +294,10 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
           ListEmptyComponent={
             <View style={sc.emptyBox}>
               <AppText style={sc.emptyEmoji}>📞</AppText>
-              <AppText style={sc.emptyTitle}>
+              <AppText style={[sc.emptyTitle, { color: theme.colors.text }]}>
                 {filter === 'all' ? t('callNoHistory') : `${FILTER_OPTIONS.find((f) => f.key === filter)?.label}`}
               </AppText>
-              <AppText style={sc.emptySub}>{t('callNoHistoryDesc')}</AppText>
+              <AppText style={[sc.emptySub, { color: theme.colors.mutedText }]}>{t('callNoHistoryDesc')}</AppText>
               {filter === 'all' && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('WorkerSearch')}
@@ -327,20 +327,20 @@ const sc = StyleSheet.create({
   summaryBar:    { flexDirection: 'row', borderBottomWidth: 1, paddingVertical: 10, paddingHorizontal: 14, gap: 8 },
   summaryCell:   { flex: 1, borderRadius: 10, paddingVertical: 8, alignItems: 'center', gap: 2 },
   summaryNum:    { fontSize: 18, fontWeight: '900' },
-  summaryLabel:  { fontSize: 9, fontWeight: '700', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
+  summaryLabel:  { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
 
   filterBar:     { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 10, paddingVertical: 6, gap: 6 },
-  chip:          { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F1F5F9' },
+  chip:          { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   chipActive:    { backgroundColor: BRAND },
-  chipTxt:       { fontSize: 12, fontWeight: '700', color: SLATE },
+  chipTxt:       { fontSize: 12, fontWeight: '700' },
   chipTxtActive: { color: WHITE },
 
   listContent:   { padding: 14 },
 
   emptyBox:      { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 32, gap: 12 },
   emptyEmoji:    { fontSize: 48 },
-  emptyTitle:    { fontSize: 18, fontWeight: '900', color: NAVY, textAlign: 'center' },
-  emptySub:      { fontSize: 13, color: SLATE, textAlign: 'center', lineHeight: 20 },
+  emptyTitle:    { fontSize: 18, fontWeight: '900', textAlign: 'center' },
+  emptySub:      { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   browseBtn:     { backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   browseBtnTxt:  { color: WHITE, fontSize: 13, fontWeight: '800' },
 });

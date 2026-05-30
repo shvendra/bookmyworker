@@ -58,6 +58,7 @@ import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/cha
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
+import { InvitationsScreen } from '../../../packages/shared-mobile/src/features/invitations/screens/InvitationsScreen';
 
 import * as Notifications from 'expo-notifications';
 import type { AgentStackParamList } from './types';
@@ -127,6 +128,8 @@ export const AppNavigator = (): React.JSX.Element => {
       const type = data?.type as string | undefined;
       if (type === 'requirement' && data?.requirementId) {
         navigationRef.navigate('RequirementDetail', { requirementId: data.requirementId as string });
+      } else if (type === 'workerInvite') {
+        navigationRef.navigate('Invitations', undefined);
       } else if (type === 'chat' && data?.roomId) {
         navigationRef.navigate('ChatRoom', { roomId: data.roomId as string, roomName: (data.roomName as string) ?? 'Chat' });
       } else {
@@ -260,6 +263,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="SwitchAccount" component={SwitchAccountScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Invitations" component={InvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{

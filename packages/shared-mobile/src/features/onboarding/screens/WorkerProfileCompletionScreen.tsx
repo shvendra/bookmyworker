@@ -333,14 +333,18 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     return (
       <View style={[doneS.root, { backgroundColor: theme.colors.primaryDark }]}>
         <StatusBar barStyle="light-content" backgroundColor={theme.colors.primaryDark} />
+        <View style={doneS.deco1} />
+        <View style={doneS.deco2} />
         <View style={[doneS.card, { backgroundColor: isDark ? theme.colors.surface : '#fff' }]}>
-          <AppText style={doneS.emoji}>🎉</AppText>
+          <View style={doneS.emojiWrap}>
+            <AppText style={doneS.emoji}>🎉</AppText>
+          </View>
           <AppText style={[doneS.title, { color: theme.colors.text }]}>{t('wizard_doneTitle')}</AppText>
           <AppText style={[doneS.sub, { color: theme.colors.mutedText }]}>{t('wizard_doneSub')}</AppText>
           <TouchableOpacity
             onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
             activeOpacity={0.85}
-            style={[doneS.btn, { backgroundColor: theme.colors.primary }]}
+            style={[doneS.btn, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
           >
             <AppText style={doneS.btnTxt}>{t('wizard_goDashboard')} →</AppText>
           </TouchableOpacity>
@@ -737,15 +741,35 @@ const styles = StyleSheet.create({
 });
 
 const doneS = StyleSheet.create({
-  root:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  card:  {
-    width: '100%', borderRadius: 28, padding: 32, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12, shadowRadius: 20, elevation: 12,
+  root:  {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    padding: 28, overflow: 'hidden',
   },
-  emoji: { fontSize: 64, marginBottom: 20 },
-  title: { fontSize: 26, fontWeight: '900', textAlign: 'center', marginBottom: 10 },
-  sub:   { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
-  btn:   { borderRadius: 16, paddingHorizontal: 32, paddingVertical: 16, width: '100%', alignItems: 'center' },
-  btnTxt:{ color: '#fff', fontSize: 16, fontWeight: '800' },
+  deco1: {
+    position: 'absolute', width: 360, height: 360, borderRadius: 180,
+    top: -140, right: -120, backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  deco2: {
+    position: 'absolute', width: 240, height: 240, borderRadius: 120,
+    bottom: -80, left: -60, backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  card:  {
+    width: '100%', maxWidth: 380, borderRadius: 32, padding: 36,
+    alignItems: 'center', gap: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.2, shadowRadius: 40, elevation: 16,
+  },
+  emojiWrap: {
+    width: 96, height: 96, borderRadius: 28, backgroundColor: '#FFF7ED',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  emoji: { fontSize: 52 },
+  title: { fontSize: 26, fontWeight: '900', textAlign: 'center', letterSpacing: -0.4 },
+  sub:   { fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: 4 },
+  btn:   {
+    marginTop: 8, borderRadius: 16, width: '100%', height: 56,
+    alignItems: 'center', justifyContent: 'center',
+    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8,
+  },
+  btnTxt:{ color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
 });

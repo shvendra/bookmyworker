@@ -20,6 +20,11 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useTranslation } from 'react-i18next';
 import { buildPhotoUrl } from '../../../core/config/env';
 
+// Replace underscores with spaces so work-type names display cleanly
+// e.g. "transport_logistics_workers" → "transport logistics workers"
+const cleanText = (text?: string): string =>
+  (text ?? '').replace(/_/g, ' ');
+
 const TYPE_META: Record<string, { icon: string; bg: string; iconColor: string }> = {
   requirement: { icon: '📋', bg: '#EFF6FF', iconColor: '#1A56DB' },
   interest:    { icon: '🤝', bg: '#F3EFFE', iconColor: '#7C3AED' },
@@ -177,14 +182,14 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
                 numberOfLines={1}
                 style={[styles.titleText, isUnread && { fontWeight: '700' }]}
               >
-                {item.title}
+                {cleanText(item.title)}
               </AppText>
               <AppText variant="micro" color={theme.colors.mutedText} style={styles.time}>
                 {formatTime(item.createdAt)}
               </AppText>
             </View>
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={2}>
-              {item.body}
+              {cleanText(item.body)}
             </AppText>
           </View>
         </View>

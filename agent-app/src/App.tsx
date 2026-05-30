@@ -16,6 +16,7 @@ import { ThemeProvider } from '../../packages/shared-mobile/src/core/theme';
 import { AuthProvider } from '../../packages/shared-mobile/src/state/auth/AuthContext';
 import { ErrorState } from '../../packages/shared-mobile/src/shared/components/feedback/ErrorState';
 import { ToastProvider } from '../../packages/shared-mobile/src/shared/state/toast/ToastContext';
+import { AppAlertProvider } from '../../packages/shared-mobile/src/shared/state/alert/AppAlertContext';
 
 import { AppNavigator } from './navigation/AppNavigator';
 
@@ -42,10 +43,12 @@ const App = (): React.JSX.Element => (
         >
           <AuthProvider>
             <ToastProvider>
-              <ErrorBoundary FallbackComponent={AppErrorFallback}>
-                <StatusBar style="auto" />
-                <AppNavigator />
-              </ErrorBoundary>
+              <AppAlertProvider>
+                <ErrorBoundary FallbackComponent={AppErrorFallback}>
+                  <StatusBar style="auto" />
+                  <AppNavigator />
+                </ErrorBoundary>
+              </AppAlertProvider>
             </ToastProvider>
           </AuthProvider>
         </PersistQueryClientProvider>

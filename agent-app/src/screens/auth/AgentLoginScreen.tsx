@@ -6,7 +6,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -157,16 +156,12 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
           </Animated.View>
 
           {/* Register link */}
-          <View style={styles.registerRow}>
-            <AppText variant="body" color={theme.colors.mutedText}>
-              {t('newToApp')}{'  '}
+          <AppText variant="body" color={theme.colors.mutedText} style={styles.registerRow}>
+            {t('newToApp')}{'  '}
+            <AppText variant="body" color={BRAND} style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
+              {t('createAccount')}
             </AppText>
-            <Pressable onPress={() => navigation.navigate('Register')}>
-              <AppText variant="body" color={BRAND} style={styles.registerLink}>
-                {t('createAccount')}
-              </AppText>
-            </Pressable>
-          </View>
+          </AppText>
 
           {/* Section divider */}
           <View style={styles.dividerRow}>
@@ -296,8 +291,8 @@ const styles = StyleSheet.create({
   modeTabTextActive: { fontWeight: '700' },
 
   registerRow: {
-    flexDirection: 'row', justifyContent: 'center',
-    marginTop: 22, flexWrap: 'wrap', alignItems: 'center',
+    textAlign: 'center',
+    marginTop: 22,
   },
   registerLink: { fontWeight: '800' },
 

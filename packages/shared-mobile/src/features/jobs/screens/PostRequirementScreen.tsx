@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RequirementType } from '../../../core/api/endpoints/requirementsApi';
@@ -120,9 +121,9 @@ interface TypeSelectionProps {
   onBack: () => void;
 }
 
-const TypeSelectionStep = ({ onSelect, onBack }: TypeSelectionProps): React.JSX.Element => {
+const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const canGoBack = true;
+  const { t } = useTranslation('employer');
 
   return (
     <ScrollView
@@ -130,42 +131,88 @@ const TypeSelectionStep = ({ onSelect, onBack }: TypeSelectionProps): React.JSX.
       contentContainerStyle={styles.typeContent}
       showsVerticalScrollIndicator={false}
     >
-      {canGoBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-          <AppText variant="body" color={theme.colors.primary}>← Back</AppText>
-        </TouchableOpacity>
-      )}
+      {/* ── Premium Hero ─────────────────────────────────────────────────── */}
+      <View style={styles.hero}>
+        <View style={styles.heroDeco1} />
+        <View style={styles.heroDeco2} />
+        <View style={styles.heroDeco3} />
+        <View style={styles.heroInner}>
+          <View style={styles.heroIconWrap}>
+            <AppText style={styles.heroEmoji}>📣</AppText>
+          </View>
+          <AppText style={styles.heroTitle}>{t('typeSelectTitle')}</AppText>
+          <AppText style={styles.heroSub}>{t('typeSelectSubtitle')}</AppText>
+        </View>
+      </View>
 
-      {/* Hero */}
-      <View style={styles.typeHero}>
-        <AppText style={[styles.typeHeroIcon]}>📣</AppText>
-        <AppText variant="title" style={styles.typeHeroTitle}>Post a Requirement</AppText>
-        <AppText variant="body" color={theme.colors.mutedText} style={styles.typeHeroSub}>
-          What type of workers are you looking for?
+      {/* ── Tagline ──────────────────────────────────────────────────────── */}
+      <View style={[styles.taglineRow, { borderBottomColor: theme.colors.border }]}>
+        <View style={[styles.taglineDot, { backgroundColor: theme.colors.primary }]} />
+        <AppText style={[styles.taglineTxt, { color: theme.colors.mutedText }]}>
+          {t('typeSelectTagline')}
         </AppText>
       </View>
 
-      {/* Type cards */}
-      <View style={styles.typeGrid}>
-        {REQ_TYPES.map((rt) => (
+      {/* ── Type Cards ───────────────────────────────────────────────────── */}
+      <View style={styles.cardsWrap}>
+        {REQ_TYPES.map((rt, idx) => (
           <TouchableOpacity
             key={rt.value}
             onPress={() => onSelect(rt.value)}
-            activeOpacity={0.82}
-            style={[styles.typeCard, { backgroundColor: theme.colors.card, borderColor: rt.color + '55' }]}
+            activeOpacity={0.78}
+            style={[
+              styles.typeCard,
+              {
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+                shadowColor: '#000',
+              },
+            ]}
           >
-            <View style={[styles.typeIconWrap, { backgroundColor: rt.color + '18' }]}>
-              <AppText style={styles.typeIcon}>{rt.icon}</AppText>
+            {/* Left accent strip */}
+            <View style={[styles.accentBar, { backgroundColor: rt.color }]} />
+
+            {/* Icon box */}
+            <View style={[styles.typeIconBox, { backgroundColor: rt.color + '18' }]}>
+              <AppText style={styles.typeIconEmoji}>{rt.icon}</AppText>
             </View>
+
+            {/* Body */}
             <View style={styles.typeCardBody}>
-              <AppText variant="label" color={theme.colors.text} style={styles.typeCardTitle}>{rt.label}</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText} style={styles.typeCardDesc} numberOfLines={2}>
-                {rt.description}
+              <View style={styles.cardTitleRow}>
+                <AppText style={[styles.typeCardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                  {t(`type_${rt.value}_label` as any)}
+                </AppText>
+                {idx === 0 && (
+                  <View style={[styles.popularBadge, { backgroundColor: rt.color + '18' }]}>
+                    <AppText style={[styles.popularTxt, { color: rt.color }]}>
+                      {t('typePopularBadge')}
+                    </AppText>
+                  </View>
+                )}
+              </View>
+              <AppText style={[styles.typeCardDesc, { color: theme.colors.mutedText }]}>
+                {t(`type_${rt.value}_desc` as any)}
               </AppText>
+              <View style={[styles.tagPill, { backgroundColor: rt.color + '10', borderColor: rt.color + '30' }]}>
+                <AppText style={[styles.tagTxt, { color: rt.color }]}>
+                  {t(`type_${rt.value}_tag` as any)}
+                </AppText>
+              </View>
             </View>
+
+            {/* Arrow */}
             <AppText style={[styles.typeArrow, { color: rt.color }]}>›</AppText>
           </TouchableOpacity>
         ))}
+      </View>
+
+      {/* ── Trust Strip ──────────────────────────────────────────────────── */}
+      <View style={[styles.trustStrip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <AppText style={styles.trustIcon}>🇮🇳</AppText>
+        <AppText style={[styles.trustTxt, { color: theme.colors.mutedText }]}>
+          {t('typeSelectTrustBadge')}
+        </AppText>
       </View>
     </ScrollView>
   );
@@ -206,6 +253,7 @@ interface FormStepProps {
 
 const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: FormStepProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
   const { state: authState } = useAuth();
   const user = authState.session?.user;
@@ -365,111 +413,128 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Back + type badge */}
-      <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-        <AppText variant="body" color={theme.colors.primary}>← Change Type</AppText>
-      </TouchableOpacity>
-
-      {/* Type badge header */}
-      <View style={[styles.typeBadge, { backgroundColor: typeInfo.color + '18', borderColor: typeInfo.color + '44' }]}>
-        <AppText style={styles.typeBadgeIcon}>{typeInfo.icon}</AppText>
-        <View>
-          <AppText variant="label" color={typeInfo.color}>{typeInfo.label}</AppText>
-          <AppText variant="caption" color={theme.colors.mutedText}>{typeInfo.description}</AppText>
+      {/* ── Type badge ── */}
+      <View style={[ps.typeBanner, { backgroundColor: typeInfo.color + '14', borderColor: typeInfo.color + '35' }]}>
+        <View style={[ps.typeBannerIcon, { backgroundColor: typeInfo.color + '20' }]}>
+          <AppText style={{ fontSize: 22 }}>{typeInfo.icon}</AppText>
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText style={[ps.typeBannerLabel, { color: typeInfo.color }]}>{typeInfo.label}</AppText>
+          <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={1}>{typeInfo.description}</AppText>
         </View>
       </View>
 
-      <AppText variant="title" style={styles.formTitle}>Post Requirement</AppText>
-
-      {/* WORK TYPE */}
-      <SectionLabel label="Work Type" theme={theme} />
-      <CategorySelector
-        category={workTypeVal}
-        subCategory={subCategoryVal}
-        onCategoryChange={(v) => { setValue('workType', v, { shouldValidate: true }); setValue('subCategory', '', { shouldValidate: true }); }}
-        onSubCategoryChange={(v) => setValue('subCategory', v, { shouldValidate: true })}
-        categoryError={errors.workType?.message}
-        subCategoryError={errors.subCategory?.message}
-        required
-      />
-
-      {/* WORKER DETAILS */}
-      <SectionLabel label="Worker Details" theme={theme} />
-      <AppCard style={styles.card}>
-        <FormInput
-          control={control}
-          name="workerQuantitySkilled"
-          label="Skilled Workers Needed *"
-          placeholder="e.g. 5"
-          keyboardType="number-pad"
-        />
-        <FormInput
-          control={control}
-          name="workerQuantityUnskilled"
-          label="Helper / Unskilled Workers"
-          placeholder="e.g. 2"
-          keyboardType="number-pad"
-        />
-        <Controller
-          control={control}
-          name="ageGroup"
-          render={({ field, fieldState }) => (
-            <FormSelect
-              label="Age Group"
-              value={field.value ?? ''}
-              options={AGE_GROUP_OPTIONS}
-              onChange={field.onChange}
-              errorText={fieldState.error?.message}
-            />
-          )}
-        />
-      </AppCard>
-
-      {/* LOCATION */}
-      <SectionLabel label="Location" theme={theme} />
-      <LocationSelector
-        state={stateVal}
-        district={districtVal}
-        block={tehsilVal ?? ''}
-        onStateChange={(v) => { setValue('state', v, { shouldValidate: true }); setValue('district', '', { shouldValidate: true }); setValue('tehsil', ''); }}
-        onDistrictChange={(v) => { setValue('district', v, { shouldValidate: true }); setValue('tehsil', ''); }}
-        onBlockChange={(v) => setValue('tehsil', v)}
-        stateError={errors.state?.message}
-        districtError={errors.district?.message}
-        blockLabel="Block / Tehsil"
-        required
-      />
-      <FormInput
-        control={control}
-        name="pinCode"
-        label="PIN Code"
-        placeholder="6-digit area PIN code"
-        keyboardType="number-pad"
-        maxLength={6}
-      />
-
-      {/* Location Picker */}
-      <TouchableOpacity
-        onPress={() => setShowLocationPicker(true)}
-        activeOpacity={0.8}
-        style={[locBtnStyles.btn, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0E' }]}
-      >
-        <AppText style={locBtnStyles.icon}>🗺</AppText>
-        <View style={locBtnStyles.body}>
-          <AppText style={[locBtnStyles.label, { color: theme.colors.primary }]}>Pick Work Location</AppText>
-          <AppText variant="caption" color={theme.colors.mutedText}>
-            {watch('workLocation') || 'Search or use GPS to set location'}
-          </AppText>
+      {/* ── 1. Work Type ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#3B82F615' }]}>
+            <AppText style={ps.sectionIcon}>💼</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secWorkType')}</AppText>
+          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
         </View>
-        <AppText style={[locBtnStyles.arrow, { color: theme.colors.primary }]}>›</AppText>
-      </TouchableOpacity>
+        <View style={ps.sectionBody}>
+          <CategorySelector
+            category={workTypeVal}
+            subCategory={subCategoryVal}
+            onCategoryChange={(v) => { setValue('workType', v, { shouldValidate: true }); setValue('subCategory', '', { shouldValidate: true }); }}
+            onSubCategoryChange={(v) => setValue('subCategory', v, { shouldValidate: true })}
+            categoryError={errors.workType?.message}
+            subCategoryError={errors.subCategory?.message}
+            required
+          />
+        </View>
+      </View>
 
-      <FormInput
-        control={control}
-        name="workLocation"
-        label="Exact Work Location / Address"
-        placeholder="e.g. Near NH44, Village Rampur (auto-filled from picker)"
-      />
+      {/* ── 2. Worker Details ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#8B5CF615' }]}>
+            <AppText style={ps.sectionIcon}>👷</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secWorkerDetails')}</AppText>
+        </View>
+        <View style={ps.sectionBody}>
+          <FormInput
+            control={control}
+            name="workerQuantitySkilled"
+            label={t('post_skilledWorkers')}
+            placeholder="e.g. 5"
+            keyboardType="number-pad"
+          />
+          <FormInput
+            control={control}
+            name="workerQuantityUnskilled"
+            label={t('post_helperWorkers')}
+            placeholder="e.g. 2"
+            keyboardType="number-pad"
+          />
+          <Controller
+            control={control}
+            name="ageGroup"
+            render={({ field, fieldState }) => (
+              <FormSelect
+                label="Age Group"
+                value={field.value ?? ''}
+                options={AGE_GROUP_OPTIONS}
+                onChange={field.onChange}
+                errorText={fieldState.error?.message}
+              />
+            )}
+          />
+        </View>
+      </View>
+
+      {/* ── 3. Location ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#10B98115' }]}>
+            <AppText style={ps.sectionIcon}>📍</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secLocation')}</AppText>
+          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+        </View>
+        <View style={ps.sectionBody}>
+          <LocationSelector
+            state={stateVal}
+            district={districtVal}
+            block={tehsilVal ?? ''}
+            onStateChange={(v) => { setValue('state', v, { shouldValidate: true }); setValue('district', '', { shouldValidate: true }); setValue('tehsil', ''); }}
+            onDistrictChange={(v) => { setValue('district', v, { shouldValidate: true }); setValue('tehsil', ''); }}
+            onBlockChange={(v) => setValue('tehsil', v)}
+            stateError={errors.state?.message}
+            districtError={errors.district?.message}
+            blockLabel="Block / Tehsil"
+            required
+          />
+          <FormInput
+            control={control}
+            name="pinCode"
+            label={t('pinCode')}
+            placeholder="6-digit area PIN code"
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          <TouchableOpacity
+            onPress={() => setShowLocationPicker(true)}
+            activeOpacity={0.8}
+            style={[ps.mapBtn, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight }]}
+          >
+            <AppText style={{ fontSize: 18 }}>🗺</AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={[ps.mapBtnLabel, { color: theme.colors.primary }]}>{t('post_pinLocation')}</AppText>
+              <AppText style={[ps.mapBtnSub, { color: theme.colors.mutedText }]} numberOfLines={1}>{watch('workLocation') || t('post_gpsHint')}</AppText>
+            </View>
+            <AppText style={[ps.mapBtnArrow, { color: theme.colors.primary }]}>›</AppText>
+          </TouchableOpacity>
+          <FormInput
+            control={control}
+            name="workLocation"
+            label={t('post_exactAddress')}
+            placeholder="e.g. Near NH44, Village Rampur"
+          />
+        </View>
+      </View>
 
       <LocationPickerModal
         visible={showLocationPicker}
@@ -478,169 +543,181 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         onPick={(loc: PickedLocation) => {
           setValue('workLocation', loc.address, { shouldValidate: true });
           setCoords({ lat: loc.lat, lng: loc.lng });
-          // auto-fill state/district/pin if they are currently empty
-          if (loc.state && !watch('state')) {
-            setValue('state', loc.state, { shouldValidate: true });
-          }
-          if (loc.district && !watch('district')) {
-            setValue('district', loc.district, { shouldValidate: true });
-          }
-          if (loc.pinCode && !watch('pinCode')) {
-            setValue('pinCode', loc.pinCode);
-          }
+          if (loc.state && !watch('state'))       setValue('state', loc.state, { shouldValidate: true });
+          if (loc.district && !watch('district')) setValue('district', loc.district, { shouldValidate: true });
+          if (loc.pinCode && !watch('pinCode'))   setValue('pinCode', loc.pinCode);
         }}
       />
 
-      {/* SCHEDULE */}
-      <SectionLabel label="Schedule & Duration" theme={theme} />
-      <AppCard style={styles.card}>
-        <FormInput
-          control={control}
-          name="workerNeedDate"
-          label="Worker Need Date *"
-          placeholder="DD/MM/YYYY"
-          keyboardType="numbers-and-punctuation"
-        />
-        {isDailyWages && (
+      {/* ── 4. Schedule & Duration ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#F59E0B15' }]}>
+            <AppText style={ps.sectionIcon}>📅</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secSchedule')}</AppText>
+        </View>
+        <View style={ps.sectionBody}>
+          <FormInput
+            control={control}
+            name="workerNeedDate"
+            label={t('post_workerNeedDate')}
+            placeholder="DD/MM/YYYY"
+            keyboardType="numbers-and-punctuation"
+          />
+          {isDailyWages && (
+            <View style={styles.row}>
+              <View style={styles.rowHalf}>
+                <FormInput control={control} name="inTime" label="Start Time" placeholder="08:00 AM" />
+              </View>
+              <View style={styles.rowHalf}>
+                <FormInput control={control} name="outTime" label="End Time" placeholder="06:00 PM" />
+              </View>
+            </View>
+          )}
+          <Controller
+            control={control}
+            name="estimated_days"
+            render={({ field }) => (
+              <FormSelect
+                label={t('post_estimatedDuration')}
+                value={field.value ?? ''}
+                options={ESTIMATED_DAYS_OPTIONS}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </View>
+      </View>
+
+      {/* ── 5. Payment ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#05966915' }]}>
+            <AppText style={ps.sectionIcon}>💰</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPayment')}{'  '}<AppText style={[ps.sectionSub, { color: theme.colors.mutedText }]}>{t('post_perWorker')}</AppText></AppText>
+        </View>
+        <View style={ps.sectionBody}>
+          {/* Salary type chips */}
+          <AppText style={[ps.fieldLabel, { color: theme.colors.mutedText }]}>{t('post_paymentFreq')}</AppText>
+          <Controller
+            control={control}
+            name="salaryType"
+            render={({ field: { value, onChange } }) => (
+              <View style={[styles.salaryTypeRow, { marginBottom: 14 }]}>
+                {(['Daily', 'Weekly', 'Monthly'] as const).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => onChange(type)}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.salaryTypeChip,
+                      {
+                        backgroundColor: value === type ? theme.colors.primary : theme.colors.surface1,
+                        borderColor: value === type ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <AppText style={[styles.salaryTypeChipTxt, { color: value === type ? '#fff' : theme.colors.mutedText }]}>
+                      {type === 'Daily' ? `📅 ${t('salaryDaily')}` : type === 'Weekly' ? `📆 ${t('salaryWeekly')}` : `🗓 ${t('salaryMonthly')}`}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          />
+          {/* Budget range */}
+          <AppText style={[ps.fieldLabel, { color: theme.colors.mutedText }]}>{t('post_budgetRange')} · {watch('salaryType')?.toLowerCase() ?? 'daily'}</AppText>
           <View style={styles.row}>
             <View style={styles.rowHalf}>
               <FormInput
                 control={control}
-                name="inTime"
-                label="Start Time"
-                placeholder="08:00 AM"
+                name="minBudgetPerWorker"
+                label={t('post_minAmount')}
+                placeholder={watch('salaryType') === 'Monthly' ? '8000' : watch('salaryType') === 'Weekly' ? '2000' : '400'}
+                keyboardType="numeric"
               />
             </View>
             <View style={styles.rowHalf}>
               <FormInput
                 control={control}
-                name="outTime"
-                label="End Time"
-                placeholder="06:00 PM"
+                name="maxBudgetPerWorker"
+                label={t('post_maxAmount')}
+                placeholder={watch('salaryType') === 'Monthly' ? '15000' : watch('salaryType') === 'Weekly' ? '4000' : '700'}
+                keyboardType="numeric"
               />
             </View>
           </View>
-        )}
-        <Controller
-          control={control}
-          name="estimated_days"
-          render={({ field }) => (
-            <FormSelect
-              label="Estimated Duration"
-              value={field.value ?? ''}
-              options={ESTIMATED_DAYS_OPTIONS}
-              onChange={field.onChange}
-            />
-          )}
-        />
-      </AppCard>
-
-      {/* SALARY TYPE */}
-      <SectionLabel label="Payment Type" theme={theme} />
-      <AppCard style={styles.card}>
-        <Controller
-          control={control}
-          name="salaryType"
-          render={({ field: { value, onChange } }) => (
-            <View style={styles.salaryTypeRow}>
-              {(['Daily', 'Weekly', 'Monthly'] as const).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => onChange(type)}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.salaryTypeChip,
-                    {
-                      backgroundColor: value === type ? theme.colors.primary : theme.colors.surface,
-                      borderColor: value === type ? theme.colors.primary : theme.colors.border,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      styles.salaryTypeChipTxt,
-                      { color: value === type ? '#fff' : theme.colors.mutedText },
-                    ]}
-                  >
-                    {type === 'Daily' ? '📅 Daily' : type === 'Weekly' ? '📆 Weekly' : '🗓 Monthly'}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        />
-      </AppCard>
-
-      {/* BUDGET */}
-      <SectionLabel label={`Budget (₹ per worker / ${watch('salaryType')?.toLowerCase() ?? 'day'})`} theme={theme} />
-      <AppCard style={styles.card}>
-        <View style={styles.row}>
-          <View style={styles.rowHalf}>
-            <FormInput
-              control={control}
-              name="minBudgetPerWorker"
-              label="Min Amount *"
-              placeholder={watch('salaryType') === 'Monthly' ? '8000' : watch('salaryType') === 'Weekly' ? '2000' : '400'}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.rowHalf}>
-            <FormInput
-              control={control}
-              name="maxBudgetPerWorker"
-              label="Max Amount *"
-              placeholder={watch('salaryType') === 'Monthly' ? '15000' : watch('salaryType') === 'Weekly' ? '4000' : '700'}
-              keyboardType="numeric"
-            />
-          </View>
         </View>
-      </AppCard>
-
-      {/* PERKS */}
-      <SectionLabel label="Perks & Benefits" theme={theme} />
-      <View style={styles.flagsGrid}>
-        {BOOLEAN_FLAGS.map((flag) => (
-          <TouchableOpacity
-            key={flag.key}
-            onPress={() => toggleFlag(flag.key)}
-            activeOpacity={0.8}
-            style={[
-              styles.flagChip,
-              {
-                backgroundColor: boolFlags[flag.key] ? theme.colors.primary + '15' : theme.colors.card,
-                borderColor: boolFlags[flag.key] ? theme.colors.primary : theme.colors.border,
-              },
-            ]}
-          >
-            <AppText style={styles.flagChipIcon}>{flag.icon}</AppText>
-            <AppText
-              variant="caption"
-              color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
-              style={styles.flagChipLabel}
-            >
-              {flag.label}
-            </AppText>
-            {boolFlags[flag.key] && (
-              <AppText style={[styles.flagCheck, { color: theme.colors.primary }]}>✓</AppText>
-            )}
-          </TouchableOpacity>
-        ))}
       </View>
 
-      {/* DESCRIPTION */}
-      <SectionLabel label="Work Description" theme={theme} />
-      <FormInput
-        control={control}
-        name="remarks"
-        label="Describe the work, site conditions, requirements *"
-        placeholder="e.g. Brick laying work for construction site. Workers should bring their own tools..."
-        multiline
-        numberOfLines={4}
-        style={styles.textarea}
-      />
+      {/* ── 6. Perks & Benefits ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#EC489915' }]}>
+            <AppText style={ps.sectionIcon}>🎁</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPerks')}</AppText>
+          <AppText style={[ps.optionalTag, { color: theme.colors.mutedText }]}>{t('optional')}</AppText>
+        </View>
+        <View style={[ps.sectionBody, { paddingBottom: 6 }]}>
+          <View style={styles.flagsGrid}>
+            {BOOLEAN_FLAGS.map((flag) => (
+              <TouchableOpacity
+                key={flag.key}
+                onPress={() => toggleFlag(flag.key)}
+                activeOpacity={0.8}
+                style={[
+                  styles.flagChip,
+                  {
+                    backgroundColor: boolFlags[flag.key] ? theme.colors.primary + '15' : theme.colors.surface1,
+                    borderColor: boolFlags[flag.key] ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+              >
+                <AppText style={styles.flagChipIcon}>{flag.icon}</AppText>
+                <AppText
+                  variant="caption"
+                  color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
+                  style={styles.flagChipLabel}
+                >
+                  {flag.label}
+                </AppText>
+                {boolFlags[flag.key] && (
+                  <AppText style={[styles.flagCheck, { color: theme.colors.primary }]}>✓</AppText>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
 
+      {/* ── 7. Work Description ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#6366F115' }]}>
+            <AppText style={ps.sectionIcon}>📝</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secDescription')}</AppText>
+          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+        </View>
+        <View style={ps.sectionBody}>
+          <FormInput
+            control={control}
+            name="remarks"
+            label={t('post_remarksLabel')}
+            placeholder="e.g. Brick laying work for construction site. Workers should bring their own tools. Site is near the highway..."
+            multiline
+            numberOfLines={4}
+            style={styles.textarea}
+          />
+        </View>
+      </View>
+
+      {/* ── Submit ── */}
       <AppButton
-        title={mutation.isPending ? 'Publishing…' : 'Publish Requirement'}
+        title={mutation.isPending ? t('post_publishing') : `🚀  ${t('post_publishBtn')}`}
         onPress={onSubmit}
         loading={mutation.isPending}
         style={styles.submitBtn}
@@ -666,10 +743,6 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={[styles.typeContent, { alignItems: 'center', justifyContent: 'center', flexGrow: 1 }]}
     >
-      <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-        <AppText variant="body" color={theme.colors.primary}>← Back</AppText>
-      </TouchableOpacity>
-
       <View style={{ alignItems: 'center', marginTop: 20 }}>
         <AppText style={{ fontSize: 56, marginBottom: 16 }}>🔐</AppText>
         <AppText variant="title" style={{ textAlign: 'center', color: theme.colors.text, marginBottom: 8 }}>
@@ -768,30 +841,130 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  // Type selection
-  typeContent: { padding: 20, paddingBottom: 40 },
-  typeHero: { alignItems: 'center', marginBottom: 28, marginTop: 8 },
-  typeHeroIcon: { fontSize: 48, marginBottom: 10 },
-  typeHeroTitle: { textAlign: 'center', marginBottom: 6 },
-  typeHeroSub: { textAlign: 'center' },
-  typeGrid: { gap: 12 },
+
+  // ── Type selection ──────────────────────────────────────────────────────────
+  typeContent: { paddingBottom: 40 },
+
+  // Hero
+  hero: {
+    backgroundColor: '#1037A4',
+    paddingTop: 36,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    overflow: 'hidden',
+  },
+  heroDeco1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -60,
+    right: -50,
+  },
+  heroDeco2: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: -30,
+    left: -20,
+  },
+  heroDeco3: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    top: 20,
+    left: '45%',
+  },
+  heroInner: { alignItems: 'center', zIndex: 1 },
+  heroIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroEmoji:  { fontSize: 38 },
+  heroTitle:  { fontSize: 26, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
+  heroSub:    { fontSize: 14, color: 'rgba(255,255,255,0.72)', textAlign: 'center', lineHeight: 20, maxWidth: 280 },
+
+  // Tagline row
+  taglineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  taglineDot: { width: 6, height: 6, borderRadius: 3 },
+  taglineTxt: { fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2, flex: 1 },
+
+  // Cards wrapper
+  cardsWrap: { paddingHorizontal: 16, gap: 12, marginBottom: 20 },
+
+  // Type card
   typeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
+    borderWidth: 1,
+    borderRadius: 18,
+    overflow: 'hidden',
+    paddingRight: 16,
+    paddingVertical: 0,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  typeIconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  typeIcon: { fontSize: 26 },
-  typeCardBody: { flex: 1, gap: 3 },
-  typeCardTitle: { fontSize: 15 },
-  typeCardDesc: { lineHeight: 17 },
-  typeArrow: { fontSize: 26, lineHeight: 30 },
-  // Form
+  accentBar: { width: 4, alignSelf: 'stretch' },
+  typeIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 14,
+    marginVertical: 16,
+    flexShrink: 0,
+  },
+  typeIconEmoji: { fontSize: 28 },
+  typeCardBody: { flex: 1, gap: 5, paddingLeft: 12, paddingVertical: 16 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  typeCardTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  popularBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  popularTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
+  typeCardDesc: { fontSize: 12.5, lineHeight: 17 },
+  tagPill: { alignSelf: 'flex-start', borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 3 },
+  tagTxt:  { fontSize: 11, fontWeight: '700' },
+  typeArrow: { fontSize: 30, lineHeight: 34, paddingLeft: 4 },
+
+  // Trust strip
+  trustStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+  },
+  trustIcon: { fontSize: 22 },
+  trustTxt:  { fontSize: 12.5, fontWeight: '600', flex: 1, lineHeight: 17 },
+
+  // ── Form ─────────────────────────────────────────────────────────────────────
   content: { padding: 16, paddingBottom: 48 },
-  backBtn: { marginBottom: 12 },
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -848,4 +1021,36 @@ const locBtnStyles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   label: { fontWeight: '700', fontSize: 13 },
   arrow: { fontSize: 22, lineHeight: 26 },
+});
+
+// ─── Premium Section Styles ────────────────────────────────────────────────────
+const ps = StyleSheet.create({
+  // Type banner (replaces old typeBadge — no duplicate title)
+  typeBanner:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 13, marginBottom: 14 },
+  typeBannerIcon:   { width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  typeBannerLabel:  { fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
+  typeBannerDesc:   { fontSize: 11.5, fontWeight: '500', marginTop: 2 },
+
+  // Section card
+  section:          { borderRadius: 16, borderWidth: 1, marginBottom: 12, overflow: 'hidden', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  sectionIconBox:   { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sectionIcon:      { fontSize: 16, lineHeight: 20 },
+  sectionTitle:     { fontSize: 14, fontWeight: '800', flex: 1, letterSpacing: -0.1 },
+  sectionSub:       { fontSize: 12, fontWeight: '500' },
+  sectionBody:      { padding: 14, gap: 0 },
+
+  // Required / Optional tags
+  requiredDot:      { backgroundColor: '#FEF2F2', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: '#FECACA' },
+  requiredTxt:      { fontSize: 9.5, fontWeight: '700', color: '#DC2626', letterSpacing: 0.3 },
+  optionalTag:      { fontSize: 11, fontWeight: '500' },
+
+  // Map / GPS picker button (inside section body)
+  mapBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderRadius: 12, padding: 12, marginBottom: 10, marginTop: 2 },
+  mapBtnLabel:      { fontSize: 13, fontWeight: '700' },
+  mapBtnSub:        { fontSize: 11, fontWeight: '400', marginTop: 2 },
+  mapBtnArrow:      { fontSize: 22, lineHeight: 26 },
+
+  // Field sub-label inside a section
+  fieldLabel:       { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
 });

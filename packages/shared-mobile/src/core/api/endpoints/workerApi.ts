@@ -44,6 +44,7 @@ export interface RawAgent {
   workerSubType?: string;
   agentType?: string;
   resumeUrl?: string;
+  labourLicenceUrl?: string;
 }
 
 export interface GetAllAgentsResponse {
@@ -75,6 +76,9 @@ export interface WorkerDetail {
   about?: string;
   categories?: string[];
   workerGroup?: string;
+  resumeUrl?: string;
+  labourLicenceUrl?: string;
+  certificates?: Array<{ url: string; name?: string; fileType?: string }>;
 }
 
 export interface WorkerDashboardData {

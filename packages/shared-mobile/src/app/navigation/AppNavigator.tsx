@@ -49,6 +49,9 @@ import { SubscriptionScreen } from '../../features/payment/screens/SubscriptionS
 import { ShortlistScreen } from '../../features/employer/screens/ShortlistScreen';
 import { PipelineScreen } from '../../features/employer/screens/PipelineScreen';
 import { EmployerAnalyticsScreen } from '../../features/employer/screens/EmployerAnalyticsScreen';
+import { InvitationsScreen } from '../../features/invitations/screens/InvitationsScreen';
+import { RequirementInvitationsScreen } from '../../features/employer/screens/RequirementInvitationsScreen';
+import { RequirementCalendarScreen } from '../../features/employer/screens/RequirementCalendarScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
 import { PdfViewerScreen } from '../../features/profile/screens/PdfViewerScreen';
 
@@ -123,6 +126,20 @@ export const AppNavigator = (): React.JSX.Element => {
               break;
             case 'requirement':
             case 'interest': {
+              const reqId = data.requirementId as string | undefined;
+              if (reqId) {
+                navigationRef.navigate('RequirementDetail' as never, { requirementId: reqId } as never);
+              } else {
+                navigationRef.navigate('Notifications' as never);
+              }
+              break;
+            }
+            // Worker/Agent receives invitation from employer → open Invitations list
+            case 'workerInvite':
+              navigationRef.navigate('Invitations' as never);
+              break;
+            // Employer receives response from worker → open RequirementDetail to see updated status
+            case 'workerInviteResponse': {
               const reqId = data.requirementId as string | undefined;
               if (reqId) {
                 navigationRef.navigate('RequirementDetail' as never, { requirementId: reqId } as never);
@@ -208,6 +225,9 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="EmployerAnalytics" component={EmployerAnalyticsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="WorkerProfileCompletion" component={WorkerProfileCompletionScreen} options={{ animation: 'slide_from_bottom', headerShown: false }} />
+            <Stack.Screen name="Invitations" component={InvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="RequirementInvitations" component={RequirementInvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

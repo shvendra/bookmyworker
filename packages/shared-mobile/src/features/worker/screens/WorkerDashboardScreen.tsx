@@ -920,8 +920,8 @@ const styles = StyleSheet.create({
 
   // ── Quick links ──────────────────────────────────────────────────────────────
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  quickBtn: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
-  quickBtnText: { fontSize: 13, fontWeight: '700' },
+  quickBtn: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: 'transparent', minHeight: 48 },
+  quickBtnText: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
   // ── WhatsApp banner ─────────────────────────────────────────────────────────
   waBanner: {
@@ -1003,7 +1003,7 @@ const sliderCard = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '900', lineHeight: 20, letterSpacing: -0.2 },
   catLabel: { fontSize: 11, fontWeight: '600', lineHeight: 15 },
   salaryRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 5 },
-  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19 },
+  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19, flexShrink: 1 },
   periodBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
   periodTxt: { fontSize: 11, fontWeight: '800' },
   iconCol: { gap: 7, alignItems: 'center', flexShrink: 0 },

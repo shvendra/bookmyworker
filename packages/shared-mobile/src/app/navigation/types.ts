@@ -90,12 +90,14 @@ export type RootStackParamList = {
   TopupWebView: { url: string; merchantOrderId: string };
   Shortlist: undefined;
   EmployerPipeline: undefined;
-  // EmployerAttendance: { requirementId: string; requirementTitle?: string };
+  EmployerAttendance: { requirementId: string; requirementTitle?: string };
   EmployerAnalytics: undefined;
   RequirementCalendar: undefined;
   CallHistory: undefined;
   DocumentHub: { requirementId: string; requirementTitle?: string };
   PdfViewer: { url: string; title?: string };
+  Invitations: undefined;
+  RequirementInvitations: { requirementId: string; requirementTitle?: string };
 };
 
 // Aliases so existing imports don't need updating

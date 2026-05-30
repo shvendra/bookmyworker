@@ -50,7 +50,7 @@
 
     "android": {
       "package": "com.app.myworker",
-      "versionCode": 1271,
+      "versionCode": 1272,
       "versionName": "12.3.17",
 
       "adaptiveIcon": {

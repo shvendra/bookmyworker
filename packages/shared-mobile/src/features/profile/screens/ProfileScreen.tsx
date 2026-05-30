@@ -449,12 +449,25 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               </View>
             }
           />
+          {(user?.role === 'agent' || user?.role === 'worker' || user?.role === 'selfworker') && (
+            <MenuItem
+              icon="📬"
+              label={t('profile_jobInvitations')}
+              onPress={() => navigation.navigate('Invitations')}
+            />
+          )}
           <MenuItem icon="🛡️" label={t('profile_securityPrivacy')} onPress={() => navigation.navigate('TermsPrivacy')} />
           {user?.role === 'employer' && (
             <MenuItem icon="💳" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="🧾" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+          )}
+          {user?.role === 'employer' && (
+            <MenuItem icon="📋" label={t('profile_myActivity')} onPress={() => navigation.navigate('MyActivity')} />
+          )}
+          {user?.role === 'employer' && (
+            <MenuItem icon="📞" label={t('profile_callHistory')} onPress={() => navigation.navigate('CallHistory')} />
           )}
           <MenuItem icon="⚙️" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>

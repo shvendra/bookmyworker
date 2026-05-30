@@ -122,6 +122,15 @@ const fmtDate = (d?: string): string => {
   catch { return d; }
 };
 
+const fmtTime = (t?: string | null): string => {
+  if (!t) return '—';
+  // Already a plain time string like "10:00 AM" — return as-is
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(t)) return t;
+  try {
+    return new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  } catch { return t; }
+};
+
 const fmtLabel = (s?: string | null): string => {
   if (!s) return '—';
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -292,7 +301,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
           {[
             [t('detailEmployer'), req.employerName],
             [t('detailStartDate'), fmtDate(req.workerNeedDate)],
-            [t('detailTiming'), req.inTime && req.outTime ? `${req.inTime} – ${req.outTime}` : null],
+            [t('detailTiming'), req.inTime && req.outTime ? `${fmtTime(req.inTime)} – ${fmtTime(req.outTime)}` : null],
             [t('detailWorkLocation'), req.workLocation],
             [t('detailRemarks'), req.remarks],
             req.ERN_NUMBER ? [t('detailErn'), req.ERN_NUMBER] : null,
@@ -1178,18 +1187,18 @@ const styles = StyleSheet.create({
   },
   detailsBtn: { paddingVertical: 4, paddingHorizontal: 4 },
   detailsBtnText: { fontSize: 11, fontWeight: '600' },
-  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
   shareBtnIcon: { fontSize: 13, lineHeight: 17 },
   shareBtnLabel: { fontSize: 12, fontWeight: '600' },
   viewContactBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
-    backgroundColor: '#1037A4',
+    borderRadius: 10, paddingHorizontal: 8, paddingVertical: 8,
+    backgroundColor: '#1037A4', flexShrink: 1,
   },
   viewContactIcon: { fontSize: 13, lineHeight: 17 },
-  viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  applyBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 96 },
+  viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  applyBtn: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, flexShrink: 0 },
   applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
   // Load more

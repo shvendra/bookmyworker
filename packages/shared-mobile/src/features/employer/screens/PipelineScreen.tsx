@@ -39,31 +39,32 @@ function deriveStage(req: RawRequirement, counts: Counts): number {
 // ─── Progress stepper ─────────────────────────────────────────────────────────
 const PipelineStepper = ({ activeIdx }: { activeIdx: number }): React.JSX.Element => {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
   const pipeLabels = [t('stagePosted'), t('stageResponding'), t('stageShortlisted'), t('stageHired'), t('stageCompleted')];
   return (
-    <View style={ps.wrap}>
+    <View style={[ps.wrap, { backgroundColor: theme.colors.surface1 }]}>
       {pipeLabels.map((label, i) => {
         const done    = i < activeIdx;
         const current = i === activeIdx;
         const filled  = done || current;
-        const leftLine  = i > 0 ? (done || current ? BRAND : '#CBD5E1') : 'transparent';
-        const rightLine = i < pipeLabels.length - 1 ? (done ? BRAND : '#CBD5E1') : 'transparent';
+        const leftLine  = i > 0 ? (done || current ? BRAND : theme.colors.border) : 'transparent';
+        const rightLine = i < pipeLabels.length - 1 ? (done ? BRAND : theme.colors.border) : 'transparent';
         return (
           <View key={label} style={ps.step}>
             <View style={ps.connRow}>
               <View style={[ps.line, { backgroundColor: leftLine }]} />
               <View style={[ps.circle, {
-                backgroundColor: filled ? BRAND : '#fff',
-                borderColor:     filled ? BRAND : '#CBD5E1',
+                backgroundColor: filled ? BRAND : theme.colors.surface,
+                borderColor:     filled ? BRAND : theme.colors.border,
               }]}>
-                <AppText style={[ps.circleNum, { color: filled ? '#fff' : '#94A3B8' }]}>
+                <AppText style={[ps.circleNum, { color: filled ? '#fff' : theme.colors.mutedText }]}>
                   {done ? '✓' : String(i + 1)}
                 </AppText>
               </View>
               <View style={[ps.line, { backgroundColor: rightLine }]} />
             </View>
             <AppText style={[ps.label, {
-              color:      current ? BRAND : done ? '#475569' : '#94A3B8',
+              color:      current ? BRAND : done ? theme.colors.textSecondary : theme.colors.mutedText,
               fontWeight: current ? '800' : '600',
             }]} numberOfLines={1}>
               {label}
@@ -85,18 +86,12 @@ const ps = StyleSheet.create({
 });
 
 // ─── Requirement card ─────────────────────────────────────────────────────────
-const COUNT_STYLES = [
-  { key: 'Interested' as const,  emoji: '👀', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  { key: 'Shortlisted' as const, emoji: '🔖', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  { key: 'Selected' as const,    emoji: '✅', color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe' },
-  { key: 'Joined' as const,      emoji: '🤝', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
-];
-
 const ReqCard = ({
   req, counts, stageIdx, onPress,
 }: {
   req: RawRequirement; counts: Counts; stageIdx: number; onPress: () => void;
 }): React.JSX.Element => {
+  const { theme } = useAppTheme();
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const title = [req.workType, req.subCategory]
     .filter(Boolean)
@@ -106,8 +101,8 @@ const ReqCard = ({
   const interestedCount = (req.intrestedAgents ?? []).length;
   const statusRaw = (req.status ?? '').toLowerCase();
   const isOpen = statusRaw !== 'closed' && statusRaw !== 'expired' && statusRaw !== 'completed';
-  const statusColor = isOpen ? '#059669' : '#64748b';
-  const statusBg    = isOpen ? '#ecfdf5' : '#f1f5f9';
+  const statusColor = isOpen ? theme.colors.success : theme.colors.mutedText;
+  const statusBg    = isOpen ? theme.colors.successLight : theme.colors.surface1;
 
   const countValues: Record<'Interested' | 'Shortlisted' | 'Selected' | 'Joined', number> = {
     Interested:  interestedCount,
@@ -116,12 +111,19 @@ const ReqCard = ({
     Joined:      counts.Joined,
   };
 
+  const countStyles = [
+    { key: 'Interested' as const,  emoji: '👀', color: theme.colors.warning,   bg: theme.colors.warningLight,   border: theme.colors.warning + '55' },
+    { key: 'Shortlisted' as const, emoji: '🔖', color: theme.colors.primary,   bg: theme.colors.primaryLight,   border: theme.colors.primary + '55' },
+    { key: 'Selected' as const,    emoji: '✅', color: theme.colors.secondary,  bg: theme.colors.secondaryLight, border: theme.colors.secondary + '55' },
+    { key: 'Joined' as const,      emoji: '🤝', color: theme.colors.success,   bg: theme.colors.successLight,   border: theme.colors.success + '55' },
+  ];
+
   return (
-    <TouchableOpacity onPress={onPress} style={rc.card} activeOpacity={0.88}>
+    <TouchableOpacity onPress={onPress} style={[rc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} activeOpacity={0.88}>
       <View style={rc.header}>
         <View style={{ flex: 1 }}>
-          <AppText style={rc.title} numberOfLines={2}>{title || 'Requirement'}</AppText>
-          <AppText style={rc.sub} numberOfLines={1}>
+          <AppText style={[rc.title, { color: theme.colors.text }]} numberOfLines={2}>{title || 'Requirement'}</AppText>
+          <AppText style={[rc.sub, { color: theme.colors.mutedText }]} numberOfLines={1}>
             {req.ERN_NUMBER ? `ERN #${req.ERN_NUMBER}` : ''}
             {req.ERN_NUMBER && location ? '  ·  ' : ''}
             {location}
@@ -136,7 +138,7 @@ const ReqCard = ({
       <PipelineStepper activeIdx={stageIdx} />
 
       <View style={rc.countsRow}>
-        {COUNT_STYLES.map(cs => (
+        {countStyles.map(cs => (
           <View key={cs.key} style={[rc.countPill, { backgroundColor: cs.bg, borderColor: cs.border }]}>
             <AppText style={rc.countEmoji}>{cs.emoji}</AppText>
             <AppText style={[rc.countNum, { color: cs.color }]}>{countValues[cs.key]}</AppText>
@@ -148,10 +150,10 @@ const ReqCard = ({
   );
 };
 const rc = StyleSheet.create({
-  card:        { backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12, padding: 14, gap: 10, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  card:        { borderRadius: 18, borderWidth: 1, marginBottom: 12, padding: 14, gap: 10, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   header:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  title:       { fontSize: 14, fontWeight: '800', color: '#0f172a', lineHeight: 20 },
-  sub:         { fontSize: 11.5, color: '#64748b', marginTop: 3 },
+  title:       { fontSize: 14, fontWeight: '800', lineHeight: 20 },
+  sub:         { fontSize: 11.5, marginTop: 3 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
   statusDot:   { width: 6, height: 6, borderRadius: 3 },
   statusTxt:   { fontSize: 10, fontWeight: '700' },
@@ -209,7 +211,9 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
 
   // ── Merge requirements + pipeline counts ─────────────────────────────────
   const pipelineByReqId = new Map(
-    (pipelineQuery.data?.requirements ?? []).map(e => [String(e.requirement._id), e]),
+    (pipelineQuery.data?.requirements ?? [])
+      .filter(e => e.requirement != null)
+      .map(e => [String(e.requirement._id), e]),
   );
   const mergedReqs = (reqListQuery.data?.requirements ?? []).map(req => {
     const entry  = pipelineByReqId.get(String(req._id));
@@ -239,18 +243,18 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
       showsVerticalScrollIndicator={false}
     >
       <View style={ls.box}>
-        <View style={ls.icon}><AppText style={{ fontSize: 36 }}>🔒</AppText></View>
-        <AppText style={ls.title}>{t('noActiveSubscription')}</AppText>
-        <AppText style={ls.sub}>{t('pipelineSubscribeDesc')}</AppText>
-        <View style={ls.benefits}>
+        <View style={[ls.icon, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '55' }]}><AppText style={{ fontSize: 36 }}>🔒</AppText></View>
+        <AppText style={[ls.title, { color: theme.colors.text }]}>{t('noActiveSubscription')}</AppText>
+        <AppText style={[ls.sub, { color: theme.colors.mutedText }]}>{t('pipelineSubscribeDesc')}</AppText>
+        <View style={[ls.benefits, { backgroundColor: theme.colors.surface1 }]}>
           {([t('pipelineBenefit1'), t('pipelineBenefit2'), t('pipelineBenefit3'), t('pipelineBenefit4')] as string[]).map((b, i) => (
             <View key={i} style={ls.row}>
               <View style={ls.dot} />
-              <AppText style={ls.benefitTxt}>{b}</AppText>
+              <AppText style={[ls.benefitTxt, { color: theme.colors.textSecondary }]}>{b}</AppText>
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
+        <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={[ls.btn, { backgroundColor: theme.colors.text }]} activeOpacity={0.85}>
           <AppText style={ls.btnTxt}>{t('viewSubscriptionPlans')}</AppText>
         </TouchableOpacity>
       </View>
@@ -286,9 +290,9 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
               {/* Global totals summary */}
               <View style={sg.row}>
                 {[
-                  { key: 'Shortlisted' as StageKey, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🔖' },
-                  { key: 'Selected'    as StageKey, color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe', emoji: '✅' },
-                  { key: 'Joined'      as StageKey, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', emoji: '🤝' },
+                  { key: 'Shortlisted' as StageKey, color: theme.colors.primary,   bg: theme.colors.primaryLight,   border: theme.colors.primary + '55',   emoji: '🔖' },
+                  { key: 'Selected'    as StageKey, color: theme.colors.secondary,  bg: theme.colors.secondaryLight, border: theme.colors.secondary + '55', emoji: '✅' },
+                  { key: 'Joined'      as StageKey, color: theme.colors.success,   bg: theme.colors.successLight,   border: theme.colors.success + '55',   emoji: '🤝' },
                 ].map(s => (
                   <View key={s.key} style={[sg.cell, { backgroundColor: s.bg, borderColor: s.border }]}>
                     <AppText style={sg.emoji}>{s.emoji}</AppText>
@@ -299,15 +303,15 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
                   </View>
                 ))}
               </View>
-              <AppText style={sg.sectionTitle}>{t('allRequirements', { count: mergedReqs.length })}</AppText>
+              <AppText style={[sg.sectionTitle, { color: theme.colors.mutedText }]}>{t('allRequirements', { count: mergedReqs.length })}</AppText>
             </View>
           }
           ListEmptyComponent={
             !isLoading ? (
               <View style={sg.emptyBox}>
                 <AppText style={sg.emptyEmoji}>📋</AppText>
-                <AppText style={sg.emptyTitle}>{t('noRequirementsTitle')}</AppText>
-                <AppText style={sg.emptySub}>{t('noRequirementsDesc')}</AppText>
+                <AppText style={[sg.emptyTitle, { color: theme.colors.text }]}>{t('noRequirementsTitle')}</AppText>
+                <AppText style={[sg.emptySub, { color: theme.colors.mutedText }]}>{t('noRequirementsDesc')}</AppText>
                 <TouchableOpacity
                   onPress={() => navigation.navigate('PostRequirement')}
                   style={sg.postBtn}
@@ -339,11 +343,11 @@ const sg = StyleSheet.create({
   emoji:        { fontSize: 18 },
   count:        { fontSize: 22, fontWeight: '900' },
   label:        { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
-  sectionTitle: { fontSize: 12, fontWeight: '800', color: '#475569', marginTop: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   emptyBox:     { alignItems: 'center', paddingVertical: 44, gap: 8 },
   emptyEmoji:   { fontSize: 44 },
-  emptyTitle:   { fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' },
-  emptySub:     { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
+  emptyTitle:   { fontSize: 17, fontWeight: '800', textAlign: 'center' },
+  emptySub:     { fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
   postBtn:      { marginTop: 8, backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   postBtnTxt:   { fontSize: 13, fontWeight: '800', color: '#fff' },
 });
@@ -351,13 +355,13 @@ const sg = StyleSheet.create({
 const ls = StyleSheet.create({
   scroll:     { flexGrow: 1, justifyContent: 'center' },
   box:        { alignItems: 'center', gap: 14, paddingHorizontal: 24, paddingVertical: 40 },
-  icon:       { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fffbeb', borderWidth: 1.5, borderColor: '#fde68a', alignItems: 'center', justifyContent: 'center' },
-  title:      { fontSize: 20, fontWeight: '800', color: '#0f172a', textAlign: 'center' },
-  sub:        { fontSize: 13.5, color: '#64748b', textAlign: 'center', lineHeight: 22, paddingHorizontal: 8 },
-  benefits:   { width: '100%', backgroundColor: '#f1f5f9', borderRadius: 14, padding: 16, gap: 10 },
+  icon:       { width: 80, height: 80, borderRadius: 40, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  title:      { fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  sub:        { fontSize: 13.5, textAlign: 'center', lineHeight: 22, paddingHorizontal: 8 },
+  benefits:   { width: '100%', borderRadius: 14, padding: 16, gap: 10 },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dot:        { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#2563eb', flexShrink: 0 },
-  benefitTxt: { fontSize: 13, fontWeight: '500', color: '#475569', flex: 1 },
-  btn:        { width: '100%', backgroundColor: '#0f172a', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  benefitTxt: { fontSize: 13, fontWeight: '500', flex: 1 },
+  btn:        { width: '100%', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   btnTxt:     { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

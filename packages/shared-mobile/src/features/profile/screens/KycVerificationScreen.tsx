@@ -212,12 +212,6 @@ export const KycVerificationScreen = (): React.JSX.Element => {
       contentContainerStyle={scr.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── Page title ──────────────────────────────────────────────── */}
-      <View style={scr.pageHeader}>
-        <AppText style={[scr.pageTitle, { color: C.navy }]}>{t('kyc_title')}</AppText>
-        <AppText style={[scr.pageSub, { color: C.slate }]}>{t('kyc_subtitle')}</AppText>
-      </View>
-
       {/* ── Status banner ───────────────────────────────────────────── */}
       <View style={[scr.statusBanner, {
         backgroundColor:
@@ -328,10 +322,6 @@ export const KycVerificationScreen = (): React.JSX.Element => {
 const scr = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { padding: 16, paddingBottom: 48, gap: 12 },
-
-  pageHeader: { marginBottom: 4 },
-  pageTitle:  { fontSize: 22, fontWeight: '800' },
-  pageSub:    { fontSize: 13, marginTop: 4, lineHeight: 18 },
 
   statusBanner: { borderRadius: 14, borderWidth: 1, padding: 14 },
   statusRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },

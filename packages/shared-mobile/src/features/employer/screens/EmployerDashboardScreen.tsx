@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
   Linking,
@@ -22,23 +23,22 @@ import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
-import type { RawRequirement, PastWorker } from '../../../core/api/endpoints/requirementsApi';
+import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
-import { AppButton } from '../../../shared/components/ui/AppButton';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
-import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { buildPhotoUrl } from '../../../core/config/env';
 import { apiClient } from '../../../core/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmployerSubscriptionModal } from '../../payment/components/EmployerSubscriptionModal';
+import { EmployerPromoSlider } from '../../../shared/components/ui/EmployerPromoSlider';
 import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
@@ -53,6 +53,25 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 // REQ_TABS is built inside the screen using t() — see renderHeader
 
 const NEARBY_SHOW = 10;
+const { width: SCREEN_W } = Dimensions.get('window');
+const REQ_CARD_WIDTH = SCREEN_W - 32; // full-bleed inside 16px padding
+
+// Premium dark palettes for requirement cards — varies by index
+// Dark mode — deep/near-black backgrounds
+const REQ_PALETTES_DARK = [
+  { bg: '#0A1628', accent: '#4A90FF', accentLight: 'rgba(74,144,255,0.18)' },
+  { bg: '#160A30', accent: '#9B59FF', accentLight: 'rgba(155,89,255,0.18)' },
+  { bg: '#041E1E', accent: '#00C896', accentLight: 'rgba(0,200,150,0.18)' },
+  { bg: '#1A0F00', accent: '#FF9500', accentLight: 'rgba(255,149,0,0.18)'  },
+] as const;
+
+// Light mode — medium-dark, rich but not oppressive
+const REQ_PALETTES_LIGHT = [
+  { bg: '#1B3F8B', accent: '#93C5FD', accentLight: 'rgba(147,197,253,0.22)' },
+  { bg: '#3B1A72', accent: '#C4B5FD', accentLight: 'rgba(196,181,253,0.22)' },
+  { bg: '#0C4040', accent: '#6EE7B7', accentLight: 'rgba(110,231,183,0.22)' },
+  { bg: '#7C3000', accent: '#FCD34D', accentLight: 'rgba(252,211,77,0.22)'  },
+] as const;
 
 // ─── Pure Utility Helpers ──────────────────────────────────────────────────────
 
@@ -178,18 +197,18 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
         {assigned && !closed && (
           <TouchableOpacity
             onPress={handlePhonePress}
-            style={[card.agentRow, { backgroundColor: '#EDE9FE', borderColor: '#C4B5FD' }]}
+            style={[card.agentRow, { backgroundColor: colors.secondaryLight, borderColor: colors.secondary + '55' }]}
             activeOpacity={req.assignedAgentPhone ? 0.72 : 1}
           >
-            <View style={card.agentAvatar}>
+            <View style={[card.agentAvatar, { backgroundColor: colors.secondary + '33' }]}>
               <AppText style={{ fontSize: 14 }}>👷</AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={[card.agentName, { color: '#4C1D95' }]}>
+              <AppText style={[card.agentName, { color: colors.secondary }]}>
                 {req.assignedAgentName ?? t('agentAssigned')}
               </AppText>
               {req.assignedAgentPhone ? (
-                <AppText style={card.agentPhone}>📞 {req.assignedAgentPhone}</AppText>
+                <AppText style={[card.agentPhone, { color: colors.secondary }]}>📞 {req.assignedAgentPhone}</AppText>
               ) : null}
             </View>
             <View style={card.agentBadge}>
@@ -203,23 +222,23 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
           <View style={[
             card.interestBanner,
             interested > 0
-              ? { backgroundColor: '#FFFBEB', borderColor: '#F59E0B' }
+              ? { backgroundColor: colors.warningLight, borderColor: colors.warning + '66' }
               : { backgroundColor: colors.surface1, borderColor: colors.border },
           ]}>
-            <View style={[card.interestIconWrap, { backgroundColor: interested > 0 ? '#FEF3C7' : colors.surface }]}>
+            <View style={[card.interestIconWrap, { backgroundColor: interested > 0 ? colors.warning + '22' : colors.surface }]}>
               <AppText style={{ fontSize: 14, lineHeight: 18 }}>{interested > 0 ? '🙋' : '👀'}</AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={[card.interestPrimary, { color: interested > 0 ? '#92400E' : colors.text }]}>
+              <AppText style={[card.interestPrimary, { color: interested > 0 ? colors.warning : colors.text }]}>
                 {interested > 0 ? t(interested === 1 ? 'agentsInterested' : 'agentsInterested_plural', { count: interested }) : t('noAgentsYet')}
               </AppText>
-              <AppText style={[card.interestSub, { color: interested > 0 ? '#B45309' : colors.mutedText }]}>
+              <AppText style={[card.interestSub, { color: interested > 0 ? colors.warningDark : colors.mutedText }]}>
                 {interested > 0 ? t('tapToReview') : t('shareRequirement')}
               </AppText>
             </View>
             {interested > 0 && (
-              <View style={card.interestChevron}>
-                <AppText style={{ color: '#92400E', fontSize: 16, fontWeight: '700' }}>›</AppText>
+              <View style={[card.interestChevron, { backgroundColor: colors.warning + '33' }]}>
+                <AppText style={{ color: colors.warning, fontSize: 16, fontWeight: '700' }}>›</AppText>
               </View>
             )}
           </View>
@@ -240,8 +259,8 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
             </View>
           ) : null}
           {req.minBudgetPerWorker != null ? (
-            <View style={[card.metaChip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-              <AppText style={[card.metaTxt, { color: '#166534', fontWeight: '700' }]}>
+            <View style={[card.metaChip, { backgroundColor: colors.successLight, borderColor: colors.success + '55' }]}>
+              <AppText style={[card.metaTxt, { color: colors.success, fontWeight: '700' }]}>
                 ₹{req.minBudgetPerWorker}–{req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/day
               </AppText>
             </View>
@@ -302,6 +321,319 @@ const card = StyleSheet.create({
   actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1, borderRadius: 10, paddingVertical: 8 },
   actionIcon:  { fontSize: 13, lineHeight: 16 },
   actionTxt:   { fontSize: 12, fontWeight: '700' },
+});
+
+// ─── Requirement Slider Card ───────────────────────────────────────────────────
+// ─── Premium Dark Requirement Card ────────────────────────────────────────────
+interface ReqSliderCardProps {
+  req: RawRequirement;
+  idx: number;
+  onPress: (id: string) => void;
+  onClose: (req: RawRequirement) => void;
+  closing: boolean;
+}
+
+const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSliderCardProps): React.JSX.Element => {
+  const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const closed    = isClosed(req);
+  const assigned  = isAssigned(req);
+  const interested = req.intrestedAgents?.length ?? 0;
+  const totalWorkers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
+
+  const PALETTES = isDark ? REQ_PALETTES_DARK : REQ_PALETTES_LIGHT;
+  const pal = closed
+    ? { bg: isDark ? '#111827' : '#374151', accent: '#94A3B8', accentLight: 'rgba(148,163,184,0.15)' }
+    : PALETTES[idx % PALETTES.length];
+
+  const statusLabel = closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
+  const statusColor = closed ? '#94A3B8' : assigned ? '#C4B5FD' : '#6EE7B7';
+
+  const handlePress      = useCallback(() => onPress(req._id), [onPress, req._id]);
+  const handleClose      = useCallback(() => onClose(req), [onClose, req]);
+  const handlePhonePress = useCallback(() => {
+    if (req.assignedAgentPhone) void Linking.openURL(`tel:${req.assignedAgentPhone}`);
+  }, [req.assignedAgentPhone]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.88}
+      style={[rsc.card, { width: REQ_CARD_WIDTH, backgroundColor: pal.bg, shadowColor: pal.accent }]}
+    >
+      {/* Decorative background circles */}
+      <View pointerEvents="none" style={[rsc.deco1, { backgroundColor: pal.accent + '12' }]} />
+      <View pointerEvents="none" style={[rsc.deco2, { backgroundColor: pal.accent + '08' }]} />
+
+      <View style={rsc.inner}>
+        {/* ── Top row: ERN + status pill ── */}
+        <View style={rsc.topRow}>
+          {req.ERN_NUMBER ? (
+            <View style={[rsc.ernChip, { borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+              <AppText style={rsc.ernTxt}>{'#'}{req.ERN_NUMBER}</AppText>
+            </View>
+          ) : <View />}
+          <View style={[rsc.statusPill, { backgroundColor: pal.accentLight, borderColor: pal.accent + '55' }]}>
+            <View style={[rsc.statusDot, { backgroundColor: statusColor }]} />
+            <AppText style={[rsc.statusTxt, { color: statusColor }]}>{statusLabel}</AppText>
+          </View>
+        </View>
+
+        {/* ── Work type + sub-category ── */}
+        {req.subCategory ? (
+          <AppText style={rsc.subCat} numberOfLines={1}>{fmtLabel(req.subCategory)}</AppText>
+        ) : null}
+        <AppText style={rsc.workType} numberOfLines={2}>{fmtLabel(req.workType)}</AppText>
+
+        {/* ── Agent / interest strip ── */}
+        {!closed && assigned ? (
+          <TouchableOpacity
+            onPress={handlePhonePress}
+            activeOpacity={req.assignedAgentPhone ? 0.75 : 1}
+            style={[rsc.agentStrip, { backgroundColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.4)' }]}
+          >
+            <AppText style={rsc.agentStripIcon}>{'👷'}</AppText>
+            <View style={{ flex: 1 }}>
+              <AppText style={rsc.agentName} numberOfLines={1}>
+                {req.assignedAgentName ?? t('agentAssigned')}
+              </AppText>
+              {req.assignedAgentPhone ? (
+                <AppText style={rsc.agentPhone}>{'📞'} {req.assignedAgentPhone}</AppText>
+              ) : null}
+            </View>
+            {req.assignedAgentPhone ? (
+              <View style={[rsc.callBadge, { backgroundColor: pal.accent }]}>
+                <AppText style={rsc.callBadgeTxt}>{t('tapToCall')}</AppText>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        ) : !closed ? (
+          <View style={[
+            rsc.interestStrip,
+            { backgroundColor: interested > 0 ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.06)',
+              borderColor: interested > 0 ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)' },
+          ]}>
+            <AppText style={rsc.interestIcon}>{interested > 0 ? '🙋' : '👀'}</AppText>
+            <AppText style={[rsc.interestTxt, { color: interested > 0 ? '#FCD34D' : 'rgba(255,255,255,0.55)' }]} numberOfLines={1}>
+              {interested > 0
+                ? t(interested === 1 ? 'agentsInterested' : 'agentsInterested_plural', { count: interested })
+                : t('noAgentsYet')}
+            </AppText>
+          </View>
+        ) : null}
+
+        {/* ── Meta chips ── */}
+        <View style={rsc.metaRow}>
+          {(req.district || req.state) ? (
+            <View style={rsc.metaChip}>
+              <AppText style={rsc.metaTxt} numberOfLines={1}>
+                {'📍'} {getLocationStr({ district: req.district, state: req.state }, i18n.language, '')}
+              </AppText>
+            </View>
+          ) : null}
+          {totalWorkers > 0 ? (
+            <View style={rsc.metaChip}>
+              <AppText style={rsc.metaTxt}>{'👷'} {totalWorkers}</AppText>
+            </View>
+          ) : null}
+          {req.minBudgetPerWorker != null ? (
+            <View style={[rsc.metaChip, { backgroundColor: pal.accentLight, borderColor: pal.accent + '44' }]}>
+              <AppText style={[rsc.metaTxt, { color: pal.accent, fontWeight: '800' }]}>
+                {'₹'}{req.minBudgetPerWorker}{req.maxBudgetPerWorker ? '–' + String(req.maxBudgetPerWorker) : ''}{'/day'}
+              </AppText>
+            </View>
+          ) : null}
+          {req.workerNeedDate ? (
+            <View style={rsc.metaChip}>
+              <AppText style={rsc.metaTxt}>{'🗓'} {fmtDate(req.workerNeedDate)}</AppText>
+            </View>
+          ) : null}
+        </View>
+
+        {/* ── Footer: view + close ── */}
+        <View style={rsc.footer}>
+          <View style={[rsc.viewBtn, { backgroundColor: pal.accent }]}>
+            <AppText style={rsc.viewBtnTxt}>{t('view')} {'→'}</AppText>
+          </View>
+          {!closed ? (
+            <TouchableOpacity
+              onPress={handleClose}
+              disabled={closing}
+              activeOpacity={0.7}
+              style={rsc.closeBtn}
+            >
+              {closing
+                ? <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
+                : <AppText style={rsc.closeTxt}>{t('close')}</AppText>}
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
+ReqSliderCard.displayName = 'ReqSliderCard';
+
+// ─── Auto-sliding Carousel Wrapper ────────────────────────────────────────────
+interface RequirementCarouselProps {
+  requirements: RawRequirement[];
+  onPress: (id: string) => void;
+  onClose: (req: RawRequirement) => void;
+  closingId: string | null;
+  isLoading: boolean;
+  onPost: () => void;
+  tab: string;
+  allCount: number;
+  t: (key: string, opts?: any) => string;
+  themeColors: any;
+}
+
+const RequirementCarousel = React.memo(({
+  requirements, onPress, onClose, closingId, isLoading, onPost, tab, allCount, t, themeColors,
+}: RequirementCarouselProps): React.JSX.Element => {
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const activeIdxRef = useRef(0);
+  const SNAP = REQ_CARD_WIDTH; // no gap between full-width pages
+
+  useEffect(() => { activeIdxRef.current = activeIdx; }, [activeIdx]);
+
+  // Auto-slide every 3.5 s
+  useEffect(() => {
+    if (requirements.length <= 1) return;
+    const timer = setInterval(() => {
+      const next = (activeIdxRef.current + 1) % requirements.length;
+      scrollRef.current?.scrollTo({ x: next * SNAP, animated: true });
+      setActiveIdx(next);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [requirements.length, SNAP]);
+
+  if (isLoading) {
+    return (
+      <View style={rsc.loadWrap}>
+        <ActivityIndicator color="#7C3AED" size="large" />
+      </View>
+    );
+  }
+
+  if (requirements.length === 0) {
+    return (
+      <View style={rsc.emptyWrap}>
+        <AppText style={rsc.emptyIcon}>{'📋'}</AppText>
+        <AppText style={[rsc.emptyTitle, { color: themeColors.text }]}>
+          {tab === 'all' ? t('noRequirementsYet') : t('noTabRequirements', { tab })}
+        </AppText>
+        <AppText style={[rsc.emptySub, { color: themeColors.mutedText }]}>
+          {tab === 'all' ? t('postFirstReq') : t('noTabReqNow', { tab })}
+        </AppText>
+        {allCount === 0 && (
+          <TouchableOpacity onPress={onPost} style={[rsc.postBtn, { backgroundColor: themeColors.primary }]} activeOpacity={0.85}>
+            <AppText style={rsc.postBtnTxt}>{t('postFirstRequirement')}</AppText>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={SNAP}
+        snapToAlignment="start"
+        contentContainerStyle={{ paddingBottom: 4 }}
+        onMomentumScrollEnd={(e) => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / SNAP);
+          const clamped = Math.max(0, Math.min(idx, requirements.length - 1));
+          setActiveIdx(clamped);
+          activeIdxRef.current = clamped;
+        }}
+      >
+        {requirements.map((req, i) => (
+          <ReqSliderCard
+            key={req._id}
+            req={req}
+            idx={i}
+            onPress={onPress}
+            onClose={onClose}
+            closing={closingId === req._id}
+          />
+        ))}
+      </ScrollView>
+      {/* Dot indicators */}
+      {requirements.length > 1 && (
+        <View style={rsc.dots}>
+          {requirements.map((_, i) => (
+            <View
+              key={i}
+              style={[rsc.dot, {
+                width: activeIdx === i ? 22 : 6,
+                backgroundColor: activeIdx === i ? '#7C3AED' : '#CBD5E1',
+              }]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+});
+RequirementCarousel.displayName = 'RequirementCarousel';
+
+// ─── Premium Card Styles ───────────────────────────────────────────────────────
+const rsc = StyleSheet.create({
+  // Card shell
+  card:          { borderRadius: 24, overflow: 'hidden', elevation: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 20 },
+  inner:         { padding: 18, gap: 11 },
+  deco1:         { position: 'absolute', width: 220, height: 220, borderRadius: 110, top: -80, right: -50 },
+  deco2:         { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: -20 },
+  // Top row
+  topRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ernChip:       { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  ernTxt:        { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
+  statusPill:    { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4, gap: 5 },
+  statusDot:     { width: 6, height: 6, borderRadius: 3 },
+  statusTxt:     { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+  // Title
+  subCat:        { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, textTransform: 'uppercase' },
+  workType:      { fontSize: 18, fontWeight: '900', color: '#FFFFFF', lineHeight: 24, letterSpacing: -0.3 },
+  // Agent strip
+  agentStrip:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 10, gap: 8 },
+  agentStripIcon:{ fontSize: 16, lineHeight: 20 },
+  agentName:     { fontSize: 12, fontWeight: '800', color: '#E9D5FF', marginBottom: 1 },
+  agentPhone:    { fontSize: 10, color: '#C4B5FD', fontWeight: '600' },
+  callBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  callBadgeTxt:  { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  // Interest strip
+  interestStrip: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, gap: 7 },
+  interestIcon:  { fontSize: 14, lineHeight: 18 },
+  interestTxt:   { fontSize: 11, fontWeight: '700', flex: 1 },
+  // Meta
+  metaRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  metaChip:      { flexDirection: 'row', alignItems: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 9, paddingVertical: 4 },
+  metaTxt:       { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.72)' },
+  // Footer
+  footer:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 },
+  viewBtn:       { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  viewBtnTxt:    { fontSize: 12, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  closeBtn:      { borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 8 },
+  closeTxt:      { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
+  // Dots
+  dots:          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 10, marginBottom: 14 },
+  dot:           { height: 6, borderRadius: 3 },
+  // Empty / loading states
+  loadWrap:      { paddingVertical: 40, alignItems: 'center' },
+  emptyWrap:     { padding: 28, alignItems: 'center', gap: 8 },
+  emptyIcon:     { fontSize: 36, lineHeight: 44 },
+  emptyTitle:    { fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  emptySub:      { fontSize: 12, textAlign: 'center', lineHeight: 17 },
+  postBtn:       { marginTop: 6, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  postBtnTxt:    { fontSize: 13, fontWeight: '800', color: '#fff' },
 });
 
 // ─── Agent Tile Component ──────────────────────────────────────────────────────
@@ -371,132 +703,282 @@ const tile = StyleSheet.create({
   moreLabel:     { fontSize: 10, fontWeight: '700', color: '#475569', lineHeight: 13 },
 });
 
-// ─── Activity Types & Utils ────────────────────────────────────────────────────
-interface ActivityItem {
-  _id: string;
-  action: string;
-  entity: string;
-  description?: string;
-  createdAt: string;
-}
 
-const timeAgo = (date: string): string => {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-};
-
-const ACTION_COLOR: Record<string, { bg: string; color: string; border: string }> = {
-  CREATE: { bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
-  UPDATE: { bg: '#dbeafe', color: '#2563eb', border: '#93c5fd' },
-  DELETE: { bg: '#fee2e2', color: '#dc2626', border: '#fca5a5' },
-  VIEW:   { bg: '#f5f3ff', color: '#7c3aed', border: '#c4b5fd' },
-  LOGIN:  { bg: '#f0fdf4', color: '#16a34a', border: '#86efac' },
-  LOGOUT: { bg: '#fff7ed', color: '#ea580c', border: '#fdba74' },
-};
-
-// ─── Nearby Worker List Card ───────────────────────────────────────────────────
-const NearbyWorkerCard = React.memo(({
+// ─── Worker Slider Card ────────────────────────────────────────────────────────
+const WorkerSliderCard = React.memo(({
   agent, onPress,
 }: { agent: RawAgent; onPress: (id: string) => void }): React.JSX.Element => {
   const { t } = useTranslation('employer');
-  const { theme } = useAppTheme();
   const photoUrl = buildPhotoUrl(agent.profilePhoto);
-  const firstName = (agent.name ?? '?').trim().split(' ')[0] ?? '?';
-  const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+  const age = (() => {
+    if (!agent.dob) return null;
+    const birth = new Date(String(agent.dob));
+    if (isNaN(birth.getTime())) return null;
+    const years = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    return years > 10 && years < 80 ? years : null;
+  })();
+
+  const workType = (() => {
+    if (!agent.areasOfWork?.length) return null;
+    let areas: (string | null | undefined)[] = [...agent.areasOfWork];
+    // Some backends store a JSON-stringified array as the first element — unwrap it
+    const first = areas[0];
+    if (typeof first === 'string' && first.trim().startsWith('[')) {
+      try { const p = JSON.parse(first); if (Array.isArray(p)) areas = p; } catch {}
+    }
+    // Drop nulls / literal "null" strings
+    const valid = areas.filter(
+      (a): a is string => typeof a === 'string' && !!a && a.toLowerCase() !== 'null' && a.toLowerCase() !== 'undefined',
+    );
+    return valid.length > 0 ? valid.map(fmtLabel).join(' · ') : null;
+  })();
+  const location = [agent.district, agent.state].filter(Boolean).join(', ');
+
+  const { workerTypeKey, workerTypeColor } = (() => {
+    const st = (agent.workerSubType ?? '').toLowerCase();
+    if (st.includes('iti') || st.includes('diploma')) return { workerTypeKey: 'workerCardITI', workerTypeColor: '#7C3AED' };
+    if (st.includes('graduate') || st.includes('degree')) return { workerTypeKey: 'workerCardGraduate', workerTypeColor: '#0891B2' };
+    if (st.includes('unskilled')) return { workerTypeKey: 'workerCardUnskilled', workerTypeColor: '#EA580C' };
+    if (st.includes('skilled')) return { workerTypeKey: 'workerCardSkilled', workerTypeColor: '#059669' };
+    return { workerTypeKey: null as string | null, workerTypeColor: '#64748B' };
+  })();
+
+  const initials = (agent.name ?? '?').trim().split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const handlePress = useCallback(() => onPress(agent._id), [onPress, agent._id]);
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.82} style={nwc.wrap}>
-      <View style={nwc.avatarWrap}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.87} style={wsc.card}>
+      {/* Decorative background circles */}
+      <View pointerEvents="none" style={wsc.bgCircle1} />
+      <View pointerEvents="none" style={wsc.bgCircle2} />
+
+      {/* Verified badge (top-left, only if verified) */}
+      <View style={wsc.topRow}>
+        {agent.veryfiedBage ? (
+          <View style={wsc.verifiedBadge}>
+            <AppText style={wsc.verifiedTxt}>✓ {t('workerCardVerified').replace('✓ ', '')}</AppText>
+          </View>
+        ) : <View />}
+        <View />
+      </View>
+
+      {/* Photo */}
+      <View style={wsc.photoWrap}>
         {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={nwc.avatar} />
+          <Image source={{ uri: photoUrl }} style={wsc.photo} />
         ) : (
-          <View style={nwc.avatarFallback}>
-            <AppText style={nwc.initials}>{displayName.charAt(0)}</AppText>
+          <View style={wsc.photoFallback}>
+            <AppText style={wsc.photoInitials}>{initials}</AppText>
           </View>
         )}
       </View>
-      <View style={nwc.info}>
-        <View style={nwc.nameRow}>
-          <AppText style={[nwc.name, { color: theme.colors.text }]} numberOfLines={1}>{agent.name ?? displayName}</AppText>
-          {agent.veryfiedBage && (
-            <View style={nwc.verifiedBadge}>
-              <AppText style={nwc.verifiedTxt}>{t('verified')}</AppText>
-            </View>
-          )}
+
+      {/* Name */}
+      <AppText style={wsc.name} numberOfLines={1}>
+        {(agent.name ?? '').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
+      </AppText>
+
+      {/* Age */}
+      {age !== null && (
+        <AppText style={wsc.age}>{t('workerCardAgeYrs', { age })}</AppText>
+      )}
+
+      {/* Work type chip */}
+      {workType !== null && (
+        <View style={wsc.workTypeChip}>
+          <AppText style={wsc.workTypeTxt} numberOfLines={1}>{workType}</AppText>
         </View>
-        {(agent as any).categories?.length > 0 && (
-          <AppText style={nwc.cats} numberOfLines={1}>
-            {((agent as any).categories as string[]).slice(0, 2).join(' · ')}
+      )}
+
+      {/* Location */}
+      {!!location && (
+        <View style={wsc.locationRow}>
+          <AppText style={wsc.locationPin}>📍</AppText>
+          <AppText style={wsc.locationTxt} numberOfLines={1}>{location}</AppText>
+        </View>
+      )}
+
+      {/* Worker type badge */}
+      {workerTypeKey !== null && (
+        <View style={[wsc.workerTypeBadge, { backgroundColor: workerTypeColor + '22', borderColor: workerTypeColor + '66' }]}>
+          <AppText style={[wsc.workerTypeTxt, { color: workerTypeKey === 'workerCardUnskilled' ? '#FF8800' : workerTypeColor }]}>
+            {t(workerTypeKey as any)}
           </AppText>
-        )}
-      </View>
-      <AppText style={nwc.chevron}>›</AppText>
+        </View>
+      )}
     </TouchableOpacity>
   );
 });
-NearbyWorkerCard.displayName = 'NearbyWorkerCard';
+WorkerSliderCard.displayName = 'WorkerSliderCard';
 
-const nwc = StyleSheet.create({
-  wrap:           { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
-  avatarWrap:     {},
-  avatar:         { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: '#2563eb' },
-  avatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#2563eb' },
-  initials:       { fontSize: 16, fontWeight: '800', color: '#1d4ed8' },
-  info:           { flex: 1, gap: 1 },
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:           { fontSize: 13, fontWeight: '700', color: '#0f172a', flexShrink: 1, textTransform: 'capitalize' },
-  verifiedBadge:  { backgroundColor: '#f0fdf4', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, borderWidth: 1, borderColor: '#86efac' },
-  verifiedTxt:    { fontSize: 9, fontWeight: '700', color: '#15803d' },
-  role:           { fontSize: 11, color: '#64748b' },
-  cats:           { fontSize: 10, color: '#94a3b8' },
-  chevron:        { fontSize: 18, color: '#cbd5e1', fontWeight: '600' },
+const wsc = StyleSheet.create({
+  card: {
+    width: 156,
+    borderRadius: 22,
+    backgroundColor: '#0F2F8C',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
+    alignItems: 'center',
+    gap: 6,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: '#0B1F6E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+  },
+  bgCircle1:       { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.07)', top: -55, right: -45 },
+  bgCircle2:       { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.04)', bottom: -22, left: -22 },
+  topRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
+  verifiedBadge:   { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#16A34A', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3 },
+  verifiedTxt:     { color: '#fff', fontSize: 9, fontWeight: '800' },
+  ratingBadge:     { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+  ratingStar:      { color: '#FCD34D', fontSize: 10, lineHeight: 13 },
+  ratingVal:       { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  photoWrap:       { width: 74, height: 74, borderRadius: 37, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.32)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A4BC2', marginTop: 8 },
+  photo:           { width: 74, height: 74 },
+  photoFallback:   { width: 74, height: 74, alignItems: 'center', justifyContent: 'center' },
+  photoInitials:   { fontSize: 26, fontWeight: '800', color: '#FFFFFF' },
+  name:            { fontSize: 13, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', width: '100%', letterSpacing: -0.2 },
+  age:             { fontSize: 11, color: 'rgba(255,255,255,0.62)', fontWeight: '500' },
+  workTypeChip:    { backgroundColor: 'rgba(255,255,255,0.13)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', maxWidth: '100%' },
+  workTypeTxt:     { color: '#E0ECFF', fontSize: 11, fontWeight: '700' },
+  locationRow:     { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },
+  locationPin:     { fontSize: 10 },
+  locationTxt:     { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '500', flexShrink: 1 },
+  workerTypeBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, marginTop: 2 },
+  workerTypeTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.2 },
+  // "View All" tile at end of slider
+  moreCard:        { width: 108, borderRadius: 22, borderWidth: 2, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 },
+  moreCount:       { fontSize: 24, fontWeight: '900', color: '#1D4ED8' },
+  moreTxt:         { fontSize: 11, fontWeight: '700', color: '#1D4ED8', textAlign: 'center', lineHeight: 15 },
 });
 
-// ─── Activity Row ──────────────────────────────────────────────────────────────
-const ActivityRow = React.memo(({
-  item, isLast,
-}: { item: ActivityItem; isLast: boolean }): React.JSX.Element => {
+
+// ─── Subscription Status Widget ────────────────────────────────────────────────
+interface SubStatusProps {
+  isSubscribed: boolean;
+  isExpired: boolean;
+  profileLoaded: boolean;
+  remainingContacts: number;
+  subscriptionExpery?: string;
+  onSubscribe: () => void;
+  onRenew: () => void;
+  onTopUp: () => void;
+}
+
+const SubscriptionStatusWidget = React.memo(({
+  isSubscribed, isExpired, profileLoaded, remainingContacts, subscriptionExpery,
+  onSubscribe, onRenew, onTopUp,
+}: SubStatusProps): React.JSX.Element | null => {
   const { theme } = useAppTheme();
-  const cfg = ACTION_COLOR[item.action] ?? ACTION_COLOR.UPDATE;
+  const { t } = useTranslation('employer');
+  const [now, setNow] = useState(() => Date.now());
+
+  // Update every minute so "X days left" recalculates in real-time
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!profileLoaded) return null;
+
+  const expiryMs = subscriptionExpery ? new Date(subscriptionExpery).getTime() : null;
+  const msLeft   = expiryMs != null ? expiryMs - now : null;
+  const daysLeft = msLeft != null ? Math.ceil(msLeft / 86_400_000) : null;
+
+  const isExpiringSoon = daysLeft != null && daysLeft > 0 && daysLeft <= 7;
+  const isLowContacts  = remainingContacts < 10;
+
+  const expiryColor = (isExpiringSoon || isExpired) ? '#DC2626' : '#059669';
+  const contactColor = isLowContacts ? '#DC2626' : '#059669';
+  const contactBg    = isLowContacts ? '#FEF2F2' : '#ECFDF5';
+  const contactBdr   = isLowContacts ? '#FECACA' : '#6EE7B7';
+  const expiryBg     = (isExpiringSoon || isExpired) ? '#FEF2F2' : '#ECFDF5';
+  const expiryBdr    = (isExpiringSoon || isExpired) ? '#FECACA' : '#6EE7B7';
+
+  const expiryLabel = (() => {
+    if (!expiryMs) return '—';
+    if (isExpired || (daysLeft != null && daysLeft <= 0)) return 'Expired';
+    if (isExpiringSoon && daysLeft != null) return `${daysLeft}d left`;
+    return new Date(expiryMs).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  })();
+
+  /* ── Not subscribed — premium promo slider ── */
+  if (!isSubscribed && !isExpired) {
+    return <EmployerPromoSlider onPress={onSubscribe} />;
+  }
+
+  /* ── Subscribed (active or recently expired) ── */
   return (
-    <View style={[ar.row, isLast && { borderBottomWidth: 0 }]}>
-      <View style={[ar.dot, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-        <AppText style={[ar.dotTxt, { color: cfg.color }]}>
-          {item.action === 'CREATE' ? '+' : item.action === 'DELETE' ? '×' : item.action === 'VIEW' ? '◉' : '✎'}
-        </AppText>
-      </View>
-      <View style={ar.body}>
-        <View style={ar.topRow}>
-          <View style={[ar.badge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-            <AppText style={[ar.badgeTxt, { color: cfg.color }]}>{item.action}</AppText>
-          </View>
-          <AppText style={ar.entity}>{item.entity}</AppText>
+    <TouchableOpacity
+      onPress={isExpired ? onRenew : onTopUp}
+      activeOpacity={0.9}
+      style={[ssw.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+    >
+      {/* Header row */}
+      <View style={ssw.headerRow}>
+        <View style={ssw.activeBadge}>
+          <View style={[ssw.activeDot, { backgroundColor: isExpired ? '#DC2626' : '#16A34A' }]} />
+          <AppText style={[ssw.activeLabel, { color: isExpired ? '#DC2626' : '#16A34A' }]}>
+            {isExpired ? 'Subscription Expired' : t('premiumSubscription')}
+          </AppText>
         </View>
-        <AppText style={[ar.desc, { color: theme.colors.text }]} numberOfLines={1}>{item.description ?? item.action}</AppText>
-        <AppText style={ar.time}>{timeAgo(item.createdAt)}</AppText>
+        <TouchableOpacity
+          onPress={isExpired ? onRenew : onTopUp}
+          style={[ssw.actionBtn, { backgroundColor: isExpired ? '#FEF2F2' : '#EBF1FF', borderColor: isExpired ? '#FECACA' : '#BFDBFE' }]}
+          activeOpacity={0.8}
+        >
+          <AppText style={[ssw.actionBtnTxt, { color: isExpired ? '#DC2626' : '#1037A4' }]}>
+            {isExpired ? 'Renew' : t('topUp')}
+          </AppText>
+        </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Stats row */}
+      <View style={ssw.statsRow}>
+        {/* Remaining contacts */}
+        <View style={[ssw.statBox, { backgroundColor: contactBg, borderColor: contactBdr }]}>
+          <AppText style={ssw.statEmoji}>{'📞'}</AppText>
+          <AppText style={[ssw.statNum, { color: contactColor }]}>{remainingContacts}</AppText>
+          <AppText style={[ssw.statLabel, { color: contactColor }]}>
+            {isLowContacts && remainingContacts === 0 ? 'No contacts' : 'Contacts left'}
+          </AppText>
+        </View>
+
+        {/* Expiry */}
+        <View style={[ssw.statBox, { backgroundColor: expiryBg, borderColor: expiryBdr }]}>
+          <AppText style={ssw.statEmoji}>{'⏰'}</AppText>
+          <AppText style={[ssw.statNum, { color: expiryColor, fontSize: isExpiringSoon || isExpired ? 16 : 13 }]}>
+            {expiryLabel}
+          </AppText>
+          <AppText style={[ssw.statLabel, { color: expiryColor }]}>
+            {isExpired ? 'Renew now' : isExpiringSoon ? 'Expiring soon!' : 'Expiry date'}
+          </AppText>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 });
-ActivityRow.displayName = 'ActivityRow';
+SubscriptionStatusWidget.displayName = 'SubscriptionStatusWidget';
 
-const ar = StyleSheet.create({
-  row:      { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
-  dot:      { width: 32, height: 32, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  dotTxt:   { fontSize: 14, fontWeight: '700', lineHeight: 18 },
-  body:     { flex: 1, gap: 2 },
-  topRow:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  badge:    { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, borderWidth: 1 },
-  badgeTxt: { fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
-  entity:   { fontSize: 10, color: '#94a3b8' },
-  desc:     { fontSize: 12, fontWeight: '600', color: '#0f172a' },
-  time:     { fontSize: 10, color: '#94a3b8' },
+const ssw = StyleSheet.create({
+  // Active subscription card
+  card:         { borderRadius: 18, borderWidth: 1, padding: 14, marginBottom: 14, gap: 12, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  activeBadge:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  activeDot:    { width: 8, height: 8, borderRadius: 4 },
+  activeLabel:  { fontSize: 13, fontWeight: '800' },
+  actionBtn:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 5 },
+  actionBtnTxt: { fontSize: 12, fontWeight: '800' },
+  // Stats
+  statsRow:     { flexDirection: 'row', gap: 10 },
+  statBox:      { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 12, alignItems: 'center', gap: 3 },
+  statEmoji:    { fontSize: 18, lineHeight: 22 },
+  statNum:      { fontSize: 20, fontWeight: '900', lineHeight: 24 },
+  statLabel:    { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center' },
 });
 
 // ─── Quick Action Card ─────────────────────────────────────────────────────────
@@ -659,24 +1141,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     enabled: !!user?.state,
   });
 
-  const activityQuery = useQuery({
-    queryKey: ['employer-activity'],
-    queryFn: async () => {
-      const res = await apiClient.get<{ success: boolean; activities?: ActivityItem[] }>('/api/v1/activity/my', { params: { limit: 6 } });
-      return res.data.activities ?? [];
-    },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  const pastWorkersQuery = useQuery<PastWorker[]>({
-    queryKey: ['employer-past-workers'],
-    queryFn: () => requirementsApi.getHiredWorkers(),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    enabled: !!user?.id,
-  });
-
   const pipelineQuery = useQuery({
     queryKey: ['employer-pipeline-totals'],
     queryFn: async () => {
@@ -759,10 +1223,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     void profileQuery.refetch();
     void nearbyQuery.refetch();
     void dashQuery.refetch();
-    void activityQuery.refetch();
-    void pastWorkersQuery.refetch();
     if (isSubscribed) void pipelineQuery.refetch();
-  }, [reqQuery, profileQuery, nearbyQuery, dashQuery, activityQuery, pastWorkersQuery, pipelineQuery, isSubscribed]);
+  }, [reqQuery, profileQuery, nearbyQuery, dashQuery, pipelineQuery, isSubscribed]);
 
   const handlePost = useCallback(() => {
     if (profileQuery.isLoading) return;
@@ -775,12 +1237,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
   const handleWorkerSearchNavigate  = useCallback(() => navigation.navigate('WorkerSearch'), [navigation]);
   const handlePipelineNavigate      = useCallback(() => navigation.navigate('EmployerPipeline'), [navigation]);
-  const handleAnalyticsNavigate     = useCallback(() => navigation.navigate('EmployerAnalytics'), [navigation]);
   const handleCalendarNavigate      = useCallback(() => navigation.navigate('RequirementCalendar'), [navigation]);
-  const handleCallHistoryNavigate   = useCallback(() => navigation.navigate('CallHistory'), [navigation]);
   const handleSubscriptionNavigate = useCallback(() => navigation.navigate('Subscription'), [navigation]);
   const handleOpenSubModal = useCallback(() => setSubModalVisible(true), []);
-  const handleKycNavigate = useCallback(() => navigation.navigate('KycVerification'), [navigation]);
   const handleAgentTilePress = useCallback((id: string) => navigation.navigate('WorkerProfile', { workerId: id }), [navigation]);
   const handleReqCardPress = useCallback((id: string) => navigation.navigate('RequirementDetail', { requirementId: id }), [navigation]);
   const handleReqCardClose = useCallback((req: RawRequirement) => setCloseTarget(req), []);
@@ -788,66 +1247,17 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   // ── Render Sub-blocks for FlatList ──────────────────────────────────────────
   const renderHeader = useMemo(() => (
     <View>
-      {/* ── Greeting card ── */}
-      <View style={[styles.greetCard, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.greetTop}>
-          <View style={{ flex: 1 }}>
-            <AppText style={[styles.greetTitle, { color: theme.colors.text }]}>
-              {t(getGreetingKey())}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
-            </AppText>
-            <AppText style={[styles.greetSub, { color: theme.colors.mutedText }]}>
-              {kycUnverified
-                ? t('dashGreetSub_pending')
-                : isSubscribed
-                ? t('dashGreetSub_premium', { count: remainingContacts })
-                : t('dashGreetSub_welcome')}
-            </AppText>
-          </View>
-          <AppText style={styles.greetEmoji}>👋</AppText>
-        </View>
-        {kycUnverified && (
-          <TouchableOpacity onPress={handleKycNavigate} style={[styles.greetBtn, { borderColor: theme.colors.primary }]} activeOpacity={0.8}>
-            <AppText style={[styles.greetBtnTxt, { color: theme.colors.primary }]}>{t('completeVerification')}</AppText>
-          </TouchableOpacity>
-        )}
-        {profileQuery.isSuccess && !isSubscribed && !kycUnverified && (
-          <TouchableOpacity onPress={handleSubscriptionNavigate} style={[styles.greetBtn, { borderColor: '#ea580c' }]} activeOpacity={0.8}>
-            <AppText style={[styles.greetBtnTxt, { color: '#ea580c' }]}>{t('subscribeToUnlock')}</AppText>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* ── Subscription expired warning banner ── */}
-      {profileQuery.isSuccess && isExpired && (
-        <TouchableOpacity onPress={handleSubscriptionNavigate} activeOpacity={0.85} style={expBanner.wrap}>
-          <View style={expBanner.iconWrap}>
-            <AppText style={expBanner.icon}>⏰</AppText>
-          </View>
-          <View style={expBanner.body}>
-            <AppText style={expBanner.title}>{t('subscriptionExpired')}</AppText>
-            <AppText style={expBanner.sub}>
-              {t('expiredOn', { date: profile?.subscriptionExpery ? new Date(profile.subscriptionExpery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—' })}
-            </AppText>
-          </View>
-          <View style={expBanner.btn}>
-            <AppText style={expBanner.btnTxt}>{t('renew')}</AppText>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* ── Subscription upsell banner (never subscribed) ── */}
-      {profileQuery.isSuccess && !isSubscribed && !isExpired && (
-        <TouchableOpacity onPress={handleOpenSubModal} activeOpacity={0.85} style={subBanner.wrap}>
-          <View style={subBanner.iconWrap}>
-            <AppText style={subBanner.icon}>⭐</AppText>
-          </View>
-          <View style={subBanner.body}>
-            <AppText style={subBanner.title}>{t('unlockPremiumAccess')}</AppText>
-            <AppText style={subBanner.sub}>{t('premiumFromPrice', { price: pricing.subscription.individual['1m'] })}</AppText>
-          </View>
-          <AppText style={subBanner.arrow}>→</AppText>
-        </TouchableOpacity>
-      )}
+      {/* ── Subscription Status Widget (always shown once profile loaded) ── */}
+      <SubscriptionStatusWidget
+        isSubscribed={isSubscribed}
+        isExpired={isExpired}
+        profileLoaded={profileQuery.isSuccess}
+        remainingContacts={remainingContacts}
+        subscriptionExpery={profile?.subscriptionExpery}
+        onSubscribe={handleOpenSubModal}
+        onRenew={handleSubscriptionNavigate}
+        onTopUp={handleSubscriptionNavigate}
+      />
 
       {/* ── Quick Action Cards ── */}
       <View style={styles.qaRow}>
@@ -894,124 +1304,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </TouchableOpacity>
       </View>
 
-      {/* ── Subscription status card (if subscribed) ── */}
-      {profileQuery.isSuccess && isSubscribed && (
-        <View style={styles.subStatusCard}>
-          <View style={styles.subStatusLeft}>
-            <View style={styles.subActiveBadge}>
-              <AppText style={styles.subActiveBadgeText}>{t('subActive')}</AppText>
-            </View>
-            <AppText style={styles.subStatusTitle}>{t('premiumSubscription')}</AppText>
-            <AppText style={styles.subStatusMeta}>
-              {t('subExpires', { date: fmtDate(profile?.subscriptionExpery) })}
-            </AppText>
-          </View>
-          <View style={styles.subStatusRight}>
-            <AppText style={styles.subContactsCount}>{remainingContacts}</AppText>
-            <AppText style={styles.subContactsLabel}>{t('contactsRemaining')}</AppText>
-            <TouchableOpacity onPress={handleSubscriptionNavigate} style={styles.subTopupBtn} activeOpacity={0.8}>
-              <AppText style={styles.subTopupTxt}>{t('topUp')}</AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* ── Hiring Pipeline strip (subscribed only) ── */}
-      {isSubscribed && (
-        <TouchableOpacity onPress={handlePipelineNavigate} activeOpacity={0.85} style={pip.card}>
-          <View style={pip.header}>
-            <AppText style={pip.title}>{t('hiringPipeline')}</AppText>
-            <AppText style={pip.viewAll}>{t('viewAll')}</AppText>
-          </View>
-          <View style={pip.row}>
-            {([
-              { key: 'Shortlisted' as const, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🔖' },
-              { key: 'Selected'    as const, color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe', emoji: '✅' },
-              { key: 'Joined'      as const, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', emoji: '🤝' },
-            ] as const).map((s) => (
-              <View key={s.key} style={[pip.cell, { backgroundColor: s.bg, borderColor: s.border }]}>
-                <AppText style={{ fontSize: 16, marginBottom: 2 }}>{s.emoji}</AppText>
-                <AppText style={[pip.count, { color: s.color }]}>
-                  {pipelineQuery.isLoading ? '—' : String(pipelineQuery.data?.[s.key] ?? 0)}
-                </AppText>
-                <AppText style={[pip.label, { color: s.color }]}>{t(s.key.toLowerCase() as 'shortlisted' | 'selected' | 'joined')}</AppText>
-              </View>
-            ))}
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* ── Analytics entry strip ── */}
-      <TouchableOpacity onPress={handleAnalyticsNavigate} activeOpacity={0.85} style={an.card}>
-        <View style={an.left}>
-          <View style={an.iconWrap}>
-            <AppText style={an.icon}>📊</AppText>
-          </View>
-          <View style={an.body}>
-            <AppText style={an.title}>{t('hiringAnalytics')}</AppText>
-            <AppText style={an.sub}>{t('analyticsSubtitle')}</AppText>
-          </View>
-        </View>
-        <AppText style={an.arrow}>→</AppText>
-      </TouchableOpacity>
-
-      {/* ── Employer Tools Row (Calendar + Call History) ── */}
-      <View style={tl.row}>
-        <TouchableOpacity onPress={handleCalendarNavigate} activeOpacity={0.85} style={tl.card}>
-          <View style={[tl.iconBox, { backgroundColor: '#EBF1FF' }]}>
-            <AppText style={tl.icon}>📅</AppText>
-          </View>
-          <AppText style={tl.title}>{t('requirementCalendar')}</AppText>
-          <AppText style={tl.sub}>{t('calendarSubtitle')}</AppText>
-          <AppText style={tl.arrow}>→</AppText>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleCallHistoryNavigate} activeOpacity={0.85} style={tl.card}>
-          <View style={[tl.iconBox, { backgroundColor: '#F5F3FF' }]}>
-            <AppText style={tl.icon}>📞</AppText>
-          </View>
-          <AppText style={tl.title}>{t('callHistory')}</AppText>
-          <AppText style={tl.sub}>{t('callHistorySubtitle')}</AppText>
-          <AppText style={tl.arrow}>→</AppText>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Pending Tasks ── */}
-      {(kycUnverified || !isSubscribed) && (
-        <View style={[styles.pendingSection, { backgroundColor: theme.colors.card }]}>
-          <AppText style={[styles.pendingTitle, { color: theme.colors.text }]}>{t('pendingTasks')}</AppText>
-          {kycUnverified && (
-            <TouchableOpacity onPress={handleKycNavigate} style={styles.pendingTask} activeOpacity={0.8}>
-              <View style={styles.pendingTaskIcon}>
-                <AppText style={{ fontSize: 20 }}>🪪</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>{t('kycVerification')} — <AppText style={{ color: '#d97706' }}>{t('kycImportant')}</AppText></AppText>
-                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>{t('kycComplete')}</AppText>
-              </View>
-              <TouchableOpacity onPress={handleKycNavigate} style={styles.pendingTaskBtn} activeOpacity={0.8}>
-                <AppText style={styles.pendingTaskBtnTxt}>{t('submitDocuments')}</AppText>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-          {profileQuery.isSuccess && !isSubscribed && (
-            <TouchableOpacity onPress={handleSubscriptionNavigate} style={styles.pendingTask} activeOpacity={0.8}>
-              <View style={styles.pendingTaskIcon}>
-                <AppText style={{ fontSize: 20 }}>🔒</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>{t('activateSubscription')}</AppText>
-                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>{t('postAndViewContacts')}</AppText>
-              </View>
-              <TouchableOpacity onPress={handleSubscriptionNavigate} style={styles.pendingTaskBtn} activeOpacity={0.8}>
-                <AppText style={styles.pendingTaskBtnTxt}>{t('subscribeCta')}</AppText>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
       {/* ── Nearby Workers — CRM NearbyWorkersSection style ── */}
-      <View style={[nws.card, { backgroundColor: theme.colors.card }]}>
+      <View style={[nws.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {/* Header */}
         <View style={nws.header}>
           <View style={nws.headerLeft}>
@@ -1040,19 +1334,37 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </View>
         ) : displayedNearby.length === 0 ? (
           <View style={nws.emptyWrap}>
-            <AppText style={nws.emptyTxt}>{t('noWorkersNear', { location: user?.district ?? 'your location' })}</AppText>
+            <AppText style={[nws.emptyTxt, { color: theme.colors.mutedText }]}>{t('noWorkersNear', { location: user?.district ?? 'your location' })}</AppText>
             <TouchableOpacity onPress={handleWorkerSearchNavigate} style={nws.browseBtn} activeOpacity={0.8}>
               <AppText style={nws.browseBtnTxt}>{t('browseAllWorkers')}</AppText>
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            {displayedNearby.map((agent) => (
-              <NearbyWorkerCard key={agent._id} agent={agent} onPress={handleAgentTilePress} />
-            ))}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={nws.sliderContent}
+              snapToInterval={168}
+              decelerationRate="fast"
+              snapToAlignment="start"
+            >
+              {displayedNearby.map((agent) => (
+                <WorkerSliderCard key={agent._id} agent={agent} onPress={handleAgentTilePress} />
+              ))}
+              {/* View-all tile at end */}
+              <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.82} style={[wsc.moreCard, { borderColor: theme.colors.borderStrong, backgroundColor: theme.colors.surface1 }]}>
+                <AppText style={[wsc.moreCount, { color: theme.colors.primary }]}>
+                  {nearbyTotal >= 1000
+                    ? `${(nearbyTotal / 1000).toFixed(nearbyTotal >= 10000 ? 0 : 1)}K+`
+                    : String(nearbyTotal)}
+                </AppText>
+                <AppText style={[wsc.moreTxt, { color: theme.colors.primary }]}>{t('viewAllWorkers')}</AppText>
+              </TouchableOpacity>
+            </ScrollView>
             {/* Footer */}
-            <View style={nws.footer}>
-              <AppText style={nws.footerTxt}>
+            <View style={[nws.footer, { borderTopColor: theme.colors.divider }]}>
+              <AppText style={[nws.footerTxt, { color: theme.colors.mutedText }]}>
                 {t('workersAvailableNear', { count: nearbyTotal.toLocaleString('en-IN') })}
               </AppText>
               <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.7}>
@@ -1063,87 +1375,139 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         )}
       </View>
 
-      <View style={styles.sectionHeader}>
-        <AppText style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('newRequirements')}</AppText>
-        {reqQuery.isFetching && !isRefreshing && (
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-        )}
-      </View>
+      {/* ── Requirements Card ── */}
+      <View style={[reqCard.wrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
 
-      <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
-        {REQ_TABS.map((t) => {
-          const count = t.value === 'open' ? openCount : t.value === 'closed' ? closedCount : all.length;
-          const active = reqTab === t.value;
-          return (
-            <TouchableOpacity
-              key={t.value}
-              onPress={() => setReqTab(t.value)}
-              style={[styles.tab, active && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 }]}
-            >
-              <AppText style={[styles.tabLabel, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
-                {t.label}
-              </AppText>
-              <View style={[styles.tabBadge, { backgroundColor: active ? theme.colors.primary : theme.colors.border }]}>
-                <AppText style={styles.tabBadgeTxt}>{count}</AppText>
+        {/* Card header */}
+        <View style={reqCard.header}>
+          <View style={reqCard.headerLeft}>
+            <AppText style={[reqCard.title, { color: theme.colors.text }]}>{t('newRequirements')}</AppText>
+            {all.length > 0 && (
+              <View style={[reqCard.countPill, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
+                <AppText style={[reqCard.countPillTxt, { color: theme.colors.primary }]}>{all.length}</AppText>
               </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  ), [theme, user, isSubscribed, remainingContacts, profile, handleSubscriptionNavigate, handleOpenSubModal, kycUnverified, handleKycNavigate, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, profileQuery.isLoading, dashQuery.isSuccess, dashQuery.isLoading, totalWorkersDisplay, navigation, shortlistCount, handlePipelineNavigate, handleAnalyticsNavigate, pipelineQuery.isLoading, pipelineQuery.data]);
-
-  const renderFooter = useMemo(() => (
-    <View>
-      {/* ── Recent Activity ── */}
-      <View style={[act.card, { backgroundColor: theme.colors.card }]}>
-        <View style={act.header}>
-          <AppText style={[act.title, { color: theme.colors.text }]}>{t('recentActivity')}</AppText>
-          <TouchableOpacity onPress={() => navigation.navigate('MyActivity')} activeOpacity={0.7}>
-            <AppText style={act.viewAll}>{t('viewAll')}</AppText>
+            )}
+            {reqQuery.isFetching && !isRefreshing && (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            )}
+          </View>
+          <TouchableOpacity onPress={handlePost} activeOpacity={0.8} style={[reqCard.postBtn, { backgroundColor: theme.colors.primary }]}>
+            <AppText style={reqCard.postBtnTxt}>＋ {t('postRequirement')}</AppText>
           </TouchableOpacity>
         </View>
 
-        {activityQuery.isLoading ? (
-          <View style={act.loadWrap}>
-            <ActivityIndicator size="small" color="#2563eb" />
-          </View>
-        ) : (activityQuery.data?.length ?? 0) === 0 ? (
-          <View style={act.emptyWrap}>
-            <AppText style={act.emptyIcon}>📋</AppText>
-            <AppText style={act.emptyTxt}>{t('noActivityYet')}</AppText>
-            <AppText style={act.emptySub}>{t('actionsAppearHere')}</AppText>
-          </View>
-        ) : (
-          <>
-            {(activityQuery.data ?? []).map((item: ActivityItem, i: number) => (
-              <ActivityRow
-                key={item._id}
-                item={item}
-                isLast={i === (activityQuery.data!.length - 1)}
-              />
-            ))}
-            <TouchableOpacity
-              onPress={() => navigation.navigate('MyActivity')}
-              style={act.footer}
-              activeOpacity={0.7}
-            >
-              <AppText style={act.footerTxt}>{t('seeFullActivityLog')}</AppText>
-            </TouchableOpacity>
-          </>
-        )}
+        {/* Tab row */}
+        <View style={[reqCard.tabRow, { borderColor: theme.colors.border }]}>
+          {REQ_TABS.map((t) => {
+            const count = t.value === 'open' ? openCount : t.value === 'closed' ? closedCount : all.length;
+            const active = reqTab === t.value;
+            return (
+              <TouchableOpacity
+                key={t.value}
+                onPress={() => setReqTab(t.value)}
+                style={[reqCard.tab, active && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 }]}
+              >
+                <AppText style={[reqCard.tabLabel, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
+                  {t.label}
+                </AppText>
+                <View style={[reqCard.tabBadge, { backgroundColor: active ? theme.colors.primary : theme.colors.border }]}>
+                  <AppText style={reqCard.tabBadgeTxt}>{count}</AppText>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Carousel */}
+        <RequirementCarousel
+          requirements={filteredRequirements}
+          onPress={handleReqCardPress}
+          onClose={handleReqCardClose}
+          closingId={closingId}
+          isLoading={reqQuery.isLoading}
+          onPost={handlePost}
+          tab={reqTab}
+          allCount={all.length}
+          t={t}
+          themeColors={theme.colors}
+        />
       </View>
 
+      {/* ── Hiring Pipeline strip (subscribed only) ── */}
+      {isSubscribed && (
+        <TouchableOpacity
+          onPress={handlePipelineNavigate}
+          activeOpacity={0.85}
+          style={[pip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 12 }]}
+        >
+          <View style={pip.header}>
+            <View style={pip.titleRow}>
+              <View style={pip.titleDot} />
+              <AppText style={[pip.title, { color: theme.colors.text }]}>{t('hiringPipeline')}</AppText>
+            </View>
+            <View style={pip.viewAllRow}>
+              <AppText style={pip.viewAll}>{t('viewAll')}</AppText>
+              <AppText style={[pip.viewAll, { opacity: 0.7 }]}>{' ›'}</AppText>
+            </View>
+          </View>
+          <View style={pip.row}>
+            {([
+              { key: 'Shortlisted' as const, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', darkBg: '#1E3A8A22', darkBorder: '#3B82F655', emoji: '🔖' },
+              { key: 'Selected'    as const, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', darkBg: '#5B21B622', darkBorder: '#8B5CF655', emoji: '✅' },
+              { key: 'Joined'      as const, color: '#059669', bg: '#ECFDF5', border: '#6EE7B7', darkBg: '#06543622', darkBorder: '#34D39955', emoji: '🤝' },
+            ] as const).map((s) => {
+              const isDark = theme.mode === 'dark';
+              const cellBg = isDark ? s.darkBg : s.bg;
+              const cellBorder = isDark ? s.darkBorder : s.border;
+              return (
+                <View key={s.key} style={[pip.cell, { backgroundColor: cellBg, borderColor: cellBorder }]}>
+                  <AppText style={pip.cellEmoji}>{s.emoji}</AppText>
+                  <AppText style={[pip.count, { color: s.color }]}>
+                    {pipelineQuery.isLoading ? '—' : String(pipelineQuery.data?.[s.key] ?? 0)}
+                  </AppText>
+                  <AppText style={[pip.label, { color: s.color }]}>
+                    {t(s.key.toLowerCase() as 'shortlisted' | 'selected' | 'joined')}
+                  </AppText>
+                </View>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* ── Requirement Calendar strip ── */}
+      <TouchableOpacity
+        onPress={handleCalendarNavigate}
+        activeOpacity={0.85}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 12 }]}
+      >
+        <View style={calStrip.left}>
+          <View style={[calStrip.iconWrap, { backgroundColor: '#EFF6FF' }]}>
+            <AppText style={calStrip.icon}>📅</AppText>
+          </View>
+          <View style={calStrip.text}>
+            <AppText style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
+            <AppText style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('calendarSubtitle')}</AppText>
+          </View>
+        </View>
+        <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
+      </TouchableOpacity>
+
+    </View>
+  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId]);
+
+  const renderFooter = useMemo(() => (
+    <View>
       {/* ── Upgrade Banner (non-subscribers only) ── */}
       {profileQuery.isSuccess && !isSubscribed && (
-        <View style={ub.card}>
-          <View style={ub.iconWrap}>
+        <View style={[ub.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[ub.iconWrap, { backgroundColor: theme.colors.primaryLight }]}>
             <AppText style={ub.icon}>🚀</AppText>
           </View>
           <View style={ub.body}>
             <AppText style={[ub.title, { color: theme.colors.text }]}>{t('upgradeToPremium')}</AppText>
-            <AppText style={ub.desc}>{t('upgradeBannerDesc')}</AppText>
-            <View style={ub.features}>
+            <AppText style={[ub.desc, { color: theme.colors.mutedText }]}>{t('upgradeBannerDesc')}</AppText>
+            <View style={[ub.features, { backgroundColor: theme.colors.surface1 }]}>
               {([
                 t('featureTopPriority'),
                 t('featureFeaturedBadge'),
@@ -1152,7 +1516,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               ] as string[]).map((f) => (
                 <View key={f} style={ub.featureRow}>
                   <AppText style={ub.featureTick}>✅</AppText>
-                  <AppText style={ub.featureTxt}>{f}</AppText>
+                  <AppText style={[ub.featureTxt, { color: theme.colors.textSecondary }]}>{f}</AppText>
                 </View>
               ))}
             </View>
@@ -1163,115 +1527,28 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </View>
       )}
 
-      {/* ── Past Workers ── */}
-      {(pastWorkersQuery.isLoading || (pastWorkersQuery.data?.length ?? 0) > 0) && (
-        <View style={[pw.card, { backgroundColor: theme.colors.card }]}>
-          <View style={pw.header}>
-            <View style={pw.headerLeft}>
-              <AppText style={[pw.title, { color: theme.colors.text }]}>{t('pastWorkers')}</AppText>
-              {(pastWorkersQuery.data?.length ?? 0) > 0 && (
-                <View style={pw.countPill}>
-                  <AppText style={pw.countPillTxt}>{pastWorkersQuery.data!.length}</AppText>
-                </View>
-              )}
-            </View>
-            <AppText style={pw.sub}>{t('workersHiredBefore')}</AppText>
-          </View>
-
-          {pastWorkersQuery.isLoading ? (
-            <View style={pw.loadWrap}>
-              <ActivityIndicator size="small" color="#1037A4" />
-            </View>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={pw.listContent}>
-              {(pastWorkersQuery.data ?? []).map((worker, idx) => {
-                const initials = (worker.workerName || 'W')
-                  .split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
-                const skill = worker.areasOfWork?.[0] || worker.workType || '—';
-                const hireDate = worker.lastHireDate
-                  ? new Date(worker.lastHireDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                  : '—';
-                const PALETTES = [
-                  { bg: '#EBF1FF', text: '#1A56DB' },
-                  { bg: '#F5F3FF', text: '#7C3AED' },
-                  { bg: '#ECFDF5', text: '#059669' },
-                  { bg: '#FFF7ED', text: '#EA580C' },
-                ];
-                const pal = PALETTES[idx % PALETTES.length]!;
-
-                return (
-                  <TouchableOpacity
-                    key={worker.workerId ?? worker.workerPhone ?? String(idx)}
-                    style={pw.workerCard}
-                    onPress={() => worker.workerId
-                      ? navigation.navigate('WorkerProfile', { workerId: worker.workerId })
-                      : undefined
-                    }
-                    activeOpacity={worker.workerId ? 0.85 : 1}
-                  >
-                    <View style={[pw.avatar, { backgroundColor: pal.bg }]}>
-                      <AppText style={[pw.initials, { color: pal.text }]}>{initials}</AppText>
-                    </View>
-                    <AppText style={[pw.workerName, { color: theme.colors.text }]} numberOfLines={1}>
-                      {(worker.workerName || 'Unknown').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
-                    </AppText>
-                    <AppText style={pw.workerSkill} numberOfLines={1}>{skill}</AppText>
-                    <AppText style={pw.workerDate}>{hireDate}</AppText>
-                    {worker.workerId && (
-                      <View style={pw.viewBtn}>
-                        <AppText style={pw.viewBtnTxt}>{t('view')}</AppText>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </View>
-      )}
-
       {/* ── Support Footer ── */}
-      <View style={sf.card}>
+      <View style={[sf.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <AppText style={[sf.sectionLabel, { color: theme.colors.mutedText }]}>Support</AppText>
         {[
-          { emoji: '🎧', title: t('needHelp'), desc: t('supportTeamReady') },
-          { emoji: '💬', title: t('support'), desc: config.contact.supportEmail },
-          { emoji: '💼', title: t('businessSupport'), desc: config.contact.businessEmail },
-        ].map(({ emoji, title, desc }) => (
-          <View key={title} style={sf.row}>
-            <AppText style={sf.emoji}>{emoji}</AppText>
+          { emoji: '🎧', title: t('needHelp'),         desc: t('supportTeamReady'),            iconBg: '#EBF1FF', iconColor: '#1037A4' },
+          { emoji: '💬', title: t('support'),           desc: config.contact.supportEmail,       iconBg: '#ECFDF5', iconColor: '#059669' },
+          { emoji: '💼', title: t('businessSupport'),   desc: config.contact.businessEmail,      iconBg: '#FFF7ED', iconColor: '#D97706' },
+        ].map(({ emoji, title, desc, iconBg, iconColor }, i, arr) => (
+          <View key={title} style={[sf.row, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.divider }]}>
+            <View style={[sf.iconBox, { backgroundColor: iconBg }]}>
+              <AppText style={sf.iconEmoji}>{emoji}</AppText>
+            </View>
             <View style={sf.text}>
               <AppText style={[sf.title, { color: theme.colors.text }]}>{title}</AppText>
-              <AppText style={sf.desc}>{desc}</AppText>
+              <AppText style={[sf.desc, { color: theme.colors.mutedText }]}>{desc}</AppText>
             </View>
+            <AppText style={[sf.chevron, { color: theme.colors.mutedText }]}>›</AppText>
           </View>
         ))}
       </View>
     </View>
-  ), [theme, activityQuery.isLoading, activityQuery.data, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation, pastWorkersQuery.isLoading, pastWorkersQuery.data]);
-
-  const renderEmptyComponent = useCallback(() => (
-    <View>
-      <EmptyState
-        title={reqTab === 'all' ? t('noRequirementsYet') : t('noTabRequirements', { tab: reqTab })}
-        message={reqTab === 'all' ? t('postFirstReq') : t('noTabReqNow', { tab: reqTab })}
-      />
-      {all.length === 0 && !reqQuery.isLoading && (
-        <AppButton title={t('postFirstRequirement')} onPress={handlePost} style={{ marginTop: 12 }} />
-      )}
-    </View>
-  ), [reqTab, all.length, reqQuery.isLoading, handlePost, t]);
-
-  const renderItem = useCallback(({ item }: { item: RawRequirement }) => (
-    <RequirementCard
-      req={item}
-      onPress={handleReqCardPress}
-      onClose={handleReqCardClose}
-      closing={closingId === item._id}
-      colors={theme.colors}
-    />
-  ), [handleReqCardPress, handleReqCardClose, closingId, theme.colors]);
-
-  const keyExtractor = useCallback((item: RawRequirement) => item._id, []);
+  ), [theme, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation]);
 
   const refreshControlComponent = useMemo(() => (
     <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />
@@ -1306,6 +1583,22 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </TouchableOpacity>
           </View>
         </View>
+        {/* Greeting + subscription status — lives inside the header */}
+        <View style={fh.greetRow}>
+          <View style={{ flex: 1 }}>
+            <AppText style={fh.greetName}>
+              {t(getGreetingKey())}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
+            </AppText>
+            <AppText style={fh.greetStatus} numberOfLines={1}>
+              {kycUnverified
+                ? t('dashGreetSub_pending')
+                : isSubscribed
+                ? t('dashGreetSub_premium', { count: remainingContacts })
+                : t('dashGreetSub_welcome')}
+            </AppText>
+          </View>
+          <AppText style={fh.greetEmoji}>{'👋'}</AppText>
+        </View>
       </View>
 
       {/* ── Subscription Upsell Modal ──────────────────────────────────── */}
@@ -1318,19 +1611,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       {/* ── Scrollable Body — lifts over header with rounded top ───────── */}
       <View style={[fh.body, { backgroundColor: theme.colors.background }]}>
         <FlatList
-          data={filteredRequirements}
-          keyExtractor={keyExtractor}
+          data={[]}
           style={styles.scroll}
           contentContainerStyle={styles.content}
           refreshControl={refreshControlComponent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={renderHeader}
           ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmptyComponent}
-          renderItem={renderItem}
-          initialNumToRender={8}
-          maxToRenderPerBatch={10}
-          windowSize={5}
+          renderItem={() => null}
         />
       </View>
 
@@ -1349,7 +1637,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             {/* Body */}
             <View style={confirm.body}>
               <AppText style={[confirm.reqName, { color: theme.colors.text }]}>
-                "{closeTarget?.workType ?? 'This requirement'}"
+                "{fmtLabel(closeTarget?.workType)}"
               </AppText>
               <AppText style={[confirm.bodyMsg, { color: theme.colors.mutedText }]}>
                 {t('closeRequirementBody')}
@@ -1388,46 +1676,27 @@ const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { padding: 16, paddingBottom: 40 },
 
-  // Greeting card
-  greetCard:    { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', padding: 16, marginBottom: 14, gap: 12, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  greetTop:     { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  greetTitle:   { fontSize: 17, fontWeight: '800', color: '#0f172a', marginBottom: 4 },
-  greetSub:     { fontSize: 12, lineHeight: 17 },
-  greetEmoji:   { fontSize: 28, lineHeight: 34 },
-  greetBtn:     { borderWidth: 1.5, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
-  greetBtnTxt:  { fontSize: 13, fontWeight: '700' },
-
   // ── Quick Action Cards ──────────────────────────────────────────────────────
   qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  qaCard:         { flex: 1, borderRadius: 20, padding: 16, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, minHeight: 160 },
+  qaCard:         { flex: 1, borderRadius: 20, padding: 12, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, minHeight: 120 },
   qaCardBlue:     { backgroundColor: '#1037A4', shadowColor: '#1037A4' },
   qaCardGreen:    { backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0', shadowColor: '#059669', elevation: 2, shadowOpacity: 0.08 },
-  qaCardInner:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  qaIconWrap:     { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  qaCardInner:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  qaIconWrap:     { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   qaIconWrapGreen:{ backgroundColor: '#D1FAE5' },
-  qaIcon:         { fontSize: 20, lineHeight: 24 },
-  qaNewBadge:     { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  qaIcon:         { fontSize: 18, lineHeight: 22 },
+  qaNewBadge:     { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   qaNewBadgeGreen:{ backgroundColor: '#A7F3D0' },
   qaNewTxt:       { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.9)' },
-  qaCount:        { fontSize: 22, fontWeight: '900', color: '#FFFFFF', lineHeight: 26, marginBottom: 2 },
-  qaCountGreen:   { color: '#065F46', fontSize: 18 },
-  qaTitle:        { fontSize: 13, fontWeight: '800', color: '#FFFFFF', marginBottom: 3 },
+  qaCount:        { fontSize: 20, fontWeight: '900', color: '#FFFFFF', lineHeight: 22, marginBottom: 1 },
+  qaCountGreen:   { color: '#065F46', fontSize: 17 },
+  qaTitle:        { fontSize: 12, fontWeight: '800', color: '#FFFFFF', marginBottom: 1 },
   qaTitleGreen:   { color: '#065F46' },
-  qaSub:          { fontSize: 10, color: 'rgba(255,255,255,0.72)', lineHeight: 14, flex: 1 },
+  qaSub:          { fontSize: 10, color: 'rgba(255,255,255,0.72)', lineHeight: 13, flex: 1 },
   qaSubGreen:     { color: '#047857' },
-  qaArrow:        { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end', marginTop: 8 },
+  qaArrow:        { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end', marginTop: 4 },
   qaArrowGreen:   { backgroundColor: '#A7F3D0' },
-  qaArrowTxt:     { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
-
-  // Pending Tasks section
-  pendingSection: { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 14, overflow: 'hidden' },
-  pendingTitle:   { fontSize: 14, fontWeight: '800', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
-  pendingTask:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
-  pendingTaskIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#fffbeb', alignItems: 'center', justifyContent: 'center' },
-  pendingTaskTitle: { fontSize: 13, fontWeight: '700', color: '#0f172a', marginBottom: 2 },
-  pendingTaskSub:  { fontSize: 11 },
-  pendingTaskBtn:  { backgroundColor: '#1037A4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  pendingTaskBtnTxt: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  qaArrowTxt:     { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   sectionTitle:  { fontSize: 16, fontWeight: '800' },
@@ -1440,53 +1709,29 @@ const styles = StyleSheet.create({
 
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
 
-  subStatusCard:      { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14, backgroundColor: '#f0fdf4', borderColor: '#86efac' },
-  subStatusLeft:      { flex: 1, gap: 5 },
-  subActiveBadge:     { alignSelf: 'flex-start', backgroundColor: '#16a34a', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  subActiveBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
-  subStatusTitle:     { fontSize: 14, fontWeight: '800', color: '#15803d' },
-  subStatusMeta:      { fontSize: 11, color: '#166534' },
-  subStatusRight:     { alignItems: 'center', gap: 2 },
-  subContactsCount:   { fontSize: 28, fontWeight: '900', color: '#16a34a', lineHeight: 32 },
-  subContactsLabel:   { fontSize: 10, fontWeight: '600', color: '#15803d', textAlign: 'center', lineHeight: 14 },
-  subTopupBtn:        { marginTop: 6, backgroundColor: '#16a34a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  subTopupTxt:        { fontSize: 10, fontWeight: '800', color: '#fff' },
 });
 
 // ─── Nearby Workers Section Styles ────────────────────────────────────────────
 const nws = StyleSheet.create({
-  card:       { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20, overflow: 'hidden' },
-  header:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 4 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  title:      { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  countPill:  { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa' },
-  countPillTxt:{ fontSize: 11, fontWeight: '700', color: '#ea580c' },
-  sub:        { fontSize: 11, paddingHorizontal: 14, paddingBottom: 10 },
-  viewAllTxt: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
-  loadWrap:   { paddingVertical: 28, alignItems: 'center' },
-  emptyWrap:  { paddingVertical: 28, paddingHorizontal: 20, alignItems: 'center', gap: 10 },
-  emptyTxt:   { fontSize: 13, color: '#64748b', textAlign: 'center' },
-  browseBtn:  { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#ea580c' },
-  browseBtnTxt:{ fontSize: 12, fontWeight: '700', color: '#ea580c' },
-  footer:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
-  footerTxt:  { fontSize: 11, color: '#94a3b8', fontWeight: '500', flex: 1 },
-  footerLink: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  card:         { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20 },
+  header:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 4 },
+  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  title:        { fontSize: 15, fontWeight: '800', color: '#0f172a' },
+  countPill:    { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa' },
+  countPillTxt: { fontSize: 11, fontWeight: '700', color: '#ea580c' },
+  sub:          { fontSize: 11, paddingHorizontal: 14, paddingBottom: 6 },
+  viewAllTxt:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  loadWrap:     { paddingVertical: 28, alignItems: 'center' },
+  emptyWrap:    { paddingVertical: 28, paddingHorizontal: 20, alignItems: 'center', gap: 10 },
+  emptyTxt:     { fontSize: 13, color: '#64748b', textAlign: 'center' },
+  browseBtn:    { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#ea580c' },
+  browseBtnTxt: { fontSize: 12, fontWeight: '700', color: '#ea580c' },
+  sliderContent:{ paddingHorizontal: 14, paddingBottom: 16, paddingTop: 6, gap: 12 },
+  footer:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
+  footerTxt:    { fontSize: 11, color: '#94a3b8', fontWeight: '500', flex: 1 },
+  footerLink:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
 });
 
-// ─── Activity Section Styles ───────────────────────────────────────────────────
-const act = StyleSheet.create({
-  card:     { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 16, overflow: 'hidden' },
-  header:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
-  title:    { fontSize: 14, fontWeight: '800', color: '#0f172a' },
-  viewAll:  { fontSize: 12, fontWeight: '700', color: '#2563eb' },
-  loadWrap: { paddingVertical: 24, alignItems: 'center' },
-  emptyWrap:{ paddingVertical: 24, alignItems: 'center', gap: 4 },
-  emptyIcon:{ fontSize: 28, marginBottom: 4 },
-  emptyTxt: { fontSize: 13, color: '#64748b', fontWeight: '600' },
-  emptySub: { fontSize: 11, color: '#94a3b8' },
-  footer:   { paddingVertical: 12, alignItems: 'center', backgroundColor: '#f8fafc', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
-  footerTxt:{ fontSize: 12, fontWeight: '600', color: '#2563eb' },
-});
 
 // ─── Upgrade Banner Styles ─────────────────────────────────────────────────────
 const ub = StyleSheet.create({
@@ -1505,33 +1750,16 @@ const ub = StyleSheet.create({
 });
 
 // ─── Support Footer Styles ─────────────────────────────────────────────────────
-const pw = StyleSheet.create({
-  card:        { borderRadius: 18, borderWidth: 1, borderColor: '#e2e8f0', paddingTop: 16, paddingBottom: 4, marginBottom: 12, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  header:      { paddingHorizontal: 16, marginBottom: 12 },
-  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  title:       { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  countPill:   { backgroundColor: '#1037A4', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
-  countPillTxt:{ color: '#fff', fontSize: 11, fontWeight: '800' },
-  sub:         { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  loadWrap:    { paddingVertical: 24, alignItems: 'center' },
-  listContent: { paddingHorizontal: 12, paddingBottom: 16, gap: 10 },
-  workerCard:  { width: 120, borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', padding: 12, alignItems: 'center', gap: 6, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  avatar:      { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  initials:    { fontSize: 18, fontWeight: '800' },
-  workerName:  { fontSize: 12, fontWeight: '800', textAlign: 'center', textTransform: 'capitalize' },
-  workerSkill: { fontSize: 10, color: '#64748b', textAlign: 'center', fontWeight: '600' },
-  workerDate:  { fontSize: 9, color: '#94a3b8', textAlign: 'center' },
-  viewBtn:     { backgroundColor: '#1037A4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, marginTop: 2 },
-  viewBtnTxt:  { color: '#fff', fontSize: 10, fontWeight: '800' },
-});
-
 const sf = StyleSheet.create({
-  card:  { borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', paddingVertical: 4, marginBottom: 8 },
-  row:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f8fafc' },
-  emoji: { fontSize: 20, width: 28, textAlign: 'center' },
-  text:  { flex: 1 },
-  title: { fontSize: 12, fontWeight: '700', color: '#0f172a' },
-  desc:  { fontSize: 11, color: '#64748b', marginTop: 1 },
+  card:         { borderRadius: 20, borderWidth: 1, padding: 4, marginBottom: 8, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  sectionLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+  row:          { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  iconBox:      { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  iconEmoji:    { fontSize: 18 },
+  text:         { flex: 1 },
+  title:        { fontSize: 13, fontWeight: '800', marginBottom: 2 },
+  desc:         { fontSize: 11, lineHeight: 15, fontWeight: '500' },
+  chevron:      { fontSize: 20, opacity: 0.35 },
 });
 
 const confirm = StyleSheet.create({
@@ -1574,15 +1802,30 @@ const expBanner = StyleSheet.create({
 });
 
 // ─── Pipeline Strip Styles ─────────────────────────────────────────────────────
+const calStrip = StyleSheet.create({
+  card:     { borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  left:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  icon:     { fontSize: 20, lineHeight: 24 },
+  text:     { gap: 2 },
+  title:    { fontSize: 14, fontWeight: '800' },
+  sub:      { fontSize: 11, fontWeight: '500' },
+  arrow:    { fontSize: 22, fontWeight: '700', opacity: 0.5 },
+});
+
 const pip = StyleSheet.create({
-  card:   { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', padding: 14, marginBottom: 14, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  title:  { fontSize: 14, fontWeight: '800', color: '#0f172a' },
-  viewAll:{ fontSize: 12, fontWeight: '700', color: '#2563eb' },
-  row:    { flexDirection: 'row', gap: 8 },
-  cell:   { flex: 1, borderRadius: 12, borderWidth: 1, paddingVertical: 10, alignItems: 'center', gap: 2 },
-  count:  { fontSize: 20, fontWeight: '900', lineHeight: 24 },
-  label:  { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  card:       { borderRadius: 20, borderWidth: 1, padding: 16, marginBottom: 14, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 12 },
+  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleDot:   { width: 5, height: 18, borderRadius: 3, backgroundColor: '#7C3AED' },
+  title:      { fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
+  viewAllRow: { flexDirection: 'row', alignItems: 'center' },
+  viewAll:    { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
+  row:        { flexDirection: 'row', gap: 10 },
+  cell:       { flex: 1, borderRadius: 16, borderWidth: 1.5, paddingVertical: 14, alignItems: 'center', gap: 4 },
+  cellEmoji:  { fontSize: 20, lineHeight: 24 },
+  count:      { fontSize: 24, fontWeight: '900', lineHeight: 28 },
+  label:      { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
 });
 
 const fh = StyleSheet.create({
@@ -1606,29 +1849,35 @@ const fh = StyleSheet.create({
   pendingBadgeTxt:{ fontSize: 11, fontWeight: '800', color: '#fff' },
   proBadge:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   proBadgeTxt:   { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  // Greeting row inside the hero header
+  greetRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  greetName:     { fontSize: 16, fontWeight: '800', color: '#fff', marginBottom: 2, letterSpacing: -0.2 },
+  greetStatus:   { fontSize: 12, color: 'rgba(255,255,255,0.82)', fontWeight: '500' },
+  greetEmoji:    { fontSize: 24, lineHeight: 28 },
   // Body lifts over hero
   body:          { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, overflow: Platform.OS === 'android' ? 'hidden' : 'visible' },
 });
 
-// ─── Analytics strip ──────────────────────────────────────────────────────────
-const an = StyleSheet.create({
-  card:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EBF1FF', borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE' },
-  left:    { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  iconWrap:{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#1037A4', alignItems: 'center', justifyContent: 'center' },
-  icon:    { fontSize: 20, lineHeight: 24 },
-  body:    { flex: 1 },
-  title:   { fontSize: 14, fontWeight: '800', color: '#0f172a' },
-  sub:     { fontSize: 11, color: '#2563eb', marginTop: 1 },
-  arrow:   { fontSize: 18, fontWeight: '700', color: '#2563eb' },
+// ─── Requirements Card (unified section wrapper) ──────────────────────────────
+const reqCard = StyleSheet.create({
+  wrap:        { borderRadius: 16, borderWidth: 1, marginBottom: 14, overflow: 'hidden', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+
+  // Header row
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  title:       { fontSize: 15, fontWeight: '800', letterSpacing: -0.1 },
+  countPill:   { borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2 },
+  countPillTxt:{ fontSize: 11, fontWeight: '800' },
+
+  // Post button
+  postBtn:     { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  postBtnTxt:  { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+
+  // Tab row
+  tabRow:      { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, marginBottom: 0 },
+  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 5, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabLabel:    { fontWeight: '600', fontSize: 13 },
+  tabBadge:    { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: 'center' },
+  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '700' },
 });
 
-// ── Tools row (Calendar + Call History) ───────────────────────────────────────
-const tl = StyleSheet.create({
-  row:    { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  card:   { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#fff', padding: 14, gap: 6, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  iconBox:{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  icon:   { fontSize: 20, lineHeight: 24 },
-  title:  { fontSize: 13, fontWeight: '800', color: '#0f172a', lineHeight: 17 },
-  sub:    { fontSize: 11, color: '#64748b', lineHeight: 15 },
-  arrow:  { fontSize: 14, fontWeight: '700', color: '#1037A4', marginTop: 4 },
-});

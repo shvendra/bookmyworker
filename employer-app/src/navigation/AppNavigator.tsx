@@ -5,7 +5,9 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import type { Subscription } from 'expo-notifications';
 
 import i18n from '../../../packages/shared-mobile/src/core/i18n';
 import { useAppTheme } from '../../../packages/shared-mobile/src/core/theme';
@@ -50,11 +52,12 @@ import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features
 import { TransactionScreen } from '../../../packages/shared-mobile/src/features/wallet/screens/TransactionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
-// import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
+import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
 import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
 import { CallHistoryScreen } from '../../../packages/shared-mobile/src/features/employer/screens/CallHistoryScreen';
 import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
+import { RequirementInvitationsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementInvitationsScreen';
 
 import type { EmployerStackParamList } from './types';
 
@@ -65,10 +68,22 @@ const Stack = createNativeStackNavigator<EmployerStackParamList>();
 // 'selected'     — language was saved; skip Welcome, open Login directly
 type LangStatus = 'checking' | 'not_selected' | 'selected';
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 export const AppNavigator = (): React.JSX.Element => {
   const { state, signOut } = useAuth();
   const { theme } = useAppTheme();
   const [langStatus, setLangStatus] = useState<LangStatus>('checking');
+  const notificationListener = useRef<Subscription | null>(null);
+  const responseListener      = useRef<Subscription | null>(null);
 
   // Sync DB language ↔ local storage on every login
   useLangSync(EMPLOYER_LANG_KEY);
@@ -83,6 +98,26 @@ export const AppNavigator = (): React.JSX.Element => {
         setLangStatus('not_selected');
       }
     });
+  }, []);
+
+  // Notification deep-link handling
+  useEffect(() => {
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      if (!navigationRef.isReady()) return;
+      const type = data?.type as string | undefined;
+      if (type === 'workerInviteResponse' && data?.requirementId) {
+        navigationRef.navigate('RequirementInvitations', {
+          requirementId: data.requirementId as string,
+          requirementTitle: data.workType as string | undefined,
+        });
+      } else if (type === 'requirement' && data?.requirementId) {
+        navigationRef.navigate('RequirementDetail', { requirementId: data.requirementId as string });
+      } else {
+        navigationRef.navigate('Notifications', undefined);
+      }
+    });
+    return () => { responseListener.current?.remove(); };
   }, []);
 
   useEffect(() => {
@@ -170,11 +205,12 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            {/* <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} /> */}
+            <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="DocumentHub" component={DocumentHubScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="RequirementInvitations" component={RequirementInvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

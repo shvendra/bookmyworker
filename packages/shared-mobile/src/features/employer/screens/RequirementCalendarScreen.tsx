@@ -76,6 +76,7 @@ function buildCalendarGrid(year: number, month: number): (number | null)[] {
 // ── Requirement status legend ─────────────────────────────────────────────────
 function Legend(): React.JSX.Element {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
   const items = [
     { color: BRAND,    label: t('calStatusOpenPending') },
     { color: '#059669', label: t('calStatusAssigned') },
@@ -87,7 +88,7 @@ function Legend(): React.JSX.Element {
       {items.map((it) => (
         <View key={it.label} style={leg.item}>
           <View style={[leg.dot, { backgroundColor: it.color }]} />
-          <AppText style={leg.label}>{it.label}</AppText>
+          <AppText style={[leg.label, { color: theme.colors.mutedText }]}>{it.label}</AppText>
         </View>
       ))}
     </View>
@@ -97,7 +98,7 @@ const leg = StyleSheet.create({
   row:   { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 14, paddingVertical: 8 },
   item:  { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot:   { width: 9, height: 9, borderRadius: 4.5 },
-  label: { fontSize: 11, color: SLATE, fontWeight: '600' },
+  label: { fontSize: 11, fontWeight: '600' },
 });
 
 // ── Requirement card in bottom sheet ─────────────────────────────────────────
@@ -121,12 +122,13 @@ function ReqCard({
     .map((s) => (s ?? '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
     .join(' · ');
 
+  const { theme } = useAppTheme();
   return (
-    <TouchableOpacity onPress={onPress} style={rcs.card} activeOpacity={0.85}>
+    <TouchableOpacity onPress={onPress} style={[rcs.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} activeOpacity={0.85}>
       <View style={rcs.top}>
         <View style={{ flex: 1 }}>
-          <AppText style={rcs.title} numberOfLines={2}>{title || 'Requirement'}</AppText>
-          <AppText style={rcs.sub}>
+          <AppText style={[rcs.title, { color: theme.colors.text }]} numberOfLines={2}>{title || 'Requirement'}</AppText>
+          <AppText style={[rcs.sub, { color: theme.colors.mutedText }]}>
             ERN #{req.ERN_NUMBER ?? '—'}
             {req.district ? `  ·  ${req.district}` : ''}
             {req.state    ? `, ${req.state}` : ''}
@@ -137,8 +139,8 @@ function ReqCard({
           <AppText style={[rcs.badgeTxt, { color }]}>{label}</AppText>
         </View>
       </View>
-      <View style={rcs.footer}>
-        <AppText style={rcs.workers}>
+      <View style={[rcs.footer, { borderTopColor: theme.colors.divider }]}>
+        <AppText style={[rcs.workers, { color: theme.colors.mutedText }]}>
           {t((req.workerQuantitySkilled ?? 0) === 1 ? 'calWorkersNeeded' : 'calWorkersNeeded_plural', { count: req.workerQuantitySkilled ?? 0 })}
         </AppText>
         {req.salaryType && (
@@ -152,15 +154,15 @@ function ReqCard({
   );
 }
 const rcs = StyleSheet.create({
-  card:      { borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: WHITE, padding: 12, marginBottom: 8, gap: 8 },
+  card:      { borderRadius: 14, borderWidth: 1, padding: 12, marginBottom: 8, gap: 8 },
   top:       { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  title:     { fontSize: 14, fontWeight: '800', color: NAVY, lineHeight: 19 },
-  sub:       { fontSize: 11.5, color: SLATE, marginTop: 2 },
+  title:     { fontSize: 14, fontWeight: '800', lineHeight: 19 },
+  sub:       { fontSize: 11.5, marginTop: 2 },
   badge:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 },
   badgeDot:  { width: 6, height: 6, borderRadius: 3 },
   badgeTxt:  { fontSize: 10, fontWeight: '700' },
-  footer:    { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: BORDER, paddingTop: 8 },
-  workers:   { fontSize: 11.5, color: SLATE, fontWeight: '600' },
+  footer:    { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
+  workers:   { fontSize: 11.5, fontWeight: '600' },
   rate:      { fontSize: 11.5, color: '#059669', fontWeight: '700' },
 });
 
@@ -242,25 +244,25 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
         <Legend />
 
         {/* Calendar card */}
-        <View style={[cal.card, { backgroundColor: theme.colors.card }]}>
+        <View style={[cal.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           {/* Month navigation */}
           <View style={cal.monthNav}>
-            <TouchableOpacity onPress={prevMonth} style={cal.navBtn} activeOpacity={0.7}>
-              <AppText style={cal.navArrow}>‹</AppText>
+            <TouchableOpacity onPress={prevMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+              <AppText style={[cal.navArrow, { color: theme.colors.text }]}>‹</AppText>
             </TouchableOpacity>
             <AppText style={[cal.monthTitle, { color: theme.colors.text }]}>
               {MONTH_NAMES[viewMonth]} {viewYear}
             </AppText>
-            <TouchableOpacity onPress={nextMonth} style={cal.navBtn} activeOpacity={0.7}>
-              <AppText style={cal.navArrow}>›</AppText>
+            <TouchableOpacity onPress={nextMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+              <AppText style={[cal.navArrow, { color: theme.colors.text }]}>›</AppText>
             </TouchableOpacity>
           </View>
 
           {/* Weekday headers */}
-          <View style={cal.weekRow}>
+          <View style={[cal.weekRow, { borderBottomColor: theme.colors.border }]}>
             {calendarWeekdays.map((d) => (
               <View key={d} style={cal.weekCell}>
-                <AppText style={cal.weekTxt}>{d}</AppText>
+                <AppText style={[cal.weekTxt, { color: theme.colors.mutedText }]}>{d}</AppText>
               </View>
             ))}
           </View>
@@ -287,7 +289,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
                     key={key}
                     style={[
                       cal.cell,
-                      isToday    && cal.cellToday,
+                      isToday    && [cal.cellToday, { backgroundColor: theme.colors.primaryLight }],
                       isSelected && cal.cellSelected,
                     ]}
                     onPress={() => setSelectedKey(isSelected ? null : key)}
@@ -308,7 +310,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
                           <View key={i} style={[cal.dot, { backgroundColor: c }]} />
                         ))}
                         {reqs.length > 3 && (
-                          <AppText style={cal.dotMore}>+{reqs.length - 3}</AppText>
+                          <AppText style={[cal.dotMore, { color: theme.colors.mutedText }]}>+{reqs.length - 3}</AppText>
                         )}
                       </View>
                     )}
@@ -350,14 +352,14 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
             return (
               <>
                 {[
-                  { n: all.length,  label: t('calSummaryThisMonth'), color: NAVY    },
-                  { n: open,        label: t('calStatusOpen'),        color: BRAND   },
-                  { n: assigned,    label: t('calStatusAssigned'),    color: '#059669' },
-                  { n: completed,   label: t('calSummaryDone'),       color: '#94A3B8' },
+                  { n: all.length,  label: t('calSummaryThisMonth'), color: theme.colors.text     },
+                  { n: open,        label: t('calStatusOpen'),        color: BRAND                 },
+                  { n: assigned,    label: t('calStatusAssigned'),    color: '#059669'             },
+                  { n: completed,   label: t('calSummaryDone'),       color: theme.colors.mutedText },
                 ].map((s) => (
-                  <View key={s.label} style={cal.summaryCell}>
+                  <View key={s.label} style={[cal.summaryCell, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
                     <AppText style={[cal.summaryNum, { color: s.color }]}>{s.n}</AppText>
-                    <AppText style={cal.summaryLabel}>{s.label}</AppText>
+                    <AppText style={[cal.summaryLabel, { color: theme.colors.mutedText }]}>{s.label}</AppText>
                   </View>
                 ))}
               </>
@@ -369,15 +371,15 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
         {selectedKey && (
           <View style={cal.dayDetailBox}>
             <View style={cal.dayDetailHeader}>
-              <AppText style={cal.dayDetailTitle}>{selectedDateLabel}</AppText>
+              <AppText style={[cal.dayDetailTitle, { color: theme.colors.text }]}>{selectedDateLabel}</AppText>
               <AppText style={cal.dayDetailCount}>
-                {selectedReqs.length} requirement{selectedReqs.length !== 1 ? 's' : ''}
+                {selectedReqs.length === 1 ? t('reqCountText', { count: selectedReqs.length }) : t('reqCountText_plural', { count: selectedReqs.length })}
               </AppText>
             </View>
             {selectedReqs.length === 0 ? (
               <View style={cal.emptyDay}>
                 <AppText style={cal.emptyDayEmoji}>📅</AppText>
-                <AppText style={cal.emptyDayTxt}>No requirements scheduled for this date.</AppText>
+                <AppText style={[cal.emptyDayTxt, { color: theme.colors.mutedText }]}>{t('noReqScheduledDate')}</AppText>
               </View>
             ) : (
               selectedReqs.map((req) => (
@@ -394,8 +396,8 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
         {/* All-month list (when nothing selected) */}
         {!selectedKey && (
           <View style={cal.monthListBox}>
-            <AppText style={cal.monthListTitle}>
-              All Requirements — {MONTH_NAMES[viewMonth]} {viewYear}
+            <AppText style={[cal.monthListTitle, { color: theme.colors.mutedText }]}>
+              {t('allRequirementsInMonth', { month: MONTH_NAMES[viewMonth] ?? '', year: viewYear })}
             </AppText>
             {(() => {
               const all = Object.entries(reqsByDate)
@@ -410,13 +412,13 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
                 return (
                   <View style={cal.emptyMonth}>
                     <AppText style={cal.emptyMonthEmoji}>📋</AppText>
-                    <AppText style={cal.emptyMonthTxt}>No requirements scheduled this month.</AppText>
+                    <AppText style={[cal.emptyMonthTxt, { color: theme.colors.mutedText }]}>{t('noReqScheduledMonth')}</AppText>
                     <TouchableOpacity
                       onPress={() => navigation.navigate('PostRequirement')}
                       style={cal.postBtn}
                       activeOpacity={0.85}
                     >
-                      <AppText style={cal.postBtnTxt}>+ Post a Requirement</AppText>
+                      <AppText style={cal.postBtnTxt}>{t('postARequirementBtn')}</AppText>
                     </TouchableOpacity>
                   </View>
                 );
@@ -440,20 +442,20 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
 // ── Styles ────────────────────────────────────────────────────────────────────
 const cal = StyleSheet.create({
   scroll:         { padding: 14, gap: 12 },
-  card:           { borderRadius: 18, borderWidth: 1, borderColor: BORDER, overflow: 'hidden' },
+  card:           { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
 
   monthNav:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  navBtn:         { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  navArrow:       { fontSize: 20, fontWeight: '800', color: NAVY, lineHeight: 24 },
+  navBtn:         { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  navArrow:       { fontSize: 20, fontWeight: '800', lineHeight: 24 },
   monthTitle:     { fontSize: 17, fontWeight: '900', letterSpacing: -0.3 },
 
-  weekRow:        { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: BORDER },
+  weekRow:        { flexDirection: 'row', borderBottomWidth: 1 },
   weekCell:       { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  weekTxt:        { fontSize: 11, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.4 },
+  weekTxt:        { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
 
   gridWrap:       { flexDirection: 'row', flexWrap: 'wrap' },
   cell:           { width: `${100 / 7}%`, aspectRatio: 0.9, alignItems: 'center', justifyContent: 'center', padding: 2 },
-  cellToday:      { backgroundColor: '#EBF1FF', borderRadius: 10 },
+  cellToday:      { borderRadius: 10 },
   cellSelected:   { backgroundColor: BRAND, borderRadius: 10 },
 
   dayNum:         { fontSize: 13, fontWeight: '700' },
@@ -462,28 +464,28 @@ const cal = StyleSheet.create({
 
   dotsRow:        { flexDirection: 'row', gap: 2, marginTop: 2, alignItems: 'center' },
   dot:            { width: 5, height: 5, borderRadius: 2.5 },
-  dotMore:        { fontSize: 8, color: SLATE, fontWeight: '700' },
+  dotMore:        { fontSize: 8, fontWeight: '700' },
 
   loadingBox:     { paddingVertical: 40, alignItems: 'center' },
 
   summaryRow:     { flexDirection: 'row', gap: 8, marginVertical: 4 },
-  summaryCell:    { flex: 1, borderRadius: 12, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: BORDER, padding: 10, alignItems: 'center', gap: 3 },
+  summaryCell:    { flex: 1, borderRadius: 12, borderWidth: 1, padding: 10, alignItems: 'center', gap: 3 },
   summaryNum:     { fontSize: 20, fontWeight: '900' },
-  summaryLabel:   { fontSize: 10, fontWeight: '700', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.3 },
+  summaryLabel:   { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
 
   dayDetailBox:   { gap: 8 },
   dayDetailHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  dayDetailTitle: { fontSize: 14, fontWeight: '900', color: NAVY, flex: 1, flexWrap: 'wrap' },
+  dayDetailTitle: { fontSize: 14, fontWeight: '900', flex: 1, flexWrap: 'wrap' },
   dayDetailCount: { fontSize: 12, fontWeight: '700', color: BRAND },
   emptyDay:       { alignItems: 'center', paddingVertical: 24, gap: 6 },
   emptyDayEmoji:  { fontSize: 32 },
-  emptyDayTxt:    { fontSize: 13, color: SLATE, textAlign: 'center' },
+  emptyDayTxt:    { fontSize: 13, textAlign: 'center' },
 
   monthListBox:   { gap: 8, marginTop: 4 },
-  monthListTitle: { fontSize: 12, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  monthListTitle: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
   emptyMonth:     { alignItems: 'center', paddingVertical: 32, gap: 10 },
   emptyMonthEmoji:{ fontSize: 40 },
-  emptyMonthTxt:  { fontSize: 13, color: SLATE, textAlign: 'center' },
+  emptyMonthTxt:  { fontSize: 13, textAlign: 'center' },
   postBtn:        { backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   postBtnTxt:     { color: WHITE, fontSize: 13, fontWeight: '800' },
 });

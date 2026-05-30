@@ -68,8 +68,8 @@ export type EmployerStackParamList = {
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   // Pipeline overview
   EmployerPipeline: undefined;
-  // EmployerAttendance removed
-  // EmployerAttendance: { requirementId: string; requirementTitle?: string };
+  // Attendance screen
+  EmployerAttendance: { requirementId: string; requirementTitle?: string };
   // Requirement calendar
   RequirementCalendar: undefined;
   // Call & remark history
@@ -83,6 +83,7 @@ export type EmployerStackParamList = {
   PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };
   TopupWebView: { url: string; merchantOrderId: string };
   PdfViewer: { url: string; title?: string };
+  RequirementInvitations: { requirementId: string; requirementTitle?: string };
 };
 
 // Keep MainStackParamList alias so employer screens can be typed with it

@@ -100,10 +100,10 @@ function WorkerCard({
             {name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
           </AppText>
           {!!location && (
-            <AppText style={wc.location} numberOfLines={1}>📍 {location}</AppText>
+            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {location}</AppText>
           )}
           {wage != null && (
-            <View style={wc.wagePill}>
+            <View style={[wc.wagePill, { backgroundColor: theme.colors.successLight, borderColor: GREEN_BDR }]}>
               <AppText style={wc.wageTxt}>₹{wage}/day</AppText>
             </View>
           )}
@@ -128,21 +128,21 @@ function WorkerCard({
       {areas.length > 0 && (
         <View style={wc.skillsRow}>
           {areas.slice(0, 3).map((skill) => (
-            <View key={skill} style={wc.skillChip}>
-              <AppText style={wc.skillTxt}>{skill}</AppText>
+            <View key={skill} style={[wc.skillChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '55' }]}>
+              <AppText style={[wc.skillTxt, { color: theme.colors.primary }]}>{skill}</AppText>
             </View>
           ))}
           {areas.length > 3 && (
-            <View style={[wc.skillChip, { backgroundColor: BRAND_SOFT }]}>
-              <AppText style={[wc.skillTxt, { color: BRAND_MID }]}>+{areas.length - 3}</AppText>
+            <View style={[wc.skillChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '55' }]}>
+              <AppText style={[wc.skillTxt, { color: theme.colors.primary }]}>+{areas.length - 3}</AppText>
             </View>
           )}
         </View>
       )}
 
       {/* Footer */}
-      <View style={wc.footer}>
-        <AppText style={wc.viewProfile}>{t('viewProfile')}</AppText>
+      <View style={[wc.footer, { borderTopColor: theme.colors.divider }]}>
+        <AppText style={[wc.viewProfile, { color: theme.colors.primary }]}>{t('viewProfile')}</AppText>
       </View>
     </TouchableOpacity>
   );
@@ -155,31 +155,32 @@ const wc = StyleSheet.create({
   initials:    { fontSize: 18, fontWeight: '800' },
   verifiedDot: { position: 'absolute', bottom: 0, right: 0, width: 18, height: 18, borderRadius: 9, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: WHITE },
   name:        { fontSize: 15, fontWeight: '800', textTransform: 'capitalize' },
-  location:    { fontSize: 12, color: SLATE },
-  wagePill:    { alignSelf: 'flex-start', backgroundColor: GREEN_SOFT, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: GREEN_BDR },
+  location:    { fontSize: 12 },
+  wagePill:    { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1 },
   wageTxt:     { fontSize: 11, fontWeight: '700', color: GREEN },
   removeBtn:   { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', flexShrink: 0 },
   removeIcon:  { fontSize: 18, color: RED },
   skillsRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  skillChip:   { backgroundColor: BRAND_SOFT, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#BFDBFE' },
-  skillTxt:    { fontSize: 11, fontWeight: '600', color: BRAND_MID },
-  footer:      { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: BORDER, paddingTop: 8 },
-  viewProfile: { fontSize: 12, fontWeight: '700', color: BRAND_MID, textAlign: 'right' },
+  skillChip:   { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
+  skillTxt:    { fontSize: 11, fontWeight: '600' },
+  footer:      { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
+  viewProfile: { fontSize: 12, fontWeight: '700', textAlign: 'right' },
 });
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 function EmptyShortlist(): React.JSX.Element {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
   return (
     <View style={es.wrap}>
-      <View style={es.iconWrap}>
+      <View style={[es.iconWrap, { backgroundColor: theme.colors.dangerLight }]}>
         <AppText style={es.icon}>🤍</AppText>
       </View>
-      <AppText style={es.title}>{t('shortlistEmpty')}</AppText>
-      <AppText style={es.sub}>{t('shortlistEmptyDesc')}</AppText>
-      <View style={es.tipRow}>
+      <AppText style={[es.title, { color: theme.colors.text }]}>{t('shortlistEmpty')}</AppText>
+      <AppText style={[es.sub, { color: theme.colors.mutedText }]}>{t('shortlistEmptyDesc')}</AppText>
+      <View style={[es.tipRow, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '66' }]}>
         <AppText style={es.tipIcon}>💡</AppText>
-        <AppText style={es.tipTxt}>{t('shortlistTip')}</AppText>
+        <AppText style={[es.tipTxt, { color: theme.colors.warning }]}>{t('shortlistTip')}</AppText>
       </View>
     </View>
   );
@@ -187,13 +188,13 @@ function EmptyShortlist(): React.JSX.Element {
 
 const es = StyleSheet.create({
   wrap:    { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32, gap: 14 },
-  iconWrap:{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  iconWrap:{ width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   icon:    { fontSize: 42 },
-  title:   { fontSize: 20, fontWeight: '900', color: NAVY, textAlign: 'center' },
-  sub:     { fontSize: 14, color: SLATE, textAlign: 'center', lineHeight: 21 },
-  tipRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#FFFBEB', borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A', padding: 12, marginTop: 8 },
+  title:   { fontSize: 20, fontWeight: '900', textAlign: 'center' },
+  sub:     { fontSize: 14, textAlign: 'center', lineHeight: 21 },
+  tipRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, borderWidth: 1, padding: 12, marginTop: 8 },
   tipIcon: { fontSize: 16 },
-  tipTxt:  { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
+  tipTxt:  { flex: 1, fontSize: 12, lineHeight: 18 },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -275,7 +276,7 @@ export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={BRAND} />
-          <AppText style={{ marginTop: 12, fontSize: 13, color: SLATE }}>Loading shortlist…</AppText>
+          <AppText style={{ marginTop: 12, fontSize: 13, color: theme.colors.mutedText }}>{t('shortlistLoading')}</AppText>
         </View>
       ) : (
         <ScrollView

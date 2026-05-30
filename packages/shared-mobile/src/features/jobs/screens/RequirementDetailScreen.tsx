@@ -51,6 +51,9 @@ const AMBER      = '#D97706';
 const AMBER_SOFT = '#FFFBEB';
 const RED        = '#DC2626';
 const WHITE      = '#FFFFFF';
+// Premium extras
+const DEEP_NAVY  = '#060E2B';
+const CARD_SHADOW = { shadowColor: '#0F172A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtLabel = (s?: string | null): string => {
@@ -107,35 +110,36 @@ const InfoTile = ({ emoji, label, value, accent }: {
   emoji: string; label: string; value: string; accent?: string;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const a = accent ?? BRAND;
   return (
-    <View style={[tile.wrap, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-      <View style={[tile.iconBox, { backgroundColor: accent ? accent + '18' : BRAND_SOFT }]}>
+    <View style={[tile.wrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={[tile.iconBox, { backgroundColor: a + '14' }]}>
         <AppText style={tile.emoji}>{emoji}</AppText>
       </View>
       <AppText style={[tile.label, { color: theme.colors.mutedText }]}>{label}</AppText>
-      <AppText style={[tile.value, { color: theme.colors.text }, accent ? { color: accent } : {}]} numberOfLines={2}>{value}</AppText>
+      <AppText style={[tile.value, { color: accent ? a : theme.colors.text }]} numberOfLines={2}>{value}</AppText>
     </View>
   );
 };
 const tile = StyleSheet.create({
-  wrap:    { width: '48%', borderRadius: 14, borderWidth: 1, padding: 12, gap: 6 },
-  iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  emoji:   { fontSize: 18 },
-  label:   { fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
-  value:   { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  wrap:    { width: '48%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 8, ...CARD_SHADOW },
+  iconBox: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  emoji:   { fontSize: 20 },
+  label:   { fontSize: 9, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: SLATE },
+  value:   { fontSize: 14, fontWeight: '800', lineHeight: 19, letterSpacing: -0.1 },
 });
 
 // ─── Section header ────────────────────────────────────────────────────────────
 const SecHead = ({ title, accent = BRAND }: { title: string; accent?: string }): React.JSX.Element => (
   <View style={sh.row}>
     <View style={[sh.bar, { backgroundColor: accent }]} />
-    <AppText style={sh.text}>{title}</AppText>
+    <AppText style={[sh.text, { color: NAVY }]}>{title}</AppText>
   </View>
 );
 const sh = StyleSheet.create({
-  row:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  bar:  { width: 4, height: 18, borderRadius: 2 },
-  text: { fontSize: 14, fontWeight: '800', color: NAVY, letterSpacing: 0.1 },
+  row:  { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  bar:  { width: 5, height: 22, borderRadius: 3 },
+  text: { fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
 });
 
 // ─── Agent card (subscribed view) ─────────────────────────────────────────────
@@ -282,31 +286,28 @@ const AgentCard = ({
   );
 };
 const ac = StyleSheet.create({
-  cardWrap:      { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER, paddingBottom: 10 },
-  card:          { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 4 },
-  avatar:        { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  initials:      { fontSize: 16, fontWeight: '800' },
-  name:          { fontSize: 14, fontWeight: '700', color: NAVY, marginBottom: 2, textTransform: 'capitalize' },
-  location:      { fontSize: 11, color: SLATE, marginBottom: 4 },
-  wagePill:      { alignSelf: 'flex-start', backgroundColor: GREEN_SOFT, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: GREEN_BDR },
-  wageText:      { fontSize: 11, fontWeight: '700', color: GREEN },
-  unlockError:        { fontSize: 11, color: '#DC2626' },
-  // View Contact button
-  viewBtn:            { backgroundColor: BRAND_SOFT, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: BRAND_MID + '40', minWidth: 62 },
-  viewTxt:            { fontSize: 10, fontWeight: '800', color: BRAND_MID, textAlign: 'center', lineHeight: 14 },
-  // Subscription locked chip — tappable
-  lockedChip:         { backgroundColor: AMBER_SOFT, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: AMBER + '40', minWidth: 62, gap: 3 },
+  cardWrap:           { borderRadius: 14, borderWidth: 1, borderColor: BORDER, marginBottom: 10, overflow: 'hidden', backgroundColor: WHITE },
+  card:               { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  avatar:             { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  initials:           { fontSize: 18, fontWeight: '900' },
+  name:               { fontSize: 14, fontWeight: '800', color: NAVY, marginBottom: 2, textTransform: 'capitalize' },
+  location:           { fontSize: 11, color: SLATE, marginBottom: 4 },
+  wagePill:           { alignSelf: 'flex-start', backgroundColor: GREEN_SOFT, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: 1, borderColor: GREEN_BDR },
+  wageText:           { fontSize: 11, fontWeight: '800', color: GREEN },
+  unlockError:        { fontSize: 11, color: RED },
+  viewBtn:            { backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, alignItems: 'center', minWidth: 68 },
+  viewTxt:            { fontSize: 10, fontWeight: '900', color: WHITE, textAlign: 'center', lineHeight: 14 },
+  lockedChip:         { backgroundColor: AMBER_SOFT, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, alignItems: 'center', borderWidth: 1.5, borderColor: AMBER + '55', minWidth: 68, gap: 3 },
   lockedIcon:         { fontSize: 14 },
-  lockedTxt:          { fontSize: 10, fontWeight: '800', color: AMBER, textAlign: 'center' },
-  // Revealed phone row
-  phoneRevealedRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', backgroundColor: GREEN_SOFT, borderRadius: 10, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, gap: 8 },
+  lockedTxt:          { fontSize: 10, fontWeight: '900', color: AMBER, textAlign: 'center' },
+  phoneRevealedRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', backgroundColor: GREEN_SOFT, borderTopWidth: 1, borderTopColor: GREEN_BDR, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   phoneRevealedLeft:  { flex: 1, minWidth: 120 },
-  phoneRevealedLabel: { fontSize: 10, fontWeight: '700', color: GREEN, textTransform: 'uppercase', letterSpacing: 0.5 },
-  phoneRevealedNum:   { fontSize: 15, fontWeight: '800', color: '#0f172a', marginTop: 2 },
-  hiredBadge:         { width: '100%', fontSize: 11, fontWeight: '700', color: '#059669' },
-  callNowBtn:         { backgroundColor: GREEN, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' },
-  callNowTxt:         { color: WHITE, fontSize: 12, fontWeight: '800' },
-  errorRow:           { paddingHorizontal: 4, paddingBottom: 6 },
+  phoneRevealedLabel: { fontSize: 9, fontWeight: '800', color: GREEN, textTransform: 'uppercase', letterSpacing: 0.6 },
+  phoneRevealedNum:   { fontSize: 15, fontWeight: '900', color: NAVY, marginTop: 3 },
+  hiredBadge:         { width: '100%', fontSize: 11, fontWeight: '800', color: GREEN },
+  callNowBtn:         { backgroundColor: GREEN, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, alignItems: 'center' },
+  callNowTxt:         { color: WHITE, fontSize: 12, fontWeight: '900' },
+  errorRow:           { paddingHorizontal: 14, paddingBottom: 10 },
 });
 
 // ─── Blurred agent row (non-subscribed) ───────────────────────────────────────
@@ -358,33 +359,39 @@ function StatusPipeline({ req, grouped }: {
 
   return (
     <View style={pipe.wrap}>
+      <AppText style={pipe.heading}>Hiring Progress</AppText>
       <View style={pipe.stepsRow}>
         {PIPE_LABELS.map((label, i) => {
           const done    = activeIdx >= 0 && i < activeIdx;
           const current = activeIdx >= 0 && i === activeIdx;
-          const filled  = done || current;
+          const future  = !done && !current;
 
-          const circleColor = filled ? BRAND : WHITE;
-          const ringColor   = filled ? BRAND : isCancelled ? '#9CA3AF' : '#CBD5E1';
-          const labelColor  = current ? BRAND : done ? '#475569' : isCancelled ? '#9CA3AF' : '#94A3B8';
-          const leftLine    = i > 0 ? (done || current ? BRAND : '#CBD5E1') : 'transparent';
-          const rightLine   = i < PIPE_LABELS.length - 1 ? (done ? BRAND : '#CBD5E1') : 'transparent';
+          const circleColor = done ? BRAND : current ? WHITE : '#F1F5F9';
+          const ringColor   = done || current ? BRAND : isCancelled ? '#9CA3AF' : '#CBD5E1';
+          const labelColor  = current ? BRAND : done ? '#334155' : isCancelled ? '#9CA3AF' : '#94A3B8';
+          const leftLine    = i > 0 ? (done || current ? BRAND : '#E2E8F0') : 'transparent';
+          const rightLine   = i < PIPE_LABELS.length - 1 ? (done ? BRAND : '#E2E8F0') : 'transparent';
 
           return (
             <View key={label} style={pipe.step}>
               <View style={pipe.connRow}>
                 <View style={[pipe.connLine, { backgroundColor: leftLine }]} />
-                <View style={[pipe.circle, { backgroundColor: circleColor, borderColor: ringColor }]}>
-                  <AppText style={[pipe.circleNum, { color: filled ? WHITE : ringColor }]}>
-                    {done ? '✓' : String(i + 1)}
-                  </AppText>
-                </View>
+                {current ? (
+                  <View style={pipe.activeRing}>
+                    <View style={[pipe.circle, { backgroundColor: WHITE, borderColor: BRAND, borderWidth: 2.5 }]}>
+                      <AppText style={[pipe.circleNum, { color: BRAND, fontSize: 10, fontWeight: '900' }]}>{String(i + 1)}</AppText>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={[pipe.circle, { backgroundColor: circleColor, borderColor: ringColor, borderWidth: done ? 0 : 1.5 }]}>
+                    <AppText style={[pipe.circleNum, { color: done ? WHITE : future ? '#94A3B8' : ringColor }]}>
+                      {done ? '✓' : String(i + 1)}
+                    </AppText>
+                  </View>
+                )}
                 <View style={[pipe.connLine, { backgroundColor: rightLine }]} />
               </View>
-              <AppText
-                style={[pipe.stepLabel, { color: labelColor, fontWeight: current ? '800' : '600' }]}
-                numberOfLines={2}
-              >
+              <AppText style={[pipe.stepLabel, { color: labelColor, fontWeight: current ? '900' : done ? '700' : '500' }]} numberOfLines={2}>
                 {label}
               </AppText>
             </View>
@@ -394,7 +401,7 @@ function StatusPipeline({ req, grouped }: {
 
       {isCancelled && (
         <View style={pipe.cancelRow}>
-          <AppText style={pipe.cancelTxt}>✕  This requirement was cancelled</AppText>
+          <AppText style={pipe.cancelTxt}>{'✕'}  This requirement was cancelled</AppText>
         </View>
       )}
     </View>
@@ -421,6 +428,13 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   // Respond-to-proposal state (employer)
   const [rejectReasonInputId, setRejectReasonInputId] = useState<string | null>(null);
   const [rejectReasonText, setRejectReasonText] = useState('');
+
+  // Pipeline filter tab
+  const [pipelineFilter, setPipelineFilter] = useState<'All' | 'Shortlisted' | 'Selected' | 'Joined'>('All');
+  // Join modal state
+  const [joinTarget, setJoinTarget] = useState<{ mappingId: string; workerName: string } | null>(null);
+  const [joinRate, setJoinRate] = useState('');
+  const [joinRateType, setJoinRateType] = useState<'Daily' | 'Monthly'>('Daily');
 
   // Rate Workers modal state
   const [showRateModal, setShowRateModal] = useState(false);
@@ -467,6 +481,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       toast.success('Requirement has been closed successfully.', 'Requirement Closed');
     },
     onError: () => toast.error('Failed to close requirement. Please try again.', 'Error'),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: () => requirementsApi.updateStatus(requirementId, 'Completed'),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
+      void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
+      toast.success('Requirement marked as completed!', 'Completed');
+    },
+    onError: () => toast.error('Failed to mark as completed. Please try again.', 'Error'),
   });
 
   const proposeWorkerMutation = useMutation({
@@ -521,6 +545,29 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     queryFn: () => workerMappingApi.getRequirementMappings(requirementId),
     enabled: isEmployer,
     staleTime: 60 * 1000,
+  });
+
+  const advanceStatusMutation = useMutation({
+    mutationFn: ({ mappingId, status, hireRate }: { mappingId: string; status: 'Selected' | 'Joined'; hireRate?: { agreedRate: number; rateType: 'Daily' | 'Monthly' } }) =>
+      workerMappingApi.updateMappingStatus(mappingId, status, hireRate),
+    onSuccess: (_, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement-mappings', requirementId] });
+      void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
+      setJoinTarget(null);
+      setJoinRate('');
+      toast.success(`Worker moved to ${vars.status}!`);
+    },
+    onError: () => toast.error('Failed to update status. Please try again.'),
+  });
+
+  const removeShortlistMutation = useMutation({
+    mutationFn: (mappingId: string) => workerMappingApi.removeShortlist(mappingId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement-mappings', requirementId] });
+      void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
+      toast.success('Removed from pipeline.');
+    },
+    onError: () => toast.error('Failed to remove. Please try again.'),
   });
 
   const isSubscribed = (() => {
@@ -583,11 +630,27 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   const isAssignedToMe = String(req.assignedAgentId) === String(user?.id);
   const sMeta = statusMeta(req.status, isAssigned);
 
+  // True when any worker in the pipeline is Selected or Joined — prevents closing
+  const hasActiveWorkers =
+    (mappingData?.grouped?.Selected?.length ?? 0) > 0 ||
+    (mappingData?.grouped?.Joined?.length ?? 0) > 0;
+
   const handleClose = (): void => {
     showAlert('Close Requirement', 'Are you sure you want to close this requirement?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Close', style: 'destructive', onPress: () => closeMutation.mutate() },
     ]);
+  };
+
+  const handleComplete = (): void => {
+    showAlert(
+      'Mark as Completed',
+      'This will mark the requirement as completed. Workers who joined will be recorded.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark Completed', style: 'default', onPress: () => completeMutation.mutate() },
+      ]
+    );
   };
 
   const handleRepost = (): void => {
@@ -619,15 +682,15 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     });
   };
 
-  // const handleMarkAttendance = (): void => {
-  //   if (!req) return;
-  //   navigation.navigate('EmployerAttendance', {
-  //     requirementId,
-  //     requirementTitle: req.workType
-  //       ? req.workType.replace(/_/g, ' ') + (req.subCategory ? ` · ${req.subCategory.replace(/_/g, ' ')}` : '')
-  //       : undefined,
-  //   });
-  // };
+  const handleMarkAttendance = (): void => {
+    if (!req) return;
+    navigation.navigate('EmployerAttendance', {
+      requirementId,
+      requirementTitle: req.workType
+        ? req.workType.replace(/_/g, ' ') + (req.subCategory ? ` · ${req.subCategory.replace(/_/g, ' ')}` : '')
+        : undefined,
+    });
+  };
 
   const handleDocumentHub = (): void => {
     if (!req) return;
@@ -661,6 +724,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       <View style={[hero.wrap, { paddingTop: insets.top + 8 }]}>
         <View style={hero.deco1} />
         <View style={hero.deco2} />
+        <View style={hero.deco3} />
 
         {/* Back row */}
         <View style={hero.navRow}>
@@ -811,12 +875,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   <AppText style={pg.assignedWage}>₹{req.finalAgentRequiredWage}/day agreed</AppText>
                 )}
                 {req.assignedAgentPhone && (
-                  <TouchableOpacity
-                    onPress={() => void Linking.openURL(`tel:${req.assignedAgentPhone}`)}
-                    style={pg.assignedCallRow}
-                  >
-                    <AppText style={pg.assignedPhone}>📞 {req.assignedAgentPhone}</AppText>
-                  </TouchableOpacity>
+                  isSubscribed ? (
+                    <TouchableOpacity
+                      onPress={() => void Linking.openURL(`tel:${req.assignedAgentPhone}`)}
+                      style={pg.assignedCallRow}
+                    >
+                      <AppText style={pg.assignedPhone}>📞 {req.assignedAgentPhone}</AppText>
+                    </TouchableOpacity>
+                  ) : (
+                    <AppText style={pg.lockedContact}>🔒 Contact hidden — subscription inactive</AppText>
+                  )
                 )}
               </View>
               <View style={pg.assignedBadge}>
@@ -864,7 +932,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     </View>
                     <View style={{ flex: 1, gap: 3 }}>
                       <AppText style={pws.name}>{pw.workerName ?? '—'}</AppText>
-                      <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
+                      {isSubscribed
+                        ? <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
+                        : <AppText style={pws.phoneLocked}>🔒 Contact hidden</AppText>
+                      }
                       {pw.status === 'rejected' && pw.rejectionReason ? (
                         <AppText style={pws.reason}>Reason: {pw.rejectionReason}</AppText>
                       ) : null}
@@ -925,6 +996,154 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               })
             )}
           </View>
+        )}
+
+        {/* ── Hiring Pipeline (employer only) — Shortlisted / Selected / Joined ─── */}
+        {isEmployer && (mappingData?.mappings?.length ?? 0) > 0 && (
+          <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            {/* Header */}
+            <View style={pl.headerRow}>
+              <SecHead title="Hiring Pipeline" accent="#7C3AED" />
+              <View style={[pl.totalBadge, { backgroundColor: '#7C3AED' }]}>
+                <AppText style={pl.totalTxt}>{mappingData!.mappings.length}</AppText>
+              </View>
+            </View>
+
+            {/* Filter chips */}
+            <View style={pl.filterRow}>
+              {(['All', 'Shortlisted', 'Selected', 'Joined'] as const).map((f) => {
+                const cnt = f === 'All'
+                  ? mappingData!.mappings.length
+                  : (mappingData!.grouped[f]?.length ?? 0);
+                const active = pipelineFilter === f;
+                const colors: Record<string, { bg: string; text: string; border: string }> = {
+                  All:         { bg: '#7C3AED', text: '#fff', border: '#7C3AED' },
+                  Shortlisted: { bg: '#2563EB', text: '#fff', border: '#2563EB' },
+                  Selected:    { bg: '#7C3AED', text: '#fff', border: '#7C3AED' },
+                  Joined:      { bg: '#059669', text: '#fff', border: '#059669' },
+                };
+                const c = colors[f]!;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setPipelineFilter(f)}
+                    style={[pl.chip, active
+                      ? { backgroundColor: c.bg, borderColor: c.border }
+                      : { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
+                    activeOpacity={0.75}
+                  >
+                    <AppText style={[pl.chipTxt, { color: active ? c.text : theme.colors.mutedText }]}>{f}</AppText>
+                    <View style={[pl.chipBadge, { backgroundColor: active ? 'rgba(255,255,255,0.25)' : theme.colors.border }]}>
+                      <AppText style={[pl.chipBadgeTxt, { color: active ? '#fff' : theme.colors.mutedText }]}>{cnt}</AppText>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Worker rows */}
+            {(pipelineFilter === 'All' ? mappingData!.mappings : (mappingData!.grouped[pipelineFilter] ?? [])).map((m, idx) => {
+              const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+                Shortlisted: { bg: '#EFF6FF', text: '#2563EB', dot: '#2563EB' },
+                Selected:    { bg: '#F5F3FF', text: '#7C3AED', dot: '#7C3AED' },
+                Joined:      { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
+              };
+              const sc = statusColors[m.status] ?? statusColors.Shortlisted;
+              const initials = (m.workerName || 'W').slice(0, 2).toUpperCase();
+              const palBg = ['#EBF1FF','#F5F3FF','#ECFDF5','#FFF7ED'][idx % 4]!;
+              const palText = [BRAND_MID,'#7C3AED',GREEN,'#EA580C'][idx % 4]!;
+
+              return (
+                <View key={m._id} style={[pl.workerRow, { borderBottomColor: theme.colors.divider }]}>
+                  {/* Avatar */}
+                  <View style={[pl.avatar, { backgroundColor: palBg }]}>
+                    <AppText style={[pl.initials, { color: palText }]}>{initials}</AppText>
+                  </View>
+
+                  {/* Info */}
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
+                        <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
+                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{m.status}</AppText>
+                      </View>
+                      {m.agreedRate != null && (
+                        <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? 'day'}</AppText>
+                      )}
+                    </View>
+                    {m.workerPhone
+                      ? isSubscribed
+                        ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
+                        : <AppText style={pl.phoneLocked}>{'🔒'} Contact hidden</AppText>
+                      : null
+                    }
+                  </View>
+
+                  {/* Actions */}
+                  <View style={{ gap: 6, alignItems: 'flex-end' }}>
+                    {m.status === 'Shortlisted' && (
+                      <TouchableOpacity
+                        style={[pl.advanceBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
+                        onPress={() => advanceStatusMutation.mutate({ mappingId: m._id, status: 'Selected' })}
+                        disabled={advanceStatusMutation.isPending}
+                        activeOpacity={0.8}
+                      >
+                        <AppText style={[pl.advanceTxt, { color: '#7C3AED' }]}>{'→'} Select</AppText>
+                      </TouchableOpacity>
+                    )}
+                    {m.status === 'Selected' && (
+                      <TouchableOpacity
+                        style={[pl.advanceBtn, { backgroundColor: '#ECFDF5', borderColor: GREEN_BDR }]}
+                        onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
+                        activeOpacity={0.8}
+                      >
+                        <AppText style={[pl.advanceTxt, { color: GREEN }]}>{'→'} Join</AppText>
+                      </TouchableOpacity>
+                    )}
+                    {m.status === 'Joined' && (
+                      <View style={[pl.joinedBadge]}>
+                        <AppText style={pl.joinedTxt}>{'✓'} Joined</AppText>
+                      </View>
+                    )}
+                    {m.status !== 'Joined' && (
+                      <TouchableOpacity
+                        onPress={() => removeShortlistMutation.mutate(m._id)}
+                        disabled={removeShortlistMutation.isPending}
+                        style={pl.removeBtn}
+                        activeOpacity={0.7}
+                      >
+                        <AppText style={pl.removeTxt}>Remove</AppText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── Worker Invitations tracker (employer only) ──────────────── */}
+        {isEmployer && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('RequirementInvitations', {
+              requirementId: req._id,
+              requirementTitle: req.workType,
+            })}
+            activeOpacity={0.85}
+            style={[pg.invitationsStrip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}
+          >
+            <View style={pg.invitationsLeft}>
+              <View style={pg.invitationsIconWrap}>
+                <AppText style={{ fontSize: 20 }}>📬</AppText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText style={pg.invitationsTitle}>Worker Invitations</AppText>
+                <AppText style={pg.invitationsSub}>Track who accepted or declined your invites</AppText>
+              </View>
+            </View>
+            <AppText style={pg.invitationsArrow}>›</AppText>
+          </TouchableOpacity>
         )}
 
         {/* ── Interested Agents (employer only) ────────────────────────── */}
@@ -1150,56 +1369,51 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Action Buttons (employer only) ────────────────────────────── */}
         {!isAgentOrWorker && (
           <View style={pg.actionRow}>
-            {/* Mark Attendance removed */}
-            {false && !isClosed && (
+            {!isClosed && (
               <TouchableOpacity
                 style={pg.attendanceBtn}
-                onPress={() => {}}
+                onPress={handleMarkAttendance}
                 activeOpacity={0.88}
               >
-                <AppText style={pg.attendanceBtnTxt}>📋  Mark Attendance & Track Salary</AppText>
+                <AppText style={pg.attendanceBtnTxt}>📋  {i18n.t('markAttendanceTab', { ns: 'employer' })} & {i18n.t('salarySummaryTab', { ns: 'employer' })}</AppText>
               </TouchableOpacity>
             )}
 
-            {/* Document Hub — always available */}
-            <TouchableOpacity
-              style={pg.documentsBtn}
-              onPress={handleDocumentHub}
-              activeOpacity={0.88}
-            >
-              <AppText style={pg.documentsBtnTxt}>📁  Documents & Agreements</AppText>
-            </TouchableOpacity>
-
-            {/* Repost — always available to reuse this requirement config */}
-            <TouchableOpacity
-              style={pg.repostBtn}
-              onPress={handleRepost}
-              activeOpacity={0.88}
-            >
-              <AppText style={pg.repostBtnTxt}>🔁  Repost This Requirement</AppText>
-            </TouchableOpacity>
-
             {!isClosed && (
-              <TouchableOpacity
-                style={pg.closeBtn}
-                onPress={handleClose}
-                disabled={closeMutation.isPending}
-                activeOpacity={0.88}
-              >
-                <AppText style={pg.closeBtnTxt}>
-                  {closeMutation.isPending ? 'Closing…' : '🔒  Close Requirement'}
-                </AppText>
-              </TouchableOpacity>
+              hasActiveWorkers ? (
+                /* Workers are Selected/Joined — only allow "Mark Completed", not close */
+                <TouchableOpacity
+                  style={pg.completeBtn}
+                  onPress={handleComplete}
+                  disabled={completeMutation.isPending}
+                  activeOpacity={0.88}
+                >
+                  <AppText style={{ fontSize: 18 }}>{'✅'}</AppText>
+                  <AppText style={pg.completeBtnTxt}>
+                    {completeMutation.isPending ? 'Saving…' : 'Mark as Completed'}
+                  </AppText>
+                </TouchableOpacity>
+              ) : (
+                /* No active workers — allow closing */
+                <TouchableOpacity
+                  style={pg.closeBtn}
+                  onPress={handleClose}
+                  disabled={closeMutation.isPending}
+                  activeOpacity={0.88}
+                >
+                  <AppText style={{ fontSize: 18 }}>{'🔒'}</AppText>
+                  <AppText style={pg.closeBtnTxt}>
+                    {closeMutation.isPending ? 'Closing…' : 'Close Requirement'}
+                  </AppText>
+                </TouchableOpacity>
+              )
             )}
 
             {/* Rate Workers button — shown when requirement is Closed/Completed */}
             {isClosed && (req?.proposedWorkers?.some((pw) => pw.status === 'approved') || (req?.intrestedAgents?.length ?? 0) > 0) && (
-              <TouchableOpacity
-                style={pg.rateBtn}
-                onPress={() => setShowRateModal(true)}
-                activeOpacity={0.88}
-              >
-                <AppText style={pg.rateBtnTxt}>⭐  Rate Your Workers</AppText>
+              <TouchableOpacity style={pg.rateBtn} onPress={() => setShowRateModal(true)} activeOpacity={0.88}>
+                <AppText style={{ fontSize: 18 }}>{'⭐'}</AppText>
+                <AppText style={pg.rateBtnTxt}>Rate Your Workers</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -1207,6 +1421,65 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* ── Join Rate Modal ──────────────────────────────────────────────── */}
+      {joinTarget && (
+        <Modal visible animationType="slide" transparent onRequestClose={() => setJoinTarget(null)}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={pw.backdrop}>
+              <View style={[pw.sheet, { backgroundColor: WHITE }]}>
+                <View style={pw.sheetHandle} />
+                <AppText style={pw.sheetTitle}>Mark as Joined</AppText>
+                <AppText style={pw.sheetSub}>{joinTarget.workerName} — enter agreed rate to confirm joining.</AppText>
+
+                <AppText style={pw.fieldLabel}>Agreed Rate (₹)</AppText>
+                <TextInput
+                  style={pw.input}
+                  value={joinRate}
+                  onChangeText={setJoinRate}
+                  placeholder="e.g. 600"
+                  placeholderTextColor={SLATE}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                  autoFocus
+                />
+
+                <AppText style={pw.fieldLabel}>Rate Type</AppText>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                  {(['Daily', 'Monthly'] as const).map((rt) => (
+                    <TouchableOpacity
+                      key={rt}
+                      onPress={() => setJoinRateType(rt)}
+                      style={[pw.cancelBtn, joinRateType === rt && { backgroundColor: BRAND, borderColor: BRAND }]}
+                      activeOpacity={0.8}
+                    >
+                      <AppText style={{ fontSize: 13, fontWeight: '700', color: joinRateType === rt ? WHITE : SLATE }}>{rt}</AppText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={[pw.btnRow, { marginTop: 16 }]}>
+                  <TouchableOpacity style={pw.cancelBtn} onPress={() => setJoinTarget(null)} activeOpacity={0.8}>
+                    <AppText style={pw.cancelTxt}>Cancel</AppText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[pw.submitBtn, (!joinRate || advanceStatusMutation.isPending) && { opacity: 0.55 }]}
+                    disabled={!joinRate || advanceStatusMutation.isPending}
+                    onPress={() => advanceStatusMutation.mutate({
+                      mappingId: joinTarget.mappingId,
+                      status: 'Joined',
+                      hireRate: { agreedRate: parseInt(joinRate, 10), rateType: joinRateType },
+                    })}
+                    activeOpacity={0.85}
+                  >
+                    <AppText style={pw.submitTxt}>{advanceStatusMutation.isPending ? 'Saving…' : '✓ Confirm Join'}</AppText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
 
       {/* ── Propose Worker Modal (agent) ──────────────────────────────── */}
       <Modal
@@ -1407,128 +1680,144 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
 // ─── Status Pipeline styles ────────────────────────────────────────────────────
 const pipe = StyleSheet.create({
-  wrap:       { borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: WHITE, padding: 14 },
+  wrap:       { borderRadius: 20, borderWidth: 1, borderColor: BORDER, backgroundColor: WHITE, padding: 18, ...CARD_SHADOW },
+  heading:    { fontSize: 13, fontWeight: '800', color: SLATE, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 18 },
   stepsRow:   { flexDirection: 'row' },
   step:       { flex: 1, alignItems: 'center' },
-  connRow:    { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 6 },
-  connLine:   { flex: 1, height: 2 },
-  circle:     { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  circleNum:  { fontSize: 9, fontWeight: '900', lineHeight: 12 },
+  connRow:    { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 },
+  connLine:   { flex: 1, height: 2.5, borderRadius: 2 },
+  circle:     { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  activeRing: { width: 38, height: 38, borderRadius: 19, borderWidth: 2.5, borderColor: BRAND + '30', backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center' },
+  circleNum:  { fontSize: 10, fontWeight: '900', lineHeight: 13 },
   stepLabel:  { fontSize: 9, textAlign: 'center', lineHeight: 13, letterSpacing: 0.1 },
-  cancelRow:  { marginTop: 10, backgroundColor: '#FEF2F2', borderRadius: 10, borderWidth: 1, borderColor: '#FECACA', padding: 8, alignItems: 'center' },
+  cancelRow:  { marginTop: 12, backgroundColor: '#FEF2F2', borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', padding: 10, alignItems: 'center' },
   cancelTxt:  { fontSize: 12, fontWeight: '800', color: RED },
 });
 
 // ─── Hero styles ───────────────────────────────────────────────────────────────
 const hero = StyleSheet.create({
-  wrap:        { backgroundColor: BRAND, paddingHorizontal: 18, paddingBottom: 24, overflow: 'hidden' },
-  deco1:       { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(255,255,255,0.05)', top: -90, right: -70 },
-  deco2:       { position: 'absolute', width: 140, height: 140, borderRadius: 70,  backgroundColor: 'rgba(255,255,255,0.05)', bottom: -40, left: -30 },
-  navRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
-  backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  backArrow:   { color: WHITE, fontSize: 18, fontWeight: '600', lineHeight: 22 },
-  navTitle:    { flex: 1, textAlign: 'center', color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600', marginHorizontal: 8 },
-  ernChip:     { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  ernTxt:      { color: WHITE, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
-  titleRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 },
-  jobTitle:    { color: WHITE, fontSize: 20, fontWeight: '900', lineHeight: 26, letterSpacing: -0.3 },
-  jobSubTitle: { color: 'rgba(255,255,255,0.88)', fontSize: 15, fontWeight: '700', marginTop: 3, lineHeight: 20 },
-  jobType:     { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginTop: 4 },
-  statusBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
-  statusDot:   { width: 6, height: 6, borderRadius: 3 },
-  statusLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
-  pillsRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  pill:        { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  pillGreen:   { backgroundColor: 'rgba(5,150,105,0.35)' },
-  pillIcon:    { fontSize: 12, color: WHITE },
-  pillTxt:     { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  wrap:        { backgroundColor: DEEP_NAVY, paddingHorizontal: 18, paddingBottom: 28, overflow: 'hidden' },
+  deco1:       { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: 'rgba(26,86,219,0.22)', top: -100, right: -80 },
+  deco2:       { position: 'absolute', width: 160, height: 160, borderRadius: 80,  backgroundColor: 'rgba(16,55,164,0.18)', bottom: -50, left: -40 },
+  deco3:       { position: 'absolute', width: 100, height: 100, borderRadius: 50,  backgroundColor: 'rgba(255,255,255,0.03)', top: 30, left: '40%' },
+  navRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  backBtn:     { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+  backArrow:   { color: WHITE, fontSize: 19, fontWeight: '500', lineHeight: 23 },
+  navTitle:    { flex: 1, textAlign: 'center', color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '700', marginHorizontal: 8, letterSpacing: 0.3, textTransform: 'uppercase' },
+  ernChip:     { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  ernTxt:      { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  titleRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
+  jobTitle:    { color: WHITE, fontSize: 24, fontWeight: '900', lineHeight: 30, letterSpacing: -0.5 },
+  jobSubTitle: { color: 'rgba(255,255,255,0.78)', fontSize: 14, fontWeight: '600', marginTop: 5, lineHeight: 19 },
+  jobType:     { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  statusBadge: { borderRadius: 999, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  statusDot:   { width: 7, height: 7, borderRadius: 4 },
+  statusLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 0.3 },
+  pillsRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  pill:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  pillGreen:   { backgroundColor: 'rgba(5,150,105,0.28)', borderColor: 'rgba(5,150,105,0.4)' },
+  pillIcon:    { fontSize: 12 },
+  pillTxt:     { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.92)' },
 });
 
 // ─── Page / section styles ─────────────────────────────────────────────────────
 const pg = StyleSheet.create({
   scroll:   { flex: 1 },
-  content:  { padding: 16, paddingTop: 18, paddingBottom: 40, gap: 12 },
+  content:  { padding: 16, paddingTop: 20, paddingBottom: 48, gap: 14 },
 
-  section:  { borderRadius: 18, borderWidth: 1, padding: 16, elevation: 1, shadowColor: NAVY, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  grid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  section:  { borderRadius: 20, borderWidth: 1, padding: 18, ...CARD_SHADOW },
+  grid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
   perksWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  perkChip:  { flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_SOFT, borderRadius: 20, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 12, paddingVertical: 5 },
-  perkTxt:   { fontSize: 12, fontWeight: '700', color: GREEN },
+  perkChip:  { flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_SOFT, borderRadius: 999, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 14, paddingVertical: 7 },
+  perkTxt:   { fontSize: 12, fontWeight: '800', color: GREEN },
 
-  remarksBox:  { flexDirection: 'row', gap: 10, backgroundColor: AMBER_SOFT, borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A', padding: 12 },
-  remarksIcon: { fontSize: 18 },
-  remarksTxt:  { flex: 1, fontSize: 13, lineHeight: 20, fontWeight: '500' },
+  remarksBox:  { flexDirection: 'row', gap: 12, backgroundColor: '#FFFBEB', borderRadius: 14, borderWidth: 1, borderColor: '#FDE68A', padding: 14 },
+  remarksIcon: { fontSize: 20 },
+  remarksTxt:  { flex: 1, fontSize: 13, lineHeight: 20, fontWeight: '500', color: '#78350F' },
 
   // Assigned agent card
-  assignedCard:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F5F3FF', borderRadius: 14, padding: 14 },
-  assignedAvatar:  { width: 52, height: 52, borderRadius: 26, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#C4B5FD' },
-  assignedInitials:{ fontSize: 18, fontWeight: '800', color: '#7C3AED' },
-  assignedName:    { fontSize: 15, fontWeight: '800', marginBottom: 2, textTransform: 'capitalize' },
+  assignedCard:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F5F3FF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#DDD6FE' },
+  assignedAvatar:  { width: 54, height: 54, borderRadius: 27, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#C4B5FD' },
+  assignedInitials:{ fontSize: 20, fontWeight: '900', color: '#7C3AED' },
+  assignedName:    { fontSize: 15, fontWeight: '900', marginBottom: 3, textTransform: 'capitalize', color: NAVY },
   assignedWage:    { fontSize: 12, color: GREEN, fontWeight: '700', marginBottom: 3 },
   assignedCallRow: {},
-  assignedPhone:   { fontSize: 13, color: BRAND_MID, fontWeight: '600' },
-  assignedBadge:   { backgroundColor: '#7C3AED', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  assignedBadgeTxt:{ fontSize: 11, fontWeight: '800', color: WHITE },
+  assignedPhone:   { fontSize: 13, color: BRAND_MID, fontWeight: '700' },
+  lockedContact:   { fontSize: 12, color: '#9CA3AF', fontWeight: '600', marginTop: 4 },
+  assignedBadge:   { backgroundColor: '#7C3AED', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  assignedBadgeTxt:{ fontSize: 11, fontWeight: '900', color: WHITE, letterSpacing: 0.3 },
 
   // Interested agents section
-  interestedHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  countBadge:       { backgroundColor: BRAND, borderRadius: 99, width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
-  countBadgeTxt:    { color: WHITE, fontSize: 12, fontWeight: '800' },
+  interestedHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  countBadge:       { backgroundColor: BRAND, borderRadius: 99, minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  countBadgeTxt:    { color: WHITE, fontSize: 12, fontWeight: '900' },
 
-  noAgentsWrap:    { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  noAgentsIconWrap:{ width: 64, height: 64, borderRadius: 32, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  noAgentsTitle:   { fontSize: 15, fontWeight: '800' },
-  noAgentsSub:     { fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  noAgentsWrap:    { alignItems: 'center', paddingVertical: 28, gap: 10 },
+  noAgentsIconWrap:{ width: 72, height: 72, borderRadius: 36, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4, borderWidth: 1.5, borderColor: '#BFDBFE' },
+  noAgentsTitle:   { fontSize: 16, fontWeight: '900', color: NAVY },
+  noAgentsSub:     { fontSize: 12, textAlign: 'center', lineHeight: 18, color: SLATE, maxWidth: 240 },
 
-  profilesLoading: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  profilesLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
+
+  // ── Worker Invitations strip ──────────────────────────────────────────────
+  invitationsStrip:   { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1, padding: 14, marginHorizontal: 12, marginBottom: 12, gap: 10 },
+  invitationsLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  invitationsIconWrap:{ width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(124,58,237,0.12)', alignItems: 'center', justifyContent: 'center' },
+  invitationsTitle:   { fontSize: 13, fontWeight: '800', color: '#4C1D95' },
+  invitationsSub:     { fontSize: 11, color: '#7C3AED', marginTop: 2, fontWeight: '500' },
+  invitationsArrow:   { fontSize: 24, fontWeight: '600', color: '#7C3AED', opacity: 0.7 },
 
   // ── Subscription lock card ────────────────────────────────────────────────
-  lockCard:       { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: BORDER, marginBottom: 12 },
-  lockPreview:    { opacity: 0.35, paddingHorizontal: 4 },
-  lockPreviewFade:{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, backgroundColor: 'rgba(248,250,252,0.95)' },
-  lockContent:    { alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, gap: 10, backgroundColor: 'rgba(248,250,252,0.97)' },
-  subLockIcon:   { width: 60, height: 60, borderRadius: 30, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  subOverlayTitle:{ fontSize: 16, fontWeight: '900', color: NAVY, textAlign: 'center' },
-  subOverlaySub:  { fontSize: 13, textAlign: 'center', lineHeight: 19, color: SLATE, maxWidth: 260 },
-  subOverlayBtn:  { marginTop: 4, backgroundColor: BRAND, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 13 },
-  subOverlayBtnTxt:{ color: WHITE, fontWeight: '800', fontSize: 14, letterSpacing: 0.2 },
+  lockCard:       { borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: BORDER, marginBottom: 12 },
+  lockPreview:    { opacity: 0.3, paddingHorizontal: 4 },
+  lockPreviewFade:{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, backgroundColor: 'rgba(248,250,252,0.97)' },
+  lockContent:    { alignItems: 'center', paddingHorizontal: 24, paddingTop: 22, paddingBottom: 26, gap: 12, backgroundColor: 'rgba(248,250,252,0.98)' },
+  subLockIcon:    { width: 68, height: 68, borderRadius: 34, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4, borderWidth: 1.5, borderColor: '#BFDBFE' },
+  subOverlayTitle:{ fontSize: 17, fontWeight: '900', color: NAVY, textAlign: 'center' },
+  subOverlaySub:  { fontSize: 13, textAlign: 'center', lineHeight: 20, color: SLATE, maxWidth: 260 },
+  subOverlayBtn:  { marginTop: 6, backgroundColor: BRAND, borderRadius: 16, paddingHorizontal: 36, paddingVertical: 14 },
+  subOverlayBtnTxt:{ color: WHITE, fontWeight: '900', fontSize: 14, letterSpacing: 0.3 },
 
-  suggestionBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: AMBER_SOFT, borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A', padding: 12, marginTop: 12 },
-  suggestionTxt:  { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
-  suggestionBold: { fontWeight: '800', color: '#92400E' },
+  suggestionBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFFBEB', borderRadius: 14, borderWidth: 1, borderColor: '#FDE68A', padding: 14, marginTop: 12 },
+  suggestionTxt:  { flex: 1, fontSize: 12, color: '#78350F', lineHeight: 18 },
+  suggestionBold: { fontWeight: '900', color: '#92400E' },
 
   // Express interest
-  interestDone:     { alignItems: 'center', paddingVertical: 20, gap: 8 },
-  interestDoneIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: GREEN_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  interestDoneTitle:{ fontSize: 15, fontWeight: '800', color: GREEN },
-  interestDoneSub:  { fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  interestDone:     { alignItems: 'center', paddingVertical: 22, gap: 10 },
+  interestDoneIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: GREEN_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4, borderWidth: 1.5, borderColor: GREEN_BDR },
+  interestDoneTitle:{ fontSize: 16, fontWeight: '900', color: GREEN },
+  interestDoneSub:  { fontSize: 12, textAlign: 'center', lineHeight: 18, maxWidth: 240 },
 
-  interestForm:  { gap: 12 },
+  interestForm:  { gap: 14 },
   minWageRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  minWageLabel:  { fontSize: 12, color: SLATE, fontWeight: '600' },
-  minWagePill:   { backgroundColor: GREEN_SOFT, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: GREEN_BDR },
-  minWagePillTxt:{ fontSize: 12, fontWeight: '700', color: GREEN },
-  wageInput:     { height: 50, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, fontSize: 15, fontWeight: '600' },
-  expressBtn:    { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  expressBtnTxt: { color: WHITE, fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
+  minWageLabel:  { fontSize: 12, color: SLATE, fontWeight: '700' },
+  minWagePill:   { backgroundColor: GREEN_SOFT, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: GREEN_BDR },
+  minWagePillTxt:{ fontSize: 13, fontWeight: '800', color: GREEN },
+  wageInput:     { height: 52, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 16, fontSize: 15, fontWeight: '700' },
+  expressBtn:    { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  expressBtnTxt: { color: WHITE, fontSize: 15, fontWeight: '900', letterSpacing: 0.3 },
 
   // Assigned to me
-  assignedMeWrap:  { alignItems: 'center', paddingVertical: 8, gap: 8 },
-  assignedMeTitle: { fontSize: 18, fontWeight: '900', color: GREEN },
-  assignedMeSub:   { fontSize: 13, fontWeight: '600' },
-  // Action buttons
-  actionRow:       { gap: 10 },
-  attendanceBtn:   { backgroundColor: '#1037A4', borderRadius: 16, padding: 16, alignItems: 'center' },
-  attendanceBtnTxt:{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  documentsBtn:    { borderWidth: 1.5, borderColor: '#D97706', borderRadius: 16, padding: 16, alignItems: 'center' },
-  documentsBtnTxt: { color: '#D97706', fontSize: 14, fontWeight: '700' },
-  repostBtn:       { borderWidth: 1.5, borderColor: '#1037A4', borderRadius: 16, padding: 16, alignItems: 'center' },
-  repostBtnTxt:    { color: '#1037A4', fontSize: 14, fontWeight: '700' },
-  closeBtn:        { borderWidth: 1.5, borderColor: RED, borderRadius: 16, padding: 16, alignItems: 'center' },
-  closeBtnTxt:     { color: RED, fontSize: 14, fontWeight: '700' },
-  rateBtn:         { backgroundColor: '#FFFBEB', borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#FDE68A' },
-  rateBtnTxt:      { color: '#92400E', fontSize: 14, fontWeight: '800' },
+  assignedMeWrap:  { alignItems: 'center', paddingVertical: 10, gap: 8 },
+  assignedMeTitle: { fontSize: 20, fontWeight: '900', color: GREEN },
+  assignedMeSub:   { fontSize: 14, fontWeight: '700', color: SLATE },
+
+  // ── Action buttons — premium style ────────────────────────────────────────
+  actionRow:         { gap: 10 },
+  documentsBtn:      { backgroundColor: '#FFF7ED', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#FDE68A', ...CARD_SHADOW },
+  documentsBtnTxt:   { color: '#B45309', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  repostBtn:         { backgroundColor: BRAND_SOFT, borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#BFDBFE', ...CARD_SHADOW },
+  repostBtnTxt:      { color: BRAND, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  closeBtn:          { backgroundColor: '#FEF2F2', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#FECACA', ...CARD_SHADOW },
+  closeBtnTxt:       { color: RED, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  completeBtn:       { backgroundColor: '#ECFDF5', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#6EE7B7', ...CARD_SHADOW },
+  completeBtnTxt:    { color: '#059669', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  rateBtn:           { backgroundColor: '#FFFBEB', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#FDE68A', ...CARD_SHADOW },
+  rateBtnTxt:        { color: '#92400E', fontSize: 14, fontWeight: '900', letterSpacing: 0.2 },
+  // unused but kept
+  attendanceBtn:     { backgroundColor: BRAND, borderRadius: 18, paddingVertical: 17, alignItems: 'center' },
+  attendanceBtnTxt:  { color: WHITE, fontSize: 14, fontWeight: '800' },
 });
 
 // ─── Proposed Workers styles ───────────────────────────────────────────────────
@@ -1538,6 +1827,7 @@ const pws = StyleSheet.create({
   initials:      { fontSize: 14, fontWeight: '800', color: BRAND_MID },
   name:          { fontSize: 13, fontWeight: '700', color: NAVY, textTransform: 'capitalize' },
   phone:         { fontSize: 11, color: SLATE, marginTop: 1 },
+  phoneLocked:   { fontSize: 11, color: '#9CA3AF', marginTop: 1 },
   reason:        { fontSize: 11, color: RED, marginTop: 2 },
   statusChip:    { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   statusTxt:     { fontSize: 11, fontWeight: '700' },
@@ -1595,4 +1885,38 @@ const pw = StyleSheet.create({
   cancelTxt:   { fontSize: 14, fontWeight: '700', color: SLATE },
   submitBtn:   { flex: 2, backgroundColor: BRAND, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   submitTxt:   { fontSize: 14, fontWeight: '800', color: WHITE },
+});
+
+// ─── Hiring Pipeline section styles ───────────────────────────────────────────
+const pl = StyleSheet.create({
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  totalBadge:   { borderRadius: 99, minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  totalTxt:     { color: WHITE, fontSize: 12, fontWeight: '900' },
+
+  // Filter chips
+  filterRow:    { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginBottom: 14 },
+  chip:         { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 11, paddingVertical: 6 },
+  chipTxt:      { fontSize: 11, fontWeight: '800' },
+  chipBadge:    { borderRadius: 99, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  chipBadgeTxt: { fontSize: 9, fontWeight: '900' },
+
+  // Worker row
+  workerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  avatar:       { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  initials:     { fontSize: 15, fontWeight: '900' },
+  workerName:   { fontSize: 14, fontWeight: '800', letterSpacing: -0.1 },
+  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  statusDot:    { width: 6, height: 6, borderRadius: 3 },
+  statusTxt:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.2 },
+  rateTxt:      { fontSize: 11, fontWeight: '700', color: GREEN },
+  phoneTxt:     { fontSize: 11, color: SLATE },
+  phoneLocked:  { fontSize: 11, color: '#9CA3AF' },
+
+  // Action buttons on each row
+  advanceBtn:   { borderRadius: 9, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
+  advanceTxt:   { fontSize: 11, fontWeight: '800' },
+  joinedBadge:  { borderRadius: 9, backgroundColor: GREEN_SOFT, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 10, paddingVertical: 5 },
+  joinedTxt:    { fontSize: 11, fontWeight: '800', color: GREEN },
+  removeBtn:    { paddingHorizontal: 8, paddingVertical: 4 },
+  removeTxt:    { fontSize: 10, fontWeight: '700', color: SLATE },
 });

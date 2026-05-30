@@ -48,16 +48,19 @@ const C = {
 };
 
 // ─── Summary tile ─────────────────────────────────────────────────────────────
-const SummaryTile = ({ value, label, color, bg }: { value: string | number; label: string; color: string; bg: string }) => (
-  <View style={[st.tile, { backgroundColor: bg }]}>
-    <AppText style={[st.val, { color }]}>{value}</AppText>
-    <AppText style={st.lbl}>{label}</AppText>
-  </View>
-);
+const SummaryTile = ({ value, label, color, bg }: { value: string | number; label: string; color: string; bg: string }) => {
+  const { theme } = useAppTheme();
+  return (
+    <View style={[st.tile, { backgroundColor: bg }]}>
+      <AppText style={[st.val, { color }]}>{value}</AppText>
+      <AppText style={[st.lbl, { color: theme.colors.mutedText }]}>{label}</AppText>
+    </View>
+  );
+};
 const st = StyleSheet.create({
   tile: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 2 },
   val:  { fontSize: 22, fontWeight: '900' },
-  lbl:  { fontSize: 11, fontWeight: '600', color: C.slate, textAlign: 'center' },
+  lbl:  { fontSize: 11, fontWeight: '600', textAlign: 'center' },
 });
 
 // ─── Bar chart (pure RN) ──────────────────────────────────────────────────────
@@ -66,13 +69,14 @@ const BAR_W_PAIR = 20; // width of one bar
 
 const BarChart = ({ data }: { data: MonthPoint[] }) => {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
   const maxVal = useMemo(() => Math.max(1, ...data.map((d) => Math.max(d.posted, d.filled))), [data]);
   return (
     <View style={bc.wrap}>
       {/* Legend */}
       <View style={bc.legend}>
-        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: BRAND }]} /><AppText style={bc.legendTxt}>{t('legendPosted')}</AppText></View>
-        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: '#10B981' }]} /><AppText style={bc.legendTxt}>{t('legendFilled')}</AppText></View>
+        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: BRAND }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendPosted')}</AppText></View>
+        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: '#10B981' }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendFilled')}</AppText></View>
       </View>
 
       {/* Bars */}
@@ -96,7 +100,7 @@ const BarChart = ({ data }: { data: MonthPoint[] }) => {
                 )}
                 <View style={[bc.bar, { height: filledH, backgroundColor: '#10B981', opacity: 0.85 }]} />
               </View>
-              <AppText style={bc.monthLabel}>{d.label}</AppText>
+              <AppText style={[bc.monthLabel, { color: theme.colors.mutedText }]}>{d.label}</AppText>
             </View>
           );
         })}
@@ -110,23 +114,24 @@ const bc = StyleSheet.create({
   legend:      { flexDirection: 'row', gap: 16, paddingLeft: 4 },
   legendRow:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot:   { width: 10, height: 10, borderRadius: 5 },
-  legendTxt:   { fontSize: 11, fontWeight: '600', color: C.slate },
+  legendTxt:   { fontSize: 11, fontWeight: '600' },
   chart:       { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: BAR_HEIGHT + 30, paddingHorizontal: 2 },
   group:       { alignItems: 'center', gap: 2, flex: 1 },
   barWrap:     { alignItems: 'center', justifyContent: 'flex-end', height: BAR_HEIGHT, width: BAR_W_PAIR },
   bar:         { width: BAR_W_PAIR, borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 2 },
   barVal:      { fontSize: 9, fontWeight: '800', marginBottom: 2 },
-  monthLabel:  { fontSize: 9, fontWeight: '700', color: C.slate, marginTop: 4 },
+  monthLabel:  { fontSize: 9, fontWeight: '700', marginTop: 4 },
 });
 
 // ─── Category pill chart ──────────────────────────────────────────────────────
 const CategoryPillChart = ({ data }: { data: CategoryPoint[] }) => {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
     <View style={cp.wrap}>
       {/* Proportional strip */}
-      <View style={cp.strip}>
+      <View style={[cp.strip, { backgroundColor: theme.colors.surface2 }]}>
         {data.map((d, i) => (
           <View key={i} style={{ flex: d.count, height: '100%', backgroundColor: PALETTE[i % PALETTE.length], borderRadius: i === 0 ? 8 : i === data.length - 1 ? 8 : 0 }} />
         ))}
@@ -136,44 +141,45 @@ const CategoryPillChart = ({ data }: { data: CategoryPoint[] }) => {
       {data.map((d, i) => (
         <View key={i} style={cp.row}>
           <View style={[cp.dot, { backgroundColor: PALETTE[i % PALETTE.length] }]} />
-          <AppText style={cp.name} numberOfLines={1}>{d.name}</AppText>
-          <AppText style={cp.count}>{d.count}</AppText>
-          <View style={cp.barWrap}>
+          <AppText style={[cp.name, { color: theme.colors.text }]} numberOfLines={1}>{d.name}</AppText>
+          <AppText style={[cp.count, { color: theme.colors.text }]}>{d.count}</AppText>
+          <View style={[cp.barWrap, { backgroundColor: theme.colors.surface2 }]}>
             <View style={[cp.bar, { width: `${d.percent}%`, backgroundColor: PALETTE[i % PALETTE.length] }]} />
           </View>
           <AppText style={[cp.pct, { color: PALETTE[i % PALETTE.length] }]}>{d.percent}%</AppText>
         </View>
       ))}
 
-      <AppText style={cp.total}>{t('totalRequirements', { count: total })}</AppText>
+      <AppText style={[cp.total, { color: theme.colors.mutedText }]}>{t('totalRequirements', { count: total })}</AppText>
     </View>
   );
 };
 const cp = StyleSheet.create({
   wrap:    { gap: 10 },
-  strip:   { height: 12, borderRadius: 8, flexDirection: 'row', overflow: 'hidden', backgroundColor: C.border, marginBottom: 4 },
+  strip:   { height: 12, borderRadius: 8, flexDirection: 'row', overflow: 'hidden', marginBottom: 4 },
   row:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot:     { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  name:    { flex: 1, fontSize: 12, fontWeight: '600', color: C.navy },
-  count:   { width: 22, fontSize: 12, fontWeight: '800', color: C.navy, textAlign: 'right' },
-  barWrap: { width: 80, height: 6, backgroundColor: C.border, borderRadius: 3, overflow: 'hidden' },
+  name:    { flex: 1, fontSize: 12, fontWeight: '600' },
+  count:   { width: 22, fontSize: 12, fontWeight: '800', textAlign: 'right' },
+  barWrap: { width: 80, height: 6, borderRadius: 3, overflow: 'hidden' },
   bar:     { height: '100%', borderRadius: 3 },
   pct:     { width: 34, fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  total:   { fontSize: 11, color: C.slate, textAlign: 'right', marginTop: 2 },
+  total:   { fontSize: 11, textAlign: 'right', marginTop: 2 },
 });
 
 // ─── Time-to-hire bars ────────────────────────────────────────────────────────
 const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }) => {
+  const { theme } = useAppTheme();
   const maxDays = useMemo(() => Math.max(1, ...data.map((d) => d.avgDays)), [data]);
   return (
     <View style={th.wrap}>
       {data.map((d, i) => (
         <View key={i} style={th.row}>
-          <AppText style={th.cat} numberOfLines={1}>{d.category}</AppText>
-          <View style={th.barWrap}>
+          <AppText style={[th.cat, { color: theme.colors.text }]} numberOfLines={1}>{d.category}</AppText>
+          <View style={[th.barWrap, { backgroundColor: theme.colors.surface2 }]}>
             <View style={[th.bar, { width: `${Math.max(4, (d.avgDays / maxDays) * 100)}%`, backgroundColor: PALETTE[i % PALETTE.length] }]} />
           </View>
-          <AppText style={th.days}>{d.avgDays}d</AppText>
+          <AppText style={[th.days, { color: theme.colors.mutedText }]}>{d.avgDays}d</AppText>
         </View>
       ))}
     </View>
@@ -182,10 +188,10 @@ const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }) => {
 const th = StyleSheet.create({
   wrap:    { gap: 10 },
   row:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cat:     { width: 80, fontSize: 11, fontWeight: '600', color: C.navy },
-  barWrap: { flex: 1, height: 12, backgroundColor: C.border, borderRadius: 6, overflow: 'hidden' },
+  cat:     { width: 80, fontSize: 11, fontWeight: '600' },
+  barWrap: { flex: 1, height: 12, borderRadius: 6, overflow: 'hidden' },
   bar:     { height: '100%', borderRadius: 6 },
-  days:    { width: 32, fontSize: 11, fontWeight: '800', color: C.slate, textAlign: 'right' },
+  days:    { width: 32, fontSize: 11, fontWeight: '800', textAlign: 'right' },
 });
 
 // ─── Section card ─────────────────────────────────────────────────────────────
@@ -194,7 +200,7 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
   return (
     <View style={[sc.card, { backgroundColor: theme.colors.card }]}>
       <View style={sc.titleRow}>
-        <AppText style={sc.title}>{title}</AppText>
+        <AppText style={[sc.title, { color: theme.colors.text }]}>{title}</AppText>
       </View>
       {children}
     </View>
@@ -203,7 +209,7 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
 const sc = StyleSheet.create({
   card:     { borderRadius: 18, padding: 16, gap: 14, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   titleRow: { borderLeftWidth: 3, borderLeftColor: BRAND, paddingLeft: 10 },
-  title:    { fontSize: 14, fontWeight: '800', color: C.navy },
+  title:    { fontSize: 14, fontWeight: '800' },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
@@ -235,7 +241,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         <ScreenHeader title={t('analyticsTitle')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={BRAND} />
-          <AppText style={{ color: C.slate, marginTop: 12, fontSize: 13 }}>{t('buildingReport')}</AppText>
+          <AppText style={{ color: theme.colors.mutedText, marginTop: 12, fontSize: 13 }}>{t('buildingReport')}</AppText>
         </View>
       </View>
     );
@@ -247,8 +253,8 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <ScreenHeader title={t('analyticsTitle')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
-          <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy }}>{t('couldntLoadAnalytics')}</AppText>
-          <AppText style={{ color: C.slate, textAlign: 'center', lineHeight: 20 }}>{t('checkConnectionRetry')}</AppText>
+          <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>{t('couldntLoadAnalytics')}</AppText>
+          <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20 }}>{t('checkConnectionRetry')}</AppText>
           <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: BRAND, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}>
             <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{t('retry')}</AppText>
           </TouchableOpacity>
@@ -270,10 +276,10 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
       >
         {/* ── Summary tiles ── */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <SummaryTile value={summary?.totalPosted ?? 0} label={t('totalPosted')} color={BRAND} bg="#EBF1FF" />
-          <SummaryTile value={summary?.totalFilled ?? 0} label={t('filled')} color={C.green} bg={C.greenSoft} />
-          <SummaryTile value={summary?.totalOpen ?? 0} label={t('open')} color={C.amber} bg={C.amberSoft} />
-          <SummaryTile value={`${summary?.fillRate ?? 0}%`} label={t('fillRate')} color="#7C3AED" bg="#F5F3FF" />
+          <SummaryTile value={summary?.totalPosted ?? 0} label={t('totalPosted')} color={theme.colors.primary} bg={theme.colors.primaryLight} />
+          <SummaryTile value={summary?.totalFilled ?? 0} label={t('filled')} color={theme.colors.success} bg={theme.colors.successLight} />
+          <SummaryTile value={summary?.totalOpen ?? 0} label={t('open')} color={theme.colors.warning} bg={theme.colors.warningLight} />
+          <SummaryTile value={`${summary?.fillRate ?? 0}%`} label={t('fillRate')} color={theme.colors.secondary} bg={theme.colors.secondaryLight} />
         </View>
 
         {/* ── Monthly bar chart ── */}
@@ -293,7 +299,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         {/* ── Time to hire ── */}
         {timeToHire.length > 0 && (
           <Card title={t('avgDaysToHire')}>
-            <AppText style={{ fontSize: 11, color: C.slate, marginBottom: 4 }}>
+            <AppText style={{ fontSize: 11, color: theme.colors.mutedText, marginBottom: 4 }}>
               {t('reqPostedToAssigned')}
             </AppText>
             <TimeToHireChart data={timeToHire} />
@@ -303,8 +309,8 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         {monthly.length === 0 && categories.length === 0 && (
           <View style={{ alignItems: 'center', paddingVertical: 48 }}>
             <AppText style={{ fontSize: 48, marginBottom: 12 }}>📊</AppText>
-            <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, textAlign: 'center', marginBottom: 8 }}>{t('noDataYet')}</AppText>
-            <AppText style={{ color: C.slate, textAlign: 'center', lineHeight: 20 }}>
+            <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text, textAlign: 'center', marginBottom: 8 }}>{t('noDataYet')}</AppText>
+            <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20 }}>
               {t('noDataDesc')}
             </AppText>
           </View>

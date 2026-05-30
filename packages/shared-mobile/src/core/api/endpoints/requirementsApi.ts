@@ -341,11 +341,6 @@ export const requirementsApi = {
         };
       }),
 
-  getHiredWorkers: () =>
-    apiClient
-      .get<{ workers: PastWorker[] }>('/api/v1/mobile/employer/hired-workers')
-      .then((r) => r.data.workers ?? []),
-
   // Returns the employer's phone number for a requirement.
   // Backend checks: requirement exists + employer has active subscription.
   revealEmployerPhone: (requirementId: string) =>
@@ -364,8 +359,8 @@ export const requirementsApi = {
       )
       .then((r) => r.data),
 
-  // Worker retrieves all requirements they've been invited to
-  getMyInvitations: (page = 1, limit = 20) =>
+  // Worker retrieves all requirements they've been invited to (paginated, newest first)
+  getMyInvitations: (page = 1, limit = 10) =>
     apiClient
       .get<{
         success: boolean;
@@ -382,6 +377,30 @@ export const requirementsApi = {
         { status },
       )
       .then((r) => r.data),
+
+  // Worker: count of invitations not yet seen (for header badge)
+  getUnseenInvitationCount: () =>
+    apiClient
+      .get<{ success: boolean; count: number }>('/api/v1/mobile/requirements/invitations/unseen-count')
+      .then((r) => r.data.count ?? 0),
+
+  // Worker: mark all invitations as seen (called when InvitationsScreen opens)
+  markInvitationsSeen: () =>
+    apiClient
+      .put<{ success: boolean }>('/api/v1/mobile/requirements/invitations/mark-seen')
+      .then((r) => r.data),
+
+  // Employer: get all invitations for a specific requirement
+  getRequirementInvitations: (requirementId: string) =>
+    apiClient
+      .get<{
+        success: boolean;
+        requirementId: string;
+        workType?: string;
+        subCategory?: string;
+        invitations: WorkerInvitation[];
+      }>(`/api/v1/mobile/requirements/${requirementId}/invitations`)
+      .then((r) => r.data),
 };
 
 export interface WorkerInvitation {
@@ -394,26 +413,17 @@ export interface WorkerInvitation {
 }
 
 export interface InvitedRequirement {
-  _id:          string;
-  workType?:    string;
-  subCategory?: string;
-  district?:    string;
-  state?:       string;
-  ERN_NUMBER?:  number;
-  status?:      string;
-  employerName?:string;
-  createdAt?:   string;
-  invitation:   WorkerInvitation | null;
+  _id:                 string;
+  workType?:           string;
+  subCategory?:        string;
+  district?:           string;
+  state?:              string;
+  ERN_NUMBER?:         number;
+  status?:             string;
+  employerName?:       string;
+  employerPhone?:      string | null;
+  employerSubscribed?: boolean;
+  createdAt?:          string;
+  invitation:          WorkerInvitation | null;
 }
 
-export interface PastWorker {
-  workerId:     string | null;
-  workerName:   string;
-  workerPhone:  string;
-  lastHireDate: string;
-  workType:     string;
-  subCategory?: string;
-  profilePhoto?: string | null;
-  workerStatus?: string | null;
-  areasOfWork?:  string[];
-}

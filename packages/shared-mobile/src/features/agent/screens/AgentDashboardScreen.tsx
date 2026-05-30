@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -496,6 +496,23 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
     enabled: !!userId && isAgent,
   });
 
+  const unseenInvitationQuery = useQuery({
+    queryKey: ['invitation-unseen-count'],
+    queryFn: () => requirementsApi.getUnseenInvitationCount(),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    enabled: !!userId,
+  });
+
+  // Refresh unseen count when screen comes back into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      void unseenInvitationQuery.refetch();
+    }, [unseenInvitationQuery]),
+  );
+
+  const unseenCount = unseenInvitationQuery.data ?? 0;
+
   // Apply mutation
   const interestMutation = useMutation({
     mutationFn: ({ reqId, wage }: { reqId: string; wage: number }) =>
@@ -635,8 +652,9 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         avatarName={user?.fullName ?? 'U'}
         avatarUri={user?.profileImage}
         onAvatarPress={() => navigation.navigate('Profile')}
-        rightIcon="🔔"
-        onRightPress={() => navigation.navigate('Notifications')}
+        rightIcon="📬"
+        onRightPress={() => navigation.navigate('Invitations')}
+        notifCount={unseenCount > 0 ? unseenCount : undefined}
         style={{ paddingBottom: 14 }}
       />
 
@@ -657,6 +675,32 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 
           {/* Promotional Banner Slider */}
           <PromoBannerSlider onPress={() => navigation.navigate('JobMarketplace')} />
+
+          {/* ── Job Invitations banner (shown when employer sent invites) ── */}
+          {unseenCount > 0 && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Invitations')}
+              activeOpacity={0.88}
+              style={[invBanner.wrap]}
+            >
+              <View style={invBanner.left}>
+                <View style={invBanner.iconWrap}>
+                  <AppText style={{ fontSize: 22 }}>📬</AppText>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText style={invBanner.title}>
+                    {unseenCount === 1
+                      ? '1 new job invitation!'
+                      : `${unseenCount} new job invitations!`}
+                  </AppText>
+                  <AppText style={invBanner.sub}>An employer wants to hire you · Tap to view</AppText>
+                </View>
+              </View>
+              <View style={invBanner.cta}>
+                <AppText style={invBanner.ctaTxt}>View →</AppText>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* ── KYC alert ─────────────────────────────────────── */}
           {/* {kycPending && (
@@ -1026,6 +1070,17 @@ const modal = StyleSheet.create({
   cancelTxt: { fontSize: 14, fontWeight: '700' },
   submitBtn: { flex: 2, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
   submitTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+});
+
+// ── Job Invitations banner ────────────────────────────────────────────────────
+const invBanner = StyleSheet.create({
+  wrap:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#7C3AED', borderRadius: 16, padding: 14, marginBottom: 10, elevation: 4, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
+  left:    { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  iconWrap:{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  title:   { fontSize: 14, fontWeight: '800', color: '#FFFFFF', lineHeight: 18 },
+  sub:     { fontSize: 11, color: 'rgba(255,255,255,0.78)', marginTop: 2, fontWeight: '500' },
+  cta:     { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  ctaTxt:  { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
 });
 
 // ── Activity section styles ───────────────────────────────────────────────────

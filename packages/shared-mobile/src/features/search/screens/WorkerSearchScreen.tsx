@@ -147,6 +147,17 @@ const normalizeText = (text = ''): string =>
     .replace(/[_-]/g, ' ')
     .replace(/\s+/g, ' ');
 
+const timeAgoDate = (date: Date): string => {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  if (Math.floor(hrs / 24) === 1) return 'Yesterday';
+  return `${Math.floor(hrs / 24)} days ago`;
+};
+
 const formatName = (name = ''): string =>
   name
     .toLowerCase()
@@ -246,19 +257,19 @@ const PickerModal = ({
       onRequestClose={onClose}
     >
       <View style={[pm.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[pm.header, { borderBottomColor: C.border, paddingTop: insets.top + 14 }]}>
+        <View style={[pm.header, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
           <View>
             <AppText style={[pm.title, { color: theme.colors.text }]}>{title}</AppText>
-            <AppText style={[pm.sub, { color: C.slate }]}>
+            <AppText style={[pm.sub, { color: theme.colors.mutedText }]}>
               {options.length} options available
             </AppText>
           </View>
           <TouchableOpacity
             onPress={onClose}
-            style={pm.closeBtn}
+            style={[pm.closeBtn, { backgroundColor: theme.colors.surface1 }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <AppText style={pm.closeTxt}>✕</AppText>
+            <AppText style={[pm.closeTxt, { color: theme.colors.mutedText }]}>✕</AppText>
           </TouchableOpacity>
         </View>
         {options.length > 6 && (
@@ -268,7 +279,7 @@ const PickerModal = ({
               { backgroundColor: theme.colors.card, borderColor: C.border },
             ]}
           >
-            <AppText style={pm.searchIcon}>⌕</AppText>
+            <AppText style={[pm.searchIcon, { color: theme.colors.mutedText }]}>⌕</AppText>
             <TextInput
               value={q}
               onChangeText={setQ}
@@ -278,7 +289,7 @@ const PickerModal = ({
             />
             {q.length > 0 && (
               <TouchableOpacity onPress={() => setQ('')} style={{ paddingRight: 14 }}>
-                <AppText style={{ color: C.slate, fontSize: 14 }}>✕</AppText>
+                <AppText style={{ color: theme.colors.mutedText, fontSize: 14 }}>✕</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -340,12 +351,12 @@ const pm = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: 1,
   },
-  title:      { fontSize: 17, fontWeight: '800', color: NAVY },
-  sub:        { fontSize: 12, marginTop: 1, color: SLATE },
-  closeBtn:   { width: 32, height: 32, borderRadius: 16, backgroundColor: SLATE_LT, alignItems: 'center', justifyContent: 'center' },
-  closeTxt:   { fontSize: 13, fontWeight: '700', color: SLATE },
+  title:      { fontSize: 17, fontWeight: '800' },
+  sub:        { fontSize: 12, marginTop: 1 },
+  closeBtn:   { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  closeTxt:   { fontSize: 13, fontWeight: '700' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginVertical: 12 },
-  searchIcon: { fontSize: 18, paddingHorizontal: 12, color: SLATE },
+  searchIcon: { fontSize: 18, paddingHorizontal: 12 },
   searchInput:{ flex: 1, paddingVertical: 12, fontSize: 15 },
   item:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   itemText:   { fontSize: 15 },
@@ -371,7 +382,7 @@ const DropField = ({
   const active = !!value;
   return (
     <View style={{ marginBottom: 12 }}>
-      <AppText style={df.label}>{label}</AppText>
+      <AppText style={[df.label, { color: theme.colors.mutedText }]}>{label}</AppText>
       <TouchableOpacity
         onPress={onPress}
         disabled={disabled}
@@ -379,25 +390,25 @@ const DropField = ({
         style={[
           df.field,
           {
-            borderColor: active ? BRAND : BORDER,
-            backgroundColor: active ? BRAND_SOFT : theme.colors.card,
+            borderColor: active ? BRAND : theme.colors.border,
+            backgroundColor: active ? theme.colors.primaryLight : theme.colors.card,
             opacity: disabled ? 0.45 : 1,
           },
         ]}
       >
         <AppText
-          style={[df.text, { color: active ? BRAND : SLATE }]}
+          style={[df.text, { color: active ? BRAND : theme.colors.mutedText }]}
           numberOfLines={1}
         >
           {value || placeholder}
         </AppText>
-        <AppText style={[df.chevron, { color: active ? BRAND : SLATE }]}>›</AppText>
+        <AppText style={[df.chevron, { color: active ? BRAND : theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
     </View>
   );
 };
 const df = StyleSheet.create({
-  label:   { fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.6, color: SLATE },
+  label:   { fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.6 },
   field:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
   text:    { flex: 1, fontSize: 14, fontWeight: '500' },
   chevron: { fontSize: 20, fontWeight: '300' },
@@ -473,7 +484,7 @@ const FilterSheet = ({
         <View style={[fsh.header, { paddingTop: insets.top + 16, backgroundColor: theme.colors.background, borderBottomColor: BORDER }]}>
           <View style={fsh.headerLeft}>
             <AppText style={[fsh.headerTitle, { color: theme.colors.text }]}>Filter Professionals</AppText>
-            <AppText style={[fsh.headerSub, { color: SLATE }]}>
+            <AppText style={[fsh.headerSub, { color: theme.colors.mutedText }]}>
               {activeCount > 0
                 ? `${activeCount} filter${activeCount > 1 ? 's' : ''} active`
                 : 'Narrow down your search'}
@@ -502,9 +513,9 @@ const FilterSheet = ({
         >
 
           {/* ── Location ──────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: BRAND_SOFT }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText style={{ fontSize: 14 }}>📍</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Location</AppText>
@@ -534,9 +545,9 @@ const FilterSheet = ({
           </View>
 
           {/* ── Work Type ─────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: AGENT_SOFT }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.secondaryLight }]}>
                 <AppText style={{ fontSize: 14 }}>💼</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Work Type</AppText>
@@ -558,7 +569,7 @@ const FilterSheet = ({
           </View>
 
           {/* ── Professional Type ─────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
               <View style={[fsh.cardIcon, { backgroundColor: GREEN_SOFT }]}>
                 <AppText style={{ fontSize: 14 }}>🧑‍💼</AppText>
@@ -577,13 +588,13 @@ const FilterSheet = ({
                     onPress={() => set('workerGroup', active ? '' : opt.val)}
                     activeOpacity={0.8}
                     style={[fsh.typeCard, {
-                      backgroundColor: active ? NAVY : theme.colors.background,
-                      borderColor: active ? NAVY : BORDER,
+                      backgroundColor: active ? '#0F1626' : theme.colors.surface1,
+                      borderColor: active ? '#0F1626' : theme.colors.border,
                     }]}
                   >
                     <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : NAVY }]} numberOfLines={1}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : SLATE }]} numberOfLines={1}>{opt.sub}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]} numberOfLines={1}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]} numberOfLines={1}>{opt.sub}</AppText>
                     {active && (
                       <View style={fsh.typeCheck}>
                         <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
@@ -596,16 +607,16 @@ const FilterSheet = ({
           </View>
 
           {/* ── Demographics ──────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: AMBER_SOFT }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
                 <AppText style={{ fontSize: 14 }}>🎯</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Demographics</AppText>
             </View>
 
             {/* Gender */}
-            <AppText style={fsh.fieldLabel}>Gender</AppText>
+            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>Gender</AppText>
             <View style={[fsh.chipRow, { marginBottom: 18 }]}>
               {[
                 { label: 'Male',   icon: '♂' },
@@ -623,7 +634,7 @@ const FilterSheet = ({
                       borderColor: active ? BRAND : BORDER,
                     }]}
                   >
-                    <AppText style={[fsh.genderIcon, { color: active ? WHITE : SLATE }]}>{g.icon}</AppText>
+                    <AppText style={[fsh.genderIcon, { color: active ? WHITE : theme.colors.text }]}>{g.icon}</AppText>
                     <AppText style={[fsh.genderChipTxt, { color: active ? WHITE : theme.colors.text }]}>{g.label}</AppText>
                   </TouchableOpacity>
                 );
@@ -631,13 +642,13 @@ const FilterSheet = ({
             </View>
 
             {/* Age Range */}
-            <AppText style={fsh.fieldLabel}>Age Range</AppText>
+            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>Age Range</AppText>
             <View style={fsh.ageGrid}>
               <View style={{ flex: 1 }}>
-                <AppText style={fsh.ageColLabel}>FROM</AppText>
+                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>FROM</AppText>
                 <View style={[fsh.ageBox, {
-                  borderColor: f.ageMin ? BRAND : BORDER,
-                  backgroundColor: f.ageMin ? BRAND_SOFT : theme.colors.background,
+                  borderColor: f.ageMin ? BRAND : theme.colors.border,
+                  backgroundColor: f.ageMin ? theme.colors.primaryLight : theme.colors.surface1,
                 }]}>
                   <TextInput
                     value={f.ageMin}
@@ -648,19 +659,19 @@ const FilterSheet = ({
                     maxLength={3}
                     style={[fsh.ageBoxInput, { color: theme.colors.text }]}
                   />
-                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMin ? BRAND + '30' : BORDER }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : SLATE }]}>yrs</AppText>
+                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMin ? BRAND + '30' : theme.colors.border }]}>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : theme.colors.mutedText }]}>yrs</AppText>
                   </View>
                 </View>
               </View>
               <View style={fsh.ageSep}>
-                <AppText style={{ color: SLATE, fontWeight: '700', fontSize: 18 }}>–</AppText>
+                <AppText style={{ color: theme.colors.mutedText, fontWeight: '700', fontSize: 18 }}>–</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={fsh.ageColLabel}>TO</AppText>
+                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>TO</AppText>
                 <View style={[fsh.ageBox, {
-                  borderColor: f.ageMax ? BRAND : BORDER,
-                  backgroundColor: f.ageMax ? BRAND_SOFT : theme.colors.background,
+                  borderColor: f.ageMax ? BRAND : theme.colors.border,
+                  backgroundColor: f.ageMax ? theme.colors.primaryLight : theme.colors.surface1,
                 }]}>
                   <TextInput
                     value={f.ageMax}
@@ -671,8 +682,8 @@ const FilterSheet = ({
                     maxLength={3}
                     style={[fsh.ageBoxInput, { color: theme.colors.text }]}
                   />
-                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMax ? BRAND + '30' : BORDER }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : SLATE }]}>yrs</AppText>
+                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMax ? BRAND + '30' : theme.colors.border }]}>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : theme.colors.mutedText }]}>yrs</AppText>
                   </View>
                 </View>
               </View>
@@ -680,9 +691,9 @@ const FilterSheet = ({
           </View>
 
           {/* ── Qualification ─────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: BORDER, backgroundColor: theme.colors.card }]}>
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#FFF8EC' }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
                 <AppText style={{ fontSize: 14 }}>🎓</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Qualification</AppText>
@@ -699,13 +710,13 @@ const FilterSheet = ({
                     onPress={() => set('qualification', active ? '' : opt.val)}
                     activeOpacity={0.8}
                     style={[fsh.typeCard, {
-                      backgroundColor: active ? '#F97316' : theme.colors.background,
-                      borderColor: active ? '#F97316' : BORDER,
+                      backgroundColor: active ? '#F97316' : theme.colors.surface1,
+                      borderColor: active ? '#F97316' : theme.colors.border,
                     }]}
                   >
                     <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : NAVY }]} numberOfLines={1}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : SLATE }]} numberOfLines={1}>{opt.sub}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]} numberOfLines={1}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]} numberOfLines={1}>{opt.sub}</AppText>
                     {active && (
                       <View style={fsh.typeCheck}>
                         <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
@@ -721,7 +732,7 @@ const FilterSheet = ({
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <View style={[fsh.footer, { borderTopColor: BORDER, backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity onPress={onClose} style={fsh.cancelBtn} activeOpacity={0.8}>
+          <TouchableOpacity onPress={onClose} style={[fsh.cancelBtn, { borderColor: theme.colors.border }]} activeOpacity={0.8}>
             <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>Cancel</AppText>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
@@ -786,20 +797,20 @@ const fsh = StyleSheet.create({
   // Header
   header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   headerLeft:    { flex: 1 },
-  headerTitle:   { fontSize: 20, fontWeight: '900', color: NAVY, letterSpacing: -0.3 },
+  headerTitle:   { fontSize: 20, fontWeight: '900', letterSpacing: -0.3 },
   headerSub:     { fontSize: 12, marginTop: 3 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   resetBtn:      { borderWidth: 1.5, borderColor: BRAND, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
   resetTxt:      { fontSize: 12, fontWeight: '800', color: BRAND },
-  closeBtn:      { width: 32, height: 32, borderRadius: 16, backgroundColor: SLATE_LT, alignItems: 'center', justifyContent: 'center' },
-  closeTxt:      { fontSize: 13, fontWeight: '700', color: SLATE },
+  closeBtn:      { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  closeTxt:      { fontSize: 13, fontWeight: '700' },
 
   // Body / cards
   body:          { padding: 14, gap: 10, paddingBottom: 28 },
   card:          { borderRadius: 16, borderWidth: 1, padding: 16 },
   cardHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   cardIcon:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  cardTitle:     { fontSize: 14, fontWeight: '800', color: NAVY, letterSpacing: 0.1 },
+  cardTitle:     { fontSize: 14, fontWeight: '800', letterSpacing: 0.1 },
 
   // Professional Type grid
   typeGrid:      { flexDirection: 'row', gap: 8 },
@@ -810,7 +821,7 @@ const fsh = StyleSheet.create({
   typeCheck:     { position: 'absolute', top: 10, right: 10, width: 18, height: 18, borderRadius: 9, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
 
   // Demographics
-  fieldLabel:    { fontSize: 11, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 },
+  fieldLabel:    { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 },
   chipRow:       { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   genderChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
   genderIcon:    { fontSize: 14, fontWeight: '700' },
@@ -818,7 +829,7 @@ const fsh = StyleSheet.create({
 
   // Age Range
   ageGrid:       { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
-  ageColLabel:   { fontSize: 10, fontWeight: '800', color: SLATE, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+  ageColLabel:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
   ageBox:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
   ageBoxInput:   { flex: 1, fontSize: 16, fontWeight: '700', paddingHorizontal: 14, paddingVertical: 13, minWidth: 0 },
   ageSuffixBox:  { borderLeftWidth: 1, paddingHorizontal: 10, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
@@ -827,7 +838,7 @@ const fsh = StyleSheet.create({
 
   // Footer
   footer:        { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth },
-  cancelBtn:     { flex: 1, borderRadius: 14, borderWidth: 1.5, borderColor: BORDER, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
+  cancelBtn:     { flex: 1, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
   cancelTxt:     { fontSize: 15, fontWeight: '700' },
   applyBtn:      { flex: 2, borderRadius: 14, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
   applyTxt:      { color: WHITE, fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
@@ -839,11 +850,13 @@ const CallOutcomePicker = ({
   current,
   onSave,
   saving,
+  remarkTime,
 }: {
   agentId: string;
   current: string;
   onSave: (id: string, val: string) => void;
   saving: boolean;
+  remarkTime?: Date;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -857,22 +870,16 @@ const CallOutcomePicker = ({
         onPress={() => setShow(true)}
         disabled={saving}
         activeOpacity={0.8}
-        style={[
-          co.btn,
-          {
-            borderColor: hasOutcome ? BRAND : BORDER,
-            backgroundColor: hasOutcome ? BRAND_SOFT : theme.colors.card,
-          },
-        ]}
+        style={[co.btn, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.card }]}
       >
-        <View style={[co.dot, { backgroundColor: hasOutcome ? BRAND : SLATE }]} />
-        <AppText
-          style={[co.btnText, { color: hasOutcome ? BRAND : SLATE }]}
-          numberOfLines={1}
-        >
+        <View style={[co.dot, { backgroundColor: hasOutcome ? BRAND : theme.colors.mutedText }]} />
+        <AppText style={[co.btnText, { color: hasOutcome ? theme.colors.text : theme.colors.mutedText }]} numberOfLines={1}>
           {saving ? 'Saving…' : (label ?? 'Log Call Outcome')}
         </AppText>
-        <AppText style={[co.chevron, { color: hasOutcome ? BRAND : SLATE }]}>›</AppText>
+        {remarkTime && (
+          <AppText style={[co.remarkTime, { color: theme.colors.mutedText }]}>{timeAgoDate(remarkTime)}</AppText>
+        )}
+        <AppText style={[co.chevron, { color: theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
 
       <Modal
@@ -882,15 +889,15 @@ const CallOutcomePicker = ({
         onRequestClose={() => setShow(false)}
       >
         <View style={[co.sheet, { backgroundColor: theme.colors.background }]}>
-          <View style={[co.sheetHeader, { borderBottomColor: BORDER, paddingTop: insets.top + 14 }]}>
+          <View style={[co.sheetHeader, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
             <View>
               <AppText style={[co.sheetTitle, { color: theme.colors.text }]}>Call Outcome</AppText>
-              <AppText style={[co.sheetSub, { color: SLATE }]}>
+              <AppText style={[co.sheetSub, { color: theme.colors.mutedText }]}>
                 Select the result of your last call
               </AppText>
             </View>
-            <TouchableOpacity onPress={() => setShow(false)} style={co.closeBtn}>
-              <AppText style={co.closeTxt}>✕</AppText>
+            <TouchableOpacity onPress={() => setShow(false)} style={[co.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
+              <AppText style={[co.closeTxt, { color: theme.colors.mutedText }]}>✕</AppText>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -908,8 +915,8 @@ const CallOutcomePicker = ({
                   style={[
                     co.item,
                     {
-                      borderBottomColor: BORDER,
-                      backgroundColor: active ? BRAND_SOFT : 'transparent',
+                      borderBottomColor: theme.colors.border,
+                      backgroundColor: active ? theme.colors.primaryLight : 'transparent',
                     },
                   ]}
                 >
@@ -941,16 +948,17 @@ const CallOutcomePicker = ({
   );
 };
 const co = StyleSheet.create({
-  btn:         { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, gap: 8 },
+  btn:         { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
   dot:         { width: 7, height: 7, borderRadius: 3.5 },
-  btnText:     { flex: 1, fontSize: 13, fontWeight: '600' },
+  btnText:     { flex: 1, fontSize: 13, fontWeight: '500' },
+  remarkTime:  { fontSize: 12 },
   chevron:     { fontSize: 18, fontWeight: '300' },
   sheet:       { flex: 1 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
-  sheetTitle:  { fontSize: 17, fontWeight: '800', color: NAVY },
+  sheetTitle:  { fontSize: 17, fontWeight: '800' },
   sheetSub:    { fontSize: 12, marginTop: 2 },
-  closeBtn:    { width: 32, height: 32, borderRadius: 16, backgroundColor: SLATE_LT, alignItems: 'center', justifyContent: 'center' },
-  closeTxt:    { fontSize: 13, fontWeight: '700', color: SLATE },
+  closeBtn:    { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  closeTxt:    { fontSize: 13, fontWeight: '700' },
   item:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   itemText:    { fontSize: 15 },
   checkCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
@@ -965,6 +973,7 @@ interface AgentCardProps {
   loadingUnlock: boolean;
   callStatus: string;
   savingRemark: boolean;
+  remarkTime?: Date;
   workerTypeApplied: string;
   appliedDistrict: string;
   onViewContact: () => void;
@@ -982,6 +991,7 @@ const AgentCard = ({
   loadingUnlock,
   callStatus,
   savingRemark,
+  remarkTime,
   workerTypeApplied,
   appliedDistrict,
   onViewContact,
@@ -991,291 +1001,265 @@ const AgentCard = ({
   onPress,
 }: AgentCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const photoUrl = buildPhotoUrl(agent.profilePhoto);
-  const initials = formatName(agent.name ?? '?')
-    .split(' ')
-    .map((w) => w[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  const isAgent     = String(agent.role ?? '').toLowerCase() === 'agent';
+  const photoUrl  = buildPhotoUrl(agent.profilePhoto);
+  const initials  = formatName(agent.name ?? '?')
+    .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+  const isAgent      = String(agent.role ?? '').toLowerCase() === 'agent';
   const matchedAreas = getMatchedAreasOfWork(agent.areasOfWork ?? [], workerTypeApplied);
-  const age = getAge(agent.dob);
-  const exp =
-    agent.workExperience !== undefined
-      ? Number(agent.workExperience) > 0
-        ? Number(agent.workExperience)
-        : 3
-      : undefined;
-  const accentColor = isAgent ? AGENT_COL : BRAND;
-  const accentBg    = isAgent ? AGENT_SOFT : BRAND_SOFT;
-  const roleLabel   = isAgent ? 'AGENT' : 'WORKER';
-  const wage        = agent.fixedSalary ?? agent.salaryFrom;
-  const wageText    = wage
+  const age          = getAge(agent.dob);
+  const exp          = agent.workExperience !== undefined
+    ? Number(agent.workExperience) > 0 ? Number(agent.workExperience) : 3
+    : undefined;
+  const accentColor  = isAgent ? theme.colors.secondary : theme.colors.primary;
+  const accentBg     = isAgent ? theme.colors.secondaryLight : theme.colors.primaryLight;
+  const locationStr  = getLocationStr(
+    { district: appliedDistrict || agent.district, state: agent.state },
+    i18n.language, '',
+  );
+  const wage    = agent.fixedSalary ?? agent.salaryFrom;
+  const wageText = wage
     ? `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}/day`
     : null;
+
   return (
-    <View
-      style={[
-        wc.card,
-        {
-          backgroundColor: theme.colors.card,
-          shadowColor: BRAND,
-        },
-      ]}
-    >
-      {/* Left accent bar */}
-      <View style={[wc.accentBar, { backgroundColor: accentColor }]} />
+    <View style={[wc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
 
-      <View style={{ flex: 1 }}>
-        {/* ── Top: tappable info row ── */}
-        <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={wc.infoSection}>
-          {/* Avatar */}
-          <View style={wc.avatarWrap}>
-            {photoUrl ? (
-              <Image
-                source={{ uri: photoUrl }}
-                style={[wc.avatar, { borderColor: accentColor }]}
-              />
-            ) : (
-              <View style={[wc.avatarFallback, { backgroundColor: accentBg, borderColor: accentColor }]}>
-                <AppText style={[wc.initials, { color: accentColor }]}>{initials}</AppText>
-              </View>
-            )}
-            {agent.veryfiedBage && (
-              <View style={wc.verifiedBadge}>
-                <AppText style={wc.verifiedTxt}>✓</AppText>
-              </View>
-            )}
-          </View>
-
-          {/* Text block */}
-          <View style={{ flex: 1 }}>
-            {/* Name + role badge */}
-            <View style={wc.nameRow}>
-              <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
-                {formatName(agent.name ?? 'Unknown')}
-              </AppText>
-              <View style={[wc.rolePill, { backgroundColor: accentBg, borderColor: accentColor + '50' }]}>
-                <AppText style={[wc.roleTxt, { color: accentColor }]}>{roleLabel}</AppText>
-              </View>
-            </View>
-
-            {/* Location — show applied district filter if set, else worker's own district (mirrors CRM finalCitySearch logic) */}
-            {((appliedDistrict || agent.district) ?? agent.state) ? (
-              <AppText style={wc.location} numberOfLines={1}>
-                {'📍 '}
-                {getLocationStr({ district: appliedDistrict || agent.district, state: agent.state }, i18n.language, '')}
-              </AppText>
-            ) : null}
-
-            {/* Meta chips */}
-            <View style={wc.metaRow}>
-              {!!age && (
-                <View style={wc.metaChip}>
-                  <AppText style={wc.metaChipTxt}>{age} yrs</AppText>
-                </View>
-              )}
-              {exp !== undefined && (
-                <View style={wc.metaChip}>
-                  <AppText style={wc.metaChipTxt}>{exp}y exp</AppText>
-                </View>
-              )}
-              {!!agent.gender && (
-                <View style={wc.metaChip}>
-                  <AppText style={wc.metaChipTxt}>{agent.gender}</AppText>
-                </View>
-              )}
-              {!!wageText && (
-                <View style={[wc.metaChip, wc.wageChip]}>
-                  <AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText>
-                </View>
-              )}
-            </View>
-
-            {/* workerSubType / agentType badge */}
-            {!!(agent.workerSubType || agent.agentType) && (
-              <View style={wc.subTypeBadge}>
-                <AppText style={wc.subTypeTxt}>{agent.workerSubType ?? agent.agentType}</AppText>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        {/* Skills strip */}
-        {matchedAreas.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={[wc.skillsStrip, { borderTopColor: BORDER }]}
-            contentContainerStyle={wc.skillsContent}
-          >
-            {matchedAreas.map((area, idx) => (
-              <View key={`${area}-${idx}`} style={wc.skillChip}>
-                <AppText style={wc.skillChipTxt}>
-                  {area.charAt(0).toUpperCase() + area.slice(1)}
-                </AppText>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Resume button */}
-        {!!agent.resumeUrl && (
-          <TouchableOpacity
-            onPress={() => void Linking.openURL(agent.resumeUrl!)}
-            style={[wc.resumeBtn, { borderTopColor: BORDER }]}
-            activeOpacity={0.8}
-          >
-            <AppText style={wc.resumeIcon}>📄</AppText>
-            <AppText style={wc.resumeTxt}>View Resume / CV</AppText>
-            <AppText style={{ color: BRAND, fontSize: 16 }}>›</AppText>
-          </TouchableOpacity>
-        )}
-
-        {/* ── Contact CTA ── */}
-        <View style={[wc.ctaSection, { borderTopColor: BORDER }]}>
-          {unlockedPhone ? (
-            // Already unlocked — show call + WhatsApp
-            <View style={wc.unlockedRow}>
-              <TouchableOpacity
-                onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
-                style={wc.callBtn}
-                activeOpacity={0.85}
-              >
-                <AppText style={wc.callBtnTxt}>📞 {unlockedPhone}</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
-                style={wc.waBtn}
-                activeOpacity={0.85}
-              >
-                <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
-              </TouchableOpacity>
-            </View>
-          ) : isContactsExhausted ? (
-            // Subscribed but contact limit reached
-            <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={wc.topupCta}>
-              <View style={[wc.lockIconBox, { backgroundColor: '#fff7ed' }]}>
-                <AppText style={{ fontSize: 16 }}>⚠️</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={wc.topupTitle}>Contact Limit Reached</AppText>
-                <AppText style={wc.topupSub}>Upgrade your plan to unlock more contacts</AppText>
-              </View>
-              <AppText style={wc.lockChevron}>›</AppText>
-            </TouchableOpacity>
-          ) : isSubscribed ? (
-            // Subscribed with remaining contacts — unlock + call
-            <TouchableOpacity
-              onPress={onViewContact}
-              disabled={loadingUnlock}
-              style={[wc.callAgentBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}
-              activeOpacity={0.85}
-            >
-              {loadingUnlock ? (
-                <ActivityIndicator size="small" color={WHITE} />
-              ) : (
-                <>
-                  <AppText style={wc.callAgentIcon}>💬</AppText>
-                  <AppText style={wc.callAgentTxt}>Call Agent</AppText>
-                </>
-              )}
-            </TouchableOpacity>
+      {/* ── Main info row (tappable) ── */}
+      <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={wc.infoRow}>
+        {/* Avatar */}
+        <View style={wc.avatarWrap}>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={[wc.avatar, { borderColor: accentColor }]} />
           ) : (
-            // Not subscribed — show Call Agent but opens subscribe flow
-            <TouchableOpacity onPress={onSubscribe} activeOpacity={0.82} style={wc.callAgentBtn}>
-              <AppText style={wc.callAgentIcon}>💬</AppText>
-              <AppText style={wc.callAgentTxt}>Call Agent</AppText>
-            </TouchableOpacity>
+            <View style={[wc.avatarFallback, { backgroundColor: accentBg, borderColor: accentColor }]}>
+              <AppText style={[wc.initials, { color: accentColor }]}>{initials}</AppText>
+            </View>
+          )}
+          {/* Green availability dot — bottom-left */}
+          <View style={wc.statusDot} />
+          {agent.veryfiedBage && (
+            <View style={wc.verifiedBadge}>
+              <AppText style={wc.verifiedTxt}>✓</AppText>
+            </View>
           )}
         </View>
 
-        {/* Call outcome picker */}
-        {isSubscribed && (
-          <View style={[wc.remarkRow, { borderTopColor: BORDER }]}>
-            <CallOutcomePicker
-              agentId={agent._id}
-              current={callStatus}
-              onSave={onSaveRemark}
-              saving={savingRemark}
-            />
-          </View>
-        )}
-
-        {/* Agent group banner */}
-        {isAgent && (
-          <View style={[wc.agentBanner, { borderTopColor: '#c4b5fd' }]}>
-            <AppText style={{ fontSize: 13 }}>👥</AppText>
-            <AppText style={wc.agentBannerTxt}>
-              Agent-managed groups · Ideal for bulk hiring
+        {/* Text block */}
+        <View style={{ flex: 1 }}>
+          <View style={wc.nameRow}>
+            <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
+              {formatName(agent.name ?? 'Unknown')}
             </AppText>
           </View>
+
+          {!!locationStr && (
+            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {locationStr}</AppText>
+          )}
+
+          <View style={wc.metaRow}>
+            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{age} yrs</AppText></View>}
+            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{exp}y exp</AppText></View>}
+            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{agent.gender}</AppText></View>}
+            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
+          </View>
+
+          {!!(agent.workerSubType || agent.agentType) && (
+            <View style={[wc.subTypeBadge, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '50' }]}>
+              <AppText style={[wc.subTypeTxt, { color: theme.colors.warning }]}>{agent.workerSubType ?? agent.agentType}</AppText>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {/* ── Last-contact row (only when a call outcome exists) ── */}
+      {!!callStatus && (
+        <View style={[wc.availRow, { borderTopColor: theme.colors.border }]}>
+          <View style={wc.availDot} />
+          <AppText style={[wc.lastContactTxt, { color: theme.colors.mutedText }]}>
+            last contact {remarkTime ? timeAgoDate(remarkTime) : 'recently'}
+          </AppText>
+        </View>
+      )}
+
+      {/* ── Skills chips ── */}
+      {matchedAreas.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[wc.skillsStrip, { borderTopColor: theme.colors.border }]}
+          contentContainerStyle={wc.skillsContent}
+        >
+          {matchedAreas.map((area, idx) => (
+            <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+              <AppText style={[wc.skillChipTxt, { color: theme.colors.text }]}>
+                {area.charAt(0).toUpperCase() + area.slice(1)}
+              </AppText>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Documents row (Resume + Labour Licence) — tap chip navigates to profile where docs are viewable */}
+      {(!!agent.resumeUrl || !!agent.labourLicenceUrl) && (
+        <View style={[wc.docsRow, { borderTopColor: theme.colors.border }]}>
+          {!!agent.resumeUrl && (
+            <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
+              <AppText style={wc.resumeIcon}>📄</AppText>
+              <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>Resume</AppText>
+            </TouchableOpacity>
+          )}
+          {!!agent.labourLicenceUrl && (
+            <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
+              <AppText style={wc.resumeIcon}>📋</AppText>
+              <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>Licence</AppText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* ── Call Agent CTA ── */}
+      <View style={[wc.ctaSection, { borderTopColor: theme.colors.border }]}>
+        {unlockedPhone ? (
+          <View style={wc.unlockedRow}>
+            <TouchableOpacity
+              onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
+              style={[wc.callBtn, { backgroundColor: BRAND }]}
+              activeOpacity={0.85}
+            >
+              <AppText style={wc.callBtnTxt}>📞 {unlockedPhone}</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
+              style={wc.waBtn}
+              activeOpacity={0.85}
+            >
+              <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
+            </TouchableOpacity>
+          </View>
+        ) : isContactsExhausted ? (
+          <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={[wc.topupCta, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '40' }]}>
+            <View style={[wc.lockIconBox, { backgroundColor: theme.colors.accentLight }]}>
+              <AppText style={{ fontSize: 16 }}>⚠️</AppText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText style={[wc.topupTitle, { color: theme.colors.warningDark }]}>Contact Limit Reached</AppText>
+              <AppText style={[wc.topupSub, { color: theme.colors.mutedText }]}>Upgrade your plan to unlock more contacts</AppText>
+            </View>
+            <AppText style={wc.lockChevron}>›</AppText>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={isSubscribed ? onViewContact : onSubscribe}
+            disabled={loadingUnlock}
+            style={[wc.callAgentBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}
+            activeOpacity={0.85}
+          >
+            {loadingUnlock ? (
+              <ActivityIndicator size="small" color={WHITE} />
+            ) : (
+              <>
+                <AppText style={wc.callAgentIcon}>📞</AppText>
+                <AppText style={wc.callAgentTxt}>Call Agent</AppText>
+              </>
+            )}
+          </TouchableOpacity>
         )}
       </View>
+
+      {/* ── Log Call Outcome ── */}
+      {isSubscribed && (
+        <CallOutcomePicker
+          agentId={agent._id}
+          current={callStatus}
+          onSave={onSaveRemark}
+          saving={savingRemark}
+          remarkTime={remarkTime}
+        />
+      )}
+
+      {/* Agent group banner */}
+      {isAgent && (
+        <View style={[wc.agentBanner, { borderTopColor: theme.colors.secondary + '50', backgroundColor: theme.colors.secondaryLight }]}>
+          <AppText style={{ fontSize: 13 }}>👥</AppText>
+          <AppText style={[wc.agentBannerTxt, { color: theme.colors.secondary }]}>Agent-managed groups · Ideal for bulk hiring</AppText>
+        </View>
+      )}
     </View>
   );
 };
 
 const wc = StyleSheet.create({
-  card:          { flexDirection: 'row', borderRadius: 14, marginBottom: 8, overflow: 'hidden', elevation: 3, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: BORDER },
-  accentBar:     { width: 4, opacity: 0.35 },
+  card:           { borderRadius: 16, marginBottom: 12, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, borderWidth: StyleSheet.hairlineWidth },
 
-  infoSection:   { flexDirection: 'row', padding: 12, gap: 12 },
+  infoRow:        { flexDirection: 'row', padding: 14, gap: 12 },
 
-  avatarWrap:    { position: 'relative', alignSelf: 'flex-start' },
-  avatar:        { width: 58, height: 58, borderRadius: 29, borderWidth: 2 },
-  avatarFallback:{ width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  initials:      { fontSize: 20, fontWeight: '800' },
-  verifiedBadge: { position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: WHITE },
-  verifiedTxt:   { color: WHITE, fontSize: 8, fontWeight: '900' },
+  avatarWrap:     { position: 'relative', alignSelf: 'flex-start' },
+  avatar:         { width: 54, height: 54, borderRadius: 27, borderWidth: 2 },
+  avatarFallback: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  initials:       { fontSize: 19, fontWeight: '800' },
+  statusDot:      { position: 'absolute', bottom: 0, left: 0, width: 13, height: 13, borderRadius: 6.5, backgroundColor: GREEN, borderWidth: 2, borderColor: WHITE },
+  verifiedBadge:  { position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: WHITE },
+  verifiedTxt:    { color: WHITE, fontSize: 7, fontWeight: '900' },
 
-  nameRow:       { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
-  name:          { fontSize: 15, fontWeight: '800', flex: 1, letterSpacing: 0.1 },
-  rolePill:      { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
-  roleTxt:       { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
-  location:      { fontSize: 11, fontWeight: '500', color: SLATE, marginBottom: 5 },
-  metaRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  metaChip:      { backgroundColor: SLATE_LT, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: BORDER },
-  metaChipTxt:   { fontSize: 10.5, fontWeight: '700', color: SLATE },
-  wageChip:      { backgroundColor: GREEN_SOFT, borderColor: '#bbf7d0', borderRadius: 6 },
-  wageTxt:       { color: GREEN, fontWeight: '800' },
+  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
+  name:           { fontSize: 15, fontWeight: '800', flex: 1 },
+  rolePill:       { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  roleTxt:        { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  location:       { fontSize: 11, marginBottom: 6 },
+  metaRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  metaChipTxt:    { fontSize: 11, fontWeight: '600' },
+  wageChip:       { backgroundColor: GREEN_SOFT },
+  wageTxt:        { color: GREEN, fontWeight: '800' },
 
-  subTypeBadge:  { marginTop: 4, alignSelf: 'flex-start', backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa' },
-  subTypeTxt:    { fontSize: 9.5, fontWeight: '700', color: '#d97706' },
+  subTypeBadge:   { marginTop: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1 },
+  subTypeTxt:     { fontSize: 9.5, fontWeight: '700' },
 
-  resumeBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth },
-  resumeIcon:    { fontSize: 13 },
-  resumeTxt:     { flex: 1, fontSize: 11.5, fontWeight: '700', color: BRAND },
+  // Availability row
+  availRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth },
+  availDot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN, marginRight: 6 },
+  availTxt:       { fontSize: 12, fontWeight: '600', color: GREEN },
+  availSep:       { fontSize: 12 },
+  lastContactTxt: { fontSize: 12 },
 
-  skillsStrip:   { borderTopWidth: StyleSheet.hairlineWidth },
-  skillsContent: { paddingHorizontal: 12, paddingVertical: 7, gap: 5, flexDirection: 'row' },
-  skillChip:     { backgroundColor: BRAND_SOFT, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: BRAND + '25' },
-  skillChipTxt:  { fontSize: 10.5, fontWeight: '700', color: BRAND },
+  // Skills
+  skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },
+  skillsContent:  { paddingHorizontal: 14, paddingVertical: 9, gap: 6, flexDirection: 'row' },
+  skillChip:      { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, borderWidth: 1 },
+  skillChipTxt:   { fontSize: 11, fontWeight: '600' },
 
-  ctaSection:    { paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  unlockedRow:   { flexDirection: 'row', gap: 7 },
-  callBtn:       { flex: 1, backgroundColor: NAVY, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  callBtnTxt:    { color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
-  waBtn:         { flex: 1, backgroundColor: '#25D366', borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
-  waBtnTxt:      { color: WHITE, fontSize: 13, fontWeight: '800' },
-  callAgentBtn:  { flex: 1, flexDirection: 'row', backgroundColor: BRAND, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', gap: 7 },
-  callAgentIcon: { fontSize: 14, color: WHITE },
-  callAgentTxt:  { color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
-  viewContactBtn:{ backgroundColor: BRAND, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  viewContactTxt:{ color: WHITE, fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
-  lockCta:       { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: AMBER_SOFT, borderRadius: 10, borderWidth: 1, borderColor: '#fde68a', paddingHorizontal: 10, paddingVertical: 9 },
-  lockIconBox:   { width: 34, height: 34, borderRadius: 9, borderWidth: 1, borderColor: '#fde68a', backgroundColor: AMBER_SOFT, alignItems: 'center', justifyContent: 'center' },
-  lockTitle:     { fontSize: 12, fontWeight: '700', color: '#92400e' },
-  lockSub:       { fontSize: 10.5, fontWeight: '500', marginTop: 1, color: SLATE },
-  lockChevron:   { fontSize: 20, fontWeight: '300', color: AMBER },
-  topupCta:      { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff7ed', borderRadius: 10, borderWidth: 1, borderColor: '#fed7aa', paddingHorizontal: 10, paddingVertical: 9 },
-  topupTitle:    { fontSize: 12, fontWeight: '700', color: '#c2410c' },
-  topupSub:      { fontSize: 10.5, fontWeight: '500', marginTop: 1, color: SLATE },
+  // Documents row (resume + licence chips)
+  docsRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  docChip:        { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EBF1FF', borderRadius: 8, borderWidth: 1, borderColor: '#BFDBFE', paddingHorizontal: 10, paddingVertical: 5 },
+  docChipTxt:     { fontSize: 11, fontWeight: '700', color: BRAND },
+  resumeIcon:     { fontSize: 13 },
+  // kept for any remaining reference
+  resumeBtn:      { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  resumeTxt:      { flex: 1, fontSize: 11.5, fontWeight: '700', color: BRAND },
 
-  remarkRow:     { paddingHorizontal: 10, paddingVertical: 7, borderTopWidth: StyleSheet.hairlineWidth },
-  agentBanner:   { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 7, borderTopWidth: 1, backgroundColor: AGENT_SOFT },
-  agentBannerTxt:{ fontSize: 11, fontWeight: '600', flex: 1, color: '#4c1d95' },
+  // CTA
+  ctaSection:     { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  unlockedRow:    { flexDirection: 'row', gap: 8 },
+  callBtn:        { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  callBtnTxt:     { color: WHITE, fontSize: 14, fontWeight: '800' },
+  waBtn:          { flex: 1, backgroundColor: '#25D366', borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 13 },
+  waBtnTxt:       { color: WHITE, fontSize: 14, fontWeight: '800' },
+  callAgentBtn:   { flexDirection: 'row', backgroundColor: BRAND, borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  callAgentIcon:  { fontSize: 16 },
+  callAgentTxt:   { color: WHITE, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  viewContactBtn: { backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  viewContactTxt: { color: WHITE, fontSize: 14, fontWeight: '800' },
+  lockCta:        { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  lockIconBox:    { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  lockTitle:      { fontSize: 12, fontWeight: '700' },
+  lockSub:        { fontSize: 10.5, fontWeight: '500', marginTop: 1 },
+  lockChevron:    { fontSize: 20, fontWeight: '300', color: AMBER },
+  topupCta:       { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  topupTitle:     { fontSize: 12, fontWeight: '700' },
+  topupSub:       { fontSize: 10.5, fontWeight: '500', marginTop: 1 },
+
+  agentBanner:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1 },
+  agentBannerTxt: { fontSize: 11, fontWeight: '600', flex: 1 },
 });
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
@@ -1326,34 +1310,6 @@ const sk = StyleSheet.create({
   avatar:   { width: 70, height: 70, borderRadius: 35 },
 });
 
-// ─── Result Count Bar ─────────────────────────────────────────────────────────
-const ResultBar = ({
-  total,
-  visible,
-}: {
-  total: number;
-  visible: boolean;
-}): React.JSX.Element | null => {
-  const { theme } = useAppTheme();
-  if (!visible) return null;
-  return (
-    <View style={rb.bar}>
-      <AppText style={[rb.left, { color: theme.colors.text }]}>
-        {total.toLocaleString()} Professionals Found
-      </AppText>
-      <View style={rb.verifiedChip}>
-        <AppText style={rb.verifiedTxt}>Verified ✓</AppText>
-      </View>
-    </View>
-  );
-};
-const rb = StyleSheet.create({
-  bar:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: WHITE, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER },
-  left:         { fontSize: 13, fontWeight: '800', color: NAVY },
-  verifiedChip: { backgroundColor: GREEN_SOFT, borderRadius: 20, borderWidth: 1, borderColor: '#bbf7d0', paddingHorizontal: 10, paddingVertical: 4 },
-  verifiedTxt:  { fontSize: 11, fontWeight: '700', color: GREEN },
-});
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 interface FullUserProfile {
@@ -1389,7 +1345,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const [loadingUnlock,   setLoadingUnlock]   = useState<Record<string, boolean>>({});
   const [callStatus,      setCallStatus]      = useState<Record<string, string>>({});
   const [savingRemark,    setSavingRemark]    = useState<Record<string, boolean>>({});
+  const [remarkTimes,     setRemarkTimes]     = useState<Record<string, Date>>({});
   const [isLimitExhausted, setIsLimitExhausted] = useState(false);
+  const [activeChip,      setActiveChip]      = useState<string>('all');
 
   // Profile + subscription
   const profileQuery = useQuery({
@@ -1501,6 +1459,41 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     });
   }, [allAgents, searchQuery]);
 
+  // Category chips dynamically built from loaded workers
+  const categoryChips = useMemo(() => {
+    const total     = filteredAgents.length;
+    const available = filteredAgents.filter(a => a.status !== 'Block' && a.status !== 'Blocked').length;
+    const catCounts: Record<string, number> = {};
+    filteredAgents.forEach(a => {
+      getMatchedAreasOfWork(a.areasOfWork ?? [], '').slice(0, 2).forEach(area => {
+        if (!area) return;
+        const key = area.charAt(0).toUpperCase() + area.slice(1);
+        catCounts[key] = (catCounts[key] ?? 0) + 1;
+      });
+    });
+    const topCats = Object.entries(catCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 4)
+      .filter(([, count]) => count > 0)
+      .map(([label, count]) => ({ key: normalizeText(label), label, count }));
+    return [
+      { key: 'all', label: 'All', count: total },
+      ...(available < total ? [{ key: 'available', label: 'Available', count: available }] : []),
+      ...topCats,
+    ];
+  }, [filteredAgents]);
+
+  // Chip-filtered list shown in the FlatList
+  const displayedAgents = useMemo(() => {
+    if (activeChip === 'all') return filteredAgents;
+    if (activeChip === 'available') return filteredAgents.filter(a => a.status !== 'Block' && a.status !== 'Blocked');
+    return filteredAgents.filter(a =>
+      getMatchedAreasOfWork(a.areasOfWork ?? [], '').some(area =>
+        normalizeText(area).includes(activeChip) || activeChip.includes(normalizeText(area)),
+      ),
+    );
+  }, [filteredAgents, activeChip]);
+
   const handleApply = useCallback(
     (f: WorkerFilters): void => {
       if (!isSubscribed && countActive(f) > 0) {
@@ -1543,6 +1536,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
   const handleSaveRemark = async (agentId: string, status: string): Promise<void> => {
     setCallStatus((p) => ({ ...p, [agentId]: status }));
+    setRemarkTimes((p) => ({ ...p, [agentId]: new Date() }));
     setSavingRemark((p) => ({ ...p, [agentId]: true }));
     try {
       await workerApi.saveWorkerRemark(agentId, status);
@@ -1614,44 +1608,68 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     },
   ].filter(Boolean) as Array<{ key: string; label: string; onRemove: () => void }>;
 
-  const headerPaddingTop = insets.top + 14;
+  const headerPaddingTop = insets.top + 12;
 
+  const isDark = theme.mode === 'dark';
   return (
     <View style={[sc.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* ── Premium Header ──────────────────────────────────────────────── */}
-      <View style={[sc.header, { paddingTop: headerPaddingTop }]}>
-        {/* Row 1: back + title + filter */}
+      {/* ── Header (white) ── */}
+      <View style={[sc.header, { paddingTop: headerPaddingTop, backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <View style={sc.headerRow1}>
           {canGoBack && (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={sc.backBtn}
+              style={[sc.backBtn, { backgroundColor: theme.colors.surface1 }]}
               activeOpacity={0.7}
             >
-              <AppText style={sc.backTxt}>←</AppText>
+              <AppText style={[sc.backTxt, { color: theme.colors.text }]}>←</AppText>
             </TouchableOpacity>
           )}
-
           <View style={sc.headerTitleBlock}>
-            <AppText style={sc.headerTitle}>Workers & Agents</AppText>
-            <AppText style={sc.headerSub} numberOfLines={1}>
-              {isLoading
-                ? 'Searching…'
-                : appliedFilters.state
-                  ? `Results in ${appliedFilters.state}`
-                  : 'All India'}
+            <AppText style={[sc.headerTitle, { color: theme.colors.text }]}>Workers & Agents</AppText>
+            <AppText style={[sc.headerSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
+              📍 {appliedFilters.state
+                ? `Results in ${appliedFilters.state}`
+                : 'All India'}
             </AppText>
           </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.8}
+            style={[sc.bellBtn, { backgroundColor: theme.colors.surface1 }]}
+          >
+            <AppText style={sc.bellIcon}>🔔</AppText>
+          </TouchableOpacity>
+        </View>
+      </View>
 
+      {/* ── Search + chips bar (white) ── */}
+      <View style={[sc.searchSection, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+        {/* Search bar */}
+        <View style={[sc.searchBarWrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+          <AppText style={[sc.searchIcon, { color: theme.colors.mutedText }]}>🔍</AppText>
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search name, skill or city..."
+            placeholderTextColor={theme.colors.mutedText}
+            style={[sc.searchInput, { color: theme.colors.text }]}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={sc.searchClear}>
+              <AppText style={[sc.searchClearTxt, { color: theme.colors.mutedText }]}>✕</AppText>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => setShowFilters(true)}
             activeOpacity={0.85}
-            style={[sc.filterBtn, activeFilterCount > 0 && sc.filterBtnActive]}
+            style={[sc.filterBtn, { backgroundColor: activeFilterCount > 0 ? BRAND : theme.colors.surface1 }, activeFilterCount > 0 && sc.filterBtnActive]}
           >
-            <AppText style={sc.filterIcon}>⊟</AppText>
+            <AppText style={[sc.filterIcon, { color: activeFilterCount > 0 ? WHITE : theme.colors.mutedText }]}>⊟</AppText>
             {activeFilterCount > 0 && (
               <View style={sc.filterBadge}>
                 <AppText style={sc.filterBadgeTxt}>{activeFilterCount}</AppText>
@@ -1660,9 +1678,32 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
 
-     
+        {/* Category chips */}
+        {!isLoading && categoryChips.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={sc.chipsContent}
+          >
+            {categoryChips.map(chip => {
+              const active = activeChip === chip.key;
+              return (
+                <TouchableOpacity
+                  key={chip.key}
+                  onPress={() => setActiveChip(chip.key)}
+                  style={[sc.chip, { backgroundColor: active ? BRAND : theme.colors.surface, borderColor: active ? BRAND : theme.colors.border }, active && sc.chipActive]}
+                  activeOpacity={0.75}
+                >
+                  <AppText style={[sc.chipTxt, { color: active ? WHITE : theme.colors.mutedText }, active && sc.chipTxtActive]}>
+                    {chip.label}{'  '}{chip.count}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
 
-        {/* Active filter pills (inside header, below search) */}
+        {/* Active filter pills */}
         {activePills.length > 0 && (
           <ScrollView
             horizontal
@@ -1671,22 +1712,13 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             contentContainerStyle={sc.pillsContent}
           >
             {activePills.map((pill) => (
-              <TouchableOpacity
-                key={pill.key}
-                onPress={pill.onRemove}
-                activeOpacity={0.75}
-                style={sc.pill}
-              >
-                <AppText style={sc.pillTxt} numberOfLines={1}>
-                  {pill.label}
-                </AppText>
+              <TouchableOpacity key={pill.key} onPress={pill.onRemove} activeOpacity={0.75} style={[sc.pill, { backgroundColor: theme.colors.primaryLight, borderColor: BRAND + '40' }]}>
+                <AppText style={sc.pillTxt} numberOfLines={1}>{pill.label}</AppText>
                 <AppText style={sc.pillClose}>×</AppText>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
-              onPress={() =>
-                setAppliedFilters({ ...EMPTY_FILTERS, state: userState })
-              }
+              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: userState })}
               style={sc.pillClear}
             >
               <AppText style={sc.pillClearTxt}>Clear all</AppText>
@@ -1695,46 +1727,38 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         )}
       </View>
 
-      {/* <ResultBar
-        total={searchQuery.trim() ? filteredAgents.length : totalCount}
-        visible={!isLoading && !isError && allAgents.length > 0}
-      /> */}
+      {/* ── Result count + sort bar ── */}
+      {!isLoading && !isError && displayedAgents.length > 0 && (
+        <View style={[sc.resultBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
+          <AppText style={[sc.resultCount, { color: theme.colors.text }]}>
+            {displayedAgents.length} workers found
+          </AppText>
+          <TouchableOpacity onPress={() => setShowFilters(true)} style={sc.sortBtn} activeOpacity={0.8}>
+            <AppText style={sc.sortIcon}>⇅</AppText>
+            <AppText style={sc.sortTxt}>Relevance</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* ── Content ─────────────────────────────────────────────────────── */}
+      {/* ── Content ── */}
       {isLoading ? (
-        <ScrollView
-          contentContainerStyle={sc.list}
-          showsVerticalScrollIndicator={false}
-        >
-          {Array.from({ length: 6 }, (_, i) => (
-            <SkeletonCard key={i} />
-          ))}
+        <ScrollView contentContainerStyle={sc.list} showsVerticalScrollIndicator={false}>
+          {Array.from({ length: 6 }, (_, i) => (<SkeletonCard key={i} />))}
         </ScrollView>
       ) : isError ? (
         <View style={sc.stateBox}>
-          <View style={sc.errorIconWrap}>
-            <AppText style={{ fontSize: 28 }}>⚠</AppText>
-          </View>
+          <View style={sc.errorIconWrap}><AppText style={{ fontSize: 28 }}>⚠</AppText></View>
           <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>Connection Error</AppText>
-          <AppText style={sc.stateBody}>
-            Unable to load professionals. Check your internet connection and try again.
-          </AppText>
-          <TouchableOpacity
-            onPress={() => void refetch()}
-            style={sc.primaryBtn}
-          >
+          <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>Unable to load professionals. Check your internet connection and try again.</AppText>
+          <TouchableOpacity onPress={() => void refetch()} style={[sc.primaryBtn, { backgroundColor: theme.colors.primary }]}>
             <AppText style={sc.primaryBtnTxt}>Retry</AppText>
           </TouchableOpacity>
         </View>
-      ) : filteredAgents.length === 0 ? (
+      ) : displayedAgents.length === 0 ? (
         <View style={sc.stateBox}>
-          <View style={sc.emptyIconWrap}>
-            <AppText style={{ fontSize: 32 }}>👷</AppText>
-          </View>
-          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>
-            No Workers Found
-          </AppText>
-          <AppText style={sc.stateBody}>
+          <View style={[sc.emptyIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]}><AppText style={{ fontSize: 32 }}>👷</AppText></View>
+          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>No Workers Found</AppText>
+          <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>
             {searchQuery.trim()
               ? `No results for "${searchQuery.trim()}". Try a different name or skill.`
               : activeFilterCount > 0
@@ -1742,18 +1766,13 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
                 : 'No workers are available in this area right now.'}
           </AppText>
           {searchQuery.trim() ? (
-            <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              style={[sc.primaryBtn, sc.outlineBtn]}
-            >
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}>
               <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>Clear Search</AppText>
             </TouchableOpacity>
           ) : activeFilterCount > 0 ? (
             <TouchableOpacity
-              onPress={() =>
-                setAppliedFilters({ ...EMPTY_FILTERS, state: userState })
-              }
-              style={[sc.primaryBtn, sc.outlineBtn]}
+              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: userState })}
+              style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}
             >
               <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>Clear Filters</AppText>
             </TouchableOpacity>
@@ -1761,7 +1780,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         </View>
       ) : (
         <FlatList
-          data={filteredAgents}
+          data={displayedAgents}
           keyExtractor={(item) => item._id}
           style={sc.flex1}
           contentContainerStyle={sc.list}
@@ -1770,9 +1789,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           maxToRenderPerBatch={8}
           windowSize={10}
           removeClippedSubviews={Platform.OS === 'android'}
-          onEndReached={() => {
-            if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
-          }}
+          onEndReached={() => { if (hasNextPage && !isFetchingNextPage) void fetchNextPage(); }}
           onEndReachedThreshold={0.6}
           renderItem={({ item }) => (
             <AgentCard
@@ -1783,29 +1800,27 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               loadingUnlock={loadingUnlock[item._id] ?? false}
               callStatus={callStatus[item._id] ?? ''}
               savingRemark={savingRemark[item._id] ?? false}
+              remarkTime={remarkTimes[item._id]}
               workerTypeApplied={appliedFilters.workerType}
               appliedDistrict={appliedFilters.district}
               onViewContact={() => void handleViewContact(item._id)}
               onSubscribe={() => navigation.navigate('Subscription')}
               onTopup={() => navigation.navigate('Subscription')}
               onSaveRemark={(id, status) => void handleSaveRemark(id, status)}
-              onPress={() =>
-                navigation.navigate('WorkerProfile', { workerId: item._id })
-              }
+              onPress={() => navigation.navigate('WorkerProfile', { workerId: item._id })}
             />
           )}
           ListFooterComponent={
             isFetchingNextPage ? (
               <View style={sc.loadMore}>
                 <ActivityIndicator size="small" color={BRAND} />
-                <AppText style={sc.loadMoreTxt}>Loading more…</AppText>
+                <AppText style={[sc.loadMoreTxt, { color: theme.colors.mutedText }]}>Loading more…</AppText>
               </View>
             ) : null
           }
         />
       )}
 
-      {/* ── Filter Sheet ─────────────────────────────────────────────────── */}
       <FilterSheet
         visible={showFilters}
         initial={appliedFilters}
@@ -1813,60 +1828,76 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         onClose={() => setShowFilters(false)}
         userState={userState}
       />
-
     </View>
   );
 };
 
 // ─── Screen styles ────────────────────────────────────────────────────────────
 const sc = StyleSheet.create({
-  container: { flex: 1 },
-  flex1:     { flex: 1 },
+  container:       { flex: 1 },
+  flex1:           { flex: 1 },
 
   // Header
-  header:          { backgroundColor: BRAND, paddingHorizontal: 16, paddingBottom: 12 },
-  headerRow1:      { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  backBtn:         { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  backTxt:         { color: WHITE, fontSize: 20, fontWeight: '600', lineHeight: 24 },
+  header:          { paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  headerRow1:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn:         { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  backTxt:         { fontSize: 20, fontWeight: '600', lineHeight: 24 },
   headerTitleBlock:{ flex: 1 },
-  headerTitle:     { fontSize: 18, fontWeight: '800', color: WHITE, marginBottom: 2 },
-  headerSub:       { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: '500' },
-  filterBtn:       { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  filterBtnActive: { backgroundColor: BRAND_DARK, borderColor: BRAND_DARK },
-  filterIcon:      { fontSize: 18, color: WHITE },
+  headerTitle:     { fontSize: 18, fontWeight: '800', marginBottom: 2 },
+  headerSub:       { fontSize: 11, fontWeight: '500' },
+  bellBtn:         { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  bellIcon:        { fontSize: 18 },
+
+  // Search section
+  searchSection:   { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  searchBarWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 10, gap: 8 },
+  searchIcon:      { fontSize: 16 },
+  searchInput:     { flex: 1, fontSize: 14, paddingVertical: 0 },
+  searchClear:     { padding: 4 },
+  searchClearTxt:  { fontSize: 18, lineHeight: 22 },
+  filterBtn:       { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  filterBtnActive: {},
+  filterIcon:      { fontSize: 16 },
   filterBadge:     { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: AMBER, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   filterBadgeTxt:  { fontSize: 9, fontWeight: '900', color: WHITE },
 
-  // Search bar
-  searchBarWrap:   { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingHorizontal: 12, height: 44, marginBottom: 10 },
-  searchIcon:      { fontSize: 18, color: 'rgba(255,255,255,0.7)', marginRight: 8 },
-  searchInput:     { flex: 1, fontSize: 14, color: WHITE, fontWeight: '500', paddingVertical: 0 },
-  searchClear:     { paddingLeft: 8 },
-  searchClearTxt:  { fontSize: 22, color: 'rgba(255,255,255,0.7)', lineHeight: 26 },
+  // Category chips
+  chipsContent:    { gap: 8, paddingBottom: 4 },
+  chip:            { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 7 },
+  chipActive:      {},
+  chipTxt:         { fontSize: 13, fontWeight: '600' },
+  chipTxtActive:   { fontWeight: '700' },
 
-  // Filter pills (inside header)
-  pillsBar:        { flexGrow: 0, marginBottom: 2 },
+  // Active filter pills
+  pillsBar:        { flexGrow: 0, marginTop: 6 },
   pillsContent:    { gap: 7, flexDirection: 'row' },
-  pill:            { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 10, paddingVertical: 5 },
-  pillTxt:         { fontSize: 12, fontWeight: '600', color: WHITE, maxWidth: 110 },
-  pillClose:       { fontSize: 16, fontWeight: '700', color: 'rgba(255,255,255,0.7)', lineHeight: 18 },
-  pillClear:       { borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,100,100,0.5)', backgroundColor: 'rgba(220,38,38,0.15)', paddingHorizontal: 10, paddingVertical: 5 },
-  pillClearTxt:    { fontSize: 12, fontWeight: '700', color: '#fca5a5' },
+  pill:            { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
+  pillTxt:         { fontSize: 12, fontWeight: '600', color: BRAND, maxWidth: 110 },
+  pillClose:       { fontSize: 16, fontWeight: '700', color: BRAND, lineHeight: 18 },
+  pillClear:       { borderRadius: 20, borderWidth: 1, borderColor: '#fca5a5', backgroundColor: '#fee2e2', paddingHorizontal: 10, paddingVertical: 5 },
+  pillClearTxt:    { fontSize: 12, fontWeight: '700', color: '#dc2626' },
+
+  // Result count bar
+  resultBar:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  resultCount:     { fontSize: 13, fontWeight: '700' },
+  sortBtn:         { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sortIcon:        { fontSize: 14, color: BRAND, fontWeight: '700' },
+  sortTxt:         { fontSize: 12, fontWeight: '600', color: BRAND },
 
   // List
-  list:            { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 32 },
+  list:            { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 32 },
 
   // Loading more
   loadMore:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 20 },
-  loadMoreTxt:     { fontSize: 13, color: SLATE },
+  loadMoreTxt:     { fontSize: 13 },
 
   // Empty / error states
   stateBox:        { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
   errorIconWrap:   { width: 72, height: 72, borderRadius: 36, backgroundColor: '#fee2e2', borderWidth: 2, borderColor: '#fca5a5', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  emptyIconWrap:   { width: 80, height: 80, borderRadius: 40, backgroundColor: BRAND_SOFT, borderWidth: 2, borderColor: '#c7d2fe', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyIconWrap:   { width: 80, height: 80, borderRadius: 40, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   stateTitle:      { fontSize: 19, fontWeight: '800', textAlign: 'center' },
-  stateBody:       { fontSize: 13, textAlign: 'center', lineHeight: 20, color: SLATE, maxWidth: 280 },
-  primaryBtn:      { marginTop: 4, backgroundColor: NAVY, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 13 },
+  stateBody:       { fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 280 },
+  primaryBtn:      { marginTop: 4, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 13 },
   outlineBtn:      { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: BRAND },
   primaryBtnTxt:   { color: WHITE, fontWeight: '800', fontSize: 14 },
 });

@@ -13,14 +13,14 @@ import {
   View,
   Image,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { buildPhotoUrl } from '../../../core/config/env';
@@ -80,6 +80,7 @@ const getAge = (dob?: string | number): string => {
 };
 
 // Handles arrays, JSON-encoded string arrays, underscore_keys, and deduplication
+const NULL_STRINGS = new Set(['null', 'undefined', 'nan', 'none', 'n/a', '']);
 const formatAreas = (raw: unknown): string[] => {
   let items: string[] = [];
   if (Array.isArray(raw)) {
@@ -102,7 +103,7 @@ const formatAreas = (raw: unknown): string[] => {
   const seen = new Set<string>();
   return items
     .map((a) => a.replace(/_/g, ' ').trim())
-    .filter(Boolean)
+    .filter((a) => !!a && !NULL_STRINGS.has(a.toLowerCase()))
     .map((a) => a.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
     .filter((v) => { if (seen.has(v)) return false; seen.add(v); return true; });
 };
@@ -123,14 +124,16 @@ const st = StyleSheet.create({
 });
 
 // ─── Info row ─────────────────────────────────────────────────────────────────
-const InfoRow = ({ icon, label, value }: {
-  icon: string; label: string; value?: string | number | null;
+const InfoRow = ({ icon, label, value, iconBg }: {
+  icon: string; label: string; value?: string | number | null; iconBg?: string;
 }): React.JSX.Element | null => {
   const { theme } = useAppTheme();
   if (value == null || value === '' || value === 0) return null;
   return (
     <View style={[inf.row, { borderBottomColor: C.border }]}>
-      <View style={inf.iconBox}><AppText style={{ fontSize: 14 }}>{icon}</AppText></View>
+      <View style={[inf.iconBox, iconBg ? { backgroundColor: iconBg } : {}]}>
+        <AppText style={{ fontSize: 14 }}>{icon}</AppText>
+      </View>
       <AppText style={[inf.label, { color: C.slate }]}>{label}</AppText>
       <AppText style={[inf.value, { color: theme.colors.text }]} numberOfLines={2}>{String(value)}</AppText>
     </View>
@@ -163,6 +166,41 @@ const sec = StyleSheet.create({
   title:    { fontSize: 14, fontWeight: '800', color: C.navy, letterSpacing: 0.2 },
 });
 
+// ─── Document Row ─────────────────────────────────────────────────────────────
+const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
+  icon: string; iconBg: string; name: string; meta: string;
+  onPress: () => void; isLast?: boolean;
+}): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={[dr.row, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}
+    >
+      <View style={[dr.iconBox, { backgroundColor: iconBg }]}>
+        <AppText style={dr.icon}>{icon}</AppText>
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText style={[dr.name, { color: theme.colors.text }]} numberOfLines={1}>{name}</AppText>
+        <AppText style={dr.meta}>{meta}</AppText>
+      </View>
+      <View style={dr.pill}>
+        <AppText style={dr.pillTxt}>View →</AppText>
+      </View>
+    </TouchableOpacity>
+  );
+};
+const dr = StyleSheet.create({
+  row:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  iconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  icon:    { fontSize: 18, lineHeight: 22 },
+  name:    { fontSize: 13, fontWeight: '700' },
+  meta:    { fontSize: 11, color: C.slate, marginTop: 2 },
+  pill:    { backgroundColor: '#EBF1FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  pillTxt: { fontSize: 11, fontWeight: '800', color: '#1037A4' },
+});
+
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 const LoadingSkeleton = (): React.JSX.Element => {
   const pulse = C.slateLight;
@@ -188,6 +226,7 @@ const LoadingSkeleton = (): React.JSX.Element => {
 interface FullUserProfile {
   isSubscribed?: boolean;
   subscriptionExpery?: string;
+  remainingContacts?: number;
   employerType?: string;
 }
 
@@ -636,6 +675,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const { workerId } = route.params;
   const { state: authState } = useAuth();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const user = authState.session?.user;
   const isEmployer = user?.role === 'employer';
   const insets = useSafeAreaInsets();
@@ -653,6 +693,15 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   // ── Invite to Requirement modal ──────────────────────────────────────────
   const [inviteVisible, setInviteVisible] = useState(false);
+
+  const openDocument = useCallback((url: string, title: string) => {
+    const ext = url.split('.').pop()?.toLowerCase() ?? '';
+    if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+      void Linking.openURL(url);
+    } else {
+      navigation.navigate('PdfViewer', { url, title });
+    }
+  }, [navigation]);
 
   useEffect(() => {
     if (!isEmployer) return;
@@ -679,8 +728,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     retry: 2,
   });
 
-  // ── Employer subscription — always fresh, no stale cache ────────────────
-  const { data: empProfile, isSuccess: empProfileLoaded } = useQuery<FullUserProfile | null>({
+  // ── Employer subscription — always fresh, refetch on every screen focus ──
+  const { data: empProfile, isSuccess: empProfileLoaded, refetch: refetchEmpProfile } = useQuery<FullUserProfile | null>({
     queryKey: ['emp-profile-worker-detail'],
     queryFn: async () => {
       const { apiClient } = await import('../../../core/api/client');
@@ -688,10 +737,23 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       return res.data.user ?? null;
     },
     enabled: isEmployer,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 0,            // always re-fetch in background on focus
+    gcTime: 5 * 60 * 1000,  // keep cached data for 5 min so no flash-to-zero on re-entry
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+
+  // Re-fetch remaining contacts every time this screen comes into focus
+  // (covers: navigating back from Subscription screen, contact used elsewhere, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      if (isEmployer) {
+        void refetchEmpProfile();
+        // Also sync with the shared dashboard cache
+        void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
+      }
+    }, [isEmployer, refetchEmpProfile, queryClient])
+  );
 
   const isSubscribed = (() => {
     if (!isEmployer) return false;
@@ -722,6 +784,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           toast.success('Contact available — this worker is already hired by you.', 'Already Hired');
         } else {
           toast.success('Contact number unlocked.', 'Unlocked');
+          // Decrement happened on backend — refresh remaining contacts immediately
+          void refetchEmpProfile();
+          void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
         }
       } else {
         const errMsg = res.message ?? 'Unable to unlock contact. Please check your subscription.';
@@ -914,14 +979,11 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* Profile details */}
           <Section title="Profile Details" accent={C.indigo}>
-            <InfoRow icon="💼" label="Category"  value={areas[0] ?? null} />
-            <InfoRow icon="📍" label="Location"          value={location || null} />
-            <InfoRow icon="⏳" label="Experience"        value={exp && exp > 0 ? `${exp} years` : 'Fresher'} />
-            <InfoRow icon="💰" label="Daily Rate"        value={wageDisplay} />
-            <InfoRow icon="👤" label="Gender"            value={worker.gender} />
-            <InfoRow icon="🎂" label="Age"               value={age ? `${age} years` : null} />
-            <InfoRow icon="🔖" label="Worker Type"       value={isAgent ? 'Agent / Group' : 'Individual Worker'} />
-            <InfoRow icon="📊" label="Status"            value={worker.status} />
+            <InfoRow icon="⏳" label="Experience"  value={exp && exp > 0 ? `${exp} years` : 'Fresher'} iconBg="#EBF1FF" />
+            <InfoRow icon="👤" label="Gender"      value={worker.gender} iconBg="#F1F5F9" />
+            <InfoRow icon="🎂" label="Age"         value={age ? `${age} years` : null} iconBg="#FFF7ED" />
+            <InfoRow icon="🔖" label="Worker Type" value={isAgent ? 'Agent / Group' : 'Individual Worker'} iconBg="#F5F3FF" />
+            <InfoRow icon="📊" label="Status"      value={worker.status} iconBg="#F0FDF4" />
             {!!bio && (
               <View style={s.bioWrap}>
                 <AppText style={s.bioLabel}>About</AppText>
@@ -930,15 +992,41 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             )}
           </Section>
 
-          {/* Hire Again — employer only */}
-          {isEmployer && areas.length > 0 && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('PostRequirement', { workType: areas[0], reqType: 'Daily_Wages' })}
-              style={s.hireAgainBtn}
-              activeOpacity={0.85}
-            >
-              <AppText style={s.hireAgainTxt}>⚡  Hire Again for {areas[0]}</AppText>
-            </TouchableOpacity>
+          {/* ── Documents & Certificates ── */}
+          {(!!worker.resumeUrl || !!worker.labourLicenceUrl || (worker.certificates?.length ?? 0) > 0) && (
+            <Section title="Documents & Certificates" accent="#7C3AED">
+              {!!worker.resumeUrl && (
+                <DocRow
+                  icon="📄"
+                  iconBg="#EBF1FF"
+                  name="Resume / CV"
+                  meta={worker.resumeUrl.endsWith('.pdf') ? 'PDF Document' : worker.resumeUrl.endsWith('.docx') || worker.resumeUrl.endsWith('.doc') ? 'Word Document' : 'Document'}
+                  onPress={() => openDocument(worker.resumeUrl!, 'Resume')}
+                  isLast={!worker.labourLicenceUrl && (worker.certificates?.length ?? 0) === 0}
+                />
+              )}
+              {!!worker.labourLicenceUrl && (
+                <DocRow
+                  icon="📋"
+                  iconBg="#F0FDF4"
+                  name="Labour Licence"
+                  meta="Official Licence Document"
+                  onPress={() => openDocument(worker.labourLicenceUrl!, 'Labour Licence')}
+                  isLast={(worker.certificates?.length ?? 0) === 0}
+                />
+              )}
+              {(worker.certificates ?? []).map((cert, i) => (
+                <DocRow
+                  key={i}
+                  icon={cert.fileType === 'pdf' ? '📄' : '🎓'}
+                  iconBg="#FFF7ED"
+                  name={cert.name || `Certificate ${i + 1}`}
+                  meta={cert.fileType ? cert.fileType.toUpperCase() + ' Certificate' : 'Skill Certificate'}
+                  onPress={() => openDocument(cert.url, cert.name || `Certificate ${i + 1}`)}
+                  isLast={i === (worker.certificates!.length - 1)}
+                />
+              ))}
+            </Section>
           )}
 
           {/* Pipeline actions — employer only */}
@@ -1041,24 +1129,48 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                 </View>
               ) : isSubscribed ? (
                 // ─ Active subscription — unlock costs 1 contact credit
-                <View style={s.unlockBox}>
-                  <View style={s.unlockHint}>
-                    <AppText style={s.unlockHintTxt}>
-                      Uses 1 contact credit · {empProfile?.remainingContacts ?? 0} remaining
-                    </AppText>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => void handleUnlock()}
-                    disabled={unlocking}
-                    style={[s.viewContactBtn, { opacity: unlocking ? 0.7 : 1 }]}
-                    activeOpacity={0.85}
-                  >
-                    {unlocking
-                      ? <ActivityIndicator color={C.white} size="small" />
-                      : <AppText style={s.viewContactTxt}>View Contact Number</AppText>
-                    }
-                  </TouchableOpacity>
-                </View>
+                (() => {
+                  const contacts = empProfile?.remainingContacts ?? 0;
+                  const noContacts = contacts <= 0 && empProfileLoaded;
+                  return (
+                    <View style={s.unlockBox}>
+                      <View style={s.unlockHint}>
+                        <AppText style={s.unlockHintTxt}>
+                          {'Uses 1 contact credit · '}
+                          <AppText style={[s.unlockHintTxt, {
+                            color: contacts <= 0 ? C.red : C.blue,
+                            fontWeight: '800',
+                          }]}>
+                            {empProfileLoaded ? `${contacts} remaining` : 'Loading…'}
+                          </AppText>
+                        </AppText>
+                      </View>
+                      {noContacts ? (
+                        /* ── No credits left — blocked state ── */
+                        <View>
+                          <View style={[s.viewContactBtn, { backgroundColor: '#F1F5F9', opacity: 0.6 }]}>
+                            <AppText style={[s.viewContactIcon, { fontSize: 18 }]}>🔒</AppText>
+                          </View>
+                          <AppText style={{ fontSize: 10, color: C.red, textAlign: 'center', marginTop: 6, fontWeight: '700' }}>
+                            No contacts remaining.{'\n'}Top up to unlock.
+                          </AppText>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => void handleUnlock()}
+                          disabled={unlocking || !empProfileLoaded}
+                          style={[s.viewContactBtn, { opacity: (unlocking || !empProfileLoaded) ? 0.6 : 1 }]}
+                          activeOpacity={0.85}
+                        >
+                          {unlocking
+                            ? <ActivityIndicator color={C.white} size="small" />
+                            : <AppText style={s.viewContactIcon}>{'📞'}</AppText>
+                          }
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })()
               ) : (
                 // ─ No subscription / expired
                 <View style={s.lockBox}>
@@ -1158,12 +1270,10 @@ const s = StyleSheet.create({
   waBtnTxt:     { color: '#ffffff', fontSize: 15, fontWeight: '800' },
 
   // Contact — subscribed not unlocked
-  viewContactBtn: { backgroundColor: '#2563eb', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  viewContactTxt: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  viewContactBtn:  { backgroundColor: '#0f172a', borderRadius: 14, paddingVertical: 18, alignItems: 'center', justifyContent: 'center' },
+  viewContactIcon: { fontSize: 26, lineHeight: 32 },
 
   // Hire Again
-  hireAgainBtn:  { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  hireAgainTxt:  { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
 
   // Invite to Requirement
   inviteBtn:  { backgroundColor: '#F5F3FF', borderRadius: 14, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: '#DDD6FE' },

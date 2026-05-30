@@ -102,14 +102,14 @@ function DocCard({
             <View style={[dc.typeBadge, { backgroundColor: meta.bg }]}>
               <AppText style={[dc.typeTxt, { color: meta.color }]}>{doc.docType}</AppText>
             </View>
-            <AppText style={dc.size}>{formatFileSize(doc.fileSize)}</AppText>
-            <AppText style={dc.date}>{formatDate(doc.createdAt)}</AppText>
+            <AppText style={[dc.size, { color: theme.colors.mutedText }]}>{formatFileSize(doc.fileSize)}</AppText>
+            <AppText style={[dc.date, { color: theme.colors.mutedText }]}>{formatDate(doc.createdAt)}</AppText>
           </View>
         </View>
       </View>
 
       {/* Actions */}
-      <View style={dc.actions}>
+      <View style={[dc.actions, { borderTopColor: theme.colors.divider }]}>
         <TouchableOpacity onPress={onView} style={dc.viewBtn} activeOpacity={0.8}>
           <AppText style={dc.viewBtnTxt}>
             {isPdf(doc.mimeType) ? t('viewPdf') : t('viewImage')}
@@ -137,9 +137,9 @@ const dc = StyleSheet.create({
   metaRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   typeBadge:{ borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   typeTxt:  { fontSize: 10, fontWeight: '700' },
-  size:     { fontSize: 11, color: SLATE, fontWeight: '600' },
-  date:     { fontSize: 11, color: SLATE },
-  actions:  { flexDirection: 'row', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: BORDER, paddingTop: 8 },
+  size:     { fontSize: 11, fontWeight: '600' },
+  date:     { fontSize: 11 },
+  actions:  { flexDirection: 'row', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
   viewBtn:  { flex: 2, backgroundColor: BRAND, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
   viewBtnTxt:{ color: WHITE, fontSize: 12, fontWeight: '800' },
   deleteBtn:{ flex: 1, borderWidth: 1.5, borderColor: '#FECACA', borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
@@ -165,6 +165,8 @@ function UploadModal({
   onClose: () => void;
   onUploaded: () => void;
 }): React.JSX.Element {
+  const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const toast = useToast();
   const qc    = useQueryClient();
 
@@ -237,44 +239,45 @@ function UploadModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={um.overlay}>
-        <View style={um.sheet}>
+        <View style={[um.sheet, { backgroundColor: theme.colors.card }]}>
           {/* Header */}
           <View style={um.header}>
-            <AppText style={um.headerTitle}>Upload Document</AppText>
-            <TouchableOpacity onPress={handleClose} style={um.closeBtn}>
-              <AppText style={{ color: SLATE, fontSize: 18, fontWeight: '700' }}>✕</AppText>
+            <AppText style={[um.headerTitle, { color: theme.colors.text }]}>{t('uploadDocumentTitle')}</AppText>
+            <TouchableOpacity onPress={handleClose} style={[um.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
+              <AppText style={{ color: theme.colors.mutedText, fontSize: 18, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           </View>
 
           {/* Document name */}
-          <AppText style={um.fieldLabel}>Document Name *</AppText>
+          <AppText style={[um.fieldLabel, { color: theme.colors.mutedText }]}>{t('documentNameLabel')} *</AppText>
           <TextInput
-            style={um.input}
+            style={[um.input, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.surface2 }]}
             placeholder="e.g. Work Agreement - Rahul Kumar"
-            placeholderTextColor={SLATE}
+            placeholderTextColor={theme.colors.mutedText}
             value={docName}
             onChangeText={setDocName}
             maxLength={80}
           />
 
           {/* Doc type picker */}
-          <AppText style={um.fieldLabel}>Document Type</AppText>
+          <AppText style={[um.fieldLabel, { color: theme.colors.mutedText }]}>{t('documentTypeLabel')}</AppText>
           <View style={um.typeGrid}>
-            {DOC_TYPES.map((t) => {
-              const meta = DOC_TYPE_META[t]!;
+            {DOC_TYPES.map((docTypeItem) => {
+              const meta = DOC_TYPE_META[docTypeItem]!;
               return (
                 <TouchableOpacity
-                  key={t}
-                  onPress={() => setDocType(t)}
+                  key={docTypeItem}
+                  onPress={() => setDocType(docTypeItem)}
                   style={[
                     um.typeChip,
-                    docType === t && { backgroundColor: meta.bg, borderColor: meta.color },
+                    { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 },
+                    docType === docTypeItem && { backgroundColor: meta.bg, borderColor: meta.color },
                   ]}
                   activeOpacity={0.75}
                 >
                   <AppText style={{ fontSize: 14 }}>{meta.emoji}</AppText>
-                  <AppText style={[um.typeChipTxt, docType === t && { color: meta.color, fontWeight: '800' }]}>
-                    {t}
+                  <AppText style={[um.typeChipTxt, { color: theme.colors.mutedText }, docType === docTypeItem && { color: meta.color, fontWeight: '800' }]}>
+                    {docTypeItem}
                   </AppText>
                 </TouchableOpacity>
               );
@@ -282,24 +285,24 @@ function UploadModal({
           </View>
 
           {/* File picker */}
-          <AppText style={um.fieldLabel}>Select File *</AppText>
+          <AppText style={[um.fieldLabel, { color: theme.colors.mutedText }]}>{t('selectFileLabel')} *</AppText>
           {file ? (
-            <View style={um.filePreview}>
-              <AppText style={um.fileName} numberOfLines={2}>{file.name}</AppText>
-              <AppText style={um.fileSize}>{formatFileSize(file.size)}</AppText>
+            <View style={[um.filePreview, { borderColor: GREEN, backgroundColor: theme.colors.successLight }]}>
+              <AppText style={[um.fileName, { color: theme.colors.text }]} numberOfLines={2}>{file.name}</AppText>
+              <AppText style={[um.fileSize, { color: theme.colors.mutedText }]}>{formatFileSize(file.size)}</AppText>
               <TouchableOpacity onPress={() => setFile(null)} style={um.removeFileBtn}>
-                <AppText style={{ color: RED, fontSize: 12, fontWeight: '700' }}>Remove</AppText>
+                <AppText style={{ color: RED, fontSize: 12, fontWeight: '700' }}>{t('removeFile')}</AppText>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={um.pickerRow}>
-              <TouchableOpacity onPress={pickPDF} style={um.pickerBtn} activeOpacity={0.8}>
+              <TouchableOpacity onPress={pickPDF} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
                 <AppText style={um.pickerIcon}>📄</AppText>
-                <AppText style={um.pickerTxt}>PDF</AppText>
+                <AppText style={[um.pickerTxt, { color: theme.colors.text }]}>{t('pdfLabel')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity onPress={pickImage} style={um.pickerBtn} activeOpacity={0.8}>
+              <TouchableOpacity onPress={pickImage} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
                 <AppText style={um.pickerIcon}>🖼️</AppText>
-                <AppText style={um.pickerTxt}>Image</AppText>
+                <AppText style={[um.pickerTxt, { color: theme.colors.text }]}>{t('imageLabel')}</AppText>
               </TouchableOpacity>
             </View>
           )}
@@ -313,7 +316,7 @@ function UploadModal({
           >
             {uploading
               ? <ActivityIndicator color={WHITE} />
-              : <AppText style={um.uploadBtnTxt}>Upload Document</AppText>}
+              : <AppText style={um.uploadBtnTxt}>{t('uploadDocument')}</AppText>}
           </TouchableOpacity>
         </View>
       </View>
@@ -322,24 +325,24 @@ function UploadModal({
 }
 
 const um = StyleSheet.create({
-  overlay:      { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet:        { backgroundColor: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 10, maxHeight: '90%' },
+  overlay:      { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet:        { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 10, maxHeight: '90%' },
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  headerTitle:  { fontSize: 18, fontWeight: '900', color: NAVY },
-  closeBtn:     { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  fieldLabel:   { fontSize: 11, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.4 },
-  input:        { borderWidth: 1.5, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: NAVY, backgroundColor: '#F8FAFC' },
+  headerTitle:  { fontSize: 18, fontWeight: '900' },
+  closeBtn:     { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel:   { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  input:        { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   typeGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  typeChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#F8FAFC' },
-  typeChipTxt:  { fontSize: 11, fontWeight: '600', color: SLATE },
-  filePreview:  { borderWidth: 1.5, borderColor: GREEN, borderRadius: 12, padding: 12, backgroundColor: '#ECFDF5', gap: 4 },
-  fileName:     { fontSize: 13, fontWeight: '700', color: NAVY },
-  fileSize:     { fontSize: 11, color: SLATE },
+  typeChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  typeChipTxt:  { fontSize: 11, fontWeight: '600' },
+  filePreview:  { borderWidth: 1.5, borderRadius: 12, padding: 12, gap: 4 },
+  fileName:     { fontSize: 13, fontWeight: '700' },
+  fileSize:     { fontSize: 11 },
   removeFileBtn:{ alignSelf: 'flex-start', marginTop: 4 },
   pickerRow:    { flexDirection: 'row', gap: 12 },
-  pickerBtn:    { flex: 1, borderWidth: 1.5, borderColor: BORDER, borderRadius: 14, paddingVertical: 16, alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC' },
+  pickerBtn:    { flex: 1, borderWidth: 1.5, borderRadius: 14, paddingVertical: 16, alignItems: 'center', gap: 6 },
   pickerIcon:   { fontSize: 28 },
-  pickerTxt:    { fontSize: 12, fontWeight: '700', color: NAVY },
+  pickerTxt:    { fontSize: 12, fontWeight: '700' },
   uploadBtn:    { backgroundColor: BRAND, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   uploadBtnTxt: { color: WHITE, fontSize: 15, fontWeight: '800' },
 });
@@ -415,19 +418,19 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
       />
 
       {/* ── Upload button strip ──────────────────────────────────────────── */}
-      <View style={[hs.uploadStrip, { borderBottomColor: BORDER }]}>
+      <View style={[hs.uploadStrip, { borderBottomColor: theme.colors.border }]}>
         <View style={{ flex: 1 }}>
-          <AppText style={hs.stripTitle}>
-            {docs.length} document{docs.length !== 1 ? 's' : ''}
+          <AppText style={[hs.stripTitle, { color: theme.colors.text }]}>
+            {docs.length === 1 ? t('docCountSingle', { count: docs.length }) : t('docCountPlural', { count: docs.length })}
           </AppText>
-          <AppText style={hs.stripSub}>{t('noDocumentsDesc')}</AppText>
+          <AppText style={[hs.stripSub, { color: theme.colors.mutedText }]}>{t('noDocumentsDesc')}</AppText>
         </View>
         <TouchableOpacity
           onPress={() => setUploadVisible(true)}
           style={hs.uploadBtn}
           activeOpacity={0.85}
         >
-          <AppText style={hs.uploadBtnTxt}>+ Upload</AppText>
+          <AppText style={hs.uploadBtnTxt}>{t('uploadPlusBtn')}</AppText>
         </TouchableOpacity>
       </View>
 
@@ -439,8 +442,8 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
       ) : docs.length === 0 ? (
         <View style={hs.emptyBox}>
           <AppText style={hs.emptyEmoji}>📁</AppText>
-          <AppText style={hs.emptyTitle}>{t('noDocuments')}</AppText>
-          <AppText style={hs.emptySub}>{t('noDocumentsDesc')}</AppText>
+          <AppText style={[hs.emptyTitle, { color: theme.colors.text }]}>{t('noDocuments')}</AppText>
+          <AppText style={[hs.emptySub, { color: theme.colors.mutedText }]}>{t('noDocumentsDesc')}</AppText>
           <TouchableOpacity
             onPress={() => setUploadVisible(true)}
             style={hs.emptyUploadBtn}
@@ -487,8 +490,8 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
 // ── Styles ────────────────────────────────────────────────────────────────────
 const hs = StyleSheet.create({
   uploadStrip:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
-  stripTitle:     { fontSize: 14, fontWeight: '800', color: NAVY },
-  stripSub:       { fontSize: 11.5, color: SLATE, marginTop: 1 },
+  stripTitle:     { fontSize: 14, fontWeight: '800' },
+  stripSub:       { fontSize: 11.5, marginTop: 1 },
   uploadBtn:      { backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   uploadBtnTxt:   { color: WHITE, fontSize: 13, fontWeight: '800' },
 
@@ -496,8 +499,8 @@ const hs = StyleSheet.create({
 
   emptyBox:       { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 14 },
   emptyEmoji:     { fontSize: 56 },
-  emptyTitle:     { fontSize: 20, fontWeight: '900', color: NAVY, textAlign: 'center' },
-  emptySub:       { fontSize: 13, color: SLATE, textAlign: 'center', lineHeight: 20 },
+  emptyTitle:     { fontSize: 20, fontWeight: '900', textAlign: 'center' },
+  emptySub:       { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   emptyUploadBtn: { backgroundColor: BRAND, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14, marginTop: 8 },
   emptyUploadTxt: { color: WHITE, fontSize: 14, fontWeight: '800' },
 });

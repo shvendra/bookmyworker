@@ -36,6 +36,52 @@ const LANG_FIELD: Record<string, keyof SubEntry> = {
 
 // ── Work-type translation ─────────────────────────────────────────────────────
 
+// Maps free-text / employer-entered workType strings (stored in DB) to standard category values.
+// Keys are lowercase-normalized; values must match a WORK_CATEGORIES entry.
+const LEGACY_WORK_TYPE_MAP: Record<string, string> = {
+  // Office / retail variants
+  'office staff':                         'retail_shop_workers',
+  'office worker':                        'retail_shop_workers',
+  'office workers':                       'retail_shop_workers',
+  'office':                               'retail_shop_workers',
+  'retail service workers':               'retail_shop_workers',
+  'retail and shop workers':              'retail_shop_workers',
+  'retail and service workers':           'retail_shop_workers',
+  'retail shop workers':                  'retail_shop_workers',
+  'retail service':                       'retail_shop_workers',
+  // Construction
+  'construction and project workers':     'construction_project_workers',
+  'construction project workers':         'construction_project_workers',
+  // Manufacturing
+  'manufacturing and industrial workers': 'manufacturing_industrial_workers',
+  'manufacturing industrial workers':     'manufacturing_industrial_workers',
+  // Agriculture
+  'agriculture and farming workers':      'agriculture_farming_workers',
+  'agriculture farming workers':          'agriculture_farming_workers',
+  // Events
+  'event and decoration workers':         'event_decoration_workers',
+  'event decoration workers':             'event_decoration_workers',
+  // Household
+  'household and domestic workers':       'household_domestic_workers',
+  'household domestic workers':           'household_domestic_workers',
+  // Hospitality
+  'hospitality and service workers':      'hospitality_service_workers',
+  'hospitality service workers':          'hospitality_service_workers',
+  // Transport
+  'transport and logistics workers':      'transport_logistics_workers',
+  'transport logistics workers':          'transport_logistics_workers',
+  // Skilled / Creative / Security / Auto / Healthcare
+  'skilled technical workers':            'skilled_technical_workers',
+  'specialized and creative workers':     'specialized_creative_workers',
+  'specialized creative workers':         'specialized_creative_workers',
+  'security and facility workers':        'Security & Facility Workers',
+  'security facility workers':            'Security & Facility Workers',
+  'security facility worker':             'Security & Facility Workers',
+  'automobile and workshop workers':      'Automobile & Workshop Workers',
+  'automobile workshop workers':          'Automobile & Workshop Workers',
+  'healthcare support workers':           'Healthcare Support Workers',
+};
+
 /**
  * Translates a work-type value using cat_* i18n keys (all 11 languages).
  * Handles legacy DB values stored as full label strings or partial names.
@@ -52,6 +98,13 @@ export function getWorkTypeLabel(
 
   const lower = value.toLowerCase().replace(/[\s_&/-]+/g, ' ').trim();
 
+  // 1.5. Legacy / free-text alias match (employer-entered strings not in taxonomy)
+  const legacyCatValue = LEGACY_WORK_TYPE_MAP[lower];
+  if (legacyCatValue) {
+    const legacyCat = WORK_CATEGORIES.find((c) => c.value === legacyCatValue);
+    if (legacyCat) return t(legacyCat.translationKey as TranslationKeys);
+  }
+
   // 2. Fuzzy match — check if the value contains a keyword from the category label
   const fuzzy = WORK_CATEGORIES.find((c) => {
     const catLower = c.label.toLowerCase().replace(/ workers?$/i, '').trim();
@@ -65,10 +118,11 @@ export function getWorkTypeLabel(
   });
   if (fuzzy) return t(fuzzy.translationKey as TranslationKeys);
 
-  // 3. Final fallback: readable English
+  // 3. Final fallback: readable English (trimmed to avoid trailing spaces)
   return value
     .replace(/_/g, ' ')
     .replace(/ workers?$/i, '')
+    .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

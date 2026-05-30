@@ -78,7 +78,7 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
         <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
           <View style={styles.logoRow}>
             <Image
-              source={require('../../assets/logo.png')}
+              source={require('../../../assets/logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

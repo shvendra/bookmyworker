@@ -22,6 +22,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { useTranslation } from 'react-i18next';
 import { attendanceApi } from '../../../core/api/endpoints/attendanceApi';
 import type { AttendanceRecord, JoinedWorker, WorkerSummary } from '../../../core/api/endpoints/attendanceApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
@@ -78,6 +79,7 @@ function DatePickerBar({
   selected: string;
   onSelect: (d: string) => void;
 }): React.JSX.Element {
+  const { theme } = useAppTheme();
   const today = new Date();
   // Show last 14 days
   const days = Array.from({ length: 14 }, (_, i) => {
@@ -101,11 +103,11 @@ function DatePickerBar({
           <TouchableOpacity
             key={d}
             onPress={() => onSelect(d)}
-            style={[dp.cell, isSelected && dp.cellActive]}
+            style={[dp.cell, { backgroundColor: theme.colors.surface1, borderColor: 'transparent' }, isSelected && dp.cellActive]}
             activeOpacity={0.75}
           >
-            <AppText style={[dp.dayTxt, isSelected && dp.activeTxt]}>{dayLabel}</AppText>
-            <AppText style={[dp.dateTxt, isSelected && dp.activeTxt]}>{dateLabel}</AppText>
+            <AppText style={[dp.dayTxt, { color: theme.colors.mutedText }, isSelected && dp.activeTxt]}>{dayLabel}</AppText>
+            <AppText style={[dp.dateTxt, { color: theme.colors.text }, isSelected && dp.activeTxt]}>{dateLabel}</AppText>
           </TouchableOpacity>
         );
       })}
@@ -114,10 +116,10 @@ function DatePickerBar({
 }
 const dp = StyleSheet.create({
   row:       { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
-  cell:      { width: 52, height: 60, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1.5, borderColor: 'transparent' },
+  cell:      { width: 52, height: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1.5 },
   cellActive:{ backgroundColor: BRAND, borderColor: BRAND },
-  dayTxt:    { fontSize: 11, fontWeight: '700', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.3 },
-  dateTxt:   { fontSize: 18, fontWeight: '900', color: NAVY },
+  dayTxt:    { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  dateTxt:   { fontSize: 18, fontWeight: '900' },
   activeTxt: { color: WHITE },
 });
 
@@ -132,6 +134,7 @@ function WorkerRow({
   onChange: (v: { present: boolean; note: string }) => void;
 }): React.JSX.Element {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const initials = (worker.workerName ?? 'W')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
 
@@ -145,13 +148,13 @@ function WorkerRow({
           <AppText style={[wr.name, { color: theme.colors.text }]} numberOfLines={1}>
             {worker.workerName}
           </AppText>
-          <AppText style={wr.sub}>
-            {worker.agreedRate ? `₹${worker.agreedRate}/${worker.rateType === 'Monthly' ? 'month' : 'day'}` : 'Rate not set'}
+          <AppText style={[wr.sub, { color: theme.colors.mutedText }]}>
+            {worker.agreedRate ? `₹${worker.agreedRate}/${worker.rateType === 'Monthly' ? 'month' : 'day'}` : t('rateNotSet')}
           </AppText>
         </View>
         <View style={wr.switchWrap}>
           <AppText style={[wr.switchLabel, { color: value.present ? GREEN : RED }]}>
-            {value.present ? 'Present' : 'Absent'}
+            {value.present ? t('presentLabel') : t('absentLabel')}
           </AppText>
           <Switch
             value={value.present}
@@ -164,9 +167,9 @@ function WorkerRow({
       </View>
       {/* Optional note */}
       <TextInput
-        style={[wr.noteInput, { color: theme.colors.text, borderColor: theme.colors.border }]}
-        placeholder="Add a note (optional)"
-        placeholderTextColor={SLATE}
+        style={[wr.noteInput, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]}
+        placeholder={t('addNoteHint')}
+        placeholderTextColor={theme.colors.mutedText}
         value={value.note}
         onChangeText={(t) => onChange({ ...value, note: t })}
         maxLength={120}
@@ -189,6 +192,7 @@ const wr = StyleSheet.create({
 // ── Summary card ──────────────────────────────────────────────────────────────
 function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const initials = (s.workerName ?? 'W')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const pct = s.totalDaysMarked > 0 ? Math.round((s.daysPresent / s.totalDaysMarked) * 100) : 0;
@@ -197,43 +201,43 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
   return (
     <View style={[sc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       <View style={sc.row}>
-        <View style={[sc.avatar, { backgroundColor: '#EBF1FF' }]}>
-          <AppText style={sc.initials}>{initials}</AppText>
+        <View style={[sc.avatar, { backgroundColor: theme.colors.primaryLight }]}>
+          <AppText style={[sc.initials, { color: BRAND }]}>{initials}</AppText>
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={[sc.name, { color: theme.colors.text }]} numberOfLines={1}>{s.workerName}</AppText>
-          <AppText style={sc.sub}>
-            {s.agreedRate ? `₹${s.agreedRate}/${s.rateType === 'Monthly' ? 'month' : 'day'}` : 'Rate not set'}
+          <AppText style={[sc.sub, { color: theme.colors.mutedText }]}>
+            {s.agreedRate ? `₹${s.agreedRate}/${s.rateType === 'Monthly' ? 'month' : 'day'}` : t('rateNotSet')}
           </AppText>
         </View>
         <View style={sc.salaryBox}>
-          <AppText style={sc.salaryLabel}>Estimated</AppText>
-          <AppText style={sc.salaryAmt}>₹{s.estimatedSalary.toLocaleString('en-IN')}</AppText>
+          <AppText style={[sc.salaryLabel, { color: theme.colors.mutedText }]}>{t('estimatedLabel')}</AppText>
+          <AppText style={[sc.salaryAmt, { color: theme.colors.text }]}>₹{s.estimatedSalary.toLocaleString('en-IN')}</AppText>
         </View>
       </View>
 
       {/* Stats bar */}
       <View style={sc.statsRow}>
-        <View style={sc.statCell}>
+        <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: GREEN }]}>{s.daysPresent}</AppText>
-          <AppText style={sc.statLabel}>Present</AppText>
+          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>{t('presentStat')}</AppText>
         </View>
-        <View style={sc.statCell}>
+        <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: RED }]}>{s.daysAbsent}</AppText>
-          <AppText style={sc.statLabel}>Absent</AppText>
+          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>{t('absentStat')}</AppText>
         </View>
-        <View style={sc.statCell}>
-          <AppText style={[sc.statNum, { color: SLATE }]}>{s.totalDaysMarked}</AppText>
-          <AppText style={sc.statLabel}>Total Days</AppText>
+        <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
+          <AppText style={[sc.statNum, { color: theme.colors.mutedText }]}>{s.totalDaysMarked}</AppText>
+          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>{t('totalDaysStat')}</AppText>
         </View>
-        <View style={[sc.statCell, { borderWidth: 1.5, borderColor: pctColor, borderRadius: 10 }]}>
+        <View style={[sc.statCell, { backgroundColor: theme.colors.surface1, borderWidth: 1.5, borderColor: pctColor, borderRadius: 10 }]}>
           <AppText style={[sc.statNum, { color: pctColor }]}>{pct}%</AppText>
-          <AppText style={[sc.statLabel, { color: pctColor }]}>Attendance</AppText>
+          <AppText style={[sc.statLabel, { color: pctColor }]}>{t('attendanceStat')}</AppText>
         </View>
       </View>
 
       {/* Progress bar */}
-      <View style={sc.progressBg}>
+      <View style={[sc.progressBg, { backgroundColor: theme.colors.surface2 }]}>
         <View style={[sc.progressFill, { width: `${pct}%`, backgroundColor: pctColor }]} />
       </View>
     </View>
@@ -243,17 +247,17 @@ const sc = StyleSheet.create({
   card:       { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10, marginBottom: 12 },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar:     { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  initials:   { fontSize: 16, fontWeight: '900', color: BRAND },
+  initials:   { fontSize: 16, fontWeight: '900' },
   name:       { fontSize: 14, fontWeight: '800', lineHeight: 19 },
-  sub:        { fontSize: 11, color: SLATE, marginTop: 1 },
+  sub:        { fontSize: 11, marginTop: 1 },
   salaryBox:  { alignItems: 'flex-end' },
-  salaryLabel:{ fontSize: 9, color: SLATE, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
-  salaryAmt:  { fontSize: 17, fontWeight: '900', color: NAVY },
+  salaryLabel:{ fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  salaryAmt:  { fontSize: 17, fontWeight: '900' },
   statsRow:   { flexDirection: 'row', gap: 8 },
-  statCell:   { flex: 1, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, paddingVertical: 8, gap: 2 },
+  statCell:   { flex: 1, alignItems: 'center', borderRadius: 10, paddingVertical: 8, gap: 2 },
   statNum:    { fontSize: 18, fontWeight: '900' },
-  statLabel:  { fontSize: 9, fontWeight: '700', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.3 },
-  progressBg: { height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' },
+  statLabel:  { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  progressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
   progressFill:{ height: 6, borderRadius: 3 },
 });
 
@@ -261,6 +265,7 @@ const sc = StyleSheet.create({
 export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { requirementId, requirementTitle } = route.params;
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const qc = useQueryClient();
@@ -358,10 +363,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   const renderEmptyJoined = () => (
     <View style={styles.emptyBox}>
       <AppText style={styles.emptyEmoji}>👷</AppText>
-      <AppText style={styles.emptyTitle}>No Joined Workers</AppText>
-      <AppText style={styles.emptySub}>
-        Mark workers as "Joined" in the pipeline to start tracking their attendance and salary.
-      </AppText>
+      <AppText style={[styles.emptyTitle, { color: theme.colors.text }]}>{t('noJoinedWorkers')}</AppText>
+      <AppText style={[styles.emptySub, { color: theme.colors.mutedText }]}>{t('noJoinedWorkersSub')}</AppText>
     </View>
   );
 
@@ -372,12 +375,12 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
-        title={requirementTitle ? `Attendance · ${requirementTitle}` : 'Attendance Tracker'}
+        title={requirementTitle ? `${t('attendanceStat')} · ${requirementTitle}` : t('markAttendanceTab')}
         onBack={() => navigation.goBack()}
       />
 
       {/* ── Tabs ──────────────────────────────────────────────────────────── */}
-      <View style={[styles.tabBar, { borderBottomColor: BORDER }]}>
+      <View style={[styles.tabBar, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
         {(['mark', 'summary'] as const).map((tab) => (
           <TouchableOpacity
             key={tab}
@@ -385,8 +388,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
             activeOpacity={0.75}
           >
-            <AppText style={[styles.tabTxt, activeTab === tab && styles.tabTxtActive]}>
-              {tab === 'mark' ? 'Mark Attendance' : 'Salary Summary'}
+            <AppText style={[styles.tabTxt, { color: theme.colors.mutedText }, activeTab === tab && styles.tabTxtActive]}>
+              {tab === 'mark' ? t('markAttendanceTab') : t('salarySummaryTab')}
             </AppText>
           </TouchableOpacity>
         ))}
@@ -400,8 +403,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
         // ── MARK ATTENDANCE TAB ────────────────────────────────────────────
         <View style={{ flex: 1 }}>
           {/* Date picker */}
-          <View style={[styles.dateSection, { borderBottomColor: BORDER }]}>
-            <AppText style={styles.sectionLabel}>Select Date</AppText>
+          <View style={[styles.dateSection, { borderBottomColor: theme.colors.border }]}>
+            <AppText style={[styles.sectionLabel, { color: theme.colors.mutedText }]}>{t('selectDate')}</AppText>
             <DatePickerBar selected={selectedDate} onSelect={handleDateChange} />
           </View>
 
@@ -427,15 +430,15 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                   {/* Date header + mark-all shortcuts */}
                   <View style={styles.dayHeader}>
                     <View>
-                      <AppText style={styles.dayHeaderDate}>{formatDisplayDate(selectedDate)}</AppText>
-                      <AppText style={styles.dayHeaderSub}>{joinedWorkers.length} worker(s)</AppText>
+                      <AppText style={[styles.dayHeaderDate, { color: theme.colors.text }]}>{formatDisplayDate(selectedDate)}</AppText>
+                      <AppText style={[styles.dayHeaderSub, { color: theme.colors.mutedText }]}>{t('workerCount', { count: joinedWorkers.length })}</AppText>
                     </View>
                     <View style={styles.markAllRow}>
-                      <TouchableOpacity onPress={() => markAll(true)} style={[styles.markAllBtn, { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
-                        <AppText style={[styles.markAllTxt, { color: GREEN }]}>All Present</AppText>
+                      <TouchableOpacity onPress={() => markAll(true)} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
+                        <AppText style={[styles.markAllTxt, { color: GREEN }]}>{t('allPresent')}</AppText>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => markAll(false)} style={[styles.markAllBtn, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]} activeOpacity={0.75}>
-                        <AppText style={[styles.markAllTxt, { color: RED }]}>All Absent</AppText>
+                      <TouchableOpacity onPress={() => markAll(false)} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
+                        <AppText style={[styles.markAllTxt, { color: RED }]}>{t('allAbsent')}</AppText>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -453,7 +456,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
 
           {/* Sticky submit */}
           {joinedWorkers.length > 0 && (
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 12, backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
               <TouchableOpacity
                 onPress={() => void handleSubmit()}
                 style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
@@ -462,7 +465,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
               >
                 {submitting
                   ? <ActivityIndicator color={WHITE} size="small" />
-                  : <AppText style={styles.submitTxt}>Save Attendance for {formatDisplayDate(selectedDate)}</AppText>
+                  : <AppText style={styles.submitTxt}>{t('saveAttendanceBtn', { date: formatDisplayDate(selectedDate) })}</AppText>
                 }
               </TouchableOpacity>
 
@@ -472,7 +475,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                 style={styles.historyBtn}
                 activeOpacity={0.75}
               >
-                <AppText style={styles.historyTxt}>View History ({historyDates.length} days marked)</AppText>
+                <AppText style={styles.historyTxt}>{t('viewHistoryBtn', { count: historyDates.length })}</AppText>
               </TouchableOpacity>
             </View>
           )}
@@ -500,13 +503,11 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
               ListHeaderComponent={
                 summaryQuery.data && summaryQuery.data.summary.length > 0 ? (
                   <View style={styles.grandTotalCard}>
-                    <AppText style={styles.gtLabel}>Total Estimated Payroll</AppText>
+                    <AppText style={styles.gtLabel}>{t('totalPayrollLabel')}</AppText>
                     <AppText style={styles.gtAmount}>
                       ₹{(summaryQuery.data?.grandTotal ?? 0).toLocaleString('en-IN')}
                     </AppText>
-                    <AppText style={styles.gtSub}>
-                      Based on marked attendance · Actual payout at your discretion
-                    </AppText>
+                    <AppText style={styles.gtSub}>{t('payrollDisclaimer')}</AppText>
                   </View>
                 ) : null
               }
@@ -514,10 +515,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                 !summaryQuery.isLoading ? (
                   <View style={styles.emptyBox}>
                     <AppText style={styles.emptyEmoji}>📊</AppText>
-                    <AppText style={styles.emptyTitle}>No Summary Yet</AppText>
-                    <AppText style={styles.emptySub}>
-                      Mark attendance for your joined workers to see salary calculations here.
-                    </AppText>
+                    <AppText style={[styles.emptyTitle, { color: theme.colors.text }]}>{t('noSummaryYet')}</AppText>
+                    <AppText style={[styles.emptySub, { color: theme.colors.mutedText }]}>{t('noSummaryYetSub')}</AppText>
                   </View>
                 ) : null
               }
@@ -535,17 +534,17 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
         onRequestClose={() => setShowHistory(false)}
       >
         <View style={hm.overlay}>
-          <View style={[hm.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={hm.header}>
-              <AppText style={hm.title}>Attendance History</AppText>
-              <TouchableOpacity onPress={() => setShowHistory(false)} style={hm.closeBtn}>
-                <AppText style={{ color: SLATE, fontSize: 18, fontWeight: '700' }}>✕</AppText>
+          <View style={[hm.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 16 }]}>
+            <View style={[hm.header, { borderBottomColor: theme.colors.border }]}>
+              <AppText style={[hm.title, { color: theme.colors.text }]}>{t('attendanceHistoryTitle')}</AppText>
+              <TouchableOpacity onPress={() => setShowHistory(false)} style={[hm.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
+                <AppText style={{ color: theme.colors.mutedText, fontSize: 18, fontWeight: '700' }}>✕</AppText>
               </TouchableOpacity>
             </View>
 
             {historyDates.length === 0 ? (
               <View style={{ padding: 32, alignItems: 'center' }}>
-                <AppText style={{ color: SLATE, fontSize: 13, textAlign: 'center' }}>No attendance marked yet.</AppText>
+                <AppText style={{ color: theme.colors.mutedText, fontSize: 13, textAlign: 'center' }}>{t('noAttendanceMarked')}</AppText>
               </View>
             ) : (
               <FlatList
@@ -556,18 +555,20 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                   const dayRecords = allRecords.filter((r) => r.date.slice(0, 10) === date);
                   const presentCount = dayRecords.filter((r) => r.present).length;
                   const total = dayRecords.length;
+                  const badgeBg = presentCount === total ? theme.colors.successLight : presentCount === 0 ? theme.colors.dangerLight : theme.colors.warningLight;
+                  const badgeColor = presentCount === total ? GREEN : presentCount === 0 ? RED : AMBER;
                   return (
                     <TouchableOpacity
                       onPress={() => { setShowHistory(false); handleDateChange(date); }}
-                      style={hm.dayRow}
+                      style={[hm.dayRow, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
                       activeOpacity={0.75}
                     >
                       <View style={{ flex: 1 }}>
-                        <AppText style={hm.dayDate}>{formatDisplayDate(date)}</AppText>
-                        <AppText style={hm.daySub}>{presentCount}/{total} present</AppText>
+                        <AppText style={[hm.dayDate, { color: theme.colors.text }]}>{formatDisplayDate(date)}</AppText>
+                        <AppText style={[hm.daySub, { color: theme.colors.mutedText }]}>{t('presentCount', { present: presentCount, total })}</AppText>
                       </View>
-                      <View style={[hm.badge, { backgroundColor: presentCount === total ? '#ECFDF5' : presentCount === 0 ? '#FEF2F2' : '#FFFBEB' }]}>
-                        <AppText style={[hm.badgeTxt, { color: presentCount === total ? GREEN : presentCount === 0 ? RED : AMBER }]}>
+                      <View style={[hm.badge, { backgroundColor: badgeBg }]}>
+                        <AppText style={[hm.badgeTxt, { color: badgeColor }]}>
                           {presentCount}/{total}
                         </AppText>
                       </View>
@@ -585,25 +586,25 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  tabBar:        { flexDirection: 'row', borderBottomWidth: 1, backgroundColor: WHITE },
+  tabBar:        { flexDirection: 'row', borderBottomWidth: 1 },
   tabBtn:        { flex: 1, paddingVertical: 13, alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
   tabBtnActive:  { borderBottomColor: BRAND },
-  tabTxt:        { fontSize: 13, fontWeight: '700', color: SLATE },
+  tabTxt:        { fontSize: 13, fontWeight: '700' },
   tabTxtActive:  { color: BRAND },
 
   dateSection:   { borderBottomWidth: 1, paddingTop: 10 },
-  sectionLabel:  { fontSize: 11, fontWeight: '800', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.4, paddingHorizontal: 16 },
+  sectionLabel:  { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, paddingHorizontal: 16 },
 
   listContent:   { padding: 14 },
 
   dayHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  dayHeaderDate: { fontSize: 15, fontWeight: '900', color: NAVY },
-  dayHeaderSub:  { fontSize: 11.5, color: SLATE, marginTop: 2 },
+  dayHeaderDate: { fontSize: 15, fontWeight: '900' },
+  dayHeaderSub:  { fontSize: 11.5, marginTop: 2 },
   markAllRow:    { flexDirection: 'row', gap: 6 },
   markAllBtn:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
   markAllTxt:    { fontSize: 11, fontWeight: '800' },
 
-  footer:        { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: WHITE, padding: 14, borderTopWidth: 1, borderTopColor: BORDER, gap: 8 },
+  footer:        { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14, borderTopWidth: 1, gap: 8 },
   submitBtn:     { backgroundColor: BRAND, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   submitTxt:     { color: WHITE, fontSize: 14, fontWeight: '800' },
   historyBtn:    { alignItems: 'center', paddingVertical: 4 },
@@ -616,19 +617,19 @@ const styles = StyleSheet.create({
 
   emptyBox:      { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32, gap: 10 },
   emptyEmoji:    { fontSize: 44 },
-  emptyTitle:    { fontSize: 18, fontWeight: '900', color: NAVY, textAlign: 'center' },
-  emptySub:      { fontSize: 13, color: SLATE, textAlign: 'center', lineHeight: 20 },
+  emptyTitle:    { fontSize: 18, fontWeight: '900', textAlign: 'center' },
+  emptySub:      { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 });
 
 const hm = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:   { backgroundColor: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%' },
-  header:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: BORDER },
-  title:   { fontSize: 17, fontWeight: '900', color: NAVY },
-  closeBtn:{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
-  dayRow:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: BORDER },
-  dayDate: { fontSize: 14, fontWeight: '800', color: NAVY },
-  daySub:  { fontSize: 11.5, color: SLATE, marginTop: 2 },
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%' },
+  header:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1 },
+  title:   { fontSize: 17, fontWeight: '900' },
+  closeBtn:{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  dayRow:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 12, borderWidth: 1 },
+  dayDate: { fontSize: 14, fontWeight: '800' },
+  daySub:  { fontSize: 11.5, marginTop: 2 },
   badge:   { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   badgeTxt:{ fontSize: 13, fontWeight: '900' },
 });
