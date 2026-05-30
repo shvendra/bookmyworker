@@ -15,12 +15,15 @@ import { apiClient } from '../../../core/api/client';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
+import { useTranslation } from 'react-i18next';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'EmployerPipeline'>;
 
 const BRAND = '#1037A4';
-const PIPE_LABELS = ['Posted', 'Responding', 'Shortlisted', 'Hired', 'Completed'] as const;
+// PIPE_LABELS is now built dynamically inside PipelineStepper using t()
 type StageKey = 'Shortlisted' | 'Selected' | 'Joined';
 type Counts = Record<StageKey, number>;
 
@@ -34,39 +37,43 @@ function deriveStage(req: RawRequirement, counts: Counts): number {
 }
 
 // ─── Progress stepper ─────────────────────────────────────────────────────────
-const PipelineStepper = ({ activeIdx }: { activeIdx: number }): React.JSX.Element => (
-  <View style={ps.wrap}>
-    {PIPE_LABELS.map((label, i) => {
-      const done    = i < activeIdx;
-      const current = i === activeIdx;
-      const filled  = done || current;
-      const leftLine  = i > 0 ? (done || current ? BRAND : '#CBD5E1') : 'transparent';
-      const rightLine = i < PIPE_LABELS.length - 1 ? (done ? BRAND : '#CBD5E1') : 'transparent';
-      return (
-        <View key={label} style={ps.step}>
-          <View style={ps.connRow}>
-            <View style={[ps.line, { backgroundColor: leftLine }]} />
-            <View style={[ps.circle, {
-              backgroundColor: filled ? BRAND : '#fff',
-              borderColor:     filled ? BRAND : '#CBD5E1',
-            }]}>
-              <AppText style={[ps.circleNum, { color: filled ? '#fff' : '#94A3B8' }]}>
-                {done ? '✓' : String(i + 1)}
-              </AppText>
+const PipelineStepper = ({ activeIdx }: { activeIdx: number }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
+  const pipeLabels = [t('stagePosted'), t('stageResponding'), t('stageShortlisted'), t('stageHired'), t('stageCompleted')];
+  return (
+    <View style={ps.wrap}>
+      {pipeLabels.map((label, i) => {
+        const done    = i < activeIdx;
+        const current = i === activeIdx;
+        const filled  = done || current;
+        const leftLine  = i > 0 ? (done || current ? BRAND : '#CBD5E1') : 'transparent';
+        const rightLine = i < pipeLabels.length - 1 ? (done ? BRAND : '#CBD5E1') : 'transparent';
+        return (
+          <View key={label} style={ps.step}>
+            <View style={ps.connRow}>
+              <View style={[ps.line, { backgroundColor: leftLine }]} />
+              <View style={[ps.circle, {
+                backgroundColor: filled ? BRAND : '#fff',
+                borderColor:     filled ? BRAND : '#CBD5E1',
+              }]}>
+                <AppText style={[ps.circleNum, { color: filled ? '#fff' : '#94A3B8' }]}>
+                  {done ? '✓' : String(i + 1)}
+                </AppText>
+              </View>
+              <View style={[ps.line, { backgroundColor: rightLine }]} />
             </View>
-            <View style={[ps.line, { backgroundColor: rightLine }]} />
+            <AppText style={[ps.label, {
+              color:      current ? BRAND : done ? '#475569' : '#94A3B8',
+              fontWeight: current ? '800' : '600',
+            }]} numberOfLines={1}>
+              {label}
+            </AppText>
           </View>
-          <AppText style={[ps.label, {
-            color:      current ? BRAND : done ? '#475569' : '#94A3B8',
-            fontWeight: current ? '800' : '600',
-          }]} numberOfLines={1}>
-            {label}
-          </AppText>
-        </View>
-      );
-    })}
-  </View>
-);
+        );
+      })}
+    </View>
+  );
+};
 const ps = StyleSheet.create({
   wrap:      { flexDirection: 'row', backgroundColor: '#f8fafc', borderRadius: 10, padding: 10, marginVertical: 2 },
   step:      { flex: 1, alignItems: 'center' },
@@ -95,7 +102,7 @@ const ReqCard = ({
     .filter(Boolean)
     .map(s => capitalize((s ?? '').replace(/_/g, ' ')))
     .join(' · ');
-  const location = [req.district, req.state].filter(Boolean).join(', ');
+  const location = getLocationStr({ district: req.district, state: req.state }, i18n.language, '');
   const interestedCount = (req.intrestedAgents ?? []).length;
   const statusRaw = (req.status ?? '').toLowerCase();
   const isOpen = statusRaw !== 'closed' && statusRaw !== 'expired' && statusRaw !== 'completed';
@@ -157,6 +164,7 @@ const rc = StyleSheet.create({
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme }  = useAppTheme();
   const insets     = useSafeAreaInsets();
   const { state: authState } = useAuth();
@@ -232,12 +240,10 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
     >
       <View style={ls.box}>
         <View style={ls.icon}><AppText style={{ fontSize: 36 }}>🔒</AppText></View>
-        <AppText style={ls.title}>No Active Subscription</AppText>
-        <AppText style={ls.sub}>
-          Subscribe to BookMyWorker to access your full hiring pipeline — track all shortlisted, selected, and joined workers.
-        </AppText>
+        <AppText style={ls.title}>{t('noActiveSubscription')}</AppText>
+        <AppText style={ls.sub}>{t('pipelineSubscribeDesc')}</AppText>
         <View style={ls.benefits}>
-          {['View all shortlisted workers', 'Track selected candidates', 'Monitor who has joined', 'Call & WhatsApp workers directly'].map((b, i) => (
+          {([t('pipelineBenefit1'), t('pipelineBenefit2'), t('pipelineBenefit3'), t('pipelineBenefit4')] as string[]).map((b, i) => (
             <View key={i} style={ls.row}>
               <View style={ls.dot} />
               <AppText style={ls.benefitTxt}>{b}</AppText>
@@ -245,7 +251,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
           ))}
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
-          <AppText style={ls.btnTxt}>View Subscription Plans</AppText>
+          <AppText style={ls.btnTxt}>{t('viewSubscriptionPlans')}</AppText>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -254,7 +260,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-      <ScreenHeader title="Hiring Pipeline" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('hiringPipeline')} onBack={() => navigation.goBack()} />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -293,23 +299,21 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
                   </View>
                 ))}
               </View>
-              <AppText style={sg.sectionTitle}>All Requirements ({mergedReqs.length})</AppText>
+              <AppText style={sg.sectionTitle}>{t('allRequirements', { count: mergedReqs.length })}</AppText>
             </View>
           }
           ListEmptyComponent={
             !isLoading ? (
               <View style={sg.emptyBox}>
                 <AppText style={sg.emptyEmoji}>📋</AppText>
-                <AppText style={sg.emptyTitle}>No Requirements Yet</AppText>
-                <AppText style={sg.emptySub}>
-                  Post a requirement to start tracking your hiring pipeline.
-                </AppText>
+                <AppText style={sg.emptyTitle}>{t('noRequirementsTitle')}</AppText>
+                <AppText style={sg.emptySub}>{t('noRequirementsDesc')}</AppText>
                 <TouchableOpacity
                   onPress={() => navigation.navigate('PostRequirement')}
                   style={sg.postBtn}
                   activeOpacity={0.85}
                 >
-                  <AppText style={sg.postBtnTxt}>+ Post a Requirement</AppText>
+                  <AppText style={sg.postBtnTxt}>{t('postARequirement')}</AppText>
                 </TouchableOpacity>
               </View>
             ) : null

@@ -1,0 +1,354 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { type NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import i18n from '../../../../packages/shared-mobile/src/core/i18n';
+import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
+import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
+import type { EmployerStackParamList } from '../../navigation/types';
+
+export const EMPLOYER_LANG_KEY = 'bmw_employer_lang';
+
+const BRAND = '#1037A4';
+const { width: W } = Dimensions.get('window');
+const CARD_GAP = 12;
+const CARD_SIZE = (W - 48 - CARD_GAP) / 2;
+
+const LANGUAGES: { code: AppLanguage; native: string; english: string }[] = [
+  { code: 'hi', native: 'हिंदी', english: 'Hindi' },
+  { code: 'en', native: 'English', english: 'English' },
+  { code: 'mr', native: 'मराठी', english: 'Marathi' },
+  { code: 'gu', native: 'ગુજરાતી', english: 'Gujarati' },
+  { code: 'ta', native: 'தமிழ்', english: 'Tamil' },
+  { code: 'te', native: 'తెలుగు', english: 'Telugu' },
+  { code: 'kn', native: 'ಕನ್ನಡ', english: 'Kannada' },
+  { code: 'ml', native: 'മലയാളം', english: 'Malayalam' },
+  { code: 'bn', native: 'বাংলা', english: 'Bengali' },
+  { code: 'or', native: 'ଓଡ଼ିଆ', english: 'Odia' },
+  { code: 'pa', native: 'ਪੰਜਾਬੀ', english: 'Punjabi' },
+];
+
+type Props = NativeStackScreenProps<EmployerStackParamList, 'LanguageSelect'>;
+
+export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element => {
+  const insets = useSafeAreaInsets();
+  const [selected, setSelected] = useState<AppLanguage>('hi');
+  const [saving, setSaving] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 60, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim, scaleAnim]);
+
+  const handleContinue = async () => {
+    if (saving) return;
+    setSaving(true);
+    await AsyncStorage.setItem(EMPLOYER_LANG_KEY, selected);
+    await i18n.changeLanguage(selected);
+    navigation.replace('Welcome');
+  };
+
+  return (
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+
+      {/* ── Blue header ─────────────────────────────────────── */}
+      <View style={styles.header}>
+        <View style={styles.circleTopRight} />
+        <View style={styles.circleBottomLeft} />
+
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+          <View style={styles.logoRow}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.brandName}>BookMyWorker</Text>
+          </View>
+
+          <Text style={styles.heroTitle}>Choose Your Language</Text>
+          <Text style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</Text>
+
+          <View style={styles.stepRow}>
+            <View style={[styles.stepDot, styles.stepDotActive]} />
+            <View style={styles.stepLine} />
+            <View style={styles.stepDot} />
+            <View style={styles.stepLine} />
+            <View style={styles.stepDot} />
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* ── Language grid ────────────────────────────────────── */}
+      <Animated.View
+        style={[
+          styles.gridContainer,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <FlatList
+          data={LANGUAGES}
+          keyExtractor={(item) => item.code}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            const isSelected = selected === item.code;
+            return (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.card,
+                  isSelected && styles.cardSelected,
+                  pressed && !isSelected && styles.cardPressed,
+                ]}
+                onPress={() => setSelected(item.code)}
+                android_ripple={{ color: 'rgba(16,55,164,0.1)', borderless: false }}
+              >
+                {isSelected && (
+                  <View style={styles.checkBadge}>
+                    <Text style={styles.checkIcon}>✓</Text>
+                  </View>
+                )}
+                <Text
+                  style={[styles.nativeText, isSelected && styles.textWhite]}
+                  numberOfLines={1}
+                >
+                  {item.native}
+                </Text>
+                <Text style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
+                  {item.english}
+                </Text>
+              </Pressable>
+            );
+          }}
+        />
+      </Animated.View>
+
+      {/* ── Continue CTA ─────────────────────────────────────── */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+        {selected ? (
+          <Text style={styles.selectedHint}>
+            Selected:{' '}
+            <Text style={styles.selectedHintBold}>
+              {LANGUAGES.find((l) => l.code === selected)?.native}
+            </Text>
+          </Text>
+        ) : null}
+        <AppButton
+          title={saving ? 'Please wait…' : 'Continue'}
+          onPress={handleContinue}
+          disabled={saving}
+          loading={saving}
+          fullWidth
+          size="lg"
+          iconRight={saving ? undefined : '→'}
+        />
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#F0F4FF',
+  },
+
+  // ── Header ──────────────────────────────────────
+  header: {
+    backgroundColor: BRAND,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+  },
+  circleTopRight: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  circleBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -30,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  logoImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    marginRight: 10,
+  },
+  brandName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  heroTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  heroSub: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    marginBottom: 18,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  stepDotActive: {
+    backgroundColor: '#fff',
+    width: 20,
+    borderRadius: 4,
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    maxWidth: 24,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginHorizontal: 4,
+  },
+
+  // ── Grid ─────────────────────────────────────────
+  gridContainer: {
+    flex: 1,
+  },
+  grid: {
+    padding: 18,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: CARD_GAP,
+  },
+  card: {
+    width: CARD_SIZE,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    position: 'relative',
+    minHeight: 78,
+    justifyContent: 'center',
+  },
+  cardSelected: {
+    backgroundColor: BRAND,
+    borderColor: BRAND,
+    shadowColor: BRAND,
+    shadowOpacity: 0.3,
+    elevation: 7,
+  },
+  cardPressed: {
+    backgroundColor: '#EEF2FF',
+    borderColor: BRAND,
+  },
+  checkBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkIcon: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  nativeText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 3,
+  },
+  englishLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+  },
+  textWhite: {
+    color: '#fff',
+  },
+  textWhiteFaded: {
+    color: 'rgba(255,255,255,0.70)',
+  },
+
+  // ── Footer ──────────────────────────────────────
+  footer: {
+    backgroundColor: '#fff',
+    paddingTop: 14,
+    paddingHorizontal: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 10,
+  },
+  selectedHint: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  selectedHintBold: {
+    fontWeight: '700',
+    color: BRAND,
+  },
+});

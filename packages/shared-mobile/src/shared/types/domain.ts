@@ -15,8 +15,10 @@ export interface UserProfile {
   profileImage?: string;
   state?: string;
   district?: string;
+  block?: string;
   tehsil?: string;
   serviceArea?: string[];
+  areasOfWork?: string[];
   // Employer subscription fields
   isSubscribed?: boolean;
   subscriptionExpiry?: string;
@@ -28,8 +30,25 @@ export interface UserProfile {
   workerSubType?: string;
   // Agent type (Group worker supplier, etc.)
   agentType?: string;
+  // Personal info
+  dob?: string;
+  gender?: string;
+  // Work categories (subcategories like 'Mason', 'Electrician')
+  categories?: string[];
+  // Cities/districts where user prefers to work
+  preferredWorkLocations?: string[];
   // Public S3 URL of the uploaded resume (PDF/Word)
   resumeUrl?: string;
+  // Skill certificates (worker) and labour licence (agent)
+  certificates?: Certificate[];
+  labourLicenceUrl?: string | null;
+}
+
+export interface Certificate {
+  url: string;
+  name: string;
+  fileType: 'image' | 'pdf';
+  uploadedAt: string;
 }
 
 export interface AuthTokens {

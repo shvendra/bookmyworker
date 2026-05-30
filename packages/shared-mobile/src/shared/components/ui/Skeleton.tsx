@@ -75,17 +75,20 @@ export const SkeletonCard = ({ lines = 3 }: { lines?: number }): React.JSX.Eleme
   );
 };
 
-export const SkeletonStatGrid = (): React.JSX.Element => (
-  <View style={skStyles.grid}>
-    {[0, 1, 2, 3].map((i) => (
-      <View key={i} style={skStyles.statBox}>
-        <Skeleton width={42} height={42} borderRadius={13} />
-        <Skeleton width="70%" height={20} borderRadius={8} style={{ marginTop: 10 }} />
-        <Skeleton width="50%" height={12} borderRadius={6} style={{ marginTop: 6 }} />
-      </View>
-    ))}
-  </View>
-);
+export const SkeletonStatGrid = (): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  return (
+    <View style={skStyles.grid}>
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} style={[skStyles.statBox, { backgroundColor: theme.colors.card }]}>
+          <Skeleton width={42} height={42} borderRadius={13} />
+          <Skeleton width="70%" height={20} borderRadius={8} style={{ marginTop: 10 }} />
+          <Skeleton width="50%" height={12} borderRadius={6} style={{ marginTop: 6 }} />
+        </View>
+      ))}
+    </View>
+  );
+};
 
 const skStyles = StyleSheet.create({
   card: {
@@ -113,7 +116,6 @@ const skStyles = StyleSheet.create({
     flex: 1,
     minWidth: '45%',
     borderRadius: 18,
-    backgroundColor: '#F4F6FB',
     padding: 14,
   },
 });

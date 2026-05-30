@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
+import { useTranslation } from 'react-i18next';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppInput } from '../../../shared/components/ui/AppInput';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +56,7 @@ export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React
     
       <View style={styles.inputGroup}>
         <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.inputLabel}>
-          Mobile Number
+          {t('mobileNumber')}
         </AppText>
         <Controller
           control={control}
@@ -81,7 +83,7 @@ export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React
       ) : null}
 
       <AppButton
-        title="Send OTP via WhatsApp"
+        title={t('sendOtpViaWhatsApp')}
         onPress={onSubmit}
         loading={isLoading}
         size="lg"

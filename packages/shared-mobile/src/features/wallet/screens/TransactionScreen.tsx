@@ -23,6 +23,9 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
+import i18n from '../../../core/i18n';
+import { useTranslation } from 'react-i18next';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 const fmtDate = (d?: string): string => {
@@ -227,6 +230,7 @@ const inv = StyleSheet.create({
 
 // ─── Payments Tab ──────────────────────────────────────────────────────────────
 const PaymentsTab = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const { config } = useAppConfig();
@@ -256,7 +260,7 @@ const PaymentsTab = (): React.JSX.Element => {
   const transactions = data?.transactions ?? [];
   const totalPaid    = transactions.reduce((s, t) => s + (t.amount ?? 0), 0);
   const u            = userFull;
-  const userAddress  = [u?.block, u?.district, u?.state].filter(Boolean).join(', ');
+  const userAddress  = getLocationStr({ tehsil: u?.block, district: u?.district, state: u?.state }, i18n.language, '');
 
   return (
     <ScrollView
@@ -266,7 +270,7 @@ const PaymentsTab = (): React.JSX.Element => {
     >
       {/* Summary banner */}
       <View style={[pay.banner, { backgroundColor: '#1E40AF' }]}>
-        <AppText variant="caption" color="rgba(255,255,255,0.7)">Total Paid</AppText>
+        <AppText variant="caption" color="rgba(255,255,255,0.7)">{t('transactionAmount')}</AppText>
         <AppText style={pay.bannerAmt}>{fmtAmt(totalPaid)}</AppText>
         <AppText variant="caption" color="rgba(255,255,255,0.6)">
           {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
@@ -278,12 +282,12 @@ const PaymentsTab = (): React.JSX.Element => {
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : transactions.length === 0 ? (
-        <EmptyState title="No payments yet" message="Your payment history will appear here." />
+        <EmptyState title={t('noTransactions')} message={t('noTransactions')} />
       ) : (
         <AppCard style={{ padding: 0, overflow: 'hidden' }}>
           <View style={[pay.row, { backgroundColor: '#f8fafc' }]}>
-            <AppText style={[pay.th, { flex: 1.2 }]}>Date</AppText>
-            <AppText style={[pay.th, { flex: 1 }]}>Status</AppText>
+            <AppText style={[pay.th, { flex: 1.2 }]}>{t('transactionDate')}</AppText>
+            <AppText style={[pay.th, { flex: 1 }]}>{t('transactionStatus')}</AppText>
             <AppText style={[pay.th, { flex: 0.9 }]}>Mode</AppText>
             <AppText style={[pay.th, { flex: 1, textAlign: 'right' }]}>Amount</AppText>
           </View>
@@ -338,13 +342,14 @@ const pay = StyleSheet.create({
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export const TransactionScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const navigation = useNavigation();
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Transactions" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('transactionsTitle')} onBack={() => navigation.goBack()} />
       <PaymentsTab />
     </View>
   );

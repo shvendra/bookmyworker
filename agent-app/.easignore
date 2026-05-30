@@ -1,0 +1,6 @@
+# Local build outputs — excluded from EAS upload tarball
+*.aab
+*.apk
+android/app/build/
+android/.gradle/
+.gradle/

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 
@@ -15,62 +16,22 @@ const SLIDE_W = SCREEN_W - 32; // card width within 16px horizontal padding on e
 const SLIDE_H = 160;
 const AUTO_SCROLL_INTERVAL = 3500;
 
-interface PromoSlide {
+interface SlideConfig {
   id: string;
   emoji: string;
-  title: string;
-  subtitle: string;
-  tag: string;
+  titleKey: string;
+  subtitleKey: string;
+  tagKey: string;
   gradient: [string, string];
   accentColor: string;
 }
 
-const SLIDES: PromoSlide[] = [
-  {
-    id: '1',
-    emoji: '🏗️',
-    title: 'Construction & Project Jobs',
-    subtitle: 'Work as mason, electrician, or laborer — earn ₹500–₹800/day',
-    tag: '📍 Pan India',
-    gradient: ['#1E3A8A', '#2563EB'],
-    accentColor: '#93C5FD',
-  },
-  {
-    id: '2',
-    emoji: '🧹',
-    title: 'Household & Domestic Work',
-    subtitle: 'Steady cook, maid & guard jobs — daily or monthly pay',
-    tag: '🌟 High Demand',
-    gradient: ['#164E63', '#0E7490'],
-    accentColor: '#67E8F9',
-  },
-  {
-    id: '3',
-    emoji: '🏭',
-    title: 'Factory & Manufacturing Jobs',
-    subtitle: 'Join as packer, operator, or helper — stable income',
-    tag: '⚡ Quick Join',
-    gradient: ['#4C1D95', '#7C3AED'],
-    accentColor: '#C4B5FD',
-  },
-  {
-    id: '4',
-    emoji: '🌾',
-    title: 'Agriculture & Farm Work',
-    subtitle: 'Harvest season jobs — earn well with flexible hours',
-    tag: '🌱 Seasonal',
-    gradient: ['#14532D', '#16A34A'],
-    accentColor: '#86EFAC',
-  },
-  {
-    id: '5',
-    emoji: '🚛',
-    title: 'Transport & Delivery Jobs',
-    subtitle: 'Drive, load, or deliver — flexible daily & weekly pay',
-    tag: '🚀 Flexible',
-    gradient: ['#78350F', '#D97706'],
-    accentColor: '#FDE68A',
-  },
+const SLIDE_CONFIGS: SlideConfig[] = [
+  { id: '1', emoji: '🏗️', titleKey: 'promo_title_1', subtitleKey: 'promo_sub_1', tagKey: 'promo_tag_1', gradient: ['#1E3A8A', '#2563EB'], accentColor: '#93C5FD' },
+  { id: '2', emoji: '🧹', titleKey: 'promo_title_2', subtitleKey: 'promo_sub_2', tagKey: 'promo_tag_2', gradient: ['#164E63', '#0E7490'], accentColor: '#67E8F9' },
+  { id: '3', emoji: '🏭', titleKey: 'promo_title_3', subtitleKey: 'promo_sub_3', tagKey: 'promo_tag_3', gradient: ['#4C1D95', '#7C3AED'], accentColor: '#C4B5FD' },
+  { id: '4', emoji: '🌾', titleKey: 'promo_title_4', subtitleKey: 'promo_sub_4', tagKey: 'promo_tag_4', gradient: ['#14532D', '#16A34A'], accentColor: '#86EFAC' },
+  { id: '5', emoji: '🚛', titleKey: 'promo_title_5', subtitleKey: 'promo_sub_5', tagKey: 'promo_tag_5', gradient: ['#78350F', '#D97706'], accentColor: '#FDE68A' },
 ];
 
 interface PromoBannerSliderProps {
@@ -79,8 +40,9 @@ interface PromoBannerSliderProps {
 
 export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
-  const dotAnim = useRef(SLIDES.map(() => new Animated.Value(0))).current;
+  const dotAnim = useRef(SLIDE_CONFIGS.map(() => new Animated.Value(0))).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentIndex = useRef(0);
 
@@ -95,7 +57,7 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
   };
 
   const scrollToIndex = (idx: number): void => {
-    const safeIdx = idx % SLIDES.length;
+    const safeIdx = idx % SLIDE_CONFIGS.length;
     scrollRef.current?.scrollTo({ x: safeIdx * SLIDE_W, animated: true });
     currentIndex.current = safeIdx;
     animateDot(safeIdx);
@@ -139,7 +101,7 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
         decelerationRate="fast"
         snapToAlignment="start"
       >
-        {SLIDES.map((slide) => (
+        {SLIDE_CONFIGS.map((slide) => (
           <TouchableOpacity
             key={slide.id}
             activeOpacity={0.92}
@@ -157,12 +119,12 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
             <View style={styles.slideInner}>
               <View style={styles.slideLeft}>
                 <View style={[styles.tagPill, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-                  <AppText style={styles.tagText}>{slide.tag}</AppText>
+                  <AppText style={styles.tagText}>{t(slide.tagKey)}</AppText>
                 </View>
-                <AppText style={styles.slideTitle} numberOfLines={2}>{slide.title}</AppText>
-                <AppText style={styles.slideSub} numberOfLines={2}>{slide.subtitle}</AppText>
+                <AppText style={styles.slideTitle} numberOfLines={2}>{t(slide.titleKey)}</AppText>
+                <AppText style={styles.slideSub} numberOfLines={2}>{t(slide.subtitleKey)}</AppText>
                 <View style={[styles.ctaBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
-                  <AppText style={styles.ctaText}>Apply Now →</AppText>
+                  <AppText style={styles.ctaText}>{t('promo_apply_now')}</AppText>
                 </View>
               </View>
               <View style={styles.slideRight}>
@@ -177,7 +139,7 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
 
       {/* Dot indicators */}
       <View style={styles.dots}>
-        {SLIDES.map((_, i) => {
+        {SLIDE_CONFIGS.map((_, i) => {
           const width = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
           const opacity = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
           return (
@@ -247,7 +209,7 @@ const styles = StyleSheet.create({
 
   dots: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    gap: 5, marginTop: 10, paddingHorizontal: 16,
+    gap: 5, marginTop: 7, paddingHorizontal: 16,
   },
   dot: { height: 6, borderRadius: 3 },
 });

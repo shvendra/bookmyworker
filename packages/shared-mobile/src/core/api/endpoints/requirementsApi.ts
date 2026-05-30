@@ -121,6 +121,9 @@ export interface RawRequirement {
     proposedAt?: string;
     respondedAt?: string;
   }>;
+  // True when the employer who posted this requirement has an active subscription.
+  // Used client-side to decide whether to show the "Call" button.
+  employerSubscribed?: boolean;
 }
 
 export interface RoleAwareFilters {
@@ -342,7 +345,66 @@ export const requirementsApi = {
     apiClient
       .get<{ workers: PastWorker[] }>('/api/v1/mobile/employer/hired-workers')
       .then((r) => r.data.workers ?? []),
+
+  // Returns the employer's phone number for a requirement.
+  // Backend checks: requirement exists + employer has active subscription.
+  revealEmployerPhone: (requirementId: string) =>
+    apiClient
+      .get<{ success: boolean; phone: string; name: string }>(
+        `/api/v1/mobile/requirements/${requirementId}/employer-phone`
+      )
+      .then((r) => ({ phone: r.data.phone, name: r.data.name })),
+
+  // Employer invites a specific worker to a requirement
+  inviteWorker: (requirementId: string, payload: { workerId?: string | null; workerName: string; workerPhone?: string }) =>
+    apiClient
+      .post<{ success: boolean; message: string; invitation: WorkerInvitation }>(
+        `/api/v1/mobile/requirements/${requirementId}/invite-worker`,
+        payload,
+      )
+      .then((r) => r.data),
+
+  // Worker retrieves all requirements they've been invited to
+  getMyInvitations: (page = 1, limit = 20) =>
+    apiClient
+      .get<{
+        success: boolean;
+        invitations: InvitedRequirement[];
+        pagination: { totalCount: number; currentPage: number; totalPages: number; limit: number };
+      }>('/api/v1/mobile/requirements/my-invitations', { params: { page, limit } })
+      .then((r) => ({ invitations: r.data.invitations ?? [], pagination: r.data.pagination })),
+
+  // Worker accepts or declines an invitation
+  respondToInvitation: (requirementId: string, status: 'accepted' | 'declined') =>
+    apiClient
+      .put<{ success: boolean; message: string }>(
+        `/api/v1/mobile/requirements/${requirementId}/invitation-response`,
+        { status },
+      )
+      .then((r) => r.data),
 };
+
+export interface WorkerInvitation {
+  workerId?:    string;
+  workerName:   string;
+  workerPhone?: string;
+  status:       'invited' | 'accepted' | 'declined';
+  invitedAt?:   string;
+  respondedAt?: string;
+}
+
+export interface InvitedRequirement {
+  _id:          string;
+  workType?:    string;
+  subCategory?: string;
+  district?:    string;
+  state?:       string;
+  ERN_NUMBER?:  number;
+  status?:      string;
+  employerName?:string;
+  createdAt?:   string;
+  invitation:   WorkerInvitation | null;
+}
 
 export interface PastWorker {
   workerId:     string | null;

@@ -22,6 +22,8 @@ import { useAppTheme } from '../../../core/theme';
 import { agentApi } from '../../../core/api/endpoints/agentApi';
 import type { WorkerItem } from '../../../core/api/endpoints/agentApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -59,7 +61,7 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
           </AppText>
           {(worker.district || worker.state) && (
             <AppText variant="caption" color={theme.colors.mutedText}>
-              📍 {[worker.district, worker.state].filter(Boolean).join(', ')}
+              📍 {getLocationStr({ district: worker.district, state: worker.state }, i18n.language, '')}
             </AppText>
           )}
           {skills ? (

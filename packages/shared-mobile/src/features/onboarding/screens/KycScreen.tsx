@@ -27,8 +27,6 @@ import { type KycFormValues, kycSchema } from '../../auth/validation/authSchemas
 interface DocState { uri: string; name: string; type: string }
 
 const pickImage = async (): Promise<DocState | null> => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') return null;
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: 0.8,
@@ -116,7 +114,7 @@ export const KycScreen = ({ navigation }: Props): React.JSX.Element => {
         {/* Step indicator */}
         <View style={s.stepRow}>
           {[1, 2, 3].map((n) => (
-            <View key={n} style={[s.stepDot, { backgroundColor: n <= 2 ? BRAND : BORDER }]} />
+            <View key={n} style={[s.stepDot, { backgroundColor: n <= 2 ? BRAND : theme.colors.border }]} />
           ))}
           <AppText style={[s.stepLabel, { color: SLATE }]}>Step 2 of 3</AppText>
         </View>
@@ -308,15 +306,13 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, color: SLATE },
   input:      { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontWeight: '500' },
   fieldError: { fontSize: 12, color: '#DC2626', marginTop: 4 },
-  fieldHint:  { fontSize: 12, marginTop: 6, lineHeight: 17 },
+  fieldHint:  { fontSize: 12, marginTop: 6, marginBottom: 12, lineHeight: 18 },
 
   langHint:    { fontSize: 12, marginBottom: 12, lineHeight: 17 },
   langGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   langChip:    { width: '30%', flexGrow: 1, borderWidth: 1.5, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', gap: 2 },
   langNative:  { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   langEnglish: { fontSize: 10, fontWeight: '500', textAlign: 'center' },
-
-  fieldHint:    { fontSize: 12, lineHeight: 18, marginBottom: 12, color: SLATE },
   uploadSlot:   { height: 130, borderWidth: 1.5, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
   uploadPreview:{ width: '100%', height: '100%' },
   uploadOverlay:{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(16,55,164,0.85)', padding: 10, alignItems: 'center' },

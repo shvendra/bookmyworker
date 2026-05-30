@@ -1,12 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Linking,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,11 +22,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAppTheme } from '../../../core/theme';
-import { walletApi } from '../../../core/api/endpoints/walletApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
@@ -35,8 +34,11 @@ import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { QuickActionCard, QuickActionsRow } from '../../../shared/components/ui/QuickActionCard';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
+import { getJobTitle, getCategoryLabel, getLocationStr, isWorkerProfileComplete } from '../../../shared/utils/labelUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
+import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import i18n from '../../../core/i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = SCREEN_W - 40;
@@ -169,20 +171,26 @@ interface ReqSliderCardProps {
 
 const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare, onViewAll }: ReqSliderCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const visual = getVisual(req.workType, req.subCategory);
   const isDark = theme.mode === 'dark';
 
-  const jobTitle = req.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req.workType);
-  const catLabel = fmtLabel(req.workType).replace(/ Workers?$/i, '');
+  const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
+  const catLabel = getCategoryLabel(req.workType, t);
   const salaryMin = req.minBudgetPerWorker ?? 0;
   const salaryMax = req.maxBudgetPerWorker ?? 0;
   const salaryType = getSalaryType(req);
-  const salaryPeriod = salaryType.charAt(0).toUpperCase() + salaryType.slice(1);
-  const location = [req.district, req.state].filter(Boolean).join(', ') || '—';
+  const salaryPeriod = t(`salaryPeriod_${salaryType}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
+  const location = getLocationStr(
+    { tehsil: req.tehsil, district: req.district, state: req.state },
+    i18n.language,
+    t('panIndia'),
+  );
   const workers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
   const cardBg = isDark ? theme.colors.card : '#FFFFFF';
   const headerBg = isDark ? visual.color + '22' : visual.bg;
-  const hasPerks = req.accommodationAvailable || req.foodAvailable || req.transportProvided || req.bonus;
+  const hasPerks = req.accommodationAvailable || req.foodAvailable || req.transportProvided || req.bonus
+    || req.weeklyOff || req.overtimeAvailable || req.insuranceAvailable || req.pfAvailable || req.esicAvailable || req.incentive;
 
   return (
     <TouchableOpacity activeOpacity={0.97} style={[sliderCard.wrap, { backgroundColor: cardBg, width: CARD_W }]} onPress={onViewAll}>
@@ -202,7 +210,7 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
                 ₹{salaryMin.toLocaleString('en-IN')}–{salaryMax.toLocaleString('en-IN')}
               </AppText>
               <View style={[sliderCard.periodBadge, { backgroundColor: visual.accent + '18', borderColor: visual.accent + '40' }]}>
-                <AppText style={[sliderCard.periodTxt, { color: visual.accent }]}>/{salaryPeriod}</AppText>
+                <AppText style={[sliderCard.periodTxt, { color: visual.accent }]}>{t('salaryPer')} {salaryPeriod}</AppText>
               </View>
             </View>
           </View>
@@ -238,14 +246,20 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
           <>
             <AppText style={[sliderCard.metaDot, { color: theme.colors.mutedText }]}> · </AppText>
             <AppText style={sliderCard.metaIcon}>👷</AppText>
-            <AppText style={[sliderCard.metaTxt, { color: theme.colors.mutedText }]}>{workers} needed</AppText>
+            <AppText style={[sliderCard.metaTxt, { color: theme.colors.mutedText }]}>{t('workerNeeded', { count: workers })}</AppText>
           </>
         )}
         {hasPerks && <AppText style={[sliderCard.metaDot, { color: theme.colors.mutedText }]}> · </AppText>}
-        {req.accommodationAvailable && <AppText style={[sliderCard.perkTxt, { color: '#15803D' }]}>🏠 Stay  </AppText>}
-        {req.foodAvailable          && <AppText style={[sliderCard.perkTxt, { color: '#C2410C' }]}>🍱 Food  </AppText>}
-        {req.transportProvided      && <AppText style={[sliderCard.perkTxt, { color: '#1D4ED8' }]}>🚌 Transport  </AppText>}
-        {req.bonus                  && <AppText style={[sliderCard.perkTxt, { color: '#7C3AED' }]}>🎁 Bonus</AppText>}
+        {req.accommodationAvailable && <AppText style={[sliderCard.perkTxt, { color: '#15803D' }]}>🏠 {t('perkStay')}  </AppText>}
+        {req.foodAvailable          && <AppText style={[sliderCard.perkTxt, { color: '#C2410C' }]}>🍱 {t('perkFood')}  </AppText>}
+        {req.transportProvided      && <AppText style={[sliderCard.perkTxt, { color: '#1D4ED8' }]}>🚌 {t('perkTransport')}  </AppText>}
+        {req.bonus                  && <AppText style={[sliderCard.perkTxt, { color: '#7C3AED' }]}>🎁 {t('perkBonus')}  </AppText>}
+        {req.incentive              && <AppText style={[sliderCard.perkTxt, { color: '#92400E' }]}>⭐ {t('perkIncentive')}  </AppText>}
+        {req.weeklyOff              && <AppText style={[sliderCard.perkTxt, { color: '#15803D' }]}>📅 {t('perkWeeklyOff')}  </AppText>}
+        {req.overtimeAvailable      && <AppText style={[sliderCard.perkTxt, { color: '#C2410C' }]}>⏱ {t('perkOvertime')}  </AppText>}
+        {req.insuranceAvailable     && <AppText style={[sliderCard.perkTxt, { color: '#1D4ED8' }]}>🛡 {t('perkInsurance')}  </AppText>}
+        {req.pfAvailable            && <AppText style={[sliderCard.perkTxt, { color: '#7C3AED' }]}>🏦 {t('perkPf')}  </AppText>}
+        {req.esicAvailable          && <AppText style={[sliderCard.perkTxt, { color: '#0E7490' }]}>🏥 {t('perkEsic')}</AppText>}
       </ScrollView>
 
       {/* ── Apply button ───────────────────────────────────── */}
@@ -255,7 +269,7 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
           activeOpacity={alreadyApplied ? 1 : 0.82}
           style={[sliderCard.applyBtn, { backgroundColor: alreadyApplied ? '#10B981' : visual.accent }]}
         >
-          <AppText style={sliderCard.applyTxt}>{alreadyApplied ? '✓  Applied' : 'Apply Now  →'}</AppText>
+          <AppText style={sliderCard.applyTxt}>{alreadyApplied ? t('appliedTick') : `${t('applyNow')}  →`}</AppText>
         </TouchableOpacity>
       </View>
 
@@ -264,17 +278,20 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
 };
 
 // ── "View All" end card ───────────────────────────────────────────────────────
-const ViewAllCard = ({ onPress }: { onPress: () => void }): React.JSX.Element => (
-  <TouchableOpacity
-    onPress={onPress}
-    activeOpacity={0.85}
-    style={[sliderCard.wrap, sliderCard.viewAllWrap, { backgroundColor: '#1037A4', width: CARD_W * 0.55 }]}
-  >
-    <AppText style={sliderCard.viewAllEmoji}>📋</AppText>
-    <AppText style={sliderCard.viewAllTitle}>View All{'\n'}Jobs</AppText>
-    <AppText style={sliderCard.viewAllArrow}>→</AppText>
-  </TouchableOpacity>
-);
+const ViewAllCard = ({ onPress }: { onPress: () => void }): React.JSX.Element => {
+  const { t } = useTranslation();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[sliderCard.wrap, sliderCard.viewAllWrap, { backgroundColor: '#1037A4', width: CARD_W * 0.55 }]}
+    >
+      <AppText style={sliderCard.viewAllEmoji}>📋</AppText>
+      <AppText style={sliderCard.viewAllTitle}>{t('viewAllJobs')}</AppText>
+      <AppText style={sliderCard.viewAllArrow}>→</AppText>
+    </TouchableOpacity>
+  );
+};
 
 // ── Mini Wage Modal ───────────────────────────────────────────────────────────
 interface MiniWageModalProps {
@@ -287,6 +304,7 @@ interface MiniWageModalProps {
 
 const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const [wage, setWage] = useState('');
   const visual = getVisual(req?.workType, req?.subCategory);
@@ -294,13 +312,13 @@ const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageMod
 
   useEffect(() => { if (visible) setWage(''); }, [visible]);
 
-  const jobTitle = req?.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req?.workType);
+  const jobTitle = getJobTitle(req?.workType, req?.subCategory, i18n.language, t);
   const period = req ? getSalaryType(req) : 'day';
-  const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
+  const periodLabel = t(`salaryPeriod_${period}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <TouchableOpacity style={modal.overlay} activeOpacity={1} onPress={onClose}>
           <TouchableOpacity
             activeOpacity={1}
@@ -310,31 +328,31 @@ const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageMod
               <AppText style={modal.bannerEmoji}>{visual.emoji}</AppText>
               <View style={{ flex: 1 }}>
                 <AppText style={[modal.bannerTitle, { color: visual.color }]} numberOfLines={1}>{jobTitle}</AppText>
-                <AppText style={[modal.bannerSub, { color: visual.color + '99' }]}>
-                  {[req?.district, req?.state].filter(Boolean).join(', ')} · min ₹{minWage}/{period}
+                <AppText style={[modal.bannerSub, { color: visual.color + '99' }]} numberOfLines={2}>
+                  {getLocationStr({ district: req?.district, state: req?.state }, i18n.language, '')} · {t('wageMinBanner', { minWage, period })}
                 </AppText>
               </View>
             </View>
             <AppText style={[modal.fieldLabel, { color: theme.colors.mutedText }]}>
-              Your Required Wage per Worker/{periodLabel} (min ₹{minWage})
+              {t('wageFieldLabel', { period: periodLabel, minWage })}
             </AppText>
             <TextInput
               value={wage}
               onChangeText={setWage}
               keyboardType="numeric"
-              placeholder={`₹${minWage} or more`}
+              placeholder={t('wageInputPlaceholder', { minWage })}
               placeholderTextColor={theme.colors.mutedText}
               style={[modal.input, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
             />
             <View style={modal.actions}>
               <TouchableOpacity onPress={onClose} style={[modal.cancelBtn, { borderColor: theme.colors.border }]}>
-                <AppText style={[modal.cancelTxt, { color: theme.colors.mutedText }]}>Cancel</AppText>
+                <AppText style={[modal.cancelTxt, { color: theme.colors.mutedText }]}>{t('cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
                   const n = Number(wage);
                   if (!n || n < minWage) {
-                    Alert.alert('Invalid Wage', `Minimum wage is ₹${minWage}`);
+                    showAlert(t('alertInvalidWage'), t('alertMinWageMsg', { minWage }));
                     return;
                   }
                   if (req?._id) onSubmit(req._id, n);
@@ -344,7 +362,7 @@ const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageMod
               >
                 {loading
                   ? <ActivityIndicator size="small" color="#FFF" />
-                  : <AppText style={modal.submitTxt}>Submit Application</AppText>
+                  : <AppText style={modal.submitTxt}>{t('submitApplication')}</AppText>
                 }
               </TouchableOpacity>
             </View>
@@ -376,13 +394,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
   const userId = user?.id ?? '';
 
   // ── Queries ──────────────────────────────────────────────────────────────────
-  const balanceQuery = useQuery({
-    queryKey: ['wallet-balance', userId],
-    queryFn: walletApi.getMyWalletBalance,
-    staleTime: 3 * 60 * 1000,
-    enabled: !!userId && !isSelfWorker,
-  });
-
   const reqsQuery = useQuery({
     queryKey: ['worker-reqs-dash', userId],
     queryFn: () =>
@@ -425,9 +436,9 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
       setInterestedIds((prev) => new Set([...prev, reqId]));
       setWageModalReq(null);
       void queryClient.invalidateQueries({ queryKey: ['worker-live-reqs-slider'] });
-      Alert.alert('Applied! 🎉', 'Your application was submitted successfully.');
+      showAlert(t('alertAppliedTitle'), t('alertAppliedMsg'));
     },
-    onError: () => Alert.alert('Error', 'Could not submit. Please try again.'),
+    onError: () => showAlert(t('alertError'), t('alertSubmitError')),
   });
 
   // Seed likedIds from server data
@@ -471,7 +482,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
   const handleShare = async (req: RawRequirement): Promise<void> => {
     const { Share } = await import('react-native');
     const jobTitle = req.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req.workType);
-    const location = [req.district, req.state].filter(Boolean).join(', ') || '—';
+    const location = getLocationStr({ district: req.district, state: req.state }, i18n.language, '—');
     const salary = `₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0}`;
     try {
       await Share.share({
@@ -481,10 +492,9 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     } catch { /* dismissed */ }
   };
 
-  const isRefreshing = balanceQuery.isFetching || reqsQuery.isFetching || liveReqsQuery.isFetching;
+  const isRefreshing = reqsQuery.isFetching || liveReqsQuery.isFetching;
 
   const handleRefresh = (): void => {
-    void balanceQuery.refetch();
     void reqsQuery.refetch();
     void liveReqsQuery.refetch();
   };
@@ -502,9 +512,9 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
       setUploadingResume(true);
       const resumeUrl = await workerApi.uploadResume(asset.uri, asset.name ?? 'resume.pdf');
       await updateProfile({ resumeUrl });
-      Alert.alert('Resume Uploaded', 'Your resume has been uploaded successfully. Employers can now view it on your profile.');
+      showAlert(t('alertResumeUploadedTitle'), t('alertResumeUploadedMsg'));
     } catch {
-      Alert.alert('Upload Failed', 'Could not upload resume. Please try again.');
+      showAlert(t('alertUploadFailedTitle'), t('alertUploadFailedMsg'));
     } finally {
       setUploadingResume(false);
     }
@@ -518,7 +528,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     navigation.navigate('JobMarketplace', { workType: cat.value });
   };
 
-  const balance = balanceQuery.data ?? 0;
   const kycPending = user?.kycStatus === 'pending';
   const greetKey = getGreetKey();
 
@@ -545,15 +554,15 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     },
     {
       emoji: '🔍',
-      label: 'Browse Jobs',
-      sub: 'Find work near you',
+      label: t('browseJobs'),
+      sub: t('findWorkNearYou'),
       gradient: ['#064E3B', '#059669'] as const,
       onPress: () => navigation.navigate('JobMarketplace'),
     },
     {
       emoji: '👤',
-      label: 'My Profile',
-      sub: 'View & edit',
+      label: t('myProfile'),
+      sub: t('viewAndEdit'),
       gradient: ['#4C1D95', '#7C3AED'] as const,
       onPress: () => navigation.navigate('Profile'),
     },
@@ -565,17 +574,46 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
 
       <GradientHeader
         subtitle={t(greetKey)}
-        title={user?.fullName ?? 'Worker'}
-        caption={kycPending ? `⚠️ ${t('verificationPending')}` : `✓ Verified`}
+        title={user?.fullName ?? t('workerRole')}
+        caption={kycPending ? `⚠️ ${t('verificationPending')}` : `✓ ${t('verified')}`}
         avatarName={user?.fullName ?? 'W'}
         onAvatarPress={() => navigation.navigate('Profile')}
         rightIcon="🔔"
         onRightPress={() => navigation.navigate('Notifications')}
-        rightIcon2={isSelfWorker ? '❤️' : undefined}
-        onRightPress2={isSelfWorker ? () => navigation.navigate('JobMarketplace', { likedOnly: true }) : undefined}
-      >
-      
-      </GradientHeader>
+        style={{ paddingBottom: 14 }}
+      />
+
+      {/* ── Complete Profile Banner ── */}
+      {!isWorkerProfileComplete(user ?? null) && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('WorkerProfileCompletion')}
+          activeOpacity={0.85}
+          style={{
+            marginHorizontal: 14,
+            marginTop: 12,
+            borderRadius: 14,
+            backgroundColor: '#FFF7ED',
+            borderWidth: 1.5,
+            borderColor: '#FED7AA',
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            gap: 10,
+          }}
+        >
+          <AppText style={{ fontSize: 22 }}>📋</AppText>
+          <View style={{ flex: 1 }}>
+            <AppText style={{ fontSize: 13.5, fontWeight: '800', color: '#C2410C' }}>
+              {t('wpc_title', 'Complete Your Profile')}
+            </AppText>
+            <AppText style={{ fontSize: 12, color: '#9A3412', marginTop: 1 }}>
+              {t('wpc_completeProfileBanner', 'Complete your profile to get better job matches')}
+            </AppText>
+          </View>
+          <AppText style={{ fontSize: 18, color: '#C2410C', fontWeight: '700' }}>›</AppText>
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -596,7 +634,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
           <PromoBannerSlider onPress={() => navigation.navigate('JobMarketplace')} />
 
           {/* KYC Alert */}
-          {kycPending && (
+          {/* {kycPending && (
             <Pressable
               onPress={() => navigation.navigate('Kyc')}
               style={[styles.alertBanner, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning }]}
@@ -609,7 +647,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                 </AppText>
               </View>
             </Pressable>
-          )}
+          )} */}
 
           {/* Resume Upload Banner (ITI/Diploma & Graduate only) */}
           {showResumeSection && (
@@ -620,12 +658,12 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                 </View>
                 <View style={styles.resumeTextCol}>
                   <AppText style={styles.resumeTitle}>
-                    {user?.resumeUrl ? 'Resume Uploaded ✓' : 'Upload Your Resume'}
+                    {user?.resumeUrl ? t('resumeUploaded') : t('uploadYourResume')}
                   </AppText>
                   <AppText style={styles.resumeSub}>
                     {user?.resumeUrl
-                      ? 'Employers can view your resume. Update it anytime.'
-                      : `As a ${user?.workerSubType} candidate, a resume gets you 3× more employer views.`}
+                      ? t('resumeUploadedDesc')
+                      : t('resumeUploadDesc', { subType: user?.workerSubType ?? '' })}
                   </AppText>
                 </View>
               </View>
@@ -637,7 +675,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                   activeOpacity={0.8}
                 >
                   <AppText style={styles.resumeBtnTxtPrimary}>
-                    {uploadingResume ? 'Uploading…' : user?.resumeUrl ? '🔄 Replace Resume' : '⬆️ Upload Resume'}
+                    {uploadingResume ? t('uploading') : user?.resumeUrl ? `🔄 ${t('replaceResume')}` : `⬆️ ${t('uploadResume')}`}
                   </AppText>
                 </TouchableOpacity>
                 {user?.resumeUrl && (
@@ -647,7 +685,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                     activeOpacity={0.8}
                   >
                     <AppText style={styles.resumeViewIcon}>👁</AppText>
-                    <AppText style={styles.resumeViewTxt}>View</AppText>
+                    <AppText style={styles.resumeViewTxt}>{t('viewResume')}</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -665,15 +703,15 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
           <View style={styles.sliderSection}>
             <View style={styles.sliderHeader}>
               <View>
-                <AppText style={[styles.sliderTitle, { color: theme.colors.text }]}>Open Jobs Near You</AppText>
-                <AppText style={[styles.sliderSub, { color: theme.colors.mutedText }]}>Scroll to see more · Tap to apply</AppText>
+                <AppText style={[styles.sliderTitle, { color: theme.colors.text }]}>{t('openJobsNearYou')}</AppText>
+                <AppText style={[styles.sliderSub, { color: theme.colors.mutedText }]}>{t('scrollSeeMore')}</AppText>
               </View>
               <TouchableOpacity
                 onPress={() => navigation.navigate('JobMarketplace')}
                 style={[styles.viewAllBtn, { backgroundColor: '#EBF1FF', borderColor: '#C3D3F5' }]}
                 activeOpacity={0.8}
               >
-                <AppText style={styles.viewAllBtnText}>View All</AppText>
+                <AppText style={styles.viewAllBtnText}>{t('viewAll')}</AppText>
                 <AppText style={styles.viewAllBtnArrow}> ›</AppText>
               </TouchableOpacity>
             </View>
@@ -681,15 +719,15 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
             {liveReqsQuery.isLoading ? (
               <View style={styles.sliderSkeleton}>
                 {[0, 1].map((i) => (
-                  <View key={i} style={[styles.sliderSkeletonCard, { backgroundColor: theme.colors.card }]} />
+                  <Skeleton key={i} width={CARD_W} height={180} borderRadius={20} />
                 ))}
               </View>
             ) : liveReqs.length === 0 ? (
               <View style={[styles.sliderEmpty, { backgroundColor: theme.colors.card }]}>
                 <AppText style={styles.sliderEmptyEmoji}>🔍</AppText>
-                <AppText style={[styles.sliderEmptyTxt, { color: theme.colors.mutedText }]}>No open jobs right now</AppText>
+                <AppText style={[styles.sliderEmptyTxt, { color: theme.colors.mutedText }]}>{t('noOpenJobsNow')}</AppText>
                 <TouchableOpacity onPress={() => navigation.navigate('JobMarketplace')} activeOpacity={0.8}>
-                  <AppText style={styles.sliderEmptyLink}>Browse all →</AppText>
+                  <AppText style={styles.sliderEmptyLink}>{t('browseAllJobs')} →</AppText>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -741,30 +779,30 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
           />
 
           {/* Quick Actions */}
-          <SectionHeader title="Quick Actions" style={styles.sectionGap} />
+          <SectionHeader title={t('quickActions')} style={styles.sectionGap} />
           <QuickActionsRow>
             <QuickActionCard
               icon="🔍"
-              title="Browse Jobs"
-              subtitle="Find near you"
+              title={t('browseJobs')}
+              subtitle={t('findNearYou')}
               color={theme.colors.primary}
               onPress={() => navigation.navigate('JobMarketplace')}
             />
             {isSelfWorker ? (
               <QuickActionCard
                 icon="❤️"
-                title="Liked Jobs"
-                subtitle="My saved jobs"
+                title={t('likedJobs')}
+                subtitle={t('mySavedJobs')}
                 color="#E11D48"
                 onPress={() => navigation.navigate('JobMarketplace', { likedOnly: true })}
               />
             ) : (
               <QuickActionCard
-                icon="📅"
-                title="Attendance"
-                subtitle="Mark today"
+                icon="📋"
+                title={t('myApplicationsTab')}
+                subtitle={t('browseJobs')}
                 color={theme.colors.success}
-                onPress={() => navigation.navigate('Attendance' as never)}
+                onPress={() => navigation.navigate('MyApplications')}
               />
             )}
           </QuickActionsRow>
@@ -801,8 +839,8 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                 <AppText style={styles.waIcon}>💬</AppText>
               </View>
               <View style={styles.waTextBlock}>
-                <AppText style={styles.waTitle}>Humaare saath WhatsApp me judo!</AppText>
-                <AppText style={styles.waSub}>Daily jobs, updates & tips — bilkul free</AppText>
+                <AppText style={styles.waTitle}>{t('waTitle')}</AppText>
+                <AppText style={styles.waSub}>{t('waSub')}</AppText>
               </View>
             </View>
             <View style={styles.waArrowWrap}>
@@ -821,6 +859,8 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         onSubmit={(reqId, wage) => interestMutation.mutate({ reqId, wage })}
         loading={interestMutation.isPending}
       />
+
+      {user && <ProfileCompletionModal user={user} />}
     </View>
   );
 };
@@ -828,19 +868,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 40 },
-  body: { padding: 16, gap: 0 },
-
-  // ── Hero wallet ──────────────────────────────────────────────────────────────
-  heroWallet: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 16,
-    paddingVertical: 12, paddingHorizontal: 16,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
-  },
-  heroWalletLeft: { gap: 3 },
-  heroWalletLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 11, fontWeight: '600' },
-  heroWalletAmt: { color: '#FFFFFF', fontSize: 22, fontWeight: '800', lineHeight: 26 },
-  withdrawBtn: { borderColor: 'rgba(255,255,255,0.5)' },
+  body: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 0 },
 
   // ── Alerts ───────────────────────────────────────────────────────────────────
   alertBanner: {
@@ -865,7 +893,7 @@ const styles = StyleSheet.create({
   statSubSkeleton: { width: '60%', height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 2 },
 
   // ── Requirements slider ──────────────────────────────────────────────────────
-  sliderSection: { marginTop: 22, marginBottom: 24 },
+  sliderSection: { marginTop: 14, marginBottom: 18 },
   sliderHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 12,
@@ -1002,16 +1030,16 @@ const sliderCard = StyleSheet.create({
 // ── Mini wage modal styles ────────────────────────────────────────────────────
 const modal = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  box: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 0 },
+  box: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 0, maxHeight: '85%' },
   banner: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, gap: 12, marginBottom: 16 },
   bannerEmoji: { fontSize: 30, lineHeight: 36 },
   bannerTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20 },
-  bannerSub: { fontSize: 11, fontWeight: '500', marginTop: 2 },
+  bannerSub: { fontSize: 11, fontWeight: '500', marginTop: 2, lineHeight: 16 },
   fieldLabel: { fontSize: 12, fontWeight: '600', marginTop: 14, marginBottom: 8 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, marginBottom: 16 },
   actions: { flexDirection: 'row', gap: 10 },
-  cancelBtn: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  cancelBtn: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', minHeight: 48 },
   cancelTxt: { fontSize: 14, fontWeight: '700' },
-  submitBtn: { flex: 2, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  submitBtn: { flex: 2, borderRadius: 12, paddingVertical: 13, alignItems: 'center', minHeight: 48 },
   submitTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
 });

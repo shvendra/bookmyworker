@@ -12,6 +12,9 @@ export interface WorkerMapping {
   workerSkill?: string;
   employerId: string;
   status: MappingStatus;
+  agreedRate?: number | null;
+  rateType?: 'Daily' | 'Monthly' | null;
+  joinedDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +26,8 @@ export interface MapWorkerPayload {
   workerSkill?: string;
   requirementIds: string[];
   status: MappingStatus;
+  agreedRate?: number;   // required when status === 'Joined'
+  rateType?: 'Daily' | 'Monthly'; // required when status === 'Joined'
 }
 
 export interface OpenRequirement {
@@ -64,12 +69,16 @@ export const workerMappingApi = {
       }>(`/api/v1/mapping/requirement/${requirementId}`)
       .then((r) => r.data),
 
-  // Advance a mapping's status
-  updateMappingStatus: (mappingId: string, status: MappingStatus) =>
+  // Advance a mapping's status — agreedRate + rateType required when status === 'Joined'
+  updateMappingStatus: (
+    mappingId: string,
+    status: MappingStatus,
+    hireRate?: { agreedRate: number; rateType: 'Daily' | 'Monthly' }
+  ) =>
     apiClient
       .put<{ success: boolean; message: string; mapping: WorkerMapping }>(
         `/api/v1/mapping/${mappingId}/status`,
-        { status }
+        { status, ...hireRate }
       )
       .then((r) => r.data),
 

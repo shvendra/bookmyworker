@@ -13,6 +13,7 @@ import { useAppTheme } from '../../../core/theme';
 import { apiClient } from '../../../core/api/client';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { useTranslation } from 'react-i18next';
 
 interface ActivityItem {
   _id: string;
@@ -46,6 +47,7 @@ const timeAgo = (date: string): string => {
   if (days === 1) return 'yesterday';
   return `${days}d ago`;
 };
+// Note: timeAgo is a pure function used outside React scope; t() values are used in rendered components below
 
 const ACTION_COLOR: Record<string, { bg: string; color: string; border: string; symbol: string }> = {
   CREATE: { bg: '#dcfce7', color: '#16a34a', border: '#86efac', symbol: '+' },
@@ -80,6 +82,7 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
 ActivityRow.displayName = 'ActivityRow';
 
 export const MyActivityScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const navigation = useNavigation();
 
@@ -126,8 +129,8 @@ export const MyActivityScreen = (): React.JSX.Element => {
     return (
       <View style={s.empty}>
         <AppText style={s.emptyIcon}>📋</AppText>
-        <AppText style={s.emptyTitle}>No activity yet</AppText>
-        <AppText style={s.emptySub}>Actions you take in the app will appear here.</AppText>
+        <AppText style={s.emptyTitle}>{t('noActivity')}</AppText>
+        <AppText style={s.emptySub}>{t('actionsAppearHere')}</AppText>
       </View>
     );
   }, [query.isLoading]);
@@ -135,7 +138,7 @@ export const MyActivityScreen = (): React.JSX.Element => {
   return (
     <View style={[s.root, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="My Activity" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('activityTitle')} onBack={() => navigation.goBack()} />
 
       {query.isLoading ? (
         <View style={s.loadWrap}>

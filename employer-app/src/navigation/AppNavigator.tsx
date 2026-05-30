@@ -1,15 +1,21 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
   NavigationContainer,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
+import i18n from '../../../packages/shared-mobile/src/core/i18n';
 import { useAppTheme } from '../../../packages/shared-mobile/src/core/theme';
 import { useAuth } from '../../../packages/shared-mobile/src/state/auth/AuthContext';
 import { LoadingState } from '../../../packages/shared-mobile/src/shared/components/feedback/LoadingState';
-import { navigationRef, resetToWelcome } from '../../../packages/shared-mobile/src/core/navigation/navigationRef';
+import { navigationRef } from '../../../packages/shared-mobile/src/core/navigation/navigationRef';
+
+// Language selection — shown only on very first launch
+import { EMPLOYER_LANG_KEY, LanguageSelectScreen } from '../screens/language/LanguageSelectScreen';
+import { useLangSync } from '../../../packages/shared-mobile/src/core/i18n/useLangSync';
 
 // Auth screens (shared)
 import { WelcomeScreen } from '../../../packages/shared-mobile/src/features/auth/screens/WelcomeScreen';
@@ -21,7 +27,7 @@ import { ForgotPasswordScreen } from '../../../packages/shared-mobile/src/featur
 // Employer-specific register screen
 import { EmployerRegisterScreen } from '../screens/auth/EmployerRegisterScreen';
 
-// Onboarding — employer-specific KYC with GST collection
+// Onboarding — employer-specific KYC/details (language + GST/ID) shown after fresh registration
 import { EmployerKycScreen } from '../../../packages/shared-mobile/src/features/onboarding/screens/EmployerKycScreen';
 
 // Employer tabs (employer role only)
@@ -44,27 +50,47 @@ import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features
 import { TransactionScreen } from '../../../packages/shared-mobile/src/features/wallet/screens/TransactionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
+// import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
+import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
+import { CallHistoryScreen } from '../../../packages/shared-mobile/src/features/employer/screens/CallHistoryScreen';
+import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 
 import type { EmployerStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<EmployerStackParamList>();
 
+// 'checking'     — reading AsyncStorage on first mount
+// 'not_selected' — no saved language (first-time user)
+// 'selected'     — language was saved; skip Welcome, open Login directly
+type LangStatus = 'checking' | 'not_selected' | 'selected';
+
 export const AppNavigator = (): React.JSX.Element => {
   const { state, signOut } = useAuth();
   const { theme } = useAppTheme();
+  const [langStatus, setLangStatus] = useState<LangStatus>('checking');
+
+  // Sync DB language ↔ local storage on every login
+  useLangSync(EMPLOYER_LANG_KEY);
+
+  // Load saved language from AsyncStorage on app boot
+  useEffect(() => {
+    AsyncStorage.getItem(EMPLOYER_LANG_KEY).then((saved) => {
+      if (saved) {
+        void i18n.changeLanguage(saved);
+        setLangStatus('selected');
+      } else {
+        setLangStatus('not_selected');
+      }
+    });
+  }, []);
 
   useEffect(() => {
-    if (state.status === 'unauthenticated') {
-      const handle = setTimeout(() => { resetToWelcome(); }, 50);
-      return () => clearTimeout(handle);
-    }
     // If somehow a non-employer session is stored (e.g. stale Agent session),
     // sign out so the user can log in with their employer account.
     if (state.status === 'authenticated' && (state.session?.user.role ?? '').toLowerCase() !== 'employer') {
       signOut();
     }
-    return undefined;
   }, [state.status, state.session?.user.role, signOut]);
 
   const navigationTheme = useMemo(
@@ -83,8 +109,8 @@ export const AppNavigator = (): React.JSX.Element => {
     [theme]
   );
 
-  if (state.status === 'loading') {
-    return <LoadingState message="Preparing your workspace…" />;
+  if (state.status === 'loading' || langStatus === 'checking') {
+    return <LoadingState fullscreen message="Preparing your workspace…" />;
   }
 
   return (
@@ -93,21 +119,34 @@ export const AppNavigator = (): React.JSX.Element => {
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────
           <>
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer', appContext: 'employer-app' }} />
+            {langStatus === 'not_selected' ? (
+              // First-time launch: language picker → Welcome landing → Login
+              <>
+                <Stack.Screen name="LanguageSelect" component={LanguageSelectScreen} options={{ animation: 'fade' }} />
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer', appContext: 'employer-app' }} />
+              </>
+            ) : (
+              // Returning user: open Login directly, Welcome still accessible via back
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer', appContext: 'employer-app' }} options={{ animation: 'fade' }} />
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              </>
+            )}
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="Register" component={EmployerRegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} initialParams={{ roleHint: 'employer' }} />
           </>
-        ) : !state.session?.onboardingCompleted ? (
-          // ── Onboarding — just KYC, no role selection ─────────────
-          <>
-            <Stack.Screen name="Kyc" component={EmployerKycScreen} />
-          </>
         ) : (
           // ── Authenticated ─────────────────────────────────────────
           <>
+            {/* When onboarding is incomplete (fresh registration), show Kyc first so
+                the employer fills in language / GST / ID details before seeing the dashboard.
+                Pattern mirrors agent-app: first screen in stack = initial route. */}
+            {!state.session?.onboardingCompleted && (
+              <Stack.Screen name="Kyc" component={EmployerKycScreen} options={{ animation: 'fade', headerShown: false }} />
+            )}
             <Stack.Screen name="Main" options={{ animation: 'none' }}>
               {() => <RoleTabsNavigator role="employer" />}
             </Stack.Screen>
@@ -117,6 +156,10 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="WorkerSearch" component={WorkerSearchScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="KycVerification" component={KycVerificationScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            {/* Kyc screen also accessible when onboarding is done (e.g. from Profile) */}
+            {state.session?.onboardingCompleted && (
+              <Stack.Screen name="Kyc" component={EmployerKycScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            )}
             <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} initialParams={{ appType: 'employer' }} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
@@ -127,6 +170,10 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            {/* <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} /> */}
+            <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="DocumentHub" component={DocumentHubScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"

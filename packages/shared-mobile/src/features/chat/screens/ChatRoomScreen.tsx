@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -12,7 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { chatApi } from '../../../core/api/endpoints/chatApi';
 import { socketService } from '../../../core/realtime/socketService';
@@ -20,6 +21,8 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
+import { ErrorState } from '../../../shared/components/feedback/ErrorState';
+import { useTranslation } from 'react-i18next';
 import type { ChatMessage } from '../../../shared/types/domain';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -75,9 +78,11 @@ const MessageBubble = React.memo(({
 MessageBubble.displayName = 'MessageBubble';
 
 export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomScreenProps): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const userId = state.session?.user.id ?? '';
   const token  = state.session?.tokens.accessToken ?? '';
   const [draft, setDraft] = useState('');
@@ -85,6 +90,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
   const [sending, setSending] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -101,8 +107,9 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         setMessages([...data.messages].reverse());
         setTotalPages(data.pages);
         setCurrentPage(1);
-      } catch { /* ignore */ }
-      finally { setInitialLoading(false); }
+      } catch {
+        setLoadError(true);
+      } finally { setInitialLoading(false); }
     };
     void load();
   }, [roomId]);
@@ -183,31 +190,39 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         fileName: uploaded.fileName,
       });
     } catch {
-      Alert.alert('Upload failed', 'Could not upload file. Please try again.');
+      showAlert('Upload failed', 'Could not upload file. Please try again.');
     } finally { setUploadingMedia(false); }
   }, [roomId, userId]);
 
   const handleAttach = useCallback((): void => {
-    Alert.alert('Attach', 'Choose attachment type', [
+    showAlert('Attach', 'Choose attachment type', [
       {
         text: '📷  Photo / Image',
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission denied', 'Allow photo access to send images.'); return; }
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-          if (result.canceled || !result.assets[0]) return;
-          const asset = result.assets[0];
-          const ext = asset.uri.split('.').pop() ?? 'jpg';
-          await uploadAndSend({ uri: asset.uri, name: `chat_image_${Date.now()}.${ext}`, type: asset.mimeType ?? `image/${ext}` });
+          try {
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+            if (result.canceled || !result.assets[0]) return;
+            const asset = result.assets[0];
+            const ext = asset.uri.split('.').pop() ?? 'jpg';
+            await uploadAndSend({ uri: asset.uri, name: `chat_image_${Date.now()}.${ext}`, type: asset.mimeType ?? `image/${ext}` });
+          } catch {
+            setUploadingMedia(false);
+            showAlert('Upload failed', 'Could not send image. Please try again.');
+          }
         },
       },
       {
         text: '📄  File / Document',
         onPress: async () => {
-          const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-          if (result.canceled || !result.assets?.[0]) return;
-          const asset = result.assets[0];
-          await uploadAndSend({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? 'application/octet-stream' });
+          try {
+            const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+            if (result.canceled || !result.assets?.[0]) return;
+            const asset = result.assets[0];
+            await uploadAndSend({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? 'application/octet-stream' });
+          } catch {
+            setUploadingMedia(false);
+            showAlert('Upload failed', 'Could not send file. Please try again.');
+          }
         },
       },
       { text: 'Cancel', style: 'cancel' },
@@ -236,7 +251,28 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     setSending(false);
   }, [draft, roomId, sending, userId]);
 
-  if (initialLoading) return <LoadingState message="Loading messages…" />;
+  if (initialLoading) return <LoadingState message={t('loading')} />;
+  if (loadError) {
+    return (
+      <ErrorState
+        title={t('error')}
+        description={t('checkConnectionRetry')}
+        onRetry={() => {
+          setLoadError(false);
+          setInitialLoading(true);
+          void (async () => {
+            try {
+              const data = await chatApi.getMessages(roomId, 1, 20);
+              setMessages([...data.messages].reverse());
+              setTotalPages(data.pages);
+              setCurrentPage(1);
+            } catch { setLoadError(true); }
+            finally { setInitialLoading(false); }
+          })();
+        }}
+      />
+    );
+  }
 
   const hasOlderMessages = currentPage < totalPages;
 
@@ -244,7 +280,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
+      keyboardVerticalOffset={insets.top + 56}
     >
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
@@ -269,7 +305,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
                 <ActivityIndicator size="small" color={theme.colors.primary} />
               ) : (
                 <AppText variant="caption" color={theme.colors.primary} style={styles.loadOlderTxt}>
-                  Load older messages
+                  {t('loadMore')}
                 </AppText>
               )}
             </TouchableOpacity>
@@ -306,7 +342,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Type a message…"
+          placeholder={t('typeMessage')}
           placeholderTextColor={theme.colors.mutedText}
           multiline
           style={[

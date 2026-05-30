@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { OtpLoginForm } from '../../../../packages/shared-mobile/src/features/auth/screens/OtpLoginForm';
@@ -29,6 +30,7 @@ const ORANGE = '#F97316';
 
 export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const roleHint = route?.params?.roleHint;
+  const { t } = useTranslation();
   const { theme }  = useAppTheme();
   const insets     = useSafeAreaInsets();
   const { config } = useAppConfig();
@@ -87,10 +89,10 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
           </View>
        
           <AppText style={styles.heroHeadline} color="#FFFFFF">
-            {'Log In to Your Account'}
+            {t('welcomeBack')}
           </AppText>
           <AppText style={styles.heroSub} color="rgba(255,255,255,0.70)">
-            Find work or manage your worker network
+            {t('loginSubtitle')}
           </AppText>
         </View>
       </View>
@@ -120,7 +122,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
   ]}
 >
                <View style={[styles.welcomeBadge, { marginBottom: 16 }]}>
-            <AppText style={styles.welcomeBadgeText} color={ORANGE}>{'👋  WELCOME BACK'}</AppText>
+            <AppText style={styles.welcomeBadgeText} color={ORANGE}>{'👋  '}{t('welcomeBack')}</AppText>
           </View>
             {/* Login mode tabs */}
             <View style={[
@@ -142,7 +144,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
                     color={mode === m ? '#FFFFFF' : theme.colors.mutedText}
                     style={mode === m ? styles.modeTabTextActive : undefined}
                   >
-                    {m === 'otp' ? '📱  OTP Login' : '🔒  Password Login'}
+                    {m === 'otp' ? `📱  ${t('otpLoginTab')}` : `🔒  ${t('passwordLoginTab')}`}
                   </AppText>
                 </TouchableOpacity>
               ))}
@@ -157,11 +159,11 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
           {/* Register link */}
           <View style={styles.registerRow}>
             <AppText variant="body" color={theme.colors.mutedText}>
-              New to BookMyWorker?{'  '}
+              {t('newToApp')}{'  '}
             </AppText>
             <Pressable onPress={() => navigation.navigate('Register')}>
               <AppText variant="body" color={BRAND} style={styles.registerLink}>
-                Create account
+                {t('createAccount')}
               </AppText>
             </Pressable>
           </View>

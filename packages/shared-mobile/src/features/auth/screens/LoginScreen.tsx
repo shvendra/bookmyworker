@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useAppTheme } from '../../../core/theme';
@@ -27,6 +28,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const roleHint = route.params?.roleHint;
   const appContext = route.params?.appContext;
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'otp' | 'password'>('otp');
@@ -56,7 +58,7 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
               BookMyWorker
             </AppText>
             <AppText variant="caption" color="rgba(255,255,255,0.7)">
-              India's workforce platform
+              {t('loginBrandSub')}
             </AppText>
           </View>
         </View>
@@ -92,7 +94,7 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
                 activeOpacity={0.8}
               >
                 <AppText variant="labelSm" color={mode === 'otp' ? '#fff' : theme.colors.mutedText}>
-                  OTP Login
+                  {t('otpLoginTab')}
                 </AppText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -101,7 +103,7 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
                 activeOpacity={0.8}
               >
                 <AppText variant="labelSm" color={mode === 'password' ? '#fff' : theme.colors.mutedText}>
-                  Password Login
+                  {t('passwordLoginTab')}
                 </AppText>
               </TouchableOpacity>
             </View>
@@ -117,18 +119,18 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
           {/* Register link */}
           <View style={styles.registerRow}>
             <AppText variant="body" color={theme.colors.mutedText}>
-              New to BookMyWorker?{' '}
+              {t('newToApp')}{' '}
             </AppText>
             <Pressable onPress={() => navigation.navigate(ROUTES.AUTH.REGISTER)}>
               <AppText variant="body" color={theme.colors.primary} style={styles.registerLink}>
-                Create account
+                {t('createAccount')}
               </AppText>
             </Pressable>
           </View>
 
           {/* Trust badges */}
           <View style={styles.trustRow}>
-            {['🔒 Secure OTP', '⚡ Instant Access', '✅ Verified Platform'].map((item) => (
+            {[t('trustBadge1'), t('trustBadge2'), t('trustBadge3')].map((item) => (
               <View key={item} style={[styles.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>

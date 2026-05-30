@@ -1,13 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import categoriesData from '../../../shared/data/categories.json';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ActivityIndicator,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -15,8 +17,9 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../state/auth/AuthContext';
-import { updateProfile } from '../../../core/api/endpoints/authApi';
+import { updateProfile, updateProfileFields } from '../../../core/api/endpoints/authApi';
 import { apiClient } from '../../../core/api/client';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -25,19 +28,44 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useAppTheme } from '../../../core/theme';
+import { indianStates } from '../../../shared/data/stateDistrict';
 import type { MainStackParamList } from '../../../app/navigation/types';
+
+// Build a flat lookup: category/subcategory value → display label
+const _AREA_LABEL_MAP: Record<string, string> = {};
+(categoriesData as Array<{ label: string; value: string; subcategories: Array<{ label: string; value: string }> }>).forEach((cat) => {
+  _AREA_LABEL_MAP[cat.value] = cat.label;
+  cat.subcategories.forEach((sub) => { _AREA_LABEL_MAP[sub.value] = sub.label; });
+});
+
+function formatAreaLabel(val: string): string {
+  if (_AREA_LABEL_MAP[val]) return _AREA_LABEL_MAP[val];
+  // Fallback: replace underscores with spaces for any unknown raw values
+  if (val.includes('_')) return val.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return val;
+}
 
 type Props = NativeStackScreenProps<MainStackParamList, 'EditProfile'>;
 
+// ── All India districts flattened for serviceable area search ─────────────────
+const ALL_DISTRICTS: { label: string; state: string }[] = [];
+Object.entries(indianStates).forEach(([stateName, districts]) => {
+  Object.keys(districts).forEach((district) => {
+    ALL_DISTRICTS.push({ label: district, state: stateName });
+  });
+});
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
+
 const editProfileSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  address: z.string().optional(),
-  accountNumber: z.string().optional(),
-  ifscCode: z.string().optional(),
-  bankName: z.string().optional(),
-  oldPassword: z.string().optional(),
-  newPassword: z.string().min(6, 'Min 6 characters').optional().or(z.literal('')),
+  name:            z.string().min(3, 'Name must be at least 3 characters'),
+  email:           z.string().email('Enter a valid email').optional().or(z.literal('')),
+  address:         z.string().optional(),
+  accountNumber:   z.string().optional(),
+  ifscCode:        z.string().optional(),
+  bankName:        z.string().optional(),
+  oldPassword:     z.string().optional(),
+  newPassword:     z.string().min(6, 'Min 6 characters').optional().or(z.literal('')),
   confirmPassword: z.string().optional(),
 }).refine((d) => {
   if (d.newPassword && d.newPassword !== d.confirmPassword) return false;
@@ -48,9 +76,13 @@ type EditProfileValues = z.infer<typeof editProfileSchema>;
 
 export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const { state, updateProfile: updateAuthProfile } = useAuth();
   const toast = useToast();
   const user = state.session?.user;
+  const isDark = theme.mode === 'dark';
+
+  const isWorkerRole = ['selfworker', 'worker', 'agent'].includes((user?.role ?? '').toLowerCase());
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +92,12 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const [stateVal, setStateVal] = useState(user?.state ?? '');
   const [districtVal, setDistrictVal] = useState(user?.district ?? '');
   const [blockVal, setBlockVal] = useState('');
+
+  // Worker-specific fields
+  const [gender, setGender] = useState<string>(user?.gender ?? '');
+  const [age, setAge] = useState<string>(user?.dob ? String(user.dob) : '');
+  const [areas, setAreas] = useState<string[]>(user?.areasOfWork ?? []);
+  const [areaSearch, setAreaSearch] = useState('');
 
   const { control, handleSubmit, reset } = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
@@ -76,21 +114,16 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     },
   });
 
-  // Fetch full profile on mount to pre-populate all fields
+  // Fetch full profile on mount
   useEffect(() => {
     const load = async (): Promise<void> => {
       try {
         const res = await apiClient.get<{
           user?: {
-            fullName?: string;
-            email?: string;
-            state?: string;
-            district?: string;
-            block?: string;
-            address?: string;
-            accountNumber?: string;
-            ifscCode?: string;
-            bankName?: string;
+            fullName?: string; email?: string; state?: string; district?: string;
+            block?: string; address?: string; accountNumber?: string;
+            ifscCode?: string; bankName?: string;
+            gender?: string; dob?: string | number; areasOfWork?: string[];
           };
         }>('/api/v1/user/getuser');
         const u = res.data?.user;
@@ -102,34 +135,55 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           accountNumber: u.accountNumber ?? '',
           ifscCode: u.ifscCode ?? '',
           bankName: u.bankName ?? '',
-          oldPassword: '',
-          newPassword: '',
-          confirmPassword: '',
+          oldPassword: '', newPassword: '', confirmPassword: '',
         });
-        if (u.state) setStateVal(u.state);
-        if (u.district) setDistrictVal(u.district);
-        if (u.block) setBlockVal(u.block);
+        if (u.state)       setStateVal(u.state);
+        if (u.district)    setDistrictVal(u.district);
+        if (u.block)       setBlockVal(u.block);
+        if (u.gender)      setGender(u.gender);
+        if (u.dob)         setAge(String(u.dob));
+        if (u.areasOfWork) setAreas(u.areasOfWork);
       } catch { /* keep defaults */ }
     };
     void load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const filteredDistricts = useMemo(() => {
+    if (!areaSearch.trim()) return [];
+    const q = areaSearch.toLowerCase();
+    return ALL_DISTRICTS.filter(
+      (d) => d.label.toLowerCase().includes(q) || d.state.toLowerCase().includes(q)
+    ).slice(0, 25);
+  }, [areaSearch]);
+
+  const toggleArea = useCallback((district: string) => {
+    setAreas((prev) =>
+      prev.includes(district) ? prev.filter((a) => a !== district) : [...prev, district]
+    );
+  }, []);
+
   const pickPhoto = async (): Promise<void> => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) { setError('Photo library permission is required.'); return; }
     setPhotoLoading(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+        mediaTypes: ['images'],
+        allowsEditing: true, aspect: [1, 1], quality: 0.8,
       });
-      if (!result.canceled && result.assets[0]) { setPhotoUri(result.assets[0].uri); setImageError(false); }
-    } finally { setPhotoLoading(false); }
+      if (!result.canceled && result.assets[0]) {
+        setPhotoUri(result.assets[0].uri);
+        setImageError(false);
+      }
+    } catch {
+      toast.error('Could not open photo library. Please try again.');
+    } finally {
+      setPhotoLoading(false);
+    }
   };
 
   const takePhoto = async (): Promise<void> => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) { setError('Camera permission is required.'); return; }
+    if (!permission.granted) { setError(t('ep_cameraPermission')); return; }
     setPhotoLoading(true);
     try {
       const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
@@ -141,16 +195,17 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     setLoading(true);
     setError(null);
     try {
+      // Main profile update (FormData for photo support)
       const formData = new FormData();
       formData.append('name', values.name);
-      if (values.email) formData.append('email', values.email);
-      if (stateVal) formData.append('state', stateVal);
-      if (districtVal) formData.append('district', districtVal);
-      if (blockVal) formData.append('block', blockVal);
-      if (values.address) formData.append('address', values.address);
+      if (values.email)         formData.append('email', values.email);
+      if (stateVal)             formData.append('state', stateVal);
+      if (districtVal)          formData.append('district', districtVal);
+      if (blockVal)             formData.append('block', blockVal);
+      if (values.address)       formData.append('address', values.address);
       if (values.accountNumber) formData.append('accountNumber', values.accountNumber);
-      if (values.ifscCode) formData.append('ifscCode', values.ifscCode);
-      if (values.bankName) formData.append('bankName', values.bankName);
+      if (values.ifscCode)      formData.append('ifscCode', values.ifscCode);
+      if (values.bankName)      formData.append('bankName', values.bankName);
       if (values.oldPassword && values.newPassword) {
         formData.append('oldPassword', values.oldPassword);
         formData.append('newPassword', values.newPassword);
@@ -161,19 +216,34 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         formData.append('profilePhoto', { uri: photoUri, name: filename, type: match ? `image/${match[1]}` : 'image/jpeg' } as unknown as Blob);
       }
       const updatedUser = await updateProfile(formData);
+
+      // Worker-specific fields via JSON endpoint
+      if (isWorkerRole) {
+        const workerUpdates: Record<string, unknown> = {};
+        if (gender) workerUpdates.gender = gender;
+        if (age && Number(age) >= 15 && Number(age) <= 70) workerUpdates.dob = Number(age);
+        if (areas.length > 0) workerUpdates.areasOfWork = areas;
+        if (Object.keys(workerUpdates).length > 0) {
+          await updateProfileFields(workerUpdates);
+        }
+      }
+
       await updateAuthProfile({
         fullName: updatedUser.fullName,
         email: updatedUser.email,
         state: updatedUser.state,
         district: updatedUser.district,
         profileImage: updatedUser.profileImage,
+        ...(isWorkerRole && gender ? { gender } : {}),
+        ...(isWorkerRole && age ? { dob: String(age) } : {}),
+        ...(isWorkerRole && areas.length > 0 ? { areasOfWork: areas } : {}),
       });
-      toast.success('Your profile has been updated successfully.', 'Profile Saved');
+      toast.success(t('ep_profileSavedMsg'), t('ep_profileSaved'));
       navigation.goBack();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to update profile';
       setError(msg);
-      toast.error(msg, 'Update Failed');
+      toast.error(msg, t('ep_updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -184,104 +254,210 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Edit Profile" onBack={() => navigation.goBack()} />
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      <AppText variant="title">Edit Profile</AppText>
-      <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
-        Update your personal information
-      </AppText>
-
-      {/* Avatar */}
-      <View style={styles.avatarSection}>
-        <TouchableOpacity onPress={pickPhoto} activeOpacity={0.88} style={styles.avatarTouchable}>
-          {currentPhotoUri && !imageError ? (
-            <Image
-              source={{ uri: currentPhotoUri }}
-              style={styles.avatar}
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
-              <Avatar name={user?.fullName ?? 'User'} size={72} />
+      <ScreenHeader title={t('editProfileTitle')} onBack={() => navigation.goBack()} />
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Avatar */}
+        <View style={styles.avatarSection}>
+          <TouchableOpacity onPress={pickPhoto} activeOpacity={0.88} style={styles.avatarTouchable}>
+            {currentPhotoUri && !imageError ? (
+              <Image source={{ uri: currentPhotoUri }} style={styles.avatar} onError={() => setImageError(true)} />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
+                <Avatar name={user?.fullName ?? 'User'} size={72} />
+              </View>
+            )}
+            <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.primary }]}>
+              <AppText style={styles.avatarEditIcon}>📷</AppText>
             </View>
-          )}
-          {/* Camera edit badge */}
-          <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.primary }]}>
-            <AppText style={styles.avatarEditIcon}>📷</AppText>
+            {photoLoading && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color="#fff" size="large" />
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={styles.photoButtons}>
+            <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.primary }]}>
+              <AppText variant="caption" color="#fff">{t('ep_galleryBtn')}</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={takePhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}>
+              <AppText variant="caption" color={theme.colors.text}>{t('ep_cameraBtn')}</AppText>
+            </TouchableOpacity>
           </View>
-          {photoLoading && (
-            <View style={styles.avatarOverlay}>
-              <ActivityIndicator color="#fff" size="large" />
+          <View style={styles.cropTipBanner}>
+            <AppText style={styles.cropTipText}>{t('ep_cropTip')}</AppText>
+          </View>
+        </View>
+
+        {/* Read-only mobile */}
+        <View style={[styles.readOnlyRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <AppText variant="caption" color={theme.colors.mutedText}>{t('ep_mobileNumber')}</AppText>
+          <AppText variant="body">+91 {user?.phone}</AppText>
+        </View>
+
+        {/* BASIC INFO */}
+        <SectionLabel label={t('ep_basicInfo')} theme={theme} />
+        <FormInput control={control} name="name" label={t('ep_fullName')} placeholder={t('ep_fullNamePlaceholder')} />
+        <FormInput control={control} name="email" label={t('ep_emailAddress')} placeholder={t('ep_emailPlaceholder')} keyboardType="email-address" />
+        <FormInput control={control} name="address" label={t('ep_address')} placeholder={t('ep_addressPlaceholder')} />
+
+        {/* LOCATION */}
+        <SectionLabel label={t('ep_location')} theme={theme} />
+        <LocationSelector
+          state={stateVal} district={districtVal} block={blockVal}
+          onStateChange={(v) => { setStateVal(v); setDistrictVal(''); setBlockVal(''); }}
+          onDistrictChange={(v) => { setDistrictVal(v); setBlockVal(''); }}
+          onBlockChange={setBlockVal}
+          required={false} blockLabel="Block / Tehsil"
+        />
+
+        {/* ── WORK PREFERENCES (SelfWorker / Worker only) ── */}
+        {isWorkerRole && (
+          <>
+            <SectionLabel label={t('ep_workPrefs')} theme={theme} />
+
+            {/* Gender */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText }]}>
+              {t('ep_gender')}
+            </AppText>
+            <View style={styles.genderRow}>
+              {GENDER_OPTIONS.map((g) => (
+                <TouchableOpacity
+                  key={g}
+                  onPress={() => setGender(g)}
+                  activeOpacity={0.75}
+                  style={[
+                    styles.genderChip,
+                    gender === g
+                      ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                      : { backgroundColor: isDark ? theme.colors.surface1 : '#F1F5F9', borderColor: isDark ? theme.colors.border : '#DDE3F0' },
+                  ]}
+                >
+                  <AppText style={[styles.genderChipText, { color: gender === g ? '#fff' : theme.colors.text }]}>
+                    {t(`gender_${g.toLowerCase()}`, g)}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
-        </TouchableOpacity>
-        <AppText variant="caption" color={theme.colors.mutedText} style={styles.avatarHint}>
-          Tap photo to change · or use buttons below
-        </AppText>
-        <View style={styles.photoButtons}>
-          <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.primary }]}>
-            <AppText variant="caption" color="#fff">📷 Gallery</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={takePhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}>
-            <AppText variant="caption" color={theme.colors.text}>📸 Camera</AppText>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.cropTipBanner}>
-          <AppText style={styles.cropTipText}>✂️ After selecting, you can crop &amp; rotate your photo</AppText>
-        </View>
-      </View>
 
-      {/* Read-only */}
-      <View style={[styles.readOnlyRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <AppText variant="caption" color={theme.colors.mutedText}>Mobile Number</AppText>
-        <AppText variant="body">+91 {user?.phone}</AppText>
-      </View>
-      <View style={[styles.readOnlyRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <AppText variant="caption" color={theme.colors.mutedText}>Role</AppText>
-        <AppText variant="body" style={styles.capitalize}>{user?.role}</AppText>
-      </View>
+            {/* Age */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+              {t('ep_age')}
+            </AppText>
+            <TextInput
+              style={[
+                styles.ageInput,
+                {
+                  backgroundColor: isDark ? theme.colors.surface : '#fff',
+                  borderColor: age ? theme.colors.primary : (isDark ? theme.colors.border : '#DDE3F0'),
+                  color: theme.colors.text,
+                },
+              ]}
+              value={age}
+              onChangeText={(v) => { if (/^\d{0,2}$/.test(v)) setAge(v); }}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder={t('wpc_agePlaceholder', 'e.g. 25')}
+              placeholderTextColor={theme.colors.mutedText}
+            />
 
-      {/* BASIC INFO */}
-      <SectionLabel label="BASIC INFO" theme={theme} />
-      <FormInput control={control} name="name" label="Full Name *" placeholder="Your full name" />
-      <FormInput control={control} name="email" label="Email Address" placeholder="example@email.com" keyboardType="email-address" />
-      <FormInput control={control} name="address" label="Village / Town / Address" placeholder="Your local address" />
+            {/* Serviceable Areas */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+              {t('ep_serviceableArea')}
+            </AppText>
 
-      {/* LOCATION */}
-      <SectionLabel label="LOCATION" theme={theme} />
-      <LocationSelector
-        state={stateVal}
-        district={districtVal}
-        block={blockVal}
-        onStateChange={(v) => { setStateVal(v); setDistrictVal(''); setBlockVal(''); }}
-        onDistrictChange={(v) => { setDistrictVal(v); setBlockVal(''); }}
-        onBlockChange={setBlockVal}
-        required={false}
-        blockLabel="Block / Tehsil"
-      />
+            {/* Search box */}
+            <View style={[styles.searchBox, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
+              <AppText style={{ fontSize: 15 }}>🔍</AppText>
+              <TextInput
+                style={[styles.searchInput, { color: theme.colors.text }]}
+                value={areaSearch}
+                onChangeText={setAreaSearch}
+                placeholder={t('wpc_searchPlaceholder', 'Search city or district…')}
+                placeholderTextColor={theme.colors.mutedText}
+                autoCorrect={false}
+              />
+              {areaSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setAreaSearch('')}>
+                  <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
+                </TouchableOpacity>
+              )}
+            </View>
 
-      {/* CHANGE PASSWORD */}
-      <SectionLabel label="CHANGE PASSWORD" theme={theme} />
-      <AppCard style={styles.card}>
-        <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardHint}>
-          Leave blank to keep your current password.
-        </AppText>
-        <FormInput control={control} name="oldPassword" label="Current Password" placeholder="Enter current password" secureTextEntry />
-        <FormInput control={control} name="newPassword" label="New Password" placeholder="Min 6 characters" secureTextEntry />
-        <FormInput control={control} name="confirmPassword" label="Confirm New Password" placeholder="Re-enter new password" secureTextEntry />
-      </AppCard>
+            {/* Dropdown results */}
+            {filteredDistricts.length > 0 && (
+              <View style={[styles.dropdown, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
+                {filteredDistricts.map((d) => {
+                  const selected = areas.includes(d.label);
+                  return (
+                    <TouchableOpacity
+                      key={`${d.state}-${d.label}`}
+                      onPress={() => { toggleArea(d.label); setAreaSearch(''); }}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.dropdownItem,
+                        selected && { backgroundColor: isDark ? theme.colors.primary + '22' : theme.colors.primaryLight },
+                        { borderBottomColor: isDark ? theme.colors.border : '#F1F5F9' },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <AppText style={[{ fontSize: 13.5, fontWeight: '700' }, { color: selected ? theme.colors.primary : theme.colors.text }]}>
+                          {d.label}
+                        </AppText>
+                        <AppText style={{ fontSize: 11.5, color: theme.colors.mutedText }}>{d.state}</AppText>
+                      </View>
+                      {selected && <AppText style={{ fontSize: 17, color: theme.colors.primary, fontWeight: '800' }}>✓</AppText>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
-      {error ? (
-        <AppText variant="caption" color={theme.colors.danger} style={styles.error}>{error}</AppText>
-      ) : null}
+            {/* Selected area tags */}
+            {areas.length > 0 && (
+              <View style={{ marginTop: 10 }}>
+                <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText }]}>
+                  {t('wpc_selected', 'Selected')} ({areas.length})
+                </AppText>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
+                  {areas.map((a) => (
+                    <TouchableOpacity
+                      key={a}
+                      onPress={() => setAreas((prev) => prev.filter((x) => x !== a))}
+                      style={[styles.areaTag, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]}
+                      activeOpacity={0.7}
+                    >
+                      <AppText style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.primary, marginRight: 4 }}>{formatAreaLabel(a)}</AppText>
+                      <AppText style={{ fontSize: 15, fontWeight: '700', color: theme.colors.primary }}>×</AppText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        )}
 
-      <AppButton title="Save Changes" onPress={onSubmit} loading={loading} style={styles.saveBtn} />
-    </ScrollView>
+        {/* CHANGE PASSWORD */}
+        <SectionLabel label={t('ep_changePassword')} theme={theme} />
+        <AppCard style={styles.card}>
+          <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardHint}>
+            {t('ep_leaveBlankPassword')}
+          </AppText>
+          <FormInput control={control} name="oldPassword" label={t('ep_currentPassword')} placeholder={t('ep_currentPasswordPlaceholder')} secureTextEntry />
+          <FormInput control={control} name="newPassword" label={t('ep_newPassword')} placeholder={t('ep_newPasswordPlaceholder')} secureTextEntry />
+          <FormInput control={control} name="confirmPassword" label={t('ep_confirmPassword')} placeholder={t('ep_confirmPasswordPlaceholder')} secureTextEntry />
+        </AppCard>
+
+        {error ? (
+          <AppText variant="caption" color={theme.colors.danger} style={styles.error}>{error}</AppText>
+        ) : null}
+
+        <AppButton title={t('ep_saveChanges')} onPress={onSubmit} loading={loading} style={styles.saveBtn} />
+      </ScrollView>
     </View>
   );
 };
@@ -291,40 +467,41 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 );
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: { padding: 16, paddingBottom: 48 },
-  subtitle: { marginTop: 4, marginBottom: 24 },
+  scroll:   { flex: 1 },
+  content:  { padding: 16, paddingBottom: 48 },
 
-  avatarSection:    { alignItems: 'center', marginBottom: 24 },
-  avatarTouchable:  { position: 'relative', alignItems: 'center', justifyContent: 'center' },
-  avatarPlaceholder:{ width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  avatar:           { width: 100, height: 100, borderRadius: 50 },
-  avatarEditBadge:  {
-    position: 'absolute', bottom: 2, right: 2,
-    width: 30, height: 30, borderRadius: 15,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: '#fff',
-  },
-  avatarEditIcon:   { fontSize: 14 },
-  avatarOverlay:    {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 50,
-    backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
-  },
-  avatarHint:       { marginTop: 8, marginBottom: 4 },
-  photoButtons:     { flexDirection: 'row', gap: 10, marginTop: 8 },
-  photoBtn:         { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  cropTipBanner:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, borderWidth: 1, borderColor: '#BFDBFE' },
-  cropTipText:      { fontSize: 11, color: '#1D4ED8', fontWeight: '600' },
-  readOnlyRow: {
-    borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10, gap: 2,
-  },
-  sectionLabel: {
-    marginTop: 20, marginBottom: 8,
-    textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.8, fontWeight: '700',
-  },
-  card: { marginBottom: 4 },
-  cardHint: { marginBottom: 12 },
-  capitalize: { textTransform: 'capitalize' },
-  error: { marginTop: 8 },
-  saveBtn: { marginTop: 20 },
+  avatarSection:     { alignItems: 'center', marginBottom: 20, marginTop: 8 },
+  avatarTouchable:   { position: 'relative', alignItems: 'center', justifyContent: 'center' },
+  avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatar:            { width: 100, height: 100, borderRadius: 50 },
+  avatarEditBadge:   { position: 'absolute', bottom: 2, right: 2, width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#fff' },
+  avatarEditIcon:    { fontSize: 14 },
+  avatarOverlay:     { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 50, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  photoButtons:      { flexDirection: 'row', gap: 10, marginTop: 10 },
+  photoBtn:          { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  cropTipBanner:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, borderWidth: 1, borderColor: '#BFDBFE' },
+  cropTipText:       { fontSize: 11, color: '#1D4ED8', fontWeight: '600' },
+
+  readOnlyRow: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10, gap: 2 },
+  sectionLabel:{ marginTop: 20, marginBottom: 8, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.8, fontWeight: '700' },
+  card:        { marginBottom: 4 },
+  cardHint:    { marginBottom: 12 },
+  error:       { marginTop: 8 },
+  saveBtn:     { marginTop: 20 },
+
+  // Gender chips
+  fieldLabel:    { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+  genderRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  genderChip:    { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 9 },
+  genderChipText:{ fontSize: 13.5, fontWeight: '600' },
+
+  // Age
+  ageInput: { fontSize: 20, fontWeight: '800', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, textAlign: 'center' },
+
+  // Serviceable area
+  searchBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, gap: 8 },
+  searchInput:  { flex: 1, fontSize: 14, fontWeight: '500', padding: 0 },
+  dropdown:     { borderWidth: 1, borderRadius: 12, marginTop: 4, maxHeight: 200, overflow: 'hidden' },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth },
+  areaTag:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, marginRight: 6, marginBottom: 6 },
 });

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { ScreenHeader } from '../../../../packages/shared-mobile/src/shared/components/ui/GradientHeader';
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
 import { getAccessToken } from '../../../../packages/shared-mobile/src/core/storage/authStorage';
@@ -32,18 +34,27 @@ import {
 interface DocState { uri: string; name: string; type: string }
 
 const pickImage = async (): Promise<DocState | null> => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') return null;
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    quality: 0.8,
-    allowsEditing: true,
-    aspect: [4, 3],
-  });
-  if (result.canceled || !result.assets[0]) return null;
-  const asset = result.assets[0];
-  const ext = asset.uri.split('.').pop() ?? 'jpg';
-  return { uri: asset.uri, name: `id_front.${ext}`, type: asset.mimeType ?? `image/${ext}` };
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (result.canceled || !result.assets[0]) return null;
+
+    const asset = result.assets[0];
+    const ext = asset.uri.split('.').pop() ?? 'jpg';
+
+    return {
+      uri: asset.uri,
+      name: `id_front.${ext}`,
+      type: asset.mimeType ?? `image/${ext}`,
+    };
+  } catch {
+    return null;
+  }
 };
 
 const BRAND      = '#1037A4';
@@ -57,6 +68,7 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'Kyc'>;
 
 export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const { state, setLanguage, updateProfile, completeOnboarding, signOut } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -68,7 +80,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
     resolver: zodResolver(kycSchema),
     defaultValues: {
       fullName: state.session?.user.fullName ?? '',
-      language: (state.session?.user.language as KycFormValues['language']) ?? 'en',
+      language: (state.session?.user.language as KycFormValues['language']) ?? (i18n.language as KycFormValues['language']) ?? 'hi',
     },
   });
 
@@ -81,7 +93,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
 
   const onSubmit = handleSubmit(async (values) => {
     if (!idFront) {
-      setErrorMessage('Please upload a photo of your government ID card to continue.');
+      setErrorMessage(t('kycUploadIdError'));
       return;
     }
     setErrorMessage(null);
@@ -110,7 +122,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
       await completeOnboarding();
       resetToMain();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+      setErrorMessage(error instanceof Error ? error.message : t('kycSomethingWrong'));
     } finally {
       setIsSubmitting(false);
     }
@@ -119,98 +131,22 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-      <ScreenHeader
-        title="Complete Your Profile"
-        onBack={() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-          } else {
-            signOut();
-          }
-        }}
-      />
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Step indicator */}
-        <View style={s.stepRow}>
-          {[1, 2, 3].map((n) => (
-            <View key={n} style={[s.stepDot, { backgroundColor: n <= 2 ? BRAND : BORDER }]} />
-          ))}
-          <AppText style={[s.stepLabel, { color: SLATE }]}>Step 2 of 3</AppText>
-        </View>
-
-        <AppText style={[s.title, { color: theme.colors.text }]}>Almost there! 🎉</AppText>
-        <AppText style={[s.subtitle, { color: SLATE }]}>
-          Confirm your name and choose your preferred language.
-        </AppText>
-
-        {/* Verification status */}
-        <View style={[
-          s.statusBanner,
-          { backgroundColor: kycStatus === 'verified' ? '#F0FDF4' : '#FFFBEB',
-            borderColor:     kycStatus === 'verified' ? '#86EFAC' : '#FDE68A' },
-        ]}>
-          <AppText style={s.statusLabel}>Verification Status</AppText>
-          <Badge
-            label={kycStatus}
-            variant={kycStatus === 'verified' ? 'success' : kycStatus === 'rejected' ? 'danger' : 'warning'}
-          />
-        </View>
-
-        {/* Name card */}
-        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <View style={s.sectionHead}>
-            <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
-              <AppText style={s.iconEmoji}>👤</AppText>
-            </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>Your Name</AppText>
-          </View>
-          <AppText style={[s.fieldLabel, { color: SLATE }]}>FULL NAME *</AppText>
-          <Controller
-            control={control}
-            name="fullName"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <TextInput
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter your full name"
-                placeholderTextColor={SLATE}
-                autoCapitalize="words"
-                style={[
-                  s.input,
-                  {
-                    color: theme.colors.text,
-                    backgroundColor: theme.colors.background,
-                    borderColor: errors.fullName ? '#DC2626' : value && value.length > 0 ? BRAND : BORDER,
-                  },
-                ]}
-              />
-            )}
-          />
-          {errors.fullName && (
-            <AppText style={s.fieldError}>{errors.fullName.message}</AppText>
-          )}
-          <AppText style={[s.fieldHint, { color: SLATE }]}>
-            Enter your name exactly as it appears on your government-issued ID
-          </AppText>
-        </View>
-
         {/* Language card */}
         <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <View style={s.sectionHead}>
             <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
               <AppText style={s.iconEmoji}>🌐</AppText>
             </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>Preferred Language</AppText>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('preferredLanguage')}</AppText>
           </View>
           <AppText style={[s.langHint, { color: SLATE }]}>
-            The app will display in your selected language
+            {t('appLanguageNote')}
           </AppText>
           <View style={s.langGrid}>
             {LANGUAGE_OPTIONS.map((lang) => {
@@ -238,45 +174,6 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
           </View>
         </View>
 
-        {/* ID Card upload */}
-        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: idFront ? BRAND : theme.colors.border }]}>
-          <View style={s.sectionHead}>
-            <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
-              <AppText style={s.iconEmoji}>🪪</AppText>
-            </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>
-              Upload ID Card <AppText style={{ color: '#DC2626' }}>*</AppText>
-            </AppText>
-          </View>
-          <AppText style={[s.fieldHint, { color: SLATE }]}>
-            Upload a clear photo of any government-issued photo ID — Voter ID, PAN Card, Driving Licence, Passport, etc.
-          </AppText>
-          <Pressable
-            onPress={() => void handlePickId()}
-            style={({ pressed }) => [
-              s.uploadSlot,
-              { borderColor: idFront ? BRAND : SLATE, backgroundColor: theme.colors.background, opacity: pressed ? 0.75 : 1 },
-            ]}
-          >
-            {idFront ? (
-              <>
-                <Image source={{ uri: idFront.uri }} style={s.uploadPreview} resizeMode="cover" />
-                <View style={s.uploadOverlay}>
-                  <AppText style={s.overlayTick}>✓  ID Uploaded — Tap to change</AppText>
-                </View>
-              </>
-            ) : (
-              <View style={s.uploadEmpty}>
-                <View style={[s.camBox, { backgroundColor: BRAND_SOFT }]}>
-                  <AppText style={{ fontSize: 22 }}>📷</AppText>
-                </View>
-                <AppText style={[s.uploadLabel, { color: theme.colors.text }]}>Tap to Upload ID Card</AppText>
-                <AppText style={[s.uploadHint, { color: SLATE }]}>JPG, PNG · Max 5 MB</AppText>
-              </View>
-            )}
-          </Pressable>
-        </View>
-
         {/* Error */}
         {errorMessage ? (
           <View style={[s.errorBox, { backgroundColor: '#FFF1F2', borderColor: '#FCA5A5' }]}>
@@ -294,12 +191,12 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
           {isSubmitting ? (
             <ActivityIndicator color={WHITE} size="small" />
           ) : (
-            <AppText style={s.submitTxt}>{idFront ? 'Continue to App →' : 'Upload ID Card to Continue'}</AppText>
+            <AppText style={s.submitTxt}>{idFront ? `${t('continueToApp')} →` : t('uploadIdToContinue')}</AppText>
           )}
         </TouchableOpacity>
 
         <AppText style={[s.disclaimer, { color: SLATE }]}>
-          Your personal information is encrypted and used only for verification purposes.
+          {t('privacyNote')}
         </AppText>
       </ScrollView>
     </View>

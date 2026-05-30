@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
   Dimensions,
   Image,
   ScrollView,
@@ -7,23 +8,28 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+// Image is still used by the grid mode below
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
+import { useAppTheme } from '../../../core/theme';
 import type { TranslationKeys } from '../../../core/i18n/translations';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-// Full-width card (matches job slider width — body has padding:16 each side + 8px gap breathing room)
 const CAT_CARD_W = SCREEN_W - 40;
-const CAT_CARD_H = 190;
+const CAT_CARD_H = 210;
 const CAT_CARD_GAP = 12;
+const AUTO_SCROLL_INTERVAL = 3800;
 
 export interface WorkCategory {
   label: string;
   value: string;
   translationKey: TranslationKeys;
   image: string;
+  /** Gradient [top color, bottom color] used when image fails or as overlay base */
+  gradient: [string, string];
   emoji: string;
   accent: string;
+  jobTypes?: number;
 }
 
 export const WORK_CATEGORIES: WorkCategory[] = [
@@ -31,97 +37,131 @@ export const WORK_CATEGORIES: WorkCategory[] = [
     label: 'Manufacturing & Industrial',
     value: 'manufacturing_industrial_workers',
     translationKey: 'cat_manufacturing',
-    image: 'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80&fit=crop',
+    gradient: ['#1E3A8A', '#1D4ED8'],
     emoji: '⚙️',
     accent: '#3B82F6',
+    jobTypes: 14,
   },
   {
     label: 'Construction & Project',
     value: 'construction_project_workers',
     translationKey: 'cat_construction',
-    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1504307651486-9d96e7b11ae0?w=800&q=80&fit=crop',
+    gradient: ['#78350F', '#D97706'],
     emoji: '🏗️',
     accent: '#F59E0B',
+    jobTypes: 17,
   },
   {
     label: 'Transport & Logistics',
     value: 'transport_logistics_workers',
     translationKey: 'cat_transport',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&q=80&fit=crop',
+    gradient: ['#312E81', '#4338CA'],
     emoji: '🚛',
     accent: '#6366F1',
+    jobTypes: 18,
   },
   {
     label: 'Agriculture & Farming',
     value: 'agriculture_farming_workers',
     translationKey: 'cat_agriculture',
-    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80&fit=crop',
+    gradient: ['#14532D', '#16A34A'],
     emoji: '🌾',
     accent: '#22C55E',
+    jobTypes: 13,
   },
   {
     label: 'Household & Domestic',
     value: 'household_domestic_workers',
     translationKey: 'cat_household',
-    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80&fit=crop',
+    gradient: ['#164E63', '#0891B2'],
     emoji: '🧹',
     accent: '#06B6D4',
+    jobTypes: 12,
   },
   {
     label: 'Automobile & Workshop',
     value: 'Automobile & Workshop Workers',
     translationKey: 'cat_automobile',
-    image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?auto=format&fit=crop&w=800&q=80',
-    emoji: '🚗',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80&fit=crop',
+    gradient: ['#1E293B', '#334155'],
+    emoji: '🔧',
     accent: '#64748B',
+    jobTypes: 9,
   },
   {
     label: 'Retail & Shop',
     value: 'retail_shop_workers',
     translationKey: 'cat_retail',
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&q=80&fit=crop',
+    gradient: ['#92400E', '#D97706'],
     emoji: '🏪',
     accent: '#D97706',
+    jobTypes: 14,
   },
   {
     label: 'Hospitality & Service',
     value: 'hospitality_service_workers',
     translationKey: 'cat_hospitality',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80&fit=crop',
+    gradient: ['#831843', '#BE185D'],
     emoji: '🛎️',
     accent: '#EC4899',
+    jobTypes: 14,
   },
   {
     label: 'Healthcare Support',
     value: 'Healthcare Support Workers',
     translationKey: 'cat_healthcare',
-    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80&fit=crop',
+    gradient: ['#7F1D1D', '#DC2626'],
     emoji: '🏥',
     accent: '#EF4444',
+    jobTypes: 7,
   },
   {
     label: 'Security & Facility',
     value: 'Security & Facility Workers',
     translationKey: 'cat_security',
-    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&q=80&fit=crop',
+    gradient: ['#0F172A', '#1E293B'],
     emoji: '👮',
     accent: '#475569',
+    jobTypes: 9,
   },
   {
     label: 'Skilled Technical',
     value: 'skilled_technical_workers',
     translationKey: 'cat_technical',
-    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80&fit=crop',
+    gradient: ['#064E3B', '#059669'],
     emoji: '🛠️',
     accent: '#10B981',
+    jobTypes: 13,
   },
   {
     label: 'Event & Decoration',
     value: 'event_decoration_workers',
     translationKey: 'cat_event',
-    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80&fit=crop',
+    gradient: ['#4C1D95', '#7C3AED'],
     emoji: '🎊',
     accent: '#8B5CF6',
+    jobTypes: 11,
+  },
+  {
+    label: 'Specialized & Creative',
+    value: 'specialized_creative_workers',
+    translationKey: 'cat_creative',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80&fit=crop',
+    gradient: ['#581C87', '#9333EA'],
+    emoji: '🎨',
+    accent: '#A855F7',
+    jobTypes: 14,
   },
 ];
 
@@ -144,16 +184,61 @@ const HCatSlider = ({
   onCategoryPress: (cat: WorkCategory) => void;
   activeCategory?: string;
 }): React.JSX.Element => {
+  const { t } = useTranslation();
+  const { theme } = useAppTheme();
   const step = CAT_CARD_W + CAT_CARD_GAP;
+
+  const scrollRef = useRef<ScrollView>(null);
+  const dotAnim = useRef(WORK_CATEGORIES.map(() => new Animated.Value(0))).current;
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentIdx = useRef(0);
+
+  const animateDot = (idx: number): void => {
+    dotAnim.forEach((a, i) => {
+      Animated.timing(a, {
+        toValue: i === idx ? 1 : 0,
+        duration: 220,
+        useNativeDriver: false,
+      }).start();
+    });
+  };
+
+  const scrollToIndex = (idx: number): void => {
+    const safeIdx = idx % WORK_CATEGORIES.length;
+    scrollRef.current?.scrollTo({ x: safeIdx * step, animated: true });
+    currentIdx.current = safeIdx;
+    animateDot(safeIdx);
+  };
+
+  const resetTimer = (): void => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => scrollToIndex(currentIdx.current + 1), AUTO_SCROLL_INTERVAL);
+  };
+
+  useEffect(() => {
+    animateDot(0);
+    timerRef.current = setInterval(() => scrollToIndex(currentIdx.current + 1), AUTO_SCROLL_INTERVAL);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleScrollEnd = (e: { nativeEvent: { contentOffset: { x: number } } }): void => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / step);
+    currentIdx.current = idx;
+    animateDot(idx);
+  };
 
   return (
     <View>
       <ScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         snapToInterval={step}
         snapToAlignment="start"
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollBeginDrag={resetTimer}
+        scrollEventThrottle={16}
         contentContainerStyle={hStyles.scrollContent}
       >
         {WORK_CATEGORIES.map((cat, idx) => {
@@ -163,40 +248,56 @@ const HCatSlider = ({
               key={cat.value}
               onPress={() => onCategoryPress(cat)}
               activeOpacity={0.88}
-              style={[hStyles.card, isActive && { borderColor: cat.accent, borderWidth: 3 }]}
+              style={[
+                hStyles.card,
+                { backgroundColor: cat.gradient[0] },
+                isActive && { borderColor: cat.accent, borderWidth: 3 },
+              ]}
             >
-              {/* Background image — high res, fully visible */}
-              <Image
-                source={{ uri: cat.image }}
-                style={StyleSheet.absoluteFillObject}
-                resizeMode="cover"
-              />
+              {/* Gradient: darker top layer */}
+              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: cat.gradient[0] }]} />
+              {/* Gradient: lighter accent bottom-right blob */}
+              <View style={[hStyles.gradientBlob, { backgroundColor: cat.gradient[1] }]} />
+              {/* Decorative circle top-right */}
+              <View style={[hStyles.circleL, { backgroundColor: cat.accent + '20' }]} />
+              <View style={[hStyles.circleS, { backgroundColor: cat.accent + '15' }]} />
 
-              {/* Very subtle full-card tint so colors stay vibrant */}
-              <View style={hStyles.tint} />
-
-              {/* Bottom gradient block for text legibility */}
-              <View style={hStyles.gradBottom} />
+              {/* Large decorative emoji — right side visual */}
+              <View style={hStyles.bigEmojiWrap}>
+                <AppText style={hStyles.bigEmoji}>{cat.emoji}</AppText>
+              </View>
 
               {/* Accent bar at very bottom */}
               <View style={[hStyles.accentBar, { backgroundColor: cat.accent }]} />
 
-              {/* TOP ROW: emoji pill + index counter */}
+              {/* TOP ROW: small emoji badge + counter */}
               <View style={hStyles.topRow}>
-                <View style={[hStyles.emojiBadge, { backgroundColor: cat.accent }]}>
+                <View style={[hStyles.emojiBadge, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
                   <AppText style={hStyles.emoji}>{cat.emoji}</AppText>
                 </View>
-                <View style={[hStyles.counter, { backgroundColor: 'rgba(0,0,0,0.45)' }]}>
+                <View style={hStyles.counter}>
                   <AppText style={hStyles.counterTxt}>{idx + 1}/{WORK_CATEGORIES.length}</AppText>
                 </View>
               </View>
 
-              {/* BOTTOM: category name + CTA */}
+              {/* BOTTOM BLOCK: name, job-types chip, CTA */}
               <View style={hStyles.bottomBlock}>
-                <AppText style={hStyles.catName} numberOfLines={1}>{cat.label}</AppText>
-                <AppText style={[hStyles.ctaTxt, { color: cat.accent === '#475569' ? '#CBD5E1' : cat.accent }]}>
-                  Browse jobs  →
+                <AppText style={hStyles.catName} numberOfLines={1}>
+                  {t(cat.translationKey as TranslationKeys).replace(/\n/g, ' ')}
                 </AppText>
+
+                <View style={hStyles.bottomRow}>
+                  {cat.jobTypes != null && (
+                    <View style={[hStyles.jobPill, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.3)' }]}>
+                      <AppText style={hStyles.jobPillTxt}>
+                        {cat.jobTypes} job types
+                      </AppText>
+                    </View>
+                  )}
+                  <View style={[hStyles.ctaBtn, { backgroundColor: cat.accent }]}>
+                    <AppText style={hStyles.ctaTxt}>{t('tab_browse')} →</AppText>
+                  </View>
+                </View>
               </View>
 
               {/* Active tick */}
@@ -210,6 +311,18 @@ const HCatSlider = ({
         })}
       </ScrollView>
 
+      {/* Dot indicators */}
+      <View style={hStyles.dots}>
+        {WORK_CATEGORIES.map((_, i) => {
+          const w = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [5, 18] });
+          const op = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
+          return (
+            <TouchableOpacity key={i} onPress={() => { scrollToIndex(i); resetTimer(); }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+              <Animated.View style={[hStyles.dot, { width: w, opacity: op, backgroundColor: theme.colors.primary }]} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 };
@@ -291,27 +404,54 @@ const hStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.20,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    elevation: 10,
   },
 
-  // Very light full-card tint — keeps image vibrant but slightly deepened
-  tint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.08)',
-  },
-
-  // Bottom 50% darkening for text contrast
-  gradBottom: {
+  // Gradient blob — bottom-right lighter colour splash
+  gradientBlob: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '52%',
-    backgroundColor: 'rgba(5,10,30,0.78)',
+    bottom: -40,
+    right: -40,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.55,
   },
+  // Decorative circles
+  circleL: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+  },
+  circleS: {
+    position: 'absolute',
+    bottom: 30,
+    left: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  // Large emoji on right side as the hero visual
+  bigEmojiWrap: {
+    position: 'absolute',
+    right: 18,
+    bottom: 44,
+    width: 90,
+    height: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  bigEmoji: { fontSize: 52, lineHeight: 60 },
 
   accentBar: {
     position: 'absolute',
@@ -332,23 +472,24 @@ const hStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   emojiBadge: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    elevation: 4,
   },
-  emoji: { fontSize: 22, lineHeight: 26 },
+  emoji: { fontSize: 24, lineHeight: 28 },
 
   counter: {
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   counterTxt: {
     color: '#FFFFFF',
@@ -357,13 +498,13 @@ const hStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Bottom text block
+  // Bottom block
   bottomBlock: {
     position: 'absolute',
-    bottom: 18,
+    bottom: 14,
     left: 16,
     right: 16,
-    gap: 5,
+    gap: 8,
   },
   catName: {
     color: '#FFFFFF',
@@ -371,22 +512,42 @@ const hStyles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 27,
     letterSpacing: -0.3,
-    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  ctaTxt: {
-    fontSize: 13,
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  jobPill: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  jobPillTxt: {
+    fontSize: 11,
     fontWeight: '700',
-    lineHeight: 17,
-    letterSpacing: 0.1,
+    color: 'rgba(255,255,255,0.90)',
+  },
+  ctaBtn: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+  },
+  ctaTxt: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
-  // Active tick (top-right)
+  // Active tick
   tick: {
     position: 'absolute',
     top: 14,
-    right: 56,
+    right: 66,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -395,6 +556,15 @@ const hStyles = StyleSheet.create({
   },
   tickTxt: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 15 },
 
+  // Dot indicators
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 10,
+  },
+  dot: { height: 5, borderRadius: 3 },
 });
 
 // ── Grid styles (unchanged) ───────────────────────────────────────────────────

@@ -1,6 +1,8 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -33,15 +35,16 @@ export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element
     onSuccess: () => {
       setApplied(true);
       void queryClient.invalidateQueries({ queryKey: ['my-applications'] });
-      Alert.alert('Applied!', 'Your application has been submitted successfully.');
+      showAlert('Applied!', 'Your application has been submitted successfully.');
     },
     onError: (err) => {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Could not submit application');
+      showAlert('Error', err instanceof Error ? err.message : 'Could not submit application');
     },
   });
 
+  const insets = useSafeAreaInsets();
   const userRole = state.session?.user.role;
-  const canApply = userRole === 'worker' || userRole === 'agent';
+  const canApply = userRole === 'selfworker' || userRole === 'worker' || userRole === 'agent';
 
   if (isLoading) return <LoadingState message="Loading job details…" />;
   if (isError || !job) {
@@ -107,7 +110,7 @@ export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element
 
       {/* Apply CTA */}
       {canApply && (
-        <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+        <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
           {applied ? (
             <View style={[styles.appliedBadge, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
               <AppText variant="label" color={theme.colors.success}>✓ Application Submitted</AppText>
@@ -173,7 +176,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    paddingBottom: 32,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   appliedBadge: {

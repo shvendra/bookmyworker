@@ -17,6 +17,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { notificationApi, type NotificationItem } from '../../../core/api/endpoints/notificationApi';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { useTranslation } from 'react-i18next';
 import { buildPhotoUrl } from '../../../core/config/env';
 
 const TYPE_META: Record<string, { icon: string; bg: string; iconColor: string }> = {
@@ -214,6 +215,7 @@ const groupByDate = (items: NotificationItem[]): Section[] => {
 };
 
 export const NotificationsScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const navigation = useNavigation();
   const qc = useQueryClient();
@@ -256,7 +258,7 @@ export const NotificationsScreen = (): React.JSX.Element => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
-        title="Notifications"
+        title={t('notificationsTitle')}
         onBack={() => navigation.goBack()}
         rightIcon={unreadCount > 0 ? '✓' : undefined}
         onRightPress={unreadCount > 0 ? () => markAllRead.mutate() : undefined}
@@ -268,10 +270,10 @@ export const NotificationsScreen = (): React.JSX.Element => {
             <AppText style={styles.emptyIcon}>🔔</AppText>
           </View>
           <AppText variant="subtitle" color={theme.colors.text} style={styles.emptyTitle}>
-            All caught up!
+            {t('noNotifications')}
           </AppText>
           <AppText variant="body" color={theme.colors.mutedText} center style={styles.emptyMsg}>
-            You have no notifications. We'll alert you when something needs your attention.
+            {t('noNotifications')}
           </AppText>
         </View>
       ) : (

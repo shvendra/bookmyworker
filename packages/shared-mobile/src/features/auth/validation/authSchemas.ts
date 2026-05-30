@@ -26,9 +26,9 @@ export const registerStep2Schema = z
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    state: z.string().min(1, 'State is required'),
-    district: z.string().min(1, 'District is required'),
-    block: z.string().min(1, 'Block / Tehsil is required'),
+    state: z.string().optional().or(z.literal('')),
+    district: z.string().optional().or(z.literal('')),
+    block: z.string().optional().or(z.literal('')),
     pinCode: z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit PIN code').optional().or(z.literal('')),
     email: z.string().email('Enter a valid email').optional().or(z.literal('')),
     referredBy: z

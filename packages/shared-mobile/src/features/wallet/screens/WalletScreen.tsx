@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Linking,
   RefreshControl,
   ScrollView,
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
@@ -93,6 +93,7 @@ export const WalletScreen = (): React.JSX.Element => {
   const {
     data: balance,
     isLoading: balanceLoading,
+    refetch: refetchBalance,
   } = useQuery({
     queryKey: ['wallet-balance', userId],
     queryFn: walletApi.getMyWalletBalance,
@@ -123,14 +124,18 @@ export const WalletScreen = (): React.JSX.Element => {
 
   const handleRefresh = (): void => {
     void refetchTx();
+    void refetchBalance();
   };
 
   const handleDownloadInvoice = (tx: RawPaymentTransaction): void => {
-    void walletApi.getInvoiceUrl(tx._id).then((url) => {
-      void Linking.openURL(url);
-    }).catch(() => {
-      Alert.alert('Error', 'Could not open invoice. Please try again.');
-    });
+    void (async () => {
+      try {
+        const url = await walletApi.getInvoiceUrl(tx._id);
+        await Linking.openURL(url);
+      } catch {
+        showAlert('Error', 'Could not open invoice. Please try again.');
+      }
+    })();
   };
 
   const allTransactions: RawPaymentTransaction[] = txList ?? [];
@@ -141,7 +146,6 @@ export const WalletScreen = (): React.JSX.Element => {
 
   const balanceDisplay = balance ?? 0;
 
-  const walletTitle = role === 'employer' ? 'My Payments' : 'My Payments';
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>

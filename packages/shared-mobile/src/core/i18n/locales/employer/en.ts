@@ -1,0 +1,370 @@
+export const employerTranslation = {
+  // ── Greetings ──────────────────────────────────────────────────────────────
+  goodMorning:                   'Good morning',
+  goodAfternoon:                 'Good afternoon',
+  goodEvening:                   'Good evening',
+
+  // ── Dashboard header ───────────────────────────────────────────────────────
+  dashGreetSub_pending:          'Your profile is pending verification.',
+  dashGreetSub_premium:          'Premium active · {{count}} contacts remaining',
+  dashGreetSub_welcome:          'Welcome to BookMyWorker',
+  completeVerification:          'Complete Verification',
+  subscribeToUnlock:             '🔓 Subscribe to Unlock Features',
+
+  // ── Banners ────────────────────────────────────────────────────────────────
+  subscriptionExpired:           'Subscription Expired',
+  expiredOn:                     'Expired on {{date}} · Renew to unlock new contacts',
+  renew:                         'Renew',
+  unlockPremiumAccess:           'Unlock Premium Access',
+  premiumFromPrice:              'From ₹{{price}}/month · Post jobs & connect with workers',
+
+  // ── Quick action cards ─────────────────────────────────────────────────────
+  badgeActive:                   'ACTIVE',
+  badgePostNew:                  'POST NEW',
+  badgeAvailable:                'AVAILABLE',
+  postRequirement:               'Post Requirement',
+  activeRequirements:            '{{count}} active requirement',
+  activeRequirements_plural:     '{{count}} active requirements',
+  publishNew:                    'Publish a new\nworker requirement',
+  browseWorkers:                 'Browse Workers',
+  exploreVerified:               'Explore verified\nworkers & agents',
+
+  // ── Subscription status card ───────────────────────────────────────────────
+  subActive:                     '✓ Active',
+  premiumSubscription:           'Premium Subscription',
+  subExpires:                    'Expires: {{date}}',
+  contactsRemaining:             'Contacts\nRemaining',
+  topUp:                         'Top-up',
+
+  // ── Hiring pipeline strip ──────────────────────────────────────────────────
+  hiringPipeline:                'Hiring Pipeline',
+  viewAll:                       'View All  ›',
+  shortlisted:                   'Shortlisted',
+  selected:                      'Selected',
+  joined:                        'Joined',
+
+  // ── Analytics strip ───────────────────────────────────────────────────────
+  hiringAnalytics:               'Hiring Analytics',
+  analyticsSubtitle:             'Charts · Fill rate · Time-to-hire',
+
+  // ── Tools row ─────────────────────────────────────────────────────────────
+  requirementCalendar:           'Requirement\nCalendar',
+  calendarSubtitle:              'Plan & visualise\nall requirements',
+  callHistory:                   'Call History',
+  callHistorySubtitle:           'All workers you\'ve\ncalled & remarked',
+
+  // ── Pending tasks ─────────────────────────────────────────────────────────
+  pendingTasks:                  'Pending Tasks',
+  kycVerification:               'KYC Verification',
+  kycImportant:                  'Important',
+  kycComplete:                   'Complete KYC to unlock full features',
+  submitDocuments:               'Submit documents',
+  activateSubscription:          'Activate Subscription',
+  postAndViewContacts:           'Post requirements & view contacts',
+  subscribeCta:                  'Subscribe',
+
+  // ── Nearby workers ─────────────────────────────────────────────────────────
+  workersNearYou:                'Workers Near You',
+  verifiedWorkersIn:             'Verified workers in {{location}}',
+  noWorkersNear:                 'No verified workers found near {{location}}.',
+  browseAllWorkers:              'Browse All Workers  ›',
+  workersAvailableNear:          '{{count}} workers available near you',
+  viewAllWorkers:                'View All Workers  ›',
+
+  // ── Requirements section ───────────────────────────────────────────────────
+  newRequirements:               'New Requirements',
+  tabAll:                        'All',
+  tabOpen:                       'Open',
+  tabClosed:                     'Closed',
+  noRequirementsYet:             'No requirements yet',
+  noTabRequirements:             'No {{tab}} requirements',
+  postFirstReq:                  'Post your first requirement to get started.',
+  noTabReqNow:                   'You have no {{tab}} requirements right now.',
+  postFirstRequirement:          'Post First Requirement',
+
+  // ── Requirement card ───────────────────────────────────────────────────────
+  statusClosed:                  'Closed',
+  statusOngoing:                 'Ongoing',
+  statusOpen:                    'Open',
+  agentAssigned:                 'Agent Assigned',
+  tapToCall:                     'Tap to call',
+  agentsInterested:              '{{count}} Agent Interested',
+  agentsInterested_plural:       '{{count}} Agents Interested',
+  noAgentsYet:                   'No agents yet',
+  tapToReview:                   'Tap to review and take action',
+  shareRequirement:              'Share your requirement to get responses',
+
+  // ── Close confirm modal ────────────────────────────────────────────────────
+  closeRequirementTitle:         'Close Requirement?',
+  closeRequirementBody:          'This will permanently close the requirement. Interested agents will no longer be able to apply. This action cannot be undone.',
+  cancel:                        'Cancel',
+  yesCloseIt:                    'Yes, Close It',
+  requirementClosed:             'Requirement closed.',
+  closedToast:                   'Closed',
+  failedToClose:                 'Failed to close requirement.',
+
+  // ── Nearby worker card ─────────────────────────────────────────────────────
+  verified:                      '✓ Verified',
+
+  // ── Recent activity ────────────────────────────────────────────────────────
+  recentActivity:                'Recent Activity',
+  noActivityYet:                 'No activity recorded yet.',
+  actionsAppearHere:             'Actions you take will appear here.',
+  seeFullActivityLog:            'See full activity log  →',
+
+  // ── Upgrade banner ─────────────────────────────────────────────────────────
+  upgradeToPremium:              'Upgrade to Premium & Hire Better!',
+  upgradeBannerDesc:             'Boost your job visibility, get more applications and connect with verified & experienced workers.',
+  featureTopPriority:            'Top priority in search',
+  featureFeaturedBadge:          'Featured employer badge',
+  featureUnlimitedPosts:         'Unlimited job posts',
+  featurePrioritySupport:        'Priority support',
+  upgradeNow:                    '⭐  Upgrade Now',
+
+  // ── Past workers ───────────────────────────────────────────────────────────
+  pastWorkers:                   'Past Workers',
+  workersHiredBefore:            "Workers you've hired before",
+  view:                          'View',
+
+  // ── Support footer ─────────────────────────────────────────────────────────
+  needHelp:                      'Need help?',
+  supportTeamReady:              'Our support team is here for you.',
+  support:                       'Support',
+  businessSupport:               'Business Support',
+
+  // ── More workers tile ──────────────────────────────────────────────────────
+  moreWorkers:                   'More\nWorkers',
+
+  // ── Pipeline screen ───────────────────────────────────────────────────────
+  noActiveSubscription:          'No Active Subscription',
+  pipelineSubscribeDesc:         'Subscribe to BookMyWorker to access your full hiring pipeline — track all shortlisted, selected, and joined workers.',
+  pipelineBenefit1:              'View all shortlisted workers',
+  pipelineBenefit2:              'Track selected candidates',
+  pipelineBenefit3:              'Monitor who has joined',
+  pipelineBenefit4:              'Call & WhatsApp workers directly',
+  viewSubscriptionPlans:         'View Subscription Plans',
+  allRequirements:               'All Requirements ({{count}})',
+  noRequirementsTitle:           'No Requirements Yet',
+  noRequirementsDesc:            'Post a requirement to start tracking your hiring pipeline.',
+  postARequirement:              '+ Post a Requirement',
+
+  // ── Pipeline stepper labels ────────────────────────────────────────────────
+  stagePosted:                   'Posted',
+  stageResponding:               'Responding',
+  stageShortlisted:              'Shortlisted',
+  stageHired:                    'Hired',
+  stageCompleted:                'Completed',
+
+  // ── Analytics screen ──────────────────────────────────────────────────────
+  analyticsTitle:                'Analytics',
+  analyticsHeaderTitle:          'Hiring Analytics',
+  buildingReport:                'Building your report…',
+  couldntLoadAnalytics:          "Couldn't Load Analytics",
+  checkConnectionRetry:          'Please check your connection and try again.',
+  retry:                         'Retry',
+  totalPosted:                   'Total Posted',
+  filled:                        'Filled',
+  open:                          'Open',
+  fillRate:                      'Fill Rate',
+  requirementsLast6Months:       'Requirements (Last 6 Months)',
+  legendPosted:                  'Posted',
+  legendFilled:                  'Filled',
+  workTypeDistribution:          'Work Type Distribution',
+  totalRequirements:             '{{count}} total requirements',
+  avgDaysToHire:                 'Avg. Days to Hire by Category',
+  reqPostedToAssigned:           'From requirement posted → agent assigned',
+  noDataYet:                     'No Data Yet',
+  noDataDesc:                    'Post requirements and hire workers to see your analytics here.',
+
+  // ── Call history screen ────────────────────────────────────────────────────
+  callHistoryTitle:              'Call History',
+  callStatusRelevant:            'Relevant',
+  callStatusCallLater:           'Call Later',
+  callStatusNotPicked:           'Not Picked',
+  callStatusSwitchedOff:         'Switched Off',
+  callStatusNotInterested:       'Not Interested',
+  callStatusWrongNumber:         'Wrong Number',
+  filterAll:                     'All',
+  callNoHistory:                 'No call history yet.',
+  callNoHistoryDesc:             'Workers you contact will appear here with their call status.',
+  callWorkerProfile:             'View Profile',
+  callNow:                       'Call Now',
+  noRemark:                      'No remark',
+  lastContacted:                 'Last contacted',
+
+  // ── Document hub screen ────────────────────────────────────────────────────
+  documentHubTitle:              'Document Hub',
+  docTypeWorkAgreement:          'Work Agreement',
+  docTypeStatementOfWork:        'Statement of Work',
+  docTypeGstInvoice:             'GST Invoice',
+  docTypePaymentReceipt:         'Payment Receipt',
+  docTypeIdentityProof:          'Identity Proof',
+  docTypeOther:                  'Other',
+  viewPdf:                       '📄 View PDF',
+  viewImage:                     '🖼️ View Image',
+  deleteDoc:                     '🗑️ Delete',
+  uploadDocument:                'Upload Document',
+  docName:                       'Document Name',
+  docType:                       'Document Type',
+  selectDocType:                 'Select type',
+  uploadFile:                    'Upload File',
+  pickFromGallery:               'Pick from gallery',
+  noDocuments:                   'No documents yet.',
+  noDocumentsDesc:               'Upload agreements, invoices, and other important files here.',
+  deleteConfirmTitle:            'Delete Document?',
+  deleteConfirmBody:             'This document will be permanently deleted.',
+  yesDelete:                     'Yes, Delete',
+  docUploaded:                   'Document uploaded successfully.',
+  docDeleted:                    'Document deleted.',
+  uploadFailed:                  'Failed to upload document.',
+  deleteFailed:                  'Failed to delete document.',
+
+  // ── Requirement calendar screen ────────────────────────────────────────────
+  requirementCalendarTitle:      'Requirement Calendar',
+  calMonday:                     'Mon',
+  calTuesday:                    'Tue',
+  calWednesday:                  'Wed',
+  calThursday:                   'Thu',
+  calFriday:                     'Fri',
+  calSaturday:                   'Sat',
+  calSunday:                     'Sun',
+  noReqThisMonth:                'No requirements this month.',
+  reqDueDate:                    'Due: {{date}}',
+
+  // ── Shortlist screen ───────────────────────────────────────────────────────
+  shortlistTitle:                'My Shortlist',
+  shortlistEmpty:                'No Shortlisted Workers',
+  shortlistEmptyDesc:            'Tap the ❤️ button on any worker\'s profile to save them here for quick access.',
+  shortlistTip:                  'Browse workers from the dashboard or worker search and shortlist the best ones.',
+  shortlistSaved:                '{{count}} saved worker',
+  shortlistSaved_plural:         '{{count}} saved workers',
+  shortlistLoading:              'Loading shortlist…',
+  removedFromShortlist:          'Removed from shortlist.',
+  failedToRemove:                'Failed to remove worker.',
+  viewProfile:                   'View Profile  →',
+
+  // ── Worker search screen ───────────────────────────────────────────────────
+  workerSearchTitle:             'Find Workers',
+  searchWorkers:                 'Search workers…',
+  filterState:                   'State',
+  filterDistrict:                'District',
+  filterWorkType:                'Work Type',
+  applyFilters:                  'Apply Filters',
+  clearFilters:                  'Clear',
+  noWorkersFound:                'No workers found.',
+  loadMore:                      'Load more',
+  perDay:                        '/day',
+  experience:                    'Experience',
+  noExperience:                  'Fresher',
+
+  // ── Subscription / payment screens ────────────────────────────────────────
+  subscriptionTitle:             'Choose Your Plan',
+  subscriptionSubtitle:          'Unlock the right plan for your hiring needs',
+  planIndividual:                'Individual',
+  planContractor:                'Contractor',
+  planAgency:                    'Agency',
+  planIndustry:                  'Industry',
+  perMonth:                      '/month',
+  subscribe:                     'Subscribe',
+  currentPlan:                   'Current Plan',
+  mostPopular:                   'Most Popular',
+  bestValue:                     'Best Value',
+
+  // ── Transaction screen ─────────────────────────────────────────────────────
+  transactionsTitle:             'Transactions',
+  noTransactions:                'No transactions yet.',
+  transactionDate:               'Date',
+  transactionAmount:             'Amount',
+  transactionStatus:             'Status',
+  transactionType:               'Type',
+  statusPaid:                    'Paid',
+  statusPending:                 'Pending',
+  statusFailed:                  'Failed',
+
+  // ── Profile screen ─────────────────────────────────────────────────────────
+  profileTitle:                  'My Profile',
+  editProfile:                   'Edit Profile',
+  kycStatus:                     'KYC Status',
+  kycVerified:                   'Verified',
+  kycUnverified:                 'Pending Verification',
+  language:                      'Language',
+  notifications:                 'Notifications',
+  signOut:                       'Sign Out',
+  signOutConfirm:                'Are you sure you want to sign out?',
+  yes:                           'Yes',
+  no:                            'No',
+
+  // ── Edit profile screen ────────────────────────────────────────────────────
+  editProfileTitle:              'Edit Profile',
+  fullName:                      'Full Name',
+  companyName:                   'Company Name',
+  email:                         'Email',
+  phone:                         'Phone',
+  state:                         'State',
+  district:                      'District',
+  block:                         'Block / Tehsil',
+  pinCode:                       'PIN Code',
+  saveChanges:                   'Save Changes',
+  profileUpdated:                'Profile updated successfully.',
+  profileUpdateFailed:           'Failed to update profile.',
+
+  // ── KYC screen ─────────────────────────────────────────────────────────────
+  kycTitle:                      'KYC Verification',
+  kycSubtitle:                   'Upload your documents to get verified',
+  idCardFront:                   'ID Card (Front)',
+  idCardBack:                    'ID Card (Back)',
+  uploadPhoto:                   'Upload Photo',
+  kycSubmit:                     'Submit for Verification',
+  kycSubmitted:                  'Documents submitted for verification.',
+  kycFailed:                     'Failed to submit documents.',
+
+  // ── Chat screens ───────────────────────────────────────────────────────────
+  chatTitle:                     'Chats',
+  noChats:                       'No conversations yet.',
+  noChatsDesc:                   'Start a chat from a worker\'s profile.',
+  typeMessage:                   'Type a message…',
+  send:                          'Send',
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  notificationsTitle:            'Notifications',
+  noNotifications:               'No notifications yet.',
+  markAllRead:                   'Mark all as read',
+
+  // ── Activity screen ────────────────────────────────────────────────────────
+  activityTitle:                 'My Activity',
+  noActivity:                    'No activity yet.',
+
+  // ── Support screen ─────────────────────────────────────────────────────────
+  supportTitle:                  'Support',
+  supportSubtitle:               'How can we help you?',
+  contactUs:                     'Contact Us',
+
+  // ── Common ─────────────────────────────────────────────────────────────────
+  loading:                       'Loading…',
+  error:                         'Error',
+  tryAgain:                      'Try again',
+  close:                         'Close',
+  done:                          'Done',
+  save:                          'Save',
+  delete:                        'Delete',
+  confirm:                       'Confirm',
+  back:                          'Back',
+  next:                          'Next',
+  submit:                        'Submit',
+  optional:                      'Optional',
+  required:                      'Required',
+  search:                        'Search',
+  noResults:                     'No results found.',
+  today:                         'Today',
+  yesterday:                     'Yesterday',
+  calStatusOpenPending:    'Open / Pending',
+  calStatusAssigned:       'Assigned',
+  calStatusCompleted:      'Completed',
+  calStatusClosed:         'Closed',
+  calStatusOpen:           'Open',
+  calSummaryThisMonth:     'This Month',
+  calSummaryDone:          'Done',
+  calWorkersNeeded:        '{{count}} worker needed',
+  calWorkersNeeded_plural: '{{count}} workers needed',
+  justNow:                       'just now',
+};

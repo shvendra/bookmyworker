@@ -8,6 +8,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
   Image,
@@ -28,6 +29,9 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { shortlistStorage } from '../../../core/storage/shortlistStorage';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import type { MappingStatus, OpenRequirement } from '../../../core/api/endpoints/workerMappingApi';
+import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
@@ -216,6 +220,11 @@ const RequirementPickerModal = ({
   const [loading,      setLoading]      = useState(false);
   const [saving,       setSaving]       = useState(false);
 
+  // Rate step — shown only when status === 'Joined'
+  const [step,      setStep]      = useState<'pick' | 'rate'>('pick');
+  const [agreedRate, setAgreedRate] = useState('');
+  const [rateType,  setRateType]  = useState<'Daily' | 'Monthly'>('Daily');
+
   const meta = STATUS_META[status];
 
   const load = useCallback(async () => {
@@ -231,16 +240,32 @@ const RequirementPickerModal = ({
   }, []);
 
   useEffect(() => {
-    if (visible) { setSelected([]); void load(); }
+    if (visible) { setSelected([]); setStep('pick'); setAgreedRate(''); setRateType('Daily'); void load(); }
   }, [visible, load]);
 
   const toggle = (id: string) =>
     setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const handleSave = async () => {
+  // For Joined, first go to the rate step; for others, save directly.
+  const handleNext = () => {
     if (selected.length === 0) { toast.error('Select at least one requirement'); return; }
+    if (status === 'Joined') { setStep('rate'); return; }
+    void handleSave();
+  };
+
+  const handleSave = async () => {
+    if (status === 'Joined') {
+      const rate = parseFloat(agreedRate);
+      if (!agreedRate || isNaN(rate) || rate <= 0) {
+        toast.error('Enter a valid agreed rate (e.g. 500)');
+        return;
+      }
+    }
     setSaving(true);
     try {
+      const hireRate = status === 'Joined'
+        ? { agreedRate: parseFloat(agreedRate), rateType }
+        : undefined;
       await workerMappingApi.mapWorker({
         workerId:       workerId || null,
         workerName,
@@ -248,8 +273,9 @@ const RequirementPickerModal = ({
         workerSkill:    workerSkill || '',
         requirementIds: selected,
         status,
+        ...hireRate,
       });
-      toast.success(`${workerName} ${meta.label}ed for ${selected.length} requirement(s)`);
+      toast.success(`${workerName} marked as Joined for ${selected.length} requirement(s)`);
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -275,80 +301,145 @@ const RequirementPickerModal = ({
             </TouchableOpacity>
           </View>
 
-          <AppText style={pm.hint}>
-            Select requirement(s) to link this worker:
-          </AppText>
+          {step === 'rate' ? (
+            // ── Step 2: Hire rate input (Joined only) ──────────────────────
+            <>
+              <View style={pm.rateStepWrap}>
+                <AppText style={pm.hint}>Set the agreed pay rate for {workerName}:</AppText>
 
-          {loading ? (
-            <View style={pm.center}><ActivityIndicator color={meta.color} size="small" /></View>
-          ) : requirements.length === 0 ? (
-            <View style={pm.emptyBox}>
-              <View style={pm.emptyIcon}>
-                <AppText style={{ fontSize: 30 }}>📋</AppText>
+                {/* Rate type toggle */}
+                <View style={pm.rateTypeRow}>
+                  {(['Daily', 'Monthly'] as const).map((rt) => (
+                    <TouchableOpacity
+                      key={rt}
+                      onPress={() => setRateType(rt)}
+                      style={[pm.rateTypeBtn, rateType === rt && { backgroundColor: meta.color, borderColor: meta.color }]}
+                      activeOpacity={0.8}
+                    >
+                      <AppText style={[pm.rateTypeTxt, rateType === rt && { color: '#fff' }]}>
+                        {rt === 'Daily' ? '📅 Per Day' : '📆 Per Month'}
+                      </AppText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Rate amount input */}
+                <View style={pm.rateInputWrap}>
+                  <AppText style={pm.rateRupee}>₹</AppText>
+                  <TextInput
+                    style={pm.rateInput}
+                    placeholder={rateType === 'Daily' ? 'e.g. 500' : 'e.g. 12000'}
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="numeric"
+                    value={agreedRate}
+                    onChangeText={setAgreedRate}
+                    maxLength={7}
+                    autoFocus
+                  />
+                  <AppText style={pm.rateUnit}>/{rateType === 'Daily' ? 'day' : 'month'}</AppText>
+                </View>
+
+                <AppText style={pm.rateNote}>
+                  This rate is used to calculate salary from attendance records. It doesn't process any payment — you pay workers directly.
+                </AppText>
               </View>
-              <AppText style={pm.emptyTitle}>No Open Requirements</AppText>
-              <AppText style={pm.emptyDesc}>
-                You need to post a requirement before adding workers to your pipeline.
-              </AppText>
-              <TouchableOpacity
-                onPress={() => { onClose(); navPicker.navigate('PostRequirement'); }}
-                style={[pm.postBtn, { backgroundColor: meta.color }]}
-                activeOpacity={0.85}
-              >
-                <AppText style={pm.postBtnTxt}>+ Post a Requirement</AppText>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <FlatList
-              data={requirements}
-              keyExtractor={(r) => r._id}
-              style={pm.list}
-              renderItem={({ item: r }) => {
-                const isChk = selected.includes(r._id);
-                return (
-                  <TouchableOpacity
-                    onPress={() => toggle(r._id)}
-                    style={[pm.reqRow, isChk && { backgroundColor: meta.bg }]}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[pm.checkbox, isChk && { backgroundColor: meta.color, borderColor: meta.color }]}>
-                      {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText style={pm.reqTitle} numberOfLines={1}>
-                        {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
-                      </AppText>
-                      <AppText style={pm.reqSub}>
-                        ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}
-                      </AppText>
-                    </View>
-                    {r.status ? (
-                      <View style={pm.statusTag}>
-                        <AppText style={[pm.statusTxt, { color: meta.color }]}>{r.status}</AppText>
-                      </View>
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          )}
 
-          {/* Footer */}
-          <View style={pm.footer}>
-            <TouchableOpacity onPress={onClose} style={pm.cancelBtn}>
-              <AppText style={pm.cancelTxt}>Cancel</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => void handleSave()}
-              disabled={saving || selected.length === 0}
-              style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || selected.length === 0) && { opacity: 0.5 }]}
-              activeOpacity={0.85}
-            >
-              {saving
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <AppText style={pm.saveTxt}>{meta.label} ({selected.length})</AppText>}
-            </TouchableOpacity>
-          </View>
+              <View style={pm.footer}>
+                <TouchableOpacity onPress={() => setStep('pick')} style={pm.cancelBtn}>
+                  <AppText style={pm.cancelTxt}>← Back</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => void handleSave()}
+                  disabled={saving || !agreedRate || parseFloat(agreedRate) <= 0}
+                  style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || !agreedRate || parseFloat(agreedRate) <= 0) && { opacity: 0.5 }]}
+                  activeOpacity={0.85}
+                >
+                  {saving
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <AppText style={pm.saveTxt}>Confirm Hire</AppText>}
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            // ── Step 1: Pick requirement(s) ────────────────────────────────
+            <>
+              <AppText style={pm.hint}>
+                Select requirement(s) to link this worker:
+              </AppText>
+
+              {loading ? (
+                <View style={pm.center}><ActivityIndicator color={meta.color} size="small" /></View>
+              ) : requirements.length === 0 ? (
+                <View style={pm.emptyBox}>
+                  <View style={pm.emptyIcon}>
+                    <AppText style={{ fontSize: 30 }}>📋</AppText>
+                  </View>
+                  <AppText style={pm.emptyTitle}>No Open Requirements</AppText>
+                  <AppText style={pm.emptyDesc}>
+                    You need to post a requirement before adding workers to your pipeline.
+                  </AppText>
+                  <TouchableOpacity
+                    onPress={() => { onClose(); navPicker.navigate('PostRequirement'); }}
+                    style={[pm.postBtn, { backgroundColor: meta.color }]}
+                    activeOpacity={0.85}
+                  >
+                    <AppText style={pm.postBtnTxt}>+ Post a Requirement</AppText>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <FlatList
+                  data={requirements}
+                  keyExtractor={(r) => r._id}
+                  style={pm.list}
+                  renderItem={({ item: r }) => {
+                    const isChk = selected.includes(r._id);
+                    return (
+                      <TouchableOpacity
+                        onPress={() => toggle(r._id)}
+                        style={[pm.reqRow, isChk && { backgroundColor: meta.bg }]}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[pm.checkbox, isChk && { backgroundColor: meta.color, borderColor: meta.color }]}>
+                          {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <AppText style={pm.reqTitle} numberOfLines={1}>
+                            {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
+                          </AppText>
+                          <AppText style={pm.reqSub}>
+                            ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}
+                          </AppText>
+                        </View>
+                        {r.status ? (
+                          <View style={pm.statusTag}>
+                            <AppText style={[pm.statusTxt, { color: meta.color }]}>{r.status}</AppText>
+                          </View>
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              )}
+
+              <View style={pm.footer}>
+                <TouchableOpacity onPress={onClose} style={pm.cancelBtn}>
+                  <AppText style={pm.cancelTxt}>Cancel</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleNext}
+                  disabled={saving || selected.length === 0}
+                  style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || selected.length === 0) && { opacity: 0.5 }]}
+                  activeOpacity={0.85}
+                >
+                  {saving
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <AppText style={pm.saveTxt}>
+                        {status === 'Joined' ? `Next →` : `${meta.label} (${selected.length})`}
+                      </AppText>}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -377,11 +468,166 @@ const pm = StyleSheet.create({
   reqSub:     { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
   statusTag:  { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#f1f5f9', flexShrink: 0 },
   statusTxt:  { fontSize: 10, fontWeight: '700' },
-  footer:     { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
-  cancelBtn:  { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingVertical: 14, alignItems: 'center' },
-  cancelTxt:  { fontSize: 14, fontWeight: '700', color: '#64748b' },
-  saveBtn:    { flex: 2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveTxt:    { fontSize: 14, fontWeight: '800', color: '#fff' },
+  footer:        { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
+  cancelBtn:     { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingVertical: 14, alignItems: 'center' },
+  cancelTxt:     { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  saveBtn:       { flex: 2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveTxt:       { fontSize: 14, fontWeight: '800', color: '#fff' },
+  // Rate step
+  rateStepWrap:  { paddingHorizontal: 20, paddingTop: 8, gap: 14 },
+  rateTypeRow:   { flexDirection: 'row', gap: 10 },
+  rateTypeBtn:   { flex: 1, borderRadius: 12, borderWidth: 2, borderColor: '#E2E8F0', paddingVertical: 12, alignItems: 'center' },
+  rateTypeTxt:   { fontSize: 13, fontWeight: '800', color: '#64748B' },
+  rateInputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#E2E8F0', borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#F8FAFC' },
+  rateRupee:     { fontSize: 22, fontWeight: '900', color: '#475569', marginRight: 4 },
+  rateInput:     { flex: 1, fontSize: 28, fontWeight: '900', color: '#0F172A', paddingVertical: 14 },
+  rateUnit:      { fontSize: 14, fontWeight: '700', color: '#64748B' },
+  rateNote:      { fontSize: 11.5, color: '#94A3B8', lineHeight: 17, paddingBottom: 8 },
+});
+
+// ─── Invite to Requirement Modal ──────────────────────────────────────────────
+interface InviteModalProps {
+  visible: boolean;
+  onClose: () => void;
+  workerId: string | null;
+  workerName: string;
+  workerPhone?: string;
+  toast: ReturnType<typeof useToast>;
+}
+
+const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, workerPhone, toast }: InviteModalProps): React.JSX.Element => {
+  const navInv = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const [requirements, setRequirements] = useState<OpenRequirement[]>([]);
+  const [selected, setSelected]   = useState<string | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [saving,  setSaving]      = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const reqs = await workerMappingApi.getEmployerOpenRequirements();
+      setRequirements(reqs);
+    } catch {
+      toast.error('Could not load requirements');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (visible) { setSelected(null); void load(); }
+  }, [visible, load]);
+
+  const handleSend = async () => {
+    if (!selected) { toast.error('Select a requirement first'); return; }
+    setSaving(true);
+    try {
+      await requirementsApi.inviteWorker(selected, { workerId, workerName, workerPhone });
+      toast.success(`Invitation sent to ${workerName}!`, 'Invited');
+      onClose();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || 'Failed to send invite');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={inv.overlay}>
+        <View style={inv.sheet}>
+          <View style={[inv.header, { backgroundColor: '#7C3AED' }]}>
+            <View style={{ flex: 1 }}>
+              <AppText style={inv.headerTitle}>Invite to Requirement</AppText>
+              <AppText style={inv.headerSub}>{workerName}</AppText>
+            </View>
+            <TouchableOpacity onPress={onClose} style={inv.closeBtn}>
+              <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
+            </TouchableOpacity>
+          </View>
+
+          <AppText style={inv.hint}>Select which requirement to invite this worker for:</AppText>
+
+          {loading ? (
+            <View style={inv.center}><ActivityIndicator color="#7C3AED" size="small" /></View>
+          ) : requirements.length === 0 ? (
+            <View style={inv.emptyBox}>
+              <AppText style={{ fontSize: 30, marginBottom: 8 }}>📋</AppText>
+              <AppText style={inv.emptyTitle}>No Open Requirements</AppText>
+              <AppText style={inv.emptyDesc}>Post a requirement first to invite workers.</AppText>
+              <TouchableOpacity onPress={() => { onClose(); navInv.navigate('PostRequirement'); }} style={[inv.postBtn, { backgroundColor: '#7C3AED' }]} activeOpacity={0.85}>
+                <AppText style={inv.postBtnTxt}>+ Post a Requirement</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={requirements}
+              keyExtractor={(r) => r._id}
+              style={inv.list}
+              renderItem={({ item: r }) => {
+                const isChk = selected === r._id;
+                return (
+                  <TouchableOpacity onPress={() => setSelected(r._id)} style={[inv.reqRow, isChk && { backgroundColor: '#F5F3FF' }]} activeOpacity={0.7}>
+                    <View style={[inv.radio, isChk && { backgroundColor: '#7C3AED', borderColor: '#7C3AED' }]}>
+                      {isChk && <View style={inv.radioDot} />}
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <AppText style={inv.reqTitle} numberOfLines={1}>
+                        {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
+                      </AppText>
+                      <AppText style={inv.reqSub}>ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}</AppText>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
+
+          <View style={inv.footer}>
+            <TouchableOpacity onPress={onClose} style={inv.cancelBtn}>
+              <AppText style={inv.cancelTxt}>Cancel</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => void handleSend()}
+              disabled={saving || !selected}
+              style={[inv.saveBtn, (!selected || saving) && { opacity: 0.5 }]}
+              activeOpacity={0.85}
+            >
+              {saving ? <ActivityIndicator color="#fff" size="small" /> : <AppText style={inv.saveTxt}>Send Invite 🔔</AppText>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const inv = StyleSheet.create({
+  overlay:   { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
+  sheet:     { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '80%', overflow: 'hidden' },
+  header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 },
+  headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  closeBtn:    { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  hint:        { fontSize: 12.5, fontWeight: '600', color: '#475569', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
+  center:      { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+  emptyBox:    { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 24, gap: 6 },
+  emptyTitle:  { fontSize: 15, fontWeight: '800', color: '#0f172a' },
+  emptyDesc:   { fontSize: 12.5, color: '#64748b', textAlign: 'center' },
+  postBtn:     { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 6 },
+  postBtnTxt:  { fontSize: 13, fontWeight: '800', color: '#fff' },
+  list:        { maxHeight: 300 },
+  reqRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
+  radio:       { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  radioDot:    { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
+  reqTitle:    { fontSize: 13.5, fontWeight: '700', color: '#0f172a' },
+  reqSub:      { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
+  footer:      { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
+  cancelBtn:   { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingVertical: 14, alignItems: 'center' },
+  cancelTxt:   { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  saveBtn:     { flex: 2, borderRadius: 12, paddingVertical: 14, alignItems: 'center', backgroundColor: '#7C3AED' },
+  saveTxt:     { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -396,6 +642,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
   const [unlocking,     setUnlocking]     = useState(false);
+  const [alreadyHired,  setAlreadyHired]  = useState(false); // worker has Joined status — free contact
 
   // ── Local shortlist (bookmark) state ────────────────────────────────────
   const [isShortlisted, setIsShortlisted] = useState(false);
@@ -403,6 +650,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   // ── Pipeline action modal (Shortlist / Select / Joined) ─────────────────
   const [pickerModal, setPickerModal] = useState<MappingStatus | null>(null);
+
+  // ── Invite to Requirement modal ──────────────────────────────────────────
+  const [inviteVisible, setInviteVisible] = useState(false);
 
   useEffect(() => {
     if (!isEmployer) return;
@@ -467,23 +717,36 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       const res = await workerApi.unlockNumber(workerId);
       if (res.phone) {
         setUnlockedPhone(res.phone);
-        toast.success('Contact number unlocked successfully.', 'Unlocked');
+        setAlreadyHired(res.alreadyHired === true);
+        if (res.alreadyHired) {
+          toast.success('Contact available — this worker is already hired by you.', 'Already Hired');
+        } else {
+          toast.success('Contact number unlocked.', 'Unlocked');
+        }
       } else {
-        // Backend returned 200 but no phone (e.g. subscription required)
         const errMsg = res.message ?? 'Unable to unlock contact. Please check your subscription.';
         toast.error(errMsg, 'Unlock Failed');
-        if (errMsg.toLowerCase().includes('subscribe')) {
+        if (errMsg.toLowerCase().includes('subscribe') || errMsg.toLowerCase().includes('expired')) {
           navigation.navigate('Subscription');
         }
       }
     } catch (err: unknown) {
-      const errObj = err as { response?: { data?: { message?: string } }; message?: string };
-      const msg = errObj?.response?.data?.message ?? errObj?.message;
-      if (msg === 'Contact limit exhausted') {
-        toast.warning('Contact limit reached. Upgrade your plan to unlock more.', 'Limit Reached');
+      const errObj = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
+      const data   = errObj?.response?.data;
+      const code   = data?.code;
+      const msg    = data?.message ?? errObj?.message;
+
+      if (code === 'SUBSCRIPTION_EXPIRED') {
+        toast.warning('Your subscription has expired. Renew to unlock new contacts.', 'Expired');
+        navigation.navigate('Subscription');
+      } else if (code === 'SUBSCRIPTION_REQUIRED') {
+        toast.error('Subscribe to BookMyWorker to unlock contact details.', 'Subscribe');
+        navigation.navigate('Subscription');
+      } else if (code === 'CONTACT_LIMIT') {
+        toast.warning('Contact limit exhausted. Top-up your plan.', 'Limit Reached');
         navigation.navigate('Subscription');
       } else {
-        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Unlock Failed');
+        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Error');
       }
     } finally {
       setUnlocking(false);
@@ -527,7 +790,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     ? `₹${wage}${worker.salaryTo && worker.salaryTo !== wage ? `–${worker.salaryTo}` : ''}/day`
     : null;
   const bio = worker.bio ?? worker.about;
-  const location = [worker.block, worker.district, worker.state].filter(Boolean).join(', ');
+  const location = getLocationStr({ tehsil: worker.block, district: worker.district, state: worker.state }, i18n.language, '');
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -651,7 +914,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* Profile details */}
           <Section title="Profile Details" accent={C.indigo}>
-            <InfoRow icon="💼" label="Category / Role"  value={areas[0] ?? worker.role} />
+            <InfoRow icon="💼" label="Category"  value={areas[0] ?? null} />
             <InfoRow icon="📍" label="Location"          value={location || null} />
             <InfoRow icon="⏳" label="Experience"        value={exp && exp > 0 ? `${exp} years` : 'Fresher'} />
             <InfoRow icon="💰" label="Daily Rate"        value={wageDisplay} />
@@ -697,6 +960,29 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             </View>
           )}
 
+          {/* Invite to Requirement button — employer only */}
+          {isEmployer && (
+            <TouchableOpacity
+              onPress={() => setInviteVisible(true)}
+              style={s.inviteBtn}
+              activeOpacity={0.85}
+            >
+              <AppText style={s.inviteTxt}>🔔  Invite to My Requirement</AppText>
+            </TouchableOpacity>
+          )}
+
+          {/* Invite Modal */}
+          {isEmployer && (
+            <InviteToRequirementModal
+              visible={inviteVisible}
+              onClose={() => setInviteVisible(false)}
+              workerId={workerId}
+              workerName={displayName}
+              workerPhone={unlockedPhone || worker.phone || ''}
+              toast={toast}
+            />
+          )}
+
           {/* Requirement picker modal */}
           {pickerModal && (
             <RequirementPickerModal
@@ -716,8 +1002,17 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           {isEmployer && (
             <Section title="Contact Worker" accent={C.green}>
               {unlockedPhone ? (
-                // ─ Unlocked
+                // ─ Unlocked (either via credit or free because already hired)
                 <View style={s.unlockedBox}>
+                  {/* Already-hired free badge */}
+                  {alreadyHired && (
+                    <View style={s.hiredBadge}>
+                      <AppText style={s.hiredBadgeEmoji}>🤝</AppText>
+                      <AppText style={s.hiredBadgeTxt}>
+                        Already hired — contact available for free
+                      </AppText>
+                    </View>
+                  )}
                   <View style={s.phoneCard}>
                     <View style={s.phoneIconWrap}>
                       <AppText style={{ fontSize: 20 }}>📞</AppText>
@@ -745,27 +1040,40 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                   </View>
                 </View>
               ) : isSubscribed ? (
-                // ─ Subscribed, not yet unlocked
-                <TouchableOpacity
-                  onPress={() => void handleUnlock()}
-                  disabled={unlocking}
-                  style={[s.viewContactBtn, { opacity: unlocking ? 0.7 : 1 }]}
-                  activeOpacity={0.85}
-                >
-                  {unlocking
-                    ? <ActivityIndicator color={C.white} size="small" />
-                    : <AppText style={s.viewContactTxt}>View Contact Number</AppText>
-                  }
-                </TouchableOpacity>
+                // ─ Active subscription — unlock costs 1 contact credit
+                <View style={s.unlockBox}>
+                  <View style={s.unlockHint}>
+                    <AppText style={s.unlockHintTxt}>
+                      Uses 1 contact credit · {empProfile?.remainingContacts ?? 0} remaining
+                    </AppText>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => void handleUnlock()}
+                    disabled={unlocking}
+                    style={[s.viewContactBtn, { opacity: unlocking ? 0.7 : 1 }]}
+                    activeOpacity={0.85}
+                  >
+                    {unlocking
+                      ? <ActivityIndicator color={C.white} size="small" />
+                      : <AppText style={s.viewContactTxt}>View Contact Number</AppText>
+                    }
+                  </TouchableOpacity>
+                </View>
               ) : (
-                // ─ Not subscribed / subscription expired
+                // ─ No subscription / expired
                 <View style={s.lockBox}>
                   <View style={s.lockIconWrap}>
-                    <AppText style={{ fontSize: 28 }}>🔒</AppText>
+                    <AppText style={{ fontSize: 28 }}>
+                      {empProfile?.isSubscribed ? '⏰' : '🔒'}
+                    </AppText>
                   </View>
-                  <AppText style={s.lockTitle}>No Active Subscription</AppText>
+                  <AppText style={s.lockTitle}>
+                    {empProfile?.isSubscribed ? 'Subscription Expired' : 'No Active Subscription'}
+                  </AppText>
                   <AppText style={[s.lockSub, { color: C.slate }]}>
-                    You don't have an active subscription. Subscribe to BookMyWorker to access worker contact details and hire directly.
+                    {empProfile?.isSubscribed
+                      ? 'Your subscription has expired. Renew to unlock new contacts. Workers you\'ve already hired are always accessible for free.'
+                      : 'Subscribe to BookMyWorker to access worker contact details and hire directly.'}
                   </AppText>
                   <View style={s.lockBenefits}>
                     {['View & call worker contact numbers', 'Direct WhatsApp messaging', 'Unlimited access to interested agents'].map((b, i) => (
@@ -775,8 +1083,21 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       </View>
                     ))}
                   </View>
+                  {/* Try to unlock anyway — backend will handle the already-hired bypass */}
+                  <TouchableOpacity
+                    onPress={() => void handleUnlock()}
+                    disabled={unlocking}
+                    style={[s.hiredCheckBtn, { opacity: unlocking ? 0.7 : 1 }]}
+                    activeOpacity={0.85}
+                  >
+                    {unlocking
+                      ? <ActivityIndicator color={C.green} size="small" />
+                      : <AppText style={s.hiredCheckTxt}>Check if Already Hired (Free)</AppText>}
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={s.subscribeBtn} activeOpacity={0.85}>
-                    <AppText style={s.subscribeTxt}>View Subscription Plans</AppText>
+                    <AppText style={s.subscribeTxt}>
+                      {empProfile?.isSubscribed ? 'Renew Subscription' : 'View Subscription Plans'}
+                    </AppText>
                   </TouchableOpacity>
                 </View>
               )}
@@ -844,10 +1165,28 @@ const s = StyleSheet.create({
   hireAgainBtn:  { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   hireAgainTxt:  { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
 
+  // Invite to Requirement
+  inviteBtn:  { backgroundColor: '#F5F3FF', borderRadius: 14, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: '#DDD6FE' },
+  inviteTxt:  { color: '#7C3AED', fontSize: 15, fontWeight: '800', letterSpacing: 0.1 },
+
   // Pipeline action buttons
   pipelineRow:   { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pipelineBtn:   { flex: 1, minWidth: 90, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   pipelineTxt:   { fontSize: 13, fontWeight: '800' },
+
+  // Already-hired badge (shown above phone number when contact is free)
+  hiredBadge:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ECFDF5', borderRadius: 10, borderWidth: 1, borderColor: '#6EE7B7', paddingHorizontal: 12, paddingVertical: 8 },
+  hiredBadgeEmoji:{ fontSize: 14 },
+  hiredBadgeTxt:  { fontSize: 12, fontWeight: '700', color: '#059669', flex: 1, lineHeight: 17 },
+
+  // Subscribed but not yet unlocked — shows credit hint
+  unlockBox:      { gap: 8 },
+  unlockHint:     { backgroundColor: '#EBF1FF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  unlockHintTxt:  { fontSize: 11.5, fontWeight: '600', color: '#1037A4', textAlign: 'center' },
+
+  // "Check if already hired" button (free, shown in expired/no-sub state)
+  hiredCheckBtn:  { width: '100%', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 14, paddingVertical: 14, alignItems: 'center', backgroundColor: '#ECFDF5' },
+  hiredCheckTxt:  { color: '#059669', fontSize: 14, fontWeight: '700' },
 
   // Contact — not subscribed
   lockBox:       { alignItems: 'center', gap: 14 },

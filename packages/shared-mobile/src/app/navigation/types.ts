@@ -38,6 +38,7 @@ export type RootStackParamList = {
   // ── Onboarding ────────────────────────────────────────────────
   RoleSelection: undefined;
   Kyc: undefined;
+  WorkerProfileCompletion: undefined;
   // ── Authenticated: tabs (root) + inner screens ───────────────
   Main: undefined;
   EditProfile: undefined;
@@ -46,7 +47,33 @@ export type RootStackParamList = {
   MyApplications: undefined;
   RequirementDetail: { requirementId: string };
   WorkerProfile: { workerId: string };
-  PostRequirement: { workType?: string; reqType?: string } | undefined;
+  PostRequirement: {
+    workType?: string;
+    reqType?: string;
+    prefill?: {
+      workType?: string;
+      subCategory?: string;
+      reqType?: string;
+      state?: string;
+      district?: string;
+      tehsil?: string;
+      workerQuantitySkilled?: number;
+      salaryType?: string;
+      budgetPerWorker?: number;
+      minBudgetPerWorker?: number;
+      maxBudgetPerWorker?: number;
+      remarks?: string;
+      inTime?: string;
+      outTime?: string;
+      accommodationAvailable?: boolean;
+      foodAvailable?: boolean;
+      transportProvided?: boolean;
+      weeklyOff?: boolean;
+      overtimeAvailable?: boolean;
+      incentive?: boolean;
+      bonus?: boolean;
+    };
+  } | undefined;
   AddWorker: undefined;
   AgentWorkers: undefined;
   WorkerSearch: { workType?: string } | undefined;
@@ -63,6 +90,11 @@ export type RootStackParamList = {
   TopupWebView: { url: string; merchantOrderId: string };
   Shortlist: undefined;
   EmployerPipeline: undefined;
+  // EmployerAttendance: { requirementId: string; requirementTitle?: string };
+  EmployerAnalytics: undefined;
+  RequirementCalendar: undefined;
+  CallHistory: undefined;
+  DocumentHub: { requirementId: string; requirementTitle?: string };
   PdfViewer: { url: string; title?: string };
 };
 
@@ -76,7 +108,6 @@ export type AppTabsParamList = {
   Discover: undefined;
   Manage: undefined;
   Chat: undefined;
-  Wallet: undefined;
   Profile: undefined;
 };
 

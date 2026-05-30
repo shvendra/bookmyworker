@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../core/i18n';
 import { indianStates } from '../../data/stateDistrict';
+import { getLocationDisplayName } from '../../data/locationTranslations';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
 
@@ -27,7 +30,9 @@ interface LocationSelectorProps {
 
 type PickerMode = 'state' | 'district' | 'block' | null;
 
-const STATE_LIST = Object.keys(indianStates).sort();
+interface LocItem { value: string; display: string; }
+
+const STATE_KEYS = Object.keys(indianStates).sort();
 
 export const LocationSelector = ({
   state,
@@ -39,14 +44,22 @@ export const LocationSelector = ({
   stateError,
   districtError,
   blockError,
-  blockLabel = 'Block / Tehsil',
+  blockLabel,
   required = true,
 }: LocationSelectorProps): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const [mode, setMode] = useState<PickerMode>(null);
   const [query, setQuery] = useState('');
+  const resolvedBlockLabel = blockLabel ?? t('blockTehsilLabel');
+  const lang = i18n.language;
 
-  const districtList = useMemo(
+  const toLocItem = (value: string, type: 'state' | 'district'): LocItem => ({
+    value,
+    display: getLocationDisplayName(value, type, lang),
+  });
+
+  const districtKeys = useMemo(
     () => (state ? Object.keys(indianStates[state] ?? {}).sort() : []),
     [state]
   );
@@ -56,43 +69,53 @@ export const LocationSelector = ({
     [state, district]
   );
 
-  const activeList = useMemo(() => {
+  const activeList = useMemo<LocItem[]>(() => {
     const q = query.toLowerCase();
-    if (mode === 'state') return STATE_LIST.filter((s) => s.toLowerCase().includes(q));
-    if (mode === 'district') return districtList.filter((d) => d.toLowerCase().includes(q));
-    if (mode === 'block') return blockList.filter((b) => b.toLowerCase().includes(q));
+    const matches = (item: LocItem) =>
+      item.display.toLowerCase().includes(q) || item.value.toLowerCase().includes(q);
+    if (mode === 'state')
+      return STATE_KEYS.map((v) => toLocItem(v, 'state')).filter(matches);
+    if (mode === 'district')
+      return districtKeys.map((v) => toLocItem(v, 'district')).filter(matches);
+    if (mode === 'block')
+      return blockList.map((v) => ({ value: v, display: getLocationDisplayName(v, 'block', lang) })).filter(matches);
     return [];
-  }, [mode, query, districtList, blockList]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, query, districtKeys, blockList, lang]);
 
   const openPicker = (m: PickerMode): void => {
     setQuery('');
     setMode(m);
   };
 
-  const handleSelect = (value: string): void => {
+  const handleSelect = (item: LocItem): void => {
     if (mode === 'state') {
-      onStateChange(value);
+      onStateChange(item.value);
       onDistrictChange('');
       onBlockChange('');
     } else if (mode === 'district') {
-      onDistrictChange(value);
+      onDistrictChange(item.value);
       onBlockChange('');
     } else if (mode === 'block') {
-      onBlockChange(value);
+      onBlockChange(item.value);
     }
     setMode(null);
   };
 
   const activeValue = mode === 'state' ? state : mode === 'district' ? district : block;
-  const modalTitle = mode === 'state' ? 'Select State' : mode === 'district' ? 'Select District' : `Select ${blockLabel}`;
+  const modalTitle = mode === 'state' ? t('selectState') : mode === 'district' ? t('selectDistrict') : `${t('selectBlockPrefix')} ${resolvedBlockLabel}`;
+
+  const stateDisplay = state ? getLocationDisplayName(state, 'state', lang) : '';
+  const districtDisplay = district ? getLocationDisplayName(district, 'district', lang) : '';
+  const blockDisplay = block ? getLocationDisplayName(block, 'block', lang) : '';
 
   return (
     <View style={styles.container}>
       {/* State */}
       <PickerField
-        label={`State${required ? ' *' : ''}`}
-        value={state}
-        placeholder="Select State"
+        label={`${t('stateLabel')}${required ? ' *' : ''}`}
+        value={stateDisplay}
+        placeholder={t('selectState')}
         error={stateError}
         onPress={() => openPicker('state')}
         theme={theme}
@@ -100,9 +123,9 @@ export const LocationSelector = ({
 
       {/* District */}
       <PickerField
-        label={`District / City${required ? ' *' : ''}`}
-        value={district}
-        placeholder={state ? 'Select District' : 'Select state first'}
+        label={`${t('districtCityLabel')}${required ? ' *' : ''}`}
+        value={districtDisplay}
+        placeholder={state ? t('selectDistrict') : t('selectStateFirst')}
         error={districtError}
         disabled={!state}
         onPress={() => state && openPicker('district')}
@@ -111,9 +134,9 @@ export const LocationSelector = ({
 
       {/* Block / Tehsil */}
       <PickerField
-        label={blockLabel}
-        value={block}
-        placeholder={district ? `Select ${blockLabel}` : 'Select district first'}
+        label={resolvedBlockLabel}
+        value={blockDisplay}
+        placeholder={district ? `${t('selectBlockPrefix')} ${resolvedBlockLabel}` : t('selectDistrictFirst')}
         error={blockError}
         disabled={!district}
         onPress={() => district && openPicker('block')}
@@ -132,14 +155,14 @@ export const LocationSelector = ({
             <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.border }]}>
               <AppText variant="label">{modalTitle}</AppText>
               <TouchableOpacity onPress={() => setMode(null)}>
-                <AppText variant="body" color={theme.colors.primary}>Done</AppText>
+                <AppText variant="body" color={theme.colors.primary}>{t('done')}</AppText>
               </TouchableOpacity>
             </View>
 
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder={`Search ${mode ?? ''}…`}
+              placeholder={t('searchEllipsis')}
               placeholderTextColor={theme.colors.mutedText}
               style={[
                 styles.search,
@@ -154,10 +177,10 @@ export const LocationSelector = ({
 
             <FlatList
               data={activeList}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
-                const selected = item === activeValue;
+                const selected = item.value === activeValue;
                 return (
                   <TouchableOpacity
                     style={[
@@ -171,7 +194,7 @@ export const LocationSelector = ({
                       variant="body"
                       color={selected ? theme.colors.primary : theme.colors.text}
                     >
-                      {item}
+                      {item.display}
                     </AppText>
                     {selected && (
                       <AppText variant="caption" color={theme.colors.primary}>✓</AppText>
@@ -181,7 +204,7 @@ export const LocationSelector = ({
               }}
               ListEmptyComponent={
                 <AppText variant="body" color={theme.colors.mutedText} style={styles.empty}>
-                  No results found
+                  {t('noResultsFound')}
                 </AppText>
               }
             />

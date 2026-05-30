@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -26,8 +27,11 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
+import { ratingApi } from '../../../core/api/endpoints/ratingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'RequirementDetail'>;
@@ -48,21 +52,19 @@ const AMBER_SOFT = '#FFFBEB';
 const RED        = '#DC2626';
 const WHITE      = '#FFFFFF';
 
-// ─── Raw attendance shape ──────────────────────────────────────────────────────
-interface RawAttendance {
-  _id: string;
-  workerName?: string;
-  workerId?: string;
-  wages?: number;
-  date?: string;
-  status?: string;
-  requirement_id?: string;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtLabel = (s?: string | null): string => {
   if (!s) return '—';
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const getSalaryType = (req: RawRequirement): string => {
+  const raw = (req as Record<string, unknown>).salaryType;
+  if (typeof raw === 'string' && raw.length > 0) return raw.toLowerCase();
+  const budget = req.minBudgetPerWorker ?? 0;
+  if (budget >= 10000) return 'month';
+  if (budget >= 500) return 'day';
+  return 'day';
 };
 
 const formatDate = (d?: string): string => {
@@ -103,21 +105,24 @@ const perkIcon: Record<string, string> = {
 // ─── InfoTile — 2-column grid tile ────────────────────────────────────────────
 const InfoTile = ({ emoji, label, value, accent }: {
   emoji: string; label: string; value: string; accent?: string;
-}): React.JSX.Element => (
-  <View style={tile.wrap}>
-    <View style={[tile.iconBox, { backgroundColor: accent ? accent + '18' : BRAND_SOFT }]}>
-      <AppText style={tile.emoji}>{emoji}</AppText>
+}): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  return (
+    <View style={[tile.wrap, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
+      <View style={[tile.iconBox, { backgroundColor: accent ? accent + '18' : BRAND_SOFT }]}>
+        <AppText style={tile.emoji}>{emoji}</AppText>
+      </View>
+      <AppText style={[tile.label, { color: theme.colors.mutedText }]}>{label}</AppText>
+      <AppText style={[tile.value, { color: theme.colors.text }, accent ? { color: accent } : {}]} numberOfLines={2}>{value}</AppText>
     </View>
-    <AppText style={tile.label}>{label}</AppText>
-    <AppText style={[tile.value, accent ? { color: accent } : {}]} numberOfLines={2}>{value}</AppText>
-  </View>
-);
+  );
+};
 const tile = StyleSheet.create({
-  wrap:    { width: '48%', borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: WHITE, padding: 12, gap: 6 },
+  wrap:    { width: '48%', borderRadius: 14, borderWidth: 1, padding: 12, gap: 6 },
   iconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   emoji:   { fontSize: 18 },
-  label:   { fontSize: 10, fontWeight: '700', color: SLATE, letterSpacing: 0.4, textTransform: 'uppercase' },
-  value:   { fontSize: 13, fontWeight: '700', color: NAVY, lineHeight: 18 },
+  label:   { fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  value:   { fontSize: 13, fontWeight: '700', lineHeight: 18 },
 });
 
 // ─── Section header ────────────────────────────────────────────────────────────
@@ -148,11 +153,12 @@ const AgentCard = ({
   const navigation = useNavigation<ReqDetailNav>();
   const toast = useToast();
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
-  const [unlocking, setUnlocking] = useState(false);
-  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlocking,     setUnlocking]     = useState(false);
+  const [unlockError,   setUnlockError]   = useState<string | null>(null);
+  const [alreadyHired,  setAlreadyHired]  = useState(false);
 
   const initials = (agent.name || `A${idx + 1}`).slice(0, 2).toUpperCase();
-  const location = [agent.district, agent.state].filter(Boolean).join(', ');
+  const location = getLocationStr({ district: agent.district, state: agent.state }, i18n.language, '');
   const colors = [
     { bg: '#EBF1FF', text: BRAND_MID },
     { bg: '#F5F3FF', text: '#7C3AED' },
@@ -162,11 +168,6 @@ const AgentCard = ({
   const palette = colors[idx % colors.length]!;
 
   const handleReveal = async (): Promise<void> => {
-    if (!isSubscribed) {
-      toast.error("You don't have an active subscription. Please subscribe to view contact details.", 'No Subscription');
-      navigation.navigate('Subscription');
-      return;
-    }
     if (unlockedPhone) {
       void Linking.openURL(`tel:${unlockedPhone}`);
       return;
@@ -177,28 +178,31 @@ const AgentCard = ({
       const res = await workerApi.unlockNumber(agent._id);
       if (res.phone) {
         setUnlockedPhone(res.phone);
+        setAlreadyHired(res.alreadyHired === true);
       } else {
-        const msg = res.message ?? "You don't have an active subscription. Please subscribe to view contact details.";
+        const msg = res.message ?? 'Unable to view contact. Please check your subscription.';
         setUnlockError(msg);
         toast.error(msg, 'Access Denied');
-        if (msg.toLowerCase().includes('subscri')) navigation.navigate('Subscription');
+        if (msg.toLowerCase().includes('subscri') || msg.toLowerCase().includes('expired')) {
+          navigation.navigate('Subscription');
+        }
       }
     } catch (err: unknown) {
-      const errObj = err as { response?: { data?: { message?: string } }; message?: string };
-      const msg = errObj?.response?.data?.message ?? errObj?.message;
-      const finalMsg = msg ?? "You don't have an active subscription. Please subscribe to view contact details.";
-      setUnlockError(finalMsg);
-      toast.error(finalMsg, 'Access Denied');
-      if (finalMsg.toLowerCase().includes('subscri')) navigation.navigate('Subscription');
+      const errObj = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
+      const data   = errObj?.response?.data;
+      const code   = data?.code;
+      const msg    = data?.message ?? errObj?.message ?? 'Unable to view contact.';
+      setUnlockError(msg);
+      if (code === 'SUBSCRIPTION_EXPIRED' || code === 'SUBSCRIPTION_REQUIRED' || code === 'CONTACT_LIMIT') {
+        navigation.navigate('Subscription');
+      }
     } finally {
       setUnlocking(false);
     }
   };
 
-  const isSubscriptionBlocked = !isSubscribed || (!!unlockError && (
-    unlockError.toLowerCase().includes('subscri') ||
-    unlockError.toLowerCase().includes('unlock')
-  ));
+  // Contact is blocked only when subscription is expired AND worker is not already hired
+  const isContactBlocked = !isSubscribed && !alreadyHired && !unlockedPhone;
 
   return (
     <View style={ac.cardWrap}>
@@ -223,17 +227,14 @@ const AgentCard = ({
         </View>
 
         {/* Button area — does NOT propagate to onProfile */}
-        {isSubscriptionBlocked ? (
+        {isContactBlocked ? (
           <TouchableOpacity
-            onPress={() => {
-              toast.error("You don't have an active subscription. Please subscribe to view contact details.", 'No Subscription');
-              navigation.navigate('Subscription');
-            }}
+            onPress={() => void handleReveal()}
             style={ac.lockedChip}
             activeOpacity={0.75}
           >
             <AppText style={ac.lockedIcon}>🔒</AppText>
-            <AppText style={ac.lockedTxt}>Subscribe</AppText>
+            <AppText style={ac.lockedTxt}>Check</AppText>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -253,7 +254,10 @@ const AgentCard = ({
 
       {/* Revealed phone — full-width row below the card */}
       {!!unlockedPhone && (
-        <View style={ac.phoneRevealedRow}>
+        <View style={[ac.phoneRevealedRow, alreadyHired && { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' }]}>
+          {alreadyHired && (
+            <AppText style={ac.hiredBadge}>🤝 Already hired — free</AppText>
+          )}
           <View style={ac.phoneRevealedLeft}>
             <AppText style={ac.phoneRevealedLabel}>Contact Number</AppText>
             <AppText style={ac.phoneRevealedNum}>📞 {unlockedPhone}</AppText>
@@ -269,7 +273,7 @@ const AgentCard = ({
       )}
 
       {/* Generic (non-subscription) error */}
-      {!!unlockError && !isSubscriptionBlocked && (
+      {!!unlockError && !isContactBlocked && (
         <View style={ac.errorRow}>
           <AppText style={ac.unlockError}>⚠️ {unlockError}</AppText>
         </View>
@@ -295,10 +299,11 @@ const ac = StyleSheet.create({
   lockedIcon:         { fontSize: 14 },
   lockedTxt:          { fontSize: 10, fontWeight: '800', color: AMBER, textAlign: 'center' },
   // Revealed phone row
-  phoneRevealedRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_SOFT, borderRadius: 10, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, gap: 10 },
-  phoneRevealedLeft:  { flex: 1 },
+  phoneRevealedRow:   { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', backgroundColor: GREEN_SOFT, borderRadius: 10, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, gap: 8 },
+  phoneRevealedLeft:  { flex: 1, minWidth: 120 },
   phoneRevealedLabel: { fontSize: 10, fontWeight: '700', color: GREEN, textTransform: 'uppercase', letterSpacing: 0.5 },
   phoneRevealedNum:   { fontSize: 15, fontWeight: '800', color: '#0f172a', marginTop: 2 },
+  hiredBadge:         { width: '100%', fontSize: 11, fontWeight: '700', color: '#059669' },
   callNowBtn:         { backgroundColor: GREEN, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' },
   callNowTxt:         { color: WHITE, fontSize: 12, fontWeight: '800' },
   errorRow:           { paddingHorizontal: 4, paddingBottom: 6 },
@@ -324,116 +329,6 @@ const ba = StyleSheet.create({
   line:    { height: 10, borderRadius: 5, backgroundColor: BORDER },
   chipWrap:{ backgroundColor: GREEN_SOFT, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   chipTxt: { fontSize: 10, fontWeight: '700', color: GREEN },
-});
-
-// ─── SOW Modal ─────────────────────────────────────────────────────────────────
-const SOWModal = ({
-  visible, onClose, requirementId, employerId,
-}: {
-  visible: boolean; onClose: () => void; requirementId: string; employerId?: string;
-}): React.JSX.Element => {
-  const { theme } = useAppTheme();
-  const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
-  const toast = useToast();
-
-  const { data: records = [], isLoading } = useQuery<RawAttendance[]>({
-    queryKey: ['attendance', requirementId],
-    queryFn: () =>
-      requirementsApi.getAttendanceByRequirement(requirementId, employerId) as unknown as Promise<RawAttendance[]>,
-    enabled: visible,
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: (id: string) => requirementsApi.approveAttendance(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['attendance', requirementId] });
-      toast.success('Attendance record approved.', 'Approved');
-    },
-    onError: () => toast.error('Failed to approve attendance. Please try again.', 'Error'),
-  });
-
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[sow.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[sow.header, { paddingTop: insets.top + 14 }]}>
-          <View style={sow.headerLeft}>
-            <AppText style={sow.headerTitle}>Statement of Work</AppText>
-            <AppText style={sow.headerSub}>Attendance & Payment Records</AppText>
-          </View>
-          <TouchableOpacity onPress={onClose} style={sow.closeBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <AppText style={sow.closeTxt}>✕</AppText>
-          </TouchableOpacity>
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator style={{ flex: 1 }} color={BRAND_MID} />
-        ) : records.length === 0 ? (
-          <View style={sow.empty}>
-            <View style={sow.emptyIconWrap}><AppText style={{ fontSize: 32 }}>📋</AppText></View>
-            <AppText style={sow.emptyTitle}>No Records Yet</AppText>
-            <AppText style={[sow.emptySub, { color: theme.colors.mutedText }]}>
-              Attendance records will appear here once workers check in.
-            </AppText>
-          </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={sow.tableHeader}>
-              <AppText style={[sow.th, { width: 32 }]}>#</AppText>
-              <AppText style={[sow.th, { flex: 1 }]}>Worker</AppText>
-              <AppText style={[sow.th, { width: 68 }]}>Wages</AppText>
-              <AppText style={[sow.th, { width: 88 }]}>Date</AppText>
-              <AppText style={[sow.th, { width: 76 }]}>Status</AppText>
-            </View>
-            {records.map((rec: RawAttendance, idx: number) => (
-              <View key={rec._id} style={[sow.tableRow, { backgroundColor: idx % 2 === 0 ? WHITE : '#F8FAFC' }]}>
-                <AppText style={[sow.td, { width: 32, color: SLATE }]}>{idx + 1}</AppText>
-                <AppText style={[sow.td, { flex: 1, color: NAVY, fontWeight: '600', textTransform: 'capitalize' }]} numberOfLines={2}>
-                  {rec.workerName ?? rec.workerId ?? '—'}
-                </AppText>
-                <AppText style={[sow.td, { width: 68, color: GREEN, fontWeight: '700' }]}>
-                  {rec.wages != null ? `₹${rec.wages}` : '—'}
-                </AppText>
-                <AppText style={[sow.td, { width: 88, color: SLATE }]}>
-                  {rec.date ? formatDate(rec.date) : '—'}
-                </AppText>
-                <View style={{ width: 76, alignItems: 'center', justifyContent: 'center' }}>
-                  {rec.status === 'approved' ? (
-                    <View style={sow.approvedChip}><AppText style={sow.approvedTxt}>✓ Done</AppText></View>
-                  ) : (
-                    <TouchableOpacity style={sow.approveBtn} onPress={() => approveMutation.mutate(rec._id)} disabled={approveMutation.isPending}>
-                      <AppText style={sow.approveBtnTxt}>{approveMutation.isPending ? '…' : 'Approve'}</AppText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-    </Modal>
-  );
-};
-const sow = StyleSheet.create({
-  root:        { flex: 1 },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BRAND, paddingHorizontal: 20, paddingBottom: 20 },
-  headerLeft:  {},
-  headerTitle: { color: WHITE, fontSize: 18, fontWeight: '800' },
-  headerSub:   { color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 3 },
-  closeBtn:    { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  closeTxt:    { color: WHITE, fontSize: 16, fontWeight: '700' },
-  empty:       { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
-  emptyIconWrap:{ width: 72, height: 72, borderRadius: 36, backgroundColor: BRAND_SOFT, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  emptyTitle:  { fontSize: 17, fontWeight: '800', color: NAVY },
-  emptySub:    { textAlign: 'center', lineHeight: 20, fontSize: 13 },
-  tableHeader: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 11, backgroundColor: '#F1F5F9', borderBottomWidth: 1, borderBottomColor: BORDER },
-  th:          { fontSize: 11, fontWeight: '800', color: '#334155', paddingRight: 4, letterSpacing: 0.3 },
-  tableRow:    { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER, alignItems: 'center' },
-  td:          { fontSize: 13, paddingRight: 4, lineHeight: 18 },
-  approvedChip:  { backgroundColor: GREEN_SOFT, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  approvedTxt:   { color: GREEN, fontSize: 11, fontWeight: '700' },
-  approveBtn:    { backgroundColor: BRAND_MID, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  approveBtnTxt: { color: WHITE, fontSize: 11, fontWeight: '700' },
 });
 
 // ─── Status Pipeline ──────────────────────────────────────────────────────────
@@ -515,7 +410,6 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   const insets = useSafeAreaInsets();
   const user = authState.session?.user;
   const { requirementId } = route.params;
-  const [showSOW, setShowSOW] = useState(false);
   const [wageInput, setWageInput] = useState('');
   const [badgeModalVisible, setBadgeModalVisible] = useState(false);
 
@@ -527,6 +421,12 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   // Respond-to-proposal state (employer)
   const [rejectReasonInputId, setRejectReasonInputId] = useState<string | null>(null);
   const [rejectReasonText, setRejectReasonText] = useState('');
+
+  // Rate Workers modal state
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [ratingStars, setRatingStars] = useState<Record<string, number>>({});
+  const [ratingComment, setRatingComment] = useState<Record<string, string>>({});
+  const [ratingSaving, setRatingSaving] = useState(false);
 
   const userRole = user?.role ?? '';
   const isAgentOrWorker = userRole === 'agent' || userRole === 'selfworker' || userRole === 'worker';
@@ -555,7 +455,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     const wage = parseInt(wageInput, 10);
     if (!wage || isNaN(wage)) { toast.warning('Please enter your per-head wage quote.'); return; }
     const min = req.minBudgetPerWorker ?? 0;
-    if (wage < min) { toast.warning(`Wage must be at least ₹${min}/${(req as any).salaryType?.toLowerCase() ?? 'day'}.`); return; }
+    if (wage < min) { toast.warning(`Wage must be at least ₹${min}/${getSalaryType(req)}.`); return; }
     expressInterestMutation.mutate({ id: req._id, wage });
   };
 
@@ -684,14 +584,66 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   const sMeta = statusMeta(req.status, isAssigned);
 
   const handleClose = (): void => {
-    Alert.alert('Close Requirement', 'Are you sure you want to close this requirement?', [
+    showAlert('Close Requirement', 'Are you sure you want to close this requirement?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Close', style: 'destructive', onPress: () => closeMutation.mutate() },
     ]);
   };
 
+  const handleRepost = (): void => {
+    if (!req) return;
+    navigation.navigate('PostRequirement', {
+      prefill: {
+        workType:               req.workType,
+        subCategory:            req.subCategory,
+        reqType:                req.req_type as string | undefined,
+        state:                  req.state,
+        district:               req.district,
+        tehsil:                 req.tehsil,
+        workerQuantitySkilled:  req.workerQuantitySkilled,
+        salaryType:             req.salaryType,
+        budgetPerWorker:        req.budgetPerWorker,
+        minBudgetPerWorker:     req.minBudgetPerWorker,
+        maxBudgetPerWorker:     req.maxBudgetPerWorker,
+        remarks:                req.remarks,
+        inTime:                 req.inTime,
+        outTime:                req.outTime,
+        accommodationAvailable: req.accommodationAvailable,
+        foodAvailable:          req.foodAvailable,
+        transportProvided:      req.transportProvided,
+        weeklyOff:              req.weeklyOff,
+        overtimeAvailable:      req.overtimeAvailable,
+        incentive:              req.incentive,
+        bonus:                  req.bonus,
+      },
+    });
+  };
+
+  // const handleMarkAttendance = (): void => {
+  //   if (!req) return;
+  //   navigation.navigate('EmployerAttendance', {
+  //     requirementId,
+  //     requirementTitle: req.workType
+  //       ? req.workType.replace(/_/g, ' ') + (req.subCategory ? ` · ${req.subCategory.replace(/_/g, ' ')}` : '')
+  //       : undefined,
+  //   });
+  // };
+
+  const handleDocumentHub = (): void => {
+    if (!req) return;
+    navigation.navigate('DocumentHub', {
+      requirementId,
+      requirementTitle: req.workType
+        ? req.workType.replace(/_/g, ' ') + (req.subCategory ? ` · ${req.subCategory.replace(/_/g, ' ')}` : '')
+        : undefined,
+    });
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* ── Verified Badge Modal (for agent gate CTA) ────────────── */}
@@ -747,14 +699,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           {(req.district || req.state) ? (
             <View style={hero.pill}>
               <AppText style={hero.pillIcon}>📍</AppText>
-              <AppText style={hero.pillTxt} numberOfLines={1}>{[req.district, req.state].filter(Boolean).join(', ')}</AppText>
+              <AppText style={hero.pillTxt} numberOfLines={1}>{getLocationStr({ district: req.district, state: req.state }, i18n.language, '')}</AppText>
             </View>
           ) : null}
           {(req.minBudgetPerWorker != null) ? (
             <View style={[hero.pill, hero.pillGreen]}>
               <AppText style={hero.pillIcon}>₹</AppText>
               <AppText style={[hero.pillTxt, { color: GREEN_SOFT }]}>
-                {req.minBudgetPerWorker}{req.maxBudgetPerWorker ? `–${req.maxBudgetPerWorker}` : ''}/{(req as any).salaryType?.toLowerCase() ?? 'day'}
+                {req.minBudgetPerWorker}{req.maxBudgetPerWorker ? `–${req.maxBudgetPerWorker}` : ''}/{getSalaryType(req)}
               </AppText>
             </View>
           ) : null}
@@ -771,6 +723,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         showsVerticalScrollIndicator={false}
         contentContainerStyle={pg.content}
         style={[pg.scroll, { backgroundColor: theme.colors.background }]}
+        keyboardShouldPersistTaps="handled"
       >
         {/* ── Status Pipeline ──────────────────────────────────────────── */}
         <StatusPipeline req={req} grouped={mappingData?.grouped} />
@@ -795,7 +748,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               <InfoTile
                 emoji="💰"
                 label="Budget / Worker"
-                value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${(req as any).salaryType?.toLowerCase() ?? 'day'}`}
+                value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${getSalaryType(req)}`}
                 accent={GREEN}
               />
             ) : null}
@@ -1111,14 +1064,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <View style={pg.minWageRow}>
                   <AppText style={pg.minWageLabel}>Minimum wage by employer</AppText>
                   <View style={pg.minWagePill}>
-                    <AppText style={pg.minWagePillTxt}>₹{req.minBudgetPerWorker ?? 0}/{(req as any).salaryType?.toLowerCase() ?? 'day'}</AppText>
+                    <AppText style={pg.minWagePillTxt}>₹{req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}</AppText>
                   </View>
                 </View>
                 <TextInput
                   style={[pg.wageInput, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border, color: theme.colors.text }]}
                   value={wageInput}
                   onChangeText={setWageInput}
-                  placeholder={`Your quote (min ₹${req.minBudgetPerWorker ?? 0}/${(req as any).salaryType?.toLowerCase() ?? 'day'})`}
+                  placeholder={`Your quote (min ₹${req.minBudgetPerWorker ?? 0}/${getSalaryType(req)})`}
                   placeholderTextColor={theme.colors.mutedText}
                   keyboardType="number-pad"
                   returnKeyType="done"
@@ -1146,11 +1099,8 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={{ fontSize: 36 }}>🏆</AppText>
                 <AppText style={pg.assignedMeTitle}>You're Assigned!</AppText>
                 <AppText style={[pg.assignedMeSub, { color: SLATE }]}>
-                  Agreed wage: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{(req as any).salaryType?.toLowerCase() ?? 'day'}
+                  Agreed wage: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}
                 </AppText>
-                <TouchableOpacity style={pg.sowBtn2} onPress={() => setShowSOW(true)} activeOpacity={0.85}>
-                  <AppText style={pg.sowBtnTxt}>📋  View Statement of Work</AppText>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -1200,12 +1150,35 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Action Buttons (employer only) ────────────────────────────── */}
         {!isAgentOrWorker && (
           <View style={pg.actionRow}>
-            {isAssigned && (
-              <TouchableOpacity style={pg.sowBtn} onPress={() => setShowSOW(true)} activeOpacity={0.88}>
-                <AppText style={pg.sowBtnIcon}>📋</AppText>
-                <AppText style={pg.sowBtnLabel}>Statement of Work</AppText>
+            {/* Mark Attendance removed */}
+            {false && !isClosed && (
+              <TouchableOpacity
+                style={pg.attendanceBtn}
+                onPress={() => {}}
+                activeOpacity={0.88}
+              >
+                <AppText style={pg.attendanceBtnTxt}>📋  Mark Attendance & Track Salary</AppText>
               </TouchableOpacity>
             )}
+
+            {/* Document Hub — always available */}
+            <TouchableOpacity
+              style={pg.documentsBtn}
+              onPress={handleDocumentHub}
+              activeOpacity={0.88}
+            >
+              <AppText style={pg.documentsBtnTxt}>📁  Documents & Agreements</AppText>
+            </TouchableOpacity>
+
+            {/* Repost — always available to reuse this requirement config */}
+            <TouchableOpacity
+              style={pg.repostBtn}
+              onPress={handleRepost}
+              activeOpacity={0.88}
+            >
+              <AppText style={pg.repostBtnTxt}>🔁  Repost This Requirement</AppText>
+            </TouchableOpacity>
+
             {!isClosed && (
               <TouchableOpacity
                 style={pg.closeBtn}
@@ -1218,13 +1191,22 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 </AppText>
               </TouchableOpacity>
             )}
+
+            {/* Rate Workers button — shown when requirement is Closed/Completed */}
+            {isClosed && (req?.proposedWorkers?.some((pw) => pw.status === 'approved') || (req?.intrestedAgents?.length ?? 0) > 0) && (
+              <TouchableOpacity
+                style={pg.rateBtn}
+                onPress={() => setShowRateModal(true)}
+                activeOpacity={0.88}
+              >
+                <AppText style={pg.rateBtnTxt}>⭐  Rate Your Workers</AppText>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
-
-      <SOWModal visible={showSOW} onClose={() => setShowSOW(false)} requirementId={requirementId} employerId={user?.id} />
 
       {/* ── Propose Worker Modal (agent) ──────────────────────────────── */}
       <Modal
@@ -1276,7 +1258,150 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           </View>
         </View>
       </Modal>
-    </View>
+
+      {/* ── Rate Workers Modal ────────────────────────────────────────────── */}
+      {isEmployer && showRateModal && req && (
+        <Modal visible animationType="slide" transparent onRequestClose={() => setShowRateModal(false)}>
+          <View style={rm.overlay}>
+            <View style={rm.sheet}>
+              {/* Header */}
+              <View style={rm.header}>
+                <View style={{ flex: 1 }}>
+                  <AppText style={rm.headerTitle}>⭐ Rate Your Workers</AppText>
+                  <AppText style={rm.headerSub}>How did they perform on this requirement?</AppText>
+                </View>
+                <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.closeBtn}>
+                  <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={rm.body} showsVerticalScrollIndicator={false}>
+                {/* Approved proposed workers */}
+                {(req.proposedWorkers ?? []).filter((pw) => pw.status === 'approved').map((pw) => {
+                  const key = pw.workerId ?? pw.workerPhone ?? '';
+                  if (!key) return null;
+                  const stars = ratingStars[key] ?? 0;
+                  return (
+                    <View key={key} style={rm.workerCard}>
+                      <View style={rm.workerRow}>
+                        <View style={rm.avatar}>
+                          <AppText style={rm.initials}>{(pw.workerName ?? 'W')[0]?.toUpperCase() ?? 'W'}</AppText>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <AppText style={rm.workerName}>{pw.workerName ?? 'Worker'}</AppText>
+                          {pw.workerPhone ? <AppText style={rm.workerPhone}>{pw.workerPhone}</AppText> : null}
+                        </View>
+                      </View>
+                      {/* Star selector */}
+                      <View style={rm.starsRow}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <TouchableOpacity key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
+                            <AppText style={[rm.star, { color: n <= stars ? '#F59E0B' : '#D1D5DB' }]}>★</AppText>
+                          </TouchableOpacity>
+                        ))}
+                        {stars > 0 && <AppText style={rm.starLabel}>{stars}/5</AppText>}
+                      </View>
+                      {/* Comment */}
+                      {stars > 0 && (
+                        <TextInput
+                          style={rm.commentInput}
+                          placeholder="Add a comment (optional)"
+                          placeholderTextColor="#94A3B8"
+                          value={ratingComment[key] ?? ''}
+                          onChangeText={(t) => setRatingComment((p) => ({ ...p, [key]: t }))}
+                          maxLength={300}
+                          multiline
+                          numberOfLines={2}
+                        />
+                      )}
+                    </View>
+                  );
+                })}
+
+                {/* Interested agents (assigned agent) */}
+                {req.assignedAgentId && !req.proposedWorkers?.some((pw) => pw.status === 'approved') && (
+                  <View style={rm.workerCard}>
+                    <View style={rm.workerRow}>
+                      <View style={rm.avatar}>
+                        <AppText style={rm.initials}>{(req.assignedAgentName ?? 'A')[0]?.toUpperCase() ?? 'A'}</AppText>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={rm.workerName}>{req.assignedAgentName ?? 'Assigned Agent'}</AppText>
+                      </View>
+                    </View>
+                    {(() => {
+                      const key = String(req.assignedAgentId);
+                      const stars = ratingStars[key] ?? 0;
+                      return (
+                        <>
+                          <View style={rm.starsRow}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <TouchableOpacity key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
+                                <AppText style={[rm.star, { color: n <= stars ? '#F59E0B' : '#D1D5DB' }]}>★</AppText>
+                              </TouchableOpacity>
+                            ))}
+                            {stars > 0 && <AppText style={rm.starLabel}>{stars}/5</AppText>}
+                          </View>
+                          {stars > 0 && (
+                            <TextInput
+                              style={rm.commentInput}
+                              placeholder="Add a comment (optional)"
+                              placeholderTextColor="#94A3B8"
+                              value={ratingComment[key] ?? ''}
+                              onChangeText={(t) => setRatingComment((p) => ({ ...p, [key]: t }))}
+                              maxLength={300}
+                              multiline
+                              numberOfLines={2}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
+                  </View>
+                )}
+              </ScrollView>
+
+              <View style={rm.footer}>
+                <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.cancelBtn}>
+                  <AppText style={rm.cancelTxt}>Cancel</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={ratingSaving || Object.keys(ratingStars).length === 0}
+                  style={[rm.submitBtn, (ratingSaving || Object.keys(ratingStars).length === 0) && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    setRatingSaving(true);
+                    try {
+                      const entries = Object.entries(ratingStars).filter(([, s]) => s > 0);
+                      await Promise.allSettled(
+                        entries.map(([key, stars]) =>
+                          ratingApi.rateWorker({
+                            workerId:      key,
+                            requirementId: req._id,
+                            stars,
+                            comment:       ratingComment[key] ?? '',
+                          })
+                        )
+                      );
+                      toast.success('Ratings submitted! Workers can now be found by their ratings.', 'Ratings Saved');
+                      setShowRateModal(false);
+                    } catch {
+                      toast.error('Failed to submit ratings. Please try again.');
+                    } finally {
+                      setRatingSaving(false);
+                    }
+                  }}
+                  activeOpacity={0.85}
+                >
+                  {ratingSaving
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <AppText style={rm.submitTxt}>Submit Ratings ({Object.values(ratingStars).filter((s) => s > 0).length})</AppText>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </KeyboardAvoidingView>
   );
 };
 
@@ -1322,7 +1447,7 @@ const hero = StyleSheet.create({
 // ─── Page / section styles ─────────────────────────────────────────────────────
 const pg = StyleSheet.create({
   scroll:   { flex: 1 },
-  content:  { padding: 16, paddingTop: 18, gap: 12 },
+  content:  { padding: 16, paddingTop: 18, paddingBottom: 40, gap: 12 },
 
   section:  { borderRadius: 18, borderWidth: 1, padding: 16, elevation: 1, shadowColor: NAVY, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
   grid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -1392,16 +1517,18 @@ const pg = StyleSheet.create({
   assignedMeWrap:  { alignItems: 'center', paddingVertical: 8, gap: 8 },
   assignedMeTitle: { fontSize: 18, fontWeight: '900', color: GREEN },
   assignedMeSub:   { fontSize: 13, fontWeight: '600' },
-  sowBtn2:         { marginTop: 6, backgroundColor: GREEN, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12 },
-  sowBtnTxt:       { color: WHITE, fontSize: 14, fontWeight: '800' },
-
   // Action buttons
-  actionRow:  { gap: 10 },
-  sowBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BRAND, borderRadius: 16, padding: 16 },
-  sowBtnIcon: { fontSize: 18 },
-  sowBtnLabel:{ color: WHITE, fontSize: 15, fontWeight: '800' },
-  closeBtn:   { borderWidth: 1.5, borderColor: RED, borderRadius: 16, padding: 16, alignItems: 'center' },
-  closeBtnTxt:{ color: RED, fontSize: 14, fontWeight: '700' },
+  actionRow:       { gap: 10 },
+  attendanceBtn:   { backgroundColor: '#1037A4', borderRadius: 16, padding: 16, alignItems: 'center' },
+  attendanceBtnTxt:{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  documentsBtn:    { borderWidth: 1.5, borderColor: '#D97706', borderRadius: 16, padding: 16, alignItems: 'center' },
+  documentsBtnTxt: { color: '#D97706', fontSize: 14, fontWeight: '700' },
+  repostBtn:       { borderWidth: 1.5, borderColor: '#1037A4', borderRadius: 16, padding: 16, alignItems: 'center' },
+  repostBtnTxt:    { color: '#1037A4', fontSize: 14, fontWeight: '700' },
+  closeBtn:        { borderWidth: 1.5, borderColor: RED, borderRadius: 16, padding: 16, alignItems: 'center' },
+  closeBtnTxt:     { color: RED, fontSize: 14, fontWeight: '700' },
+  rateBtn:         { backgroundColor: '#FFFBEB', borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#FDE68A' },
+  rateBtnTxt:      { color: '#92400E', fontSize: 14, fontWeight: '800' },
 });
 
 // ─── Proposed Workers styles ───────────────────────────────────────────────────
@@ -1426,6 +1553,32 @@ const pws = StyleSheet.create({
   rejectConfirmBtn:  { flex: 1, backgroundColor: RED, borderRadius: 8, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
   proposeBtn:    { backgroundColor: BRAND, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
   proposeBtnTxt: { color: WHITE, fontSize: 12, fontWeight: '800' },
+});
+
+// ─── Rate Workers Modal styles ────────────────────────────────────────────────
+const rm = StyleSheet.create({
+  overlay:      { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
+  sheet:        { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '85%', overflow: 'hidden' },
+  header:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#D97706' },
+  headerTitle:  { fontSize: 16, fontWeight: '800', color: '#fff' },
+  headerSub:    { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  closeBtn:     { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  body:         { maxHeight: 400, paddingHorizontal: 16, paddingTop: 8 },
+  workerCard:   { borderRadius: 14, borderWidth: 1, borderColor: BORDER, padding: 14, marginBottom: 10, gap: 10 },
+  workerRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatar:       { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFBEB', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FDE68A' },
+  initials:     { fontSize: 16, fontWeight: '800', color: '#92400E' },
+  workerName:   { fontSize: 14, fontWeight: '700', color: NAVY },
+  workerPhone:  { fontSize: 11, color: SLATE, marginTop: 2 },
+  starsRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  star:         { fontSize: 30 },
+  starLabel:    { fontSize: 13, fontWeight: '700', color: '#92400E', marginLeft: 4 },
+  commentInput: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: NAVY, backgroundColor: '#F8FAFC', minHeight: 56 },
+  footer:       { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: BORDER },
+  cancelBtn:    { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: BORDER, paddingVertical: 14, alignItems: 'center' },
+  cancelTxt:    { fontSize: 14, fontWeight: '700', color: SLATE },
+  submitBtn:    { flex: 2, borderRadius: 12, paddingVertical: 14, alignItems: 'center', backgroundColor: '#D97706' },
+  submitTxt:    { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
 
 // ─── Propose-worker modal styles ──────────────────────────────────────────────

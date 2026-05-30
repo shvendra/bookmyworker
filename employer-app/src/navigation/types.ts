@@ -1,6 +1,7 @@
 // Employer-app route param list — employer-only, no role switching
 export type EmployerStackParamList = {
   // Auth
+  LanguageSelect: undefined;
   Welcome: undefined;
   Login: { roleHint?: 'employer'; appContext?: 'employer-app' } | undefined;
   OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app' };
@@ -10,9 +11,9 @@ export type EmployerStackParamList = {
     role: 'Employer';
     name: string;
     password: string;
-    state: string;
-    district: string;
-    block: string;
+    state?: string;
+    district?: string;
+    block?: string;
     pinCode?: string;
     email?: string;
     referredBy?: string;
@@ -27,7 +28,33 @@ export type EmployerStackParamList = {
   // Main
   Main: undefined;
   EditProfile: undefined;
-  PostRequirement: undefined;
+  PostRequirement: {
+    workType?: string;
+    reqType?: string;
+    prefill?: {
+      workType?: string;
+      subCategory?: string;
+      reqType?: string;
+      state?: string;
+      district?: string;
+      tehsil?: string;
+      workerQuantitySkilled?: number;
+      salaryType?: string;
+      budgetPerWorker?: number;
+      minBudgetPerWorker?: number;
+      maxBudgetPerWorker?: number;
+      remarks?: string;
+      inTime?: string;
+      outTime?: string;
+      accommodationAvailable?: boolean;
+      foodAvailable?: boolean;
+      transportProvided?: boolean;
+      weeklyOff?: boolean;
+      overtimeAvailable?: boolean;
+      incentive?: boolean;
+      bonus?: boolean;
+    };
+  } | undefined;
   RequirementDetail: { requirementId: string };
   WorkerProfile: { workerId: string };
   WorkerSearch: { workType?: string } | undefined;
@@ -41,7 +68,15 @@ export type EmployerStackParamList = {
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   // Pipeline overview
   EmployerPipeline: undefined;
-  // Wallet (for Transactions tab)
+  // EmployerAttendance removed
+  // EmployerAttendance: { requirementId: string; requirementTitle?: string };
+  // Requirement calendar
+  RequirementCalendar: undefined;
+  // Call & remark history
+  CallHistory: undefined;
+  // Document hub (per requirement)
+  DocumentHub: { requirementId: string; requirementTitle?: string };
+  // Wallet / Transactions
   Transactions: undefined;
   // Subscription + payment flow
   Subscription: { agentId?: string } | undefined;

@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
 import { buildPhotoUrl } from '../../config/env';
-import type { AppRole, UserProfile } from '../../../shared/types/domain';
+import type { AppLanguage, AppRole, UserProfile } from '../../../shared/types/domain';
 
 export type AppContext = 'employer-app' | 'agent-app';
 
@@ -31,7 +31,7 @@ interface BackendUser {
   block?: string;
   profilePhoto?: string;
   isSubscribed?: boolean;
-  subscriptionExpery?: string;   // backend typo — "Expery" not "Expiry"
+  subscriptionExpery?: string;
   subscriptionExpiry?: string;
   remainingContacts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
@@ -39,6 +39,11 @@ interface BackendUser {
   workerSubType?: string;
   agentType?: string;
   resumeUrl?: string;
+  areasOfWork?: string[];
+  categories?: string[];
+  gender?: string;
+  dob?: string | number;
+  language?: string;
 }
 
 export interface VerifyOtpResponse {
@@ -67,10 +72,11 @@ function mapBackendUser(u: BackendUser): UserProfile {
     phone: u.phone,
     role: mapRole(u.role),
     kycStatus: u.status === 'Verified' ? 'verified' : u.status === 'Block' ? 'rejected' : 'pending',
-    language: 'en',
+    language: (u.language as AppLanguage | undefined) ?? undefined,
     email: u.email,
     state: u.state,
     district: u.district,
+    block: u.block,
     profileImage: buildPhotoUrl(u.profilePhoto),
     isSubscribed: u.isSubscribed,
     subscriptionExpiry: u.subscriptionExpery ?? u.subscriptionExpiry,
@@ -80,6 +86,10 @@ function mapBackendUser(u: BackendUser): UserProfile {
     workerSubType: u.workerSubType,
     agentType: u.agentType,
     resumeUrl: u.resumeUrl,
+    areasOfWork: u.areasOfWork,
+    categories: u.categories,
+    gender: u.gender,
+    dob: u.dob !== undefined ? String(u.dob) : undefined,
   };
 }
 
@@ -109,9 +119,10 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   role: 'Employer' | 'Agent' | 'SelfWorker';
-  state: string;
-  district: string;
-  block: string;
+  language?: string;
+  state?: string;
+  district?: string;
+  block?: string;
   pinCode?: string;
   email?: string;
   referredBy?: string;
@@ -136,8 +147,22 @@ export const registerUser = async (payload: RegisterPayload): Promise<{ message:
   return { message: body.message ?? 'Registered successfully' };
 };
 
-export const verifyOtpOnly = async (phone: string, otp: string): Promise<void> => {
-  await apiClient.post('/api/v1/otp/verify-otp', { phone, otp, role: 'register' });
+export const verifyOtpOnly = async (
+  phone: string,
+  otp: string
+): Promise<any> => {
+  const res = await apiClient.post('/api/v1/otp/verify-otp', {
+    phone,
+    otp,
+    role: 'register',
+  });
+
+  // IMPORTANT: enforce failure handling
+  if (!res?.data?.success) {
+    throw new Error(res?.data?.message || 'Invalid OTP');
+  }
+
+  return res.data;
 };
 
 export const verifyOtp = async (payload: VerifyOtpPayload): Promise<VerifyOtpResponse> => {
@@ -224,6 +249,37 @@ export const resetPassword = async (payload: {
 
 export const getCurrentUser = async (): Promise<UserProfile> => {
   const response = await apiClient.get('/api/v1/user/getuser');
+  const body = response.data as { user?: BackendUser } | BackendUser;
+  const raw = (body as { user?: BackendUser }).user ?? (body as BackendUser);
+  return mapBackendUser(raw);
+};
+
+export interface ProfileFields {
+  name?: string;
+  state?: string;
+  district?: string;
+  block?: string;
+  gender?: string;
+  dob?: string | number;
+  address?: string;
+  email?: string;
+  areasOfWork?: string[];
+  categories?: string[];
+  workerSubType?: string;
+  agentType?: string;
+  workExperience?: string | number;
+  salaryType?: string;
+  fixedSalary?: string | number;
+  salaryFrom?: string | number;
+  salaryTo?: string | number;
+  employerType?: Record<string, boolean>;
+  preferredWorkLocations?: string[];
+}
+
+export const updateProfileFields = async (fields: ProfileFields): Promise<UserProfile> => {
+  const response = await apiClient.put('/api/v1/user/update', fields, {
+    headers: { 'Content-Type': 'application/json' },
+  });
   const body = response.data as { user?: BackendUser } | BackendUser;
   const raw = (body as { user?: BackendUser }).user ?? (body as BackendUser);
   return mapBackendUser(raw);

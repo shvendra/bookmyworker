@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../state/alert/AppAlertContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { usePricingConfig, calcDiscount } from '../../../core/api/endpoints/pricingApi';
@@ -179,15 +179,15 @@ export const SubscriptionModal = ({
           await Linking.openURL(url);
           onClose();
         } else {
-          Alert.alert('Error', 'Cannot open payment URL. Please try again.');
+          showAlert('Error', 'Cannot open payment URL. Please try again.');
         }
       } else {
-        Alert.alert('Subscribed!', 'Your subscription has been activated.');
+        showAlert('Subscribed!', 'Your subscription has been activated.');
         onClose();
       }
     },
     onError: () => {
-      Alert.alert('Payment Error', 'Could not initiate payment. Please try again.');
+      showAlert('Payment Error', 'Could not initiate payment. Please try again.');
     },
   });
 

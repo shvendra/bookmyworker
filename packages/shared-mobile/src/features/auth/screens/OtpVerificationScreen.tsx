@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -32,6 +33,7 @@ const RESEND_COOLDOWN = 60;
 const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -133,34 +135,34 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
       };
 
       if (appContext === 'employer-app' && actualRole !== 'employer') {
-        showRoleError('Only Employer accounts can login to the Employer App. Please use the Worker App if you have a Worker or Agent account.');
+        showRoleError(t('roleErrorOnlyEmployer'));
         return;
       }
       if (appContext === 'agent-app' && actualRole === 'employer') {
-        showRoleError('Employer accounts cannot login to the Worker App. Please use the BookMyWorker Employer App.');
+        showRoleError(t('roleErrorEmployerInWorkerApp'));
         return;
       }
       // Legacy checks (no appContext)
       if (!appContext && roleHint === 'employer' && actualRole !== 'employer') {
-        showRoleError('No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.');
+        showRoleError(t('roleErrorNoEmployerFound'));
         return;
       }
       if (!appContext && !roleHint && actualRole === 'employer') {
-        showRoleError('This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.');
+        showRoleError(t('roleErrorUseEmployerApp'));
         return;
       }
 
-      toast.success('Welcome to BookMyWorker!', 'Login Successful');
+      toast.success(t('welcomeToApp'), t('loginSuccessful'));
       await signIn(session);
     } catch (error) {
       const msg =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? (error instanceof Error ? error.message : 'Invalid OTP. Please try again.');
+        ?? (error instanceof Error ? error.message : t('invalidOtpMsg'));
       setErrorMessage(msg);
       shakeBoxes();
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
-      toast.error(msg, 'Verification Failed');
+      toast.error(msg, t('verificationFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -178,10 +180,10 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
       startCountdown();
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
-      toast.success(`OTP resent to +91 ${route.params.phone}`, 'OTP Resent');
+      toast.success(`${t('otpResentToNumber')} ${route.params.phone}`, t('otpResent'));
     } catch (error) {
       const resendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? (error instanceof Error ? error.message : 'Failed to resend OTP');
+        ?? (error instanceof Error ? error.message : t('failedResendOtp'));
       toast.error(resendMsg);
     } finally {
       setResendLoading(false);
@@ -202,7 +204,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
           </View>
           <View>
             <AppText style={styles.brandName}>BookMyWorker</AppText>
-            <AppText style={styles.brandTagline}>Verify your number</AppText>
+            <AppText style={styles.brandTagline}>{t('otpBrandTagline')}</AppText>
           </View>
         </View>
         <View style={[styles.deco, styles.deco1]} />
@@ -224,17 +226,17 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
                 <AppText style={styles.iconEmoji}>📱</AppText>
               </View>
               <AppText variant="heading" color={theme.colors.text} style={styles.heading}>
-                Verify Your Number
+                {t('verifyYourNumber')}
               </AppText>
               <AppText variant="body" color={theme.colors.mutedText} center style={styles.subText}>
-                We sent a {OTP_LENGTH}-digit OTP via{' '}
+                {t('otpCodeSentPrefix')}{' '}
                 <AppText variant="bodyMd" color="#25D366">WhatsApp</AppText>
-                {' '}to{'\n'}
+                {' '}{t('otpCodeSentTo')}{'\n'}
                 <AppText variant="bodyMd" color={theme.colors.text}>+91 {route.params.phone}</AppText>
               </AppText>
               <Pressable onPress={() => navigation.goBack()}>
                 <AppText variant="caption" color={theme.colors.primary} style={styles.changeLink}>
-                  Change number
+                  {t('changeNumber')}
                 </AppText>
               </Pressable>
             </View>
@@ -314,7 +316,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
             {/* Verify button */}
             <AppButton
-              title={isLoading ? 'Verifying…' : 'Verify & Continue →'}
+              title={isLoading ? t('processing') : t('verifyOtpBtn')}
               onPress={handleVerify}
               loading={isLoading}
               disabled={filled < OTP_LENGTH}
@@ -327,7 +329,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
             <View style={styles.resendRow}>
               {countdown > 0 ? (
                 <AppText variant="caption" color={theme.colors.mutedText} center>
-                  Resend OTP in{' '}
+                  {t('resendOtpIn')}{' '}
                   <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>
                     {countdown}s
                   </AppText>
@@ -335,7 +337,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
               ) : (
                 <Pressable onPress={handleResend} disabled={resendLoading}>
                   <AppText variant="caption" color={theme.colors.primary} style={styles.resendLink}>
-                    {resendLoading ? 'Sending…' : '↩ Resend OTP'}
+                    {resendLoading ? t('sending') : `↩ ${t('resendOtpBtn')}`}
                   </AppText>
                 </Pressable>
               )}
@@ -344,7 +346,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
           {/* Trust row */}
           <View style={styles.trustRow}>
-            {['🔒 End-to-end encrypted', '💬 Sent via WhatsApp', '✅ Secure verification'].map((item) => (
+            {[t('otpTrustBadge1'), t('otpTrustBadge2'), t('otpTrustBadge3')].map((item) => (
               <View key={item} style={[styles.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>

@@ -37,6 +37,8 @@ import type { MainStackParamList } from '../../../app/navigation/types';
 import WORKER_CATEGORIES from '../../../shared/data/categories.json';
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { buildPhotoUrl } from '../../../core/config/env';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 const PAGE_LIMIT = 25;
 
@@ -1063,7 +1065,7 @@ const AgentCard = ({
             {((appliedDistrict || agent.district) ?? agent.state) ? (
               <AppText style={wc.location} numberOfLines={1}>
                 {'📍 '}
-                {[appliedDistrict || agent.district, agent.state].filter(Boolean).join(', ')}
+                {getLocationStr({ district: appliedDistrict || agent.district, state: agent.state }, i18n.language, '')}
               </AppText>
             ) : null}
 

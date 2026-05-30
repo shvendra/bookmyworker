@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   RefreshControl,
@@ -15,10 +15,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -30,6 +32,7 @@ import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
+import { getJobTitle, getCategoryLabel, getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
 
 type RouteProps = RouteProp<MainStackParamList, 'JobMarketplace'>;
 
@@ -131,25 +134,33 @@ const totalWorkers = (r: RawRequirement): number =>
 interface ReqCardProps {
   req: RawRequirement;
   isAgent: boolean;
+  isVerifiedAgent: boolean;
+  isSelfWorker: boolean;
   alreadyInterested: boolean;
   isLiked: boolean;
   onInterest: (req: RawRequirement) => void;
   onLike: (id: string) => void;
+  onCallPress: (reqId: string, employerName: string) => void;
 }
 
-const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike }: ReqCardProps): React.JSX.Element => {
+const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyInterested, isLiked, onInterest, onLike, onCallPress }: ReqCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const visual = getVisual(req.workType, req.subCategory);
   const isDark = theme.mode === 'dark';
 
-  const locationStr = [req.district, req.state].filter(Boolean).join(', ') || '—';
+  const locationStr = getLocationStr(
+    { tehsil: req.tehsil, district: req.district, state: req.state },
+    i18n.language,
+    t('panIndia'),
+  );
   const workers = totalWorkers(req);
   const salaryText = `₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0}`;
   const salaryType = getSalaryType(req);
-  const salaryPeriod = salaryType.charAt(0).toUpperCase() + salaryType.slice(1);
-  const jobTitle = req.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req.workType);
-  const categoryLabel = fmtLabel(req.workType).replace(/ Workers?$/i, '');
+  const salaryPeriod = t(`salaryPeriod_${salaryType}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
+  const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
+  const categoryLabel = getCategoryLabel(req.workType, t);
 
   const handleShare = async (): Promise<void> => {
     try {
@@ -208,58 +219,83 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
       {/* ── Salary row ───────────────────────────────────────── */}
       <View style={styles.infoRow}>
         <AppText style={styles.infoRowIcon}>💼</AppText>
-        <AppText style={[styles.salaryAmt, { color: visual.color }]}>{salaryText} *</AppText>
-        <AppText style={[styles.salarySlash, { color: theme.colors.mutedText }]}>/{salaryPeriod}</AppText>
+        <AppText style={[styles.salaryAmt, { color: visual.color, flexShrink: 1 }]} numberOfLines={1}>{salaryText}</AppText>
+        <AppText style={[styles.salarySlash, { color: theme.colors.mutedText, flexShrink: 0 }]}> {t('salaryPer')} {salaryPeriod}</AppText>
         {workers > 0 && (
           <>
-            <AppText style={[styles.dot, { color: theme.colors.mutedText }]}> · </AppText>
-            <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]}>👷 {workers} needed</AppText>
+            <AppText style={[styles.dot, { color: theme.colors.mutedText, flexShrink: 0 }]}> · </AppText>
+            <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flexShrink: 0 }]} numberOfLines={1}>👷 {t('workerNeeded', { count: workers })}</AppText>
           </>
         )}
       </View>
 
       {/* ── Chips row ────────────────────────────────────────── */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContent}>
+      <View style={styles.chipsWrap}>
         <View style={[styles.chip, { backgroundColor: isDark ? theme.colors.surface : visual.bg + 'CC', borderColor: visual.color + '33' }]}>
-          <AppText style={[styles.chipText, { color: visual.color }]}>{categoryLabel}</AppText>
+          <AppText style={[styles.chipText, { color: visual.color }]} numberOfLines={1}>{categoryLabel}</AppText>
         </View>
         {req.accommodationAvailable && (
           <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <AppText style={[styles.chipText, { color: '#15803D' }]}>🏠 Stay</AppText>
+            <AppText style={[styles.chipText, { color: '#15803D' }]}>🏠 {t('perkStay')}</AppText>
           </View>
         )}
         {req.foodAvailable && (
           <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <AppText style={[styles.chipText, { color: '#C2410C' }]}>🍱 Food</AppText>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]}>🍱 {t('perkFood')}</AppText>
           </View>
         )}
         {req.transportProvided && (
           <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🚌 Transport</AppText>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🚌 {t('perkTransport')}</AppText>
           </View>
         )}
         {req.bonus && (
           <View style={[styles.chip, { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' }]}>
-            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🎁 Bonus</AppText>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🎁 {t('perkBonus')}</AppText>
           </View>
         )}
         {req.incentive && (
           <View style={[styles.chip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-            <AppText style={[styles.chipText, { color: '#92400E' }]}>⭐ Incentive</AppText>
+            <AppText style={[styles.chipText, { color: '#92400E' }]}>🌟 {t('perkIncentive')}</AppText>
           </View>
         )}
-      </ScrollView>
+        {req.weeklyOff && (
+          <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <AppText style={[styles.chipText, { color: '#15803D' }]}>📅 {t('perkWeeklyOff')}</AppText>
+          </View>
+        )}
+        {req.overtimeAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]}>⏱ {t('perkOvertime')}</AppText>
+          </View>
+        )}
+        {req.insuranceAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🛡 {t('perkInsurance')}</AppText>
+          </View>
+        )}
+        {req.pfAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🏦 {t('perkPf')}</AppText>
+          </View>
+        )}
+        {req.esicAvailable && (
+          <View style={[styles.chip, { backgroundColor: '#ECFEFF', borderColor: '#A5F3FC' }]}>
+            <AppText style={[styles.chipText, { color: '#0E7490' }]}>🏥 {t('perkEsic')}</AppText>
+          </View>
+        )}
+      </View>
 
       {/* ── Expanded details ─────────────────────────────────── */}
       {expanded && (
         <View style={[styles.expandedBlock, { borderTopColor: theme.colors.border }]}>
           {[
-            ['Employer', req.employerName],
-            ['Start Date', fmtDate(req.workerNeedDate)],
-            ['Timing', req.inTime && req.outTime ? `${req.inTime} – ${req.outTime}` : null],
-            ['Work Location', req.workLocation],
-            ['Remarks', req.remarks],
-            req.ERN_NUMBER ? ['ERN', req.ERN_NUMBER] : null,
+            [t('detailEmployer'), req.employerName],
+            [t('detailStartDate'), fmtDate(req.workerNeedDate)],
+            [t('detailTiming'), req.inTime && req.outTime ? `${req.inTime} – ${req.outTime}` : null],
+            [t('detailWorkLocation'), req.workLocation],
+            [t('detailRemarks'), req.remarks],
+            req.ERN_NUMBER ? [t('detailErn'), req.ERN_NUMBER] : null,
           ].filter((row): row is [string, string] => Boolean(row) && Boolean(row![1])).map(([k, v]) => (
             <View key={k} style={styles.detailRow}>
               <AppText variant="caption" color={theme.colors.mutedText} style={styles.detailKey}>{k}:</AppText>
@@ -277,7 +313,7 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
           activeOpacity={0.7}
         >
           <AppText style={[styles.detailsBtnText, { color: theme.colors.mutedText }]}>
-            {expanded ? 'Hide details ▲' : 'See details ▼'}
+            {expanded ? `${t('hideDetails')} ▲` : `${t('seeDetails')} ▼`}
           </AppText>
         </TouchableOpacity>
 
@@ -288,8 +324,32 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
             activeOpacity={0.75}
           >
             <AppText style={styles.shareBtnIcon}>📤</AppText>
-            <AppText style={[styles.shareBtnLabel, { color: theme.colors.mutedText }]}>Share</AppText>
+            <AppText style={[styles.shareBtnLabel, { color: theme.colors.mutedText }]}>{t('share')}</AppText>
           </TouchableOpacity>
+
+          {/* Call button — only visible when employer has an active subscription.
+              SelfWorker: can call freely.
+              Agent: must have verified badge, else show badge gate message. */}
+          {req.employerSubscribed && (
+            <TouchableOpacity
+              onPress={() => {
+                if (!isSelfWorker && isAgent && !isVerifiedAgent) {
+                  showAlert(
+                    t('verifiedBadgeRequired'),
+                    t('verifiedAgentCallMsg'),
+                    [{ text: 'OK' }]
+                  );
+                  return;
+                }
+                onCallPress(req._id, req.employerName ?? '');
+              }}
+              activeOpacity={0.8}
+              style={styles.viewContactBtn}
+            >
+              <AppText style={styles.viewContactIcon}>👁️</AppText>
+              <AppText style={styles.viewContactText}>View Contact</AppText>
+            </TouchableOpacity>
+          )}
 
           {isAgent && (
             <TouchableOpacity
@@ -298,13 +358,102 @@ const ReqCard = ({ req, isAgent, alreadyInterested, isLiked, onInterest, onLike 
               style={[styles.applyBtn, { backgroundColor: alreadyInterested ? '#10B981' : visual.color }]}
             >
               <AppText style={styles.applyBtnText}>
-                {alreadyInterested ? 'Applied ✓' : 'Apply →'}
+                {alreadyInterested ? t('appliedCheck') : `${t('apply')} →`}
               </AppText>
             </TouchableOpacity>
           )}
         </View>
       </View>
     </View>
+  );
+};
+
+// ── Contact reveal modal ──────────────────────────────────────────────────────
+interface ContactModalProps {
+  visible: boolean;
+  name: string;
+  phone: string;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+}
+
+const ContactModal = ({ visible, name, phone, loading, error, onClose }: ContactModalProps): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 16 }}
+          >
+            {/* Handle bar */}
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.border, alignSelf: 'center', marginBottom: 20 }} />
+
+            <View style={{ alignItems: 'center', paddingHorizontal: 8 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                <AppText style={{ fontSize: 32 }}>📞</AppText>
+              </View>
+              <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text, marginBottom: 4, textAlign: 'center' }}>{name || 'Employer'}</AppText>
+              <AppText style={{ fontSize: 12, color: theme.colors.mutedText, marginBottom: 20 }}>Employer Contact</AppText>
+
+              {/* Phone number card */}
+              <View style={{
+                backgroundColor: loading ? '#F8FAFC' : (phone ? '#EBF1FF' : '#FEF2F2'),
+                borderRadius: 16,
+                paddingVertical: 20,
+                paddingHorizontal: 24,
+                marginBottom: 24,
+                borderWidth: 1.5,
+                borderColor: loading ? theme.colors.border : (phone ? '#1037A4' + '40' : '#FECACA'),
+                width: '100%',
+                alignItems: 'center',
+                minHeight: 72,
+                justifyContent: 'center',
+              }}>
+                {loading ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <ActivityIndicator size="small" color="#1037A4" />
+                    <AppText style={{ fontSize: 14, color: '#1037A4', fontWeight: '600' }}>Fetching contact…</AppText>
+                  </View>
+                ) : error ? (
+                  <View style={{ alignItems: 'center', gap: 4 }}>
+                    <AppText style={{ fontSize: 20 }}>⚠️</AppText>
+                    <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600', textAlign: 'center' }}>{error}</AppText>
+                  </View>
+                ) : phone ? (
+                  <View style={{ alignItems: 'center', gap: 4 }}>
+                    <AppText style={{ fontSize: 11, fontWeight: '700', color: '#1037A4', letterSpacing: 0.5, textTransform: 'uppercase' }}>Mobile Number</AppText>
+                    <AppText style={{ fontSize: 26, fontWeight: '900', color: '#1037A4', letterSpacing: 2 }}>{phone}</AppText>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center', gap: 4 }}>
+                    <AppText style={{ fontSize: 20 }}>📵</AppText>
+                    <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600' }}>Phone number not available</AppText>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <AppButton title="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <AppButton
+                title="📞 Call Now"
+                onPress={() => { if (phone) void Linking.openURL(`tel:${phone}`); onClose(); }}
+                style={{ flex: 1 }}
+                disabled={!phone || loading}
+              />
+            </View>
+          </ScrollView>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
   );
 };
 
@@ -319,6 +468,7 @@ interface WageModalProps {
 
 const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const [wage, setWage] = useState('');
   const visual = getVisual(req?.workType, req?.subCategory);
@@ -327,60 +477,67 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
 
   const minWage = req?.minBudgetPerWorker ?? 0;
   const period = req ? getSalaryType(req) : 'day';
-  const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
+  const periodLabel = t(`salaryPeriod_${period}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
           <TouchableOpacity
             activeOpacity={1}
-            style={[styles.modalBox, { backgroundColor: theme.colors.surface, paddingBottom: Math.max(insets.bottom, 16) + 16 }]}
+            style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}
           >
-            {/* Job banner inside modal */}
-            <View style={[styles.modalBanner, { backgroundColor: visual.bg }]}>
-              <AppText style={styles.modalBannerEmoji}>{visual.emoji}</AppText>
-              <View style={{ flex: 1 }}>
-                <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={1}>
-                  {req?.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req?.workType)}
-                </AppText>
-                <AppText variant="caption" style={{ color: visual.color + '99' }}>
-                  {req?.district ?? ''} · ₹{minWage}+ per {period}
-                </AppText>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 16 }}
+            >
+              {/* Job banner inside modal */}
+              <View style={[styles.modalBanner, { backgroundColor: visual.bg }]}>
+                <AppText style={styles.modalBannerEmoji}>{visual.emoji}</AppText>
+                <View style={{ flex: 1 }}>
+                  <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={1}>
+                    {getJobTitle(req?.workType, req?.subCategory, i18n.language, t)}
+                  </AppText>
+                  <AppText variant="caption" style={{ color: visual.color + '99' }}>
+                    {req?.district ?? ''} · ₹{minWage}+ {t('perPeriod', { period })}
+                  </AppText>
+                </View>
               </View>
-            </View>
 
-            <AppText variant="caption" color={theme.colors.mutedText} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              Your Required Wage per Worker/{periodLabel} (min ₹{minWage})
-            </AppText>
-            <TextInput
-              value={wage}
-              onChangeText={setWage}
-              keyboardType="numeric"
-              placeholder={`Enter amount (≥ ₹${minWage})`}
-              placeholderTextColor={theme.colors.mutedText}
-              style={[styles.wageInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
-            />
-
-            <View style={styles.modalActions}>
-              <AppButton title="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
-              <AppButton
-                title="Submit Application"
-                loading={loading}
-                onPress={() => {
-                  const n = Number(wage);
-                  if (!n || n < minWage) {
-                    Alert.alert('Invalid Wage', `Minimum wage is ₹${minWage}`);
-                    return;
-                  }
-                  if (req?._id) onSubmit(req._id, n);
-                }}
-                style={{ flex: 1 }}
+              <AppText variant="caption" color={theme.colors.mutedText} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('wageFieldLabel', { period: periodLabel, minWage })}
+              </AppText>
+              <TextInput
+                value={wage}
+                onChangeText={setWage}
+                keyboardType="numeric"
+                placeholder={t('wageInputPlaceholder', { minWage })}
+                placeholderTextColor={theme.colors.mutedText}
+                style={[styles.wageInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
               />
-            </View>
+
+              <View style={[styles.modalActions, { marginTop: 8 }]}>
+                <AppButton title={t('cancel')} variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+                <AppButton
+                  title={t('submitApplication')}
+                  loading={loading}
+                  onPress={() => {
+                    const n = Number(wage);
+                    if (!n || n < minWage) {
+                      showAlert(t('alertInvalidWage'), t('alertMinWageMsg', { minWage }));
+                      return;
+                    }
+                    if (req?._id) onSubmit(req._id, n);
+                  }}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
       </KeyboardAvoidingView>
@@ -391,6 +548,7 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export const JobMarketplaceScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const isDark = theme.mode === 'dark';
   const insets = useSafeAreaInsets();
   const { state: authState } = useAuth();
@@ -401,6 +559,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const user = authState.session?.user;
   const role = user?.role ?? 'worker';
   const isAgent = role === 'agent' || role === 'selfworker' || role === 'worker';
+  const isVerifiedAgent = !!(user?.veryfiedBage);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -510,6 +669,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [wageModalReq, setWageModalReq] = useState<RawRequirement | null>(null);
   const [sortMode, setSortMode] = useState<'default' | 'salary' | 'new'>('default');
+  const [contactInfo, setContactInfo] = useState<{ name: string; phone: string; loading: boolean; error: string | null } | null>(null);
 
   // Seed liked IDs from server data (likedBy field on each requirement)
   useEffect(() => {
@@ -551,14 +711,32 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       setInterestedIds((prev) => new Set([...prev, reqId]));
       setWageModalReq(null);
       void queryClient.invalidateQueries({ queryKey: ['requirements-role'] });
-      Alert.alert('Applied! 🎉', 'Your application was submitted successfully.');
+      showAlert('Applied! 🎉', 'Your application was submitted successfully.');
     },
-    onError: () => Alert.alert('Error', 'Could not submit application. Please try again.'),
+    onError: () => showAlert('Error', 'Could not submit application. Please try again.'),
   });
 
   const handleInterest = useCallback((req: RawRequirement): void => {
     setWageModalReq(req);
   }, []);
+
+  // Reveal employer phone — opens modal immediately with a loading state, then populates phone
+  const revealMutation = useMutation({
+    mutationFn: (reqId: string) => requirementsApi.revealEmployerPhone(reqId),
+    onSuccess: ({ phone, name }) => {
+      setContactInfo({ phone: phone ?? '', name, loading: false, error: null });
+    },
+    onError: (err: unknown) => {
+      const errObj = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = errObj?.response?.data?.message ?? errObj?.message ?? 'Could not fetch contact details.';
+      setContactInfo((prev) => prev ? { ...prev, loading: false, error: msg } : null);
+    },
+  });
+
+  const handleCallPress = useCallback((reqId: string, employerName: string): void => {
+    setContactInfo({ phone: '', name: employerName, loading: true, error: null });
+    revealMutation.mutate(reqId);
+  }, [revealMutation]);
 
   const isInterested = (req: RawRequirement): boolean =>
     interestedIds.has(req._id) ||
@@ -576,10 +754,10 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     return requirements;
   }, [requirements, sortMode]);
 
-  if (isLoading) return <LoadingState message="Loading jobs…" />;
-  if (isError) return <ErrorState title="Unable to Load Jobs" message="Could not fetch jobs. Please check your connection and try again." onRetry={() => void refetch()} />;
+  if (isLoading) return <LoadingState message={t('loading')} />;
+  if (isError) return <ErrorState title={t('alertError')} message={t('fetchJobsError')} onRetry={() => void refetch()} />;
 
-  const pageTitle = showLikedOnly ? 'Saved Jobs ❤️' : showMyInterests ? 'My Applications' : 'Find Work Near You';
+  const pageTitle = showLikedOnly ? t('likedJobs') : showMyInterests ? t('myApplicationsTab') : t('findWorkNearYou');
   const hasFilters = !!(selectedCategory || selectedSubCat);
 
   return (
@@ -595,7 +773,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           <View style={{ flex: 1 }}>
             <AppText style={styles.headerTitle}>{pageTitle}</AppText>
             <AppText style={styles.headerSub}>
-              {(totalCount > 0 ? totalCount : requirements.length)} jobs found near you
+              {t('jobsFoundNearYou', { count: totalCount > 0 ? totalCount : requirements.length })}
             </AppText>
           </View>
           {isFetching && !isFetchingNextPage && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
@@ -607,7 +785,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           <TextInput
             value={search}
             onChangeText={handleSearchChange}
-            placeholder="Search work type, location…"
+            placeholder={t('searchPlaceholder')}
             placeholderTextColor="rgba(255,255,255,0.55)"
             style={styles.searchBarInput}
             returnKeyType="search"
@@ -633,9 +811,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         {!showLikedOnly && !showMyInterests && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
             {([
-              { id: 'default', label: '✦ All Jobs' },
-              { id: 'salary',  label: '💰 High Salary' },
-              { id: 'new',     label: '⚡ New Jobs' },
+              { id: 'default', label: `✦ ${t('sortAllJobs')}` },
+              { id: 'salary',  label: `💰 ${t('sortHighSalary')}` },
+              { id: 'new',     label: `⚡ ${t('sortNewJobs')}` },
             ] as const).map((s) => (
               <TouchableOpacity
                 key={s.id}
@@ -657,7 +835,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           {selectedCategory && (
             <View style={[styles.activeChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}>
               <AppText style={[styles.activeChipText, { color: theme.colors.primary }]}>
-                {(WORK_TYPE_VISUALS[selectedCategory] ?? DEFAULT_VISUAL).emoji} {CATEGORIES.find(c => c.value === selectedCategory)?.label?.replace(/ Workers?$/, '') ?? selectedCategory}
+                {(WORK_TYPE_VISUALS[selectedCategory] ?? DEFAULT_VISUAL).emoji} {getCategoryLabel(selectedCategory, t)}
               </AppText>
               <TouchableOpacity onPress={() => { setSelectedCategory(''); setSelectedSubCat(''); }} hitSlop={8}>
                 <AppText style={[styles.activeChipX, { color: theme.colors.primary }]}>✕</AppText>
@@ -681,13 +859,13 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       {sortedRequirements.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
-            title={showLikedOnly ? 'No saved jobs yet' : 'No jobs found'}
+            title={showLikedOnly ? t('noLikedJobsTitle') : t('noJobsFound')}
             message={
               showLikedOnly
-                ? 'Tap ❤️ on any job to save it here.'
+                ? t('noLikedJobsMsg')
                 : selectedCategory
-                  ? 'No open jobs for this work type in your area.'
-                  : 'No open jobs at the moment. Check back soon!'
+                  ? t('noJobsInArea')
+                  : t('noJobsYet')
             }
           />
         </View>
@@ -710,10 +888,13 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             <ReqCard
               req={item}
               isAgent={isAgent}
+              isVerifiedAgent={isVerifiedAgent}
+              isSelfWorker={role === 'selfworker'}
               alreadyInterested={isInterested(item)}
               isLiked={likedIds.has(item._id)}
               onInterest={handleInterest}
               onLike={handleLike}
+              onCallPress={handleCallPress}
             />
           )}
           ListFooterComponent={
@@ -740,23 +921,23 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
           {/* Header */}
           <View style={styles.sheetHeader}>
-            <AppText style={[styles.sheetTitle, { color: theme.colors.text }]}>Filter Jobs</AppText>
+            <AppText style={[styles.sheetTitle, { color: theme.colors.text }]}>{t('filterJobsTitle')}</AppText>
             {(pendingCategory || pendingSubCat) && (
               <TouchableOpacity onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}>
-                <AppText style={styles.sheetClear}>Clear All</AppText>
+                <AppText style={styles.sheetClear}>{t('clearAllFilters')}</AppText>
               </TouchableOpacity>
             )}
           </View>
 
           <ScrollView style={styles.sheetBody} showsVerticalScrollIndicator={false}>
             {/* Work Category */}
-            <AppText style={[styles.sheetSection, { color: theme.colors.mutedText }]}>WORK CATEGORY</AppText>
+            <AppText style={[styles.sheetSection, { color: theme.colors.mutedText }]}>{t('workCategorySection').toUpperCase()}</AppText>
             <TouchableOpacity
               onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}
               style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
             >
               <AppText style={styles.sheetRowEmoji}>🔍</AppText>
-              <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>All Categories</AppText>
+              <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>{t('allCategories')}</AppText>
               {!pendingCategory && <AppText style={styles.sheetRowCheck}>✓</AppText>}
             </TouchableOpacity>
             {CATEGORIES.map((cat) => {
@@ -770,7 +951,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
                 >
                   <AppText style={styles.sheetRowEmoji}>{v.emoji}</AppText>
                   <AppText style={[styles.sheetRowLabel, { color: active ? theme.colors.primary : theme.colors.text, fontWeight: active ? '700' : '500' }]}>
-                    {cat.label.replace(/ Workers?$/, '')}
+                    {getCategoryLabel(cat.value, t)}
                   </AppText>
                   {active && <AppText style={styles.sheetRowCheck}>✓</AppText>}
                 </TouchableOpacity>
@@ -780,12 +961,12 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             {/* Sub-category */}
             {pendingSubCategories.length > 0 && (
               <>
-                <AppText style={[styles.sheetSection, { color: theme.colors.mutedText, marginTop: 16 }]}>SUB CATEGORY</AppText>
+                <AppText style={[styles.sheetSection, { color: theme.colors.mutedText, marginTop: 16 }]}>{t('subCategorySection').toUpperCase()}</AppText>
                 <TouchableOpacity
                   onPress={() => setPendingSubCat('')}
                   style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
                 >
-                  <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>All Sub-categories</AppText>
+                  <AppText style={[styles.sheetRowLabel, { color: theme.colors.text }]}>{t('allSubCategories')}</AppText>
                   {!pendingSubCat && <AppText style={styles.sheetRowCheck}>✓</AppText>}
                 </TouchableOpacity>
                 {pendingSubCategories.map((sc) => {
@@ -797,7 +978,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
                       style={[styles.sheetRow, { borderBottomColor: theme.colors.divider, backgroundColor: active ? '#EDE9FE' : 'transparent' }]}
                     >
                       <AppText style={[styles.sheetRowLabel, { color: active ? '#6366F1' : theme.colors.text, fontWeight: active ? '700' : '500' }]}>
-                        {sc.label}
+                        {getSubCatLabel(sc.value, i18n.language)}
                       </AppText>
                       {active && <AppText style={[styles.sheetRowCheck, { color: '#6366F1' }]}>✓</AppText>}
                     </TouchableOpacity>
@@ -810,7 +991,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
           <View style={[styles.sheetFooter, { borderTopColor: theme.colors.border }]}>
             <AppButton
-              title="Apply Filters"
+              title={t('applyFiltersBtn')}
               onPress={() => {
                 setSelectedCategory(pendingCategory);
                 setSelectedSubCat(pendingSubCat);
@@ -829,6 +1010,16 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         onClose={() => setWageModalReq(null)}
         onSubmit={(reqId, wage) => interestMutation.mutate({ reqId, wage })}
         loading={interestMutation.isPending}
+      />
+
+      {/* Contact reveal modal */}
+      <ContactModal
+        visible={!!contactInfo}
+        name={contactInfo?.name ?? ''}
+        phone={contactInfo?.phone ?? ''}
+        loading={contactInfo?.loading ?? false}
+        error={contactInfo?.error ?? null}
+        onClose={() => setContactInfo(null)}
       />
     </View>
   );
@@ -966,13 +1157,13 @@ const styles = StyleSheet.create({
   dot: { fontSize: 12 },
 
   // Chips
-  chipsScroll: { paddingHorizontal: 14, marginVertical: 8 },
-  chipsContent: { flexDirection: 'row', gap: 7 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: 14, marginVertical: 8 },
   chip: {
     borderRadius: 999, borderWidth: 1,
     paddingHorizontal: 11, paddingVertical: 5,
+    flexShrink: 0,
   },
-  chipText: { fontSize: 11.5, fontWeight: '600' },
+  chipText: { fontSize: 11.5, fontWeight: '600', flexShrink: 0 },
 
   // Expanded
   expandedBlock: { borderTopWidth: StyleSheet.hairlineWidth, padding: 14, gap: 8 },
@@ -991,6 +1182,13 @@ const styles = StyleSheet.create({
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
   shareBtnIcon: { fontSize: 13, lineHeight: 17 },
   shareBtnLabel: { fontSize: 12, fontWeight: '600' },
+  viewContactBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+    backgroundColor: '#1037A4',
+  },
+  viewContactIcon: { fontSize: 13, lineHeight: 17 },
+  viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   applyBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 96 },
   applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 

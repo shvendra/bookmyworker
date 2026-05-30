@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "commonjs",
+    "lib": ["ES2019", "DOM"],
+    "jsx": "react",
+    "strict": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
+    "outDir": "dist-test",
+    "baseUrl": ".",
+    "types": ["jest", "node"],
+    "paths": {
+      "expo-file-system": ["src/__tests__/__mocks__/expo-file-system.d.ts"],
+      "react-native": ["src/__tests__/__mocks__/react-native.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist-test"]
+}

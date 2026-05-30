@@ -1,8 +1,9 @@
-import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
+import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
 import { registerForPushNotifications } from '../../../core/notifications/pushService';
 import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
 import type { AppRole, UserProfile } from '../../../shared/types/domain';
+import { isWorkerProfileComplete } from '../../../shared/utils/workerProfileUtils';
 
 // Priority: Agent > SelfWorker > Worker. Applied when user has multiple roles on same phone.
 const ROLE_PRIORITY: Record<string, number> = { Agent: 3, SelfWorker: 2, Worker: 1, Employer: 0 };
@@ -91,6 +92,25 @@ export const authService = {
     await verifyOtpOnly(phone, otp);
   },
 
+  // Login directly with password after registration — no second OTP needed
+  loginWithPassword: async (phone: string, password: string, roleHint?: AppRole, appContext?: AppContext): Promise<AuthSession> => {
+    const pushToken = await registerForPushNotifications();
+    const response = await loginWithPasswordApi({ phone, password, roleHint, appContext });
+    if (pushToken) {
+      notificationApi.registerToken(pushToken).catch(() => {});
+    }
+    return {
+      tokens: {
+        accessToken: response.token,
+        refreshToken: response.token,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      },
+      user: response.user,
+      onboardingCompleted: isWorkerProfileComplete(response.user),
+      availableRoles: response.availableRoles,
+    };
+  },
+
   // Called after registration to get a session token via OTP login
   loginAfterRegister: async (phone: string, otp: string, roleHint?: AppRole): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();
@@ -105,7 +125,7 @@ export const authService = {
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       },
       user: response.user,
-      onboardingCompleted: false,
+      onboardingCompleted: isWorkerProfileComplete(response.user),
       availableRoles: response.availableRoles,
     };
   },

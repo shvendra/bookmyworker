@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -8,6 +7,7 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -45,7 +45,7 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
       await switchRole(backendRole);
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Switch Failed', e instanceof Error ? e.message : 'Could not switch account. Please try again.');
+      showAlert('Switch Failed', e instanceof Error ? e.message : 'Could not switch account. Please try again.');
       setSwitching(null);
     }
   };
@@ -54,9 +54,9 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
     setSettingDefault(backendRole);
     try {
       await setDefaultRole(backendRole);
-      Alert.alert('Default Set', `${ROLE_META[backendRole]?.label ?? backendRole} is now your default account. It will open automatically on next login.`);
+      showAlert('Default Set', `${ROLE_META[backendRole]?.label ?? backendRole} is now your default account. It will open automatically on next login.`);
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not set default. Please try again.');
+      showAlert('Error', e instanceof Error ? e.message : 'Could not set default. Please try again.');
     } finally {
       setSettingDefault(null);
     }

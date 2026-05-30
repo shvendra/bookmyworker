@@ -173,13 +173,38 @@ const TypeSelectionStep = ({ onSelect, onBack }: TypeSelectionProps): React.JSX.
 
 
 // ─── Step 2: Requirement Form ──────────────────────────────────────────────────
+interface PrefillData {
+  workType?: string;
+  subCategory?: string;
+  reqType?: string;
+  state?: string;
+  district?: string;
+  tehsil?: string;
+  workerQuantitySkilled?: number;
+  salaryType?: string;
+  budgetPerWorker?: number;
+  minBudgetPerWorker?: number;
+  maxBudgetPerWorker?: number;
+  remarks?: string;
+  inTime?: string;
+  outTime?: string;
+  accommodationAvailable?: boolean;
+  foodAvailable?: boolean;
+  transportProvided?: boolean;
+  weeklyOff?: boolean;
+  overtimeAvailable?: boolean;
+  incentive?: boolean;
+  bonus?: boolean;
+}
+
 interface FormStepProps {
   reqType: RequirementType;
   onBack: () => void;
   initialWorkType?: string;
+  prefill?: PrefillData;
 }
 
-const RequirementFormStep = ({ reqType, onBack, initialWorkType }: FormStepProps): React.JSX.Element => {
+const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: FormStepProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<Nav>();
   const { state: authState } = useAuth();
@@ -201,13 +226,13 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType }: FormStepProps
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const [boolFlags, setBoolFlags] = useState<Record<BooleanFlagKey, boolean>>({
-    accommodationAvailable: false,
-    foodAvailable: false,
-    transportProvided: false,
-    weeklyOff: false,
-    overtimeAvailable: false,
-    bonus: false,
-    incentive: false,
+    accommodationAvailable: prefill?.accommodationAvailable ?? false,
+    foodAvailable:          prefill?.foodAvailable ?? false,
+    transportProvided:      prefill?.transportProvided ?? false,
+    weeklyOff:              prefill?.weeklyOff ?? false,
+    overtimeAvailable:      prefill?.overtimeAvailable ?? false,
+    bonus:                  prefill?.bonus ?? false,
+    incentive:              prefill?.incentive ?? false,
     insuranceAvailable: false,
     pfAvailable: false,
     esicAvailable: false,
@@ -255,6 +280,24 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType }: FormStepProps
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialWorkType]);
+
+  // Pre-fill all fields when reposting
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.workType)              setValue('workType', prefill.workType, { shouldValidate: false });
+    if (prefill.subCategory)           setValue('subCategory', prefill.subCategory, { shouldValidate: false });
+    if (prefill.state)                 setValue('state', prefill.state, { shouldValidate: false });
+    if (prefill.district)              setValue('district', prefill.district, { shouldValidate: false });
+    if (prefill.tehsil)                setValue('tehsil', prefill.tehsil, { shouldValidate: false });
+    if (prefill.workerQuantitySkilled) setValue('workerQuantitySkilled', String(prefill.workerQuantitySkilled), { shouldValidate: false });
+    if (prefill.salaryType)            setValue('salaryType', prefill.salaryType as 'Daily' | 'Weekly' | 'Monthly', { shouldValidate: false });
+    if (prefill.minBudgetPerWorker)    setValue('minBudgetPerWorker', String(prefill.minBudgetPerWorker), { shouldValidate: false });
+    if (prefill.maxBudgetPerWorker)    setValue('maxBudgetPerWorker', String(prefill.maxBudgetPerWorker), { shouldValidate: false });
+    if (prefill.remarks)               setValue('remarks', prefill.remarks, { shouldValidate: false });
+    if (prefill.inTime)                setValue('inTime', prefill.inTime, { shouldValidate: false });
+    if (prefill.outTime)               setValue('outTime', prefill.outTime, { shouldValidate: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stateVal = watch('state');
   const districtVal = watch('district');
@@ -670,10 +713,11 @@ export const PostRequirementScreen = (): React.JSX.Element => {
   const { state: authState } = useAuth();
   const user = authState.session?.user;
 
-  const paramReqType = (route.params?.reqType ?? null) as RequirementType | null;
-  const paramWorkType = route.params?.workType ?? '';
+  const paramReqType  = (route.params?.reqType ?? route.params?.prefill?.reqType ?? null) as RequirementType | null;
+  const paramWorkType = route.params?.workType ?? route.params?.prefill?.workType ?? '';
+  const prefill       = route.params?.prefill;
 
-  // If "Hire Again" passed a reqType, skip type selection
+  // If repost / "Hire Again" passed a reqType, skip type selection
   const [reqType, setReqType] = useState<RequirementType | null>(paramReqType);
 
   const isEmployer = user?.role === 'employer';
@@ -716,6 +760,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
         reqType={reqType}
         onBack={() => setReqType(null)}
         initialWorkType={paramWorkType || undefined}
+        prefill={prefill}
       />
     </View>
   );

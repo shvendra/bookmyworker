@@ -15,13 +15,12 @@ import { WorkerDashboardScreen } from '../../features/worker/screens/WorkerDashb
 import { EmployerDashboardScreen } from '../../features/employer/screens/EmployerDashboardScreen';
 import { AgentDashboardScreen } from '../../features/agent/screens/AgentDashboardScreen';
 // ── Role-specific feature screens ─────────────────────────────────────────────
-import { PayoutScreen } from '../../features/wallet/screens/PayoutScreen';
 import { TransactionScreen } from '../../features/wallet/screens/TransactionScreen';
-
+// import { MyPlacementsScreen } from '../../features/agent/screens/MyPlacementsScreen';
+import { AgentWorkersScreen } from '../../features/agent/screens/AgentWorkersScreen';
 // ── Shared screens ────────────────────────────────────────────────────────────
 import { WorkerSearchScreen } from '../../features/search/screens/WorkerSearchScreen';
 import { PostRequirementScreen } from '../../features/jobs/screens/PostRequirementScreen';
-import { AttendanceScreen } from '../../features/attendance/screens/AttendanceScreen';
 import { JobMarketplaceScreen } from '../../features/jobs/screens/JobMarketplaceScreen';
 import { MyApplicationsScreen } from '../../features/jobs/screens/MyApplicationsScreen';
 import { ChatNavigator } from './ChatNavigator';
@@ -50,10 +49,11 @@ interface TabConfig {
 
 const roleTabConfigs: Record<AppRole, TabConfig[]> = {
   worker: [
-    { name: 'Home',       labelKey: 'tab_home',       component: WorkerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
-    { name: 'Jobs',       labelKey: 'tab_jobs',        component: JobMarketplaceScreen,  icon: { outline: 'briefcase-outline',  filled: 'briefcase'  } },
-    { name: 'Chat',       labelKey: 'tab_chat',        component: ChatNavigator,         icon: { outline: 'chatbubbles-outline',filled: 'chatbubbles'} },
-    { name: 'Profile',    labelKey: 'tab_profile',     component: ProfileScreen,         icon: { outline: 'person-outline',     filled: 'person'     } },
+    { name: 'Home',         labelKey: 'tab_home',         component: WorkerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'        } },
+    { name: 'Saved',        labelKey: 'tab_saved',        component: JobMarketplaceScreen,  icon: { outline: 'heart-outline',      filled: 'heart'       }, initialParams: { likedOnly: true } },
+    { name: 'Jobs',         labelKey: 'tab_jobs',         component: JobMarketplaceScreen,  icon: { outline: 'briefcase-outline',  filled: 'briefcase'   }, isAction: true },
+    { name: 'Applications', labelKey: 'tab_applications', component: MyApplicationsScreen,  icon: { outline: 'document-text-outline', filled: 'document-text' } },
+    { name: 'Profile',      labelKey: 'tab_profile',      component: ProfileScreen,         icon: { outline: 'person-outline',     filled: 'person'      } },
   ],
   employer: [
     { name: 'Home',         labelKey: 'tab_dashboard', component: EmployerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'       } },
@@ -63,18 +63,19 @@ const roleTabConfigs: Record<AppRole, TabConfig[]> = {
     { name: 'Profile',      labelKey: 'tab_profile',   component: ProfileScreen,           icon: { outline: 'person-outline',     filled: 'person'     } },
   ],
   agent: [
-    { name: 'Home',    labelKey: 'tab_home',    component: AgentDashboardScreen, icon: { outline: 'home-outline',        filled: 'home'        } },
-    { name: 'Saved',   labelKey: 'tab_saved',   component: JobMarketplaceScreen, icon: { outline: 'heart-outline',       filled: 'heart'       }, initialParams: { likedOnly: true } },
-    { name: 'Jobs',    labelKey: 'tab_jobs',    component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',   filled: 'briefcase'   }, isAction: true },
-    { name: 'Chat',    labelKey: 'tab_chat',    component: ChatNavigator,        icon: { outline: 'chatbubbles-outline', filled: 'chatbubbles' } },
-    { name: 'Profile', labelKey: 'tab_profile', component: ProfileScreen,        icon: { outline: 'person-outline',      filled: 'person'      } },
+    { name: 'Home',       labelKey: 'tab_home',       component: AgentDashboardScreen, icon: { outline: 'home-outline',        filled: 'home'        } },
+    { name: 'MyWorkers',  labelKey: 'tab_network',    component: AgentWorkersScreen,   icon: { outline: 'people-outline',      filled: 'people'      } },
+    { name: 'Jobs',       labelKey: 'tab_jobs',       component: JobMarketplaceScreen, icon: { outline: 'briefcase-outline',   filled: 'briefcase'   }, isAction: true },
+    { name: 'Liked',      labelKey: 'tab_liked',      component: JobMarketplaceScreen, icon: { outline: 'heart-outline',       filled: 'heart'       }, initialParams: { likedOnly: true } },
+    // { name: 'Placements', labelKey: 'tab_placements', component: MyPlacementsScreen,   icon: { outline: 'checkmark-done-circle-outline', filled: 'checkmark-done-circle' } },
+    { name: 'Profile',    labelKey: 'tab_profile',    component: ProfileScreen,        icon: { outline: 'person-outline',      filled: 'person'      } },
   ],
   selfworker: [
-    { name: 'Home',    labelKey: 'tab_home',     component: WorkerDashboardScreen,  icon: { outline: 'home-outline',        filled: 'home'        } },
-    { name: 'Saved',   labelKey: 'tab_saved',    component: JobMarketplaceScreen,   icon: { outline: 'heart-outline',       filled: 'heart'       }, initialParams: { likedOnly: true } },
-    { name: 'Jobs',    labelKey: 'tab_jobs',     component: JobMarketplaceScreen,   icon: { outline: 'briefcase-outline',   filled: 'briefcase'   }, isAction: true },
-    { name: 'Chat',    labelKey: 'tab_chat',     component: ChatNavigator,          icon: { outline: 'chatbubbles-outline', filled: 'chatbubbles' } },
-    { name: 'Profile', labelKey: 'tab_profile',  component: ProfileScreen,          icon: { outline: 'person-outline',      filled: 'person'      } },
+    { name: 'Home',         labelKey: 'tab_home',         component: WorkerDashboardScreen, icon: { outline: 'home-outline',       filled: 'home'        } },
+    { name: 'Saved',        labelKey: 'tab_saved',        component: JobMarketplaceScreen,  icon: { outline: 'heart-outline',      filled: 'heart'       }, initialParams: { likedOnly: true } },
+    { name: 'Jobs',         labelKey: 'tab_jobs',         component: JobMarketplaceScreen,  icon: { outline: 'briefcase-outline',  filled: 'briefcase'   }, isAction: true },
+    { name: 'Applications', labelKey: 'tab_applications', component: MyApplicationsScreen,  icon: { outline: 'document-text-outline', filled: 'document-text' } },
+    { name: 'Profile',      labelKey: 'tab_profile',      component: ProfileScreen,         icon: { outline: 'person-outline',     filled: 'person'      } },
   ],
   // Admin/SuperAdmin roles fall back to the employer tab set
   admin: [

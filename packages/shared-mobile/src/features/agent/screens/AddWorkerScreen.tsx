@@ -136,7 +136,8 @@ export const AddWorkerScreen = (): React.JSX.Element => {
       formData.append('password', values.mobile);
       formData.append('role', 'Worker');
       if (values.gender) formData.append('gender', values.gender);
-      if (values.dob) formData.append('dob', values.dob);
+      // dob stores age as plain Number (e.g. 25)
+      if (values.dob) formData.append('dob', String(Number(values.dob)));
       if (values.address) formData.append('address', values.address);
       if (stateVal) formData.append('state', stateVal);
       if (districtVal) formData.append('district', districtVal);
@@ -156,8 +157,8 @@ export const AddWorkerScreen = (): React.JSX.Element => {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['agent-stats'] });
-      toast.success('Worker registered successfully. Their password is their mobile number.', 'Worker Added!');
-      setTimeout(() => { if (canGoBack) navigation.goBack(); }, 1500);
+      toast.success('Worker registered successfully.', 'Worker Added!');
+      if (canGoBack) navigation.goBack();
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Could not register worker', 'Registration Failed');
@@ -179,21 +180,9 @@ export const AddWorkerScreen = (): React.JSX.Element => {
   return (
     <View style={styles.root}>
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <View >
-    
-        {canGoBack && (
-        
-              <ScreenHeader
-                  title="Add Worker"
-                  onBack={() => navigation.goBack()}
-                  onRightPress={() => navigation.navigate('AddWorker')}
-                />
-                
-        )}
-
-      
-      </View>
+      {canGoBack && (
+        <ScreenHeader title="Add Worker" onBack={() => navigation.goBack()} />
+      )}
 
       {/* ── Form body ────────────────────────────────────────── */}
       <KeyboardAvoidingView
@@ -223,7 +212,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
                 />
               )}
             />
-            <FormInput control={control} name="dob" label="Age" placeholder="Age" keyboardType="numbers-and-punctuation" />
+            <FormInput control={control} name="dob" label="Age" placeholder="e.g. 25" keyboardType="number-pad" maxLength={2} />
             <FormInput control={control} name="address" label="Village / Town / Address" placeholder="Local address" />
           </SectionCard>
 

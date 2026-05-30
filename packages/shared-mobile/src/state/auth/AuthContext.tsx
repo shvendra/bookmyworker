@@ -8,9 +8,10 @@ import i18n from '../../core/i18n';
 import { queryClient } from '../../core/query/queryClient';
 import { resetToWelcome } from '../../core/navigation/navigationRef';
 import { registerSignOutHandler, unregisterSignOutHandler } from './authEventBus';
-import { getCurrentUser, setDefaultRoleApi } from '../../core/api/endpoints/authApi';
+import { getCurrentUser, setDefaultRoleApi, updateProfileFields } from '../../core/api/endpoints/authApi';
 import { apiClient } from '../../core/api/client';
 import { notificationApi } from '../../core/api/endpoints/notificationApi';
+import { registerForPushNotifications } from '../../core/notifications/pushService';
 import { authService } from '../../features/auth/services/authService';
 import type { AppLanguage, AppRole } from '../../shared/types/domain';
 import type { AuthContextValue, AuthSession, AuthState } from './authTypes';
@@ -28,7 +29,11 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
       const session = await loadAuthSession();
       if (session) {
         setState({ status: 'authenticated', session });
-        void i18n.changeLanguage(session.user.language ?? 'en');
+        // Only apply DB language if one is saved — never reset to 'en' for users
+        // who haven't had their language saved to the DB yet (e.g. mid-registration).
+        if (session.user.language) {
+          void i18n.changeLanguage(session.user.language);
+        }
         // Refresh availableRoles from backend in background
         void (async () => {
           try {
@@ -78,6 +83,13 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
   const signIn = useCallback(async (session: AuthSession): Promise<void> => {
     await saveAuthSession(session);
     setState({ status: 'authenticated', session });
+    // Register push token in background — never block the login flow
+    void (async () => {
+      try {
+        const token = await registerForPushNotifications();
+        if (token) await notificationApi.registerToken(token);
+      } catch { /* silently ignore — push is non-critical */ }
+    })();
   }, []);
 
   const signOut = useCallback((): void => {
@@ -94,7 +106,7 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
         await notificationApi.removeToken();
       } catch {}
       try {
-        await apiClient.get('/api/v1/user/logout');
+        await apiClient.post('/api/v1/user/logout');
       } catch {}
     })();
   }, []);
@@ -125,12 +137,16 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   const switchRole = useCallback(
     async (backendRole: string): Promise<void> => {
-      const phone = (await loadAuthSession())?.user?.phone;
+      const session = await loadAuthSession();
+      const phone = session?.user?.phone;
+      if (!phone) throw new Error('No active session — cannot switch role');
       const newSession = await authService.switchRole(backendRole, phone);
       await saveAuthSession(newSession);
       queryClient.clear();
       setState({ status: 'authenticated', session: newSession });
-      void i18n.changeLanguage(newSession.user.language ?? 'en');
+      if (newSession.user.language) {
+        void i18n.changeLanguage(newSession.user.language);
+      }
     },
     []
   );
@@ -170,13 +186,14 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   const setLanguage = useCallback(
     async (language: AppLanguage): Promise<void> => {
+      // 1. Update local session immediately so the UI reacts
       await patchSession((session) => ({
         ...session,
-        user: {
-          ...session.user,
-          language,
-        },
+        user: { ...session.user, language },
       }));
+      // 2. Persist to DB so the choice survives re-login (non-fatal)
+      void updateProfileFields({ language }).catch(() => {});
+      // 3. Apply to i18n
       void i18n.changeLanguage(language);
     },
     [patchSession]

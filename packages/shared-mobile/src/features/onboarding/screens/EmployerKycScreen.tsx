@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,21 +13,20 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { apiClient } from '../../../core/api/client';
+import { resetToMain } from '../../../core/navigation/navigationRef';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Badge } from '../../../shared/components/ui/Badge';
 import { useAppTheme } from '../../../core/theme';
 import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
-import type { OnboardingStackParamList } from '../../../app/navigation/types';
 import { type KycFormValues, kycSchema } from '../../auth/validation/authSchemas';
 
 interface DocState { uri: string; name: string; type: string }
 
 const pickImage = async (): Promise<DocState | null> => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') return null;
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: 0.8,
@@ -50,10 +48,12 @@ const WHITE      = '#FFFFFF';
 const GREEN      = '#16A34A';
 const GREEN_SOFT = '#DCFCE7';
 
-type Props = NativeStackScreenProps<OnboardingStackParamList, 'Kyc'>;
+// Minimal nav interface — avoids cross-package type dependency
+interface Props { navigation: { goBack(): void; canGoBack(): boolean } }
 
 export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const { state, setLanguage, updateProfile, completeOnboarding } = useAuth();
 
   const employerType = state.session?.user.employerType as
@@ -107,11 +107,11 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const onSubmit = handleSubmit(async (values) => {
     if (!canSubmit) {
       if (!hasGst && !isIndividual) {
-        setErrorMessage('Please choose whether you have GST registration.');
+        setErrorMessage(t('kycChooseGstError'));
       } else if (needsIdCard && !idFront) {
-        setErrorMessage('Please upload a photo of your government ID card to continue.');
+        setErrorMessage(t('kycUploadIdError'));
       } else if (hasGst === 'yes' && !gstNumber.trim()) {
-        setErrorMessage('Please enter your GST number.');
+        setErrorMessage(t('kycEnterGstError'));
       }
       return;
     }
@@ -141,8 +141,9 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
       }
 
       await completeOnboarding();
+      resetToMain();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+      setErrorMessage(error instanceof Error ? error.message : t('kycSomethingWrong'));
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +152,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-      <ScreenHeader title="Complete Your Profile" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('wizard_completeProfile')} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -164,12 +165,12 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
           {[1, 2, 3].map((n) => (
             <View key={n} style={[s.stepDot, { backgroundColor: n <= 2 ? BRAND : BORDER }]} />
           ))}
-          <AppText style={[s.stepLabel, { color: SLATE }]}>Step 2 of 3</AppText>
+          <AppText style={[s.stepLabel, { color: SLATE }]}>{t('kycStep2of3')}</AppText>
         </View>
 
-        <AppText style={[s.title, { color: theme.colors.text }]}>Almost there! 🎉</AppText>
+        <AppText style={[s.title, { color: theme.colors.text }]}>{t('almostThere')} 🎉</AppText>
         <AppText style={[s.subtitle, { color: SLATE }]}>
-          Confirm your name and choose your preferred language.
+          {t('kycSubtitle')}
         </AppText>
 
         {/* Verification status */}
@@ -178,7 +179,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
           { backgroundColor: kycStatus === 'verified' ? '#F0FDF4' : '#FFFBEB',
             borderColor:     kycStatus === 'verified' ? '#86EFAC' : '#FDE68A' },
         ]}>
-          <AppText style={s.statusLabel}>Verification Status</AppText>
+          <AppText style={s.statusLabel}>{t('verificationStatus')}</AppText>
           <Badge
             label={kycStatus}
             variant={kycStatus === 'verified' ? 'success' : kycStatus === 'rejected' ? 'danger' : 'warning'}
@@ -191,9 +192,9 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
             <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
               <AppText style={s.iconEmoji}>👤</AppText>
             </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>Your Name</AppText>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('yourName')}</AppText>
           </View>
-          <AppText style={[s.fieldLabel, { color: SLATE }]}>FULL NAME / COMPANY NAME *</AppText>
+          <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('fullNameCompany').toUpperCase()} *</AppText>
           <Controller
             control={control}
             name="fullName"
@@ -202,7 +203,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                placeholder="Enter your name or company name"
+                placeholder={t('kycFullNamePlaceholder')}
                 placeholderTextColor={SLATE}
                 autoCapitalize="words"
                 style={[
@@ -227,10 +228,10 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
             <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
               <AppText style={s.iconEmoji}>🌐</AppText>
             </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>Preferred Language</AppText>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('preferredLanguage')}</AppText>
           </View>
           <AppText style={[s.langHint, { color: SLATE }]}>
-            The app will display in your selected language
+            {t('appLanguageNote')}
           </AppText>
           <View style={s.langGrid}>
             {LANGUAGE_OPTIONS.map((lang) => {
@@ -265,10 +266,10 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
               <View style={[s.iconBox, { backgroundColor: '#FEF3C7' }]}>
                 <AppText style={s.iconEmoji}>🧾</AppText>
               </View>
-              <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>GST Registration</AppText>
+              <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('kycGstSection')}</AppText>
             </View>
 
-            <AppText style={[s.fieldLabel, { color: SLATE }]}>DO YOU HAVE GST? *</AppText>
+            <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycHasGst').toUpperCase()}</AppText>
             <View style={s.toggleRow}>
               <TouchableOpacity
                 onPress={() => setHasGst('yes')}
@@ -276,7 +277,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 style={[s.toggleBtn, { borderColor: hasGst === 'yes' ? GREEN : BORDER, backgroundColor: hasGst === 'yes' ? GREEN_SOFT : theme.colors.background }]}
               >
                 <AppText style={[s.toggleTxt, { color: hasGst === 'yes' ? GREEN : SLATE, fontWeight: '700' }]}>
-                  ✓  Yes, I have GST
+                  {t('kycYesGst')}
                 </AppText>
               </TouchableOpacity>
               <TouchableOpacity
@@ -285,7 +286,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 style={[s.toggleBtn, { borderColor: hasGst === 'no' ? '#DC2626' : BORDER, backgroundColor: hasGst === 'no' ? '#FFF1F2' : theme.colors.background }]}
               >
                 <AppText style={[s.toggleTxt, { color: hasGst === 'no' ? '#DC2626' : SLATE, fontWeight: '700' }]}>
-                  ✗  No GST
+                  {t('kycNoGst')}
                 </AppText>
               </TouchableOpacity>
             </View>
@@ -293,33 +294,33 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
             {hasGst === 'yes' && (
               <View style={{ marginTop: 12, gap: 10 }}>
                 <View>
-                  <AppText style={[s.fieldLabel, { color: SLATE }]}>GST NUMBER *</AppText>
+                  <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycGstNumber').toUpperCase()} *</AppText>
                   <TextInput
                     value={gstNumber}
                     onChangeText={setGstNumber}
-                    placeholder="e.g. 22AAAAA0000A1Z5"
+                    placeholder={t('kycGstPlaceholder')}
                     placeholderTextColor={SLATE}
                     autoCapitalize="characters"
                     style={[s.input, { color: theme.colors.text, backgroundColor: theme.colors.background, borderColor: gstNumber ? BRAND : BORDER }]}
                   />
                 </View>
                 <View>
-                  <AppText style={[s.fieldLabel, { color: SLATE }]}>FIRM / COMPANY NAME *</AppText>
+                  <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycFirmName').toUpperCase()} *</AppText>
                   <TextInput
                     value={firmName}
                     onChangeText={setFirmName}
-                    placeholder="Registered firm name"
+                    placeholder={t('kycFirmNamePlaceholder')}
                     placeholderTextColor={SLATE}
                     autoCapitalize="words"
                     style={[s.input, { color: theme.colors.text, backgroundColor: theme.colors.background, borderColor: firmName ? BRAND : BORDER }]}
                   />
                 </View>
                 <View>
-                  <AppText style={[s.fieldLabel, { color: SLATE }]}>FIRM ADDRESS (optional)</AppText>
+                  <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycFirmAddress').toUpperCase()}</AppText>
                   <TextInput
                     value={firmAddress}
                     onChangeText={setFirmAddress}
-                    placeholder="Registered business address"
+                    placeholder={t('kycFirmAddressPlaceholder')}
                     placeholderTextColor={SLATE}
                     multiline
                     numberOfLines={2}
@@ -339,11 +340,11 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 <AppText style={s.iconEmoji}>🪪</AppText>
               </View>
               <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>
-                Upload ID Card <AppText style={{ color: '#DC2626' }}>*</AppText>
+                {t('uploadIdCard')} <AppText style={{ color: '#DC2626' }}>*</AppText>
               </AppText>
             </View>
             <AppText style={[s.fieldHint, { color: SLATE }]}>
-              Upload a clear photo of any government-issued photo ID — Voter ID, PAN Card, Driving Licence, Passport, etc.
+              {t('kycUploadIdHint')}
             </AppText>
             <Pressable
               onPress={() => void handlePickId()}
@@ -356,7 +357,7 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 <>
                   <Image source={{ uri: idFront.uri }} style={s.uploadPreview} resizeMode="cover" />
                   <View style={s.uploadOverlay}>
-                    <AppText style={s.overlayTick}>✓  ID Uploaded — Tap to change</AppText>
+                    <AppText style={s.overlayTick}>✓  {t('idUploaded')}</AppText>
                   </View>
                 </>
               ) : (
@@ -364,8 +365,8 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                   <View style={[s.camBox, { backgroundColor: BRAND_SOFT }]}>
                     <AppText style={{ fontSize: 22 }}>📷</AppText>
                   </View>
-                  <AppText style={[s.uploadLabel, { color: theme.colors.text }]}>Tap to Upload ID Card</AppText>
-                  <AppText style={[s.uploadHint, { color: SLATE }]}>JPG, PNG · Max 5 MB</AppText>
+                  <AppText style={[s.uploadLabel, { color: theme.colors.text }]}>{t('tapToUploadId')}</AppText>
+                  <AppText style={[s.uploadHint, { color: SLATE }]}>{t('jpgPngNote')}</AppText>
                 </View>
               )}
             </Pressable>
@@ -389,12 +390,12 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
           {isSubmitting ? (
             <ActivityIndicator color={WHITE} size="small" />
           ) : (
-            <AppText style={s.submitTxt}>Continue to App →</AppText>
+            <AppText style={s.submitTxt}>{t('continueToApp')} →</AppText>
           )}
         </TouchableOpacity>
 
         <AppText style={[s.disclaimer, { color: SLATE }]}>
-          Your information is encrypted and used only for verification purposes.
+          {t('kycInfoEncrypted')}
         </AppText>
       </ScrollView>
     </View>

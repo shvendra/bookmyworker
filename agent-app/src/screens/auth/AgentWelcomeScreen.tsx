@@ -20,7 +20,7 @@ import {
   formatStat,
 } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import type { AgentStackParamList } from '../../navigation/types';
-
+import { useTranslation } from 'react-i18next';
 type Props = NativeStackScreenProps<AgentStackParamList, 'Welcome'>;
 
 const { width: W } = Dimensions.get('window');
@@ -29,18 +29,18 @@ const BRAND  = '#1037A4';
 const ORANGE = '#F97316';
 
 const WORK_TYPES = [
-  { icon: '🏗️', label: 'Construction' },
-  { icon: '🏭', label: 'Manufacturing' },
-  { icon: '🚜', label: 'Agriculture' },
-  { icon: '🔧', label: 'Maintenance' },
-  { icon: '🏠', label: 'Household' },
-  { icon: '🚚', label: 'Logistics' },
-  { icon: '🛠️', label: 'Industrial' },
-  { icon: '🛡️', label: 'Security' },
-  { icon: '🧹', label: 'Cleaning' },
-  { icon: '🧑‍🍳', label: 'Hospitality' },
-  { icon: '👔', label: 'Apparel' },
-  { icon: '🛍️', label: 'Retail' },
+  { icon: '🏗️', labelKey: 'construction' },
+  { icon: '🏭', labelKey: 'manufacturing' },
+  { icon: '🚜', labelKey: 'agriculture' },
+  { icon: '🔧', labelKey: 'maintenance' },
+  { icon: '🏠', labelKey: 'household' },
+  { icon: '🚚', labelKey: 'logistics' },
+  { icon: '🛠️', labelKey: 'industrial' },
+  { icon: '🛡️', labelKey: 'security' },
+  { icon: '🧹', labelKey: 'cleaning' },
+  { icon: '🧑‍🍳', labelKey: 'hospitality' },
+  { icon: '👔', labelKey: 'apparel' },
+  { icon: '🛍️', labelKey: 'retail' },
 ];
 
 export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
@@ -50,6 +50,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bodyAnim = useRef(new Animated.Value(0)).current;
+  const { t } = useTranslation(); // ADD THIS
 
   useEffect(() => {
     Animated.stagger(200, [
@@ -68,137 +69,243 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
   ], [config.stats]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+<View style={styles.root}>
+  <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
-      {/* ── Hero ────────────────────────────────────────────────── */}
-      <View style={[styles.hero, { paddingTop: insets.top + 14 }]}>
-        <View style={[styles.circle, styles.c1]} />
-        <View style={[styles.circle, styles.c2]} />
-        <View style={[styles.circle, styles.c3]} />
-        <View style={styles.orangeBar} />
+{/* ── Hero ────────────────────────────────────────────────── */}
+<View style={[styles.hero, { paddingTop: insets.top + 14 }]}>
+<View style={[styles.circle, styles.c1]} />
+<View style={[styles.circle, styles.c2]} />
+<View style={[styles.circle, styles.c3]} /> <View style={styles.orangeBar} />
 
-        <Animated.View style={{ opacity: fadeAnim }}>
-          {/* Brand row */}
-          <View style={styles.brandRow}>
-            <View style={styles.logoBox}>
-              <Image
-                source={require('../../../../packages/shared-mobile/assets/logo.png')}
-                style={styles.logoImg}
-                resizeMode="contain"
-              />
-            </View>
-           
-          </View>
+<Animated.View style={{ opacity: fadeAnim }}>
+  {/* Brand row */}
+  <View style={styles.brandRow}>
+    <View style={styles.logoBox}>
+      <Image
+        source={require('../../../../packages/shared-mobile/assets/logo.png')}
+        style={styles.logoImg}
+        resizeMode="contain"
+      />
+    </View>
+  </View>
 
-          {/* Headline */}
-         {/* Headline */}
-         {/* Headline */}
-          <View style={styles.headlineBlock}>
-<AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
-<AppText style={styles.headline} color="#FFFFFF">Kaam Dhundo,</AppText>
-            <AppText style={styles.heroSub} color="rgba(255,255,255,0.72)">
-              Find work near you. Register workers.{'\n'}Earn. Grow your network.
-            </AppText>
-          </View>
+  {/* Headline */}
+  <View style={styles.headlineBlock}>
+    <AppText style={styles.brandName} color="#FFFFFF">
+      BookMyWorker
+    </AppText>
 
-          {/* Live pill */}
-          <View style={styles.livePill}>
-            <View style={styles.liveDot} />
-            <AppText style={styles.liveText} color="#FFFFFF">
-              {formatStat(config.stats.workerCount)} Workers active right now
-            </AppText>
-          </View>
-        </Animated.View>
-      </View>
+    <AppText style={styles.headline} color="#FFFFFF">
+      {t('welcomeHeadline')}
+    </AppText>
 
-      {/* ── White body ──────────────────────────────────────────── */}
-      <Animated.View
+    <AppText style={styles.heroSub} color="rgba(255,255,255,0.72)">
+      {t('welcomeHeroSub')}
+    </AppText>
+  </View>
+
+  {/* Live pill */}
+  <View style={styles.livePill}>
+    <View style={styles.liveDot} />
+
+    <AppText style={styles.liveText} color="#FFFFFF">
+      {formatStat(config.stats.workerCount)} {t('liveWorkersActive')}
+    </AppText>
+  </View>
+</Animated.View>
+
+
+  </View>
+
+{/* ── White body ──────────────────────────────────────────── */}
+<Animated.View
+style={[
+styles.body,
+{
+backgroundColor: isDark
+? theme.colors.background
+: '#FFFFFF',
+},
+{
+opacity: bodyAnim,
+transform: [
+{
+translateY: bodyAnim.interpolate({
+inputRange: [0, 1],
+outputRange: [24, 0],
+}),
+},
+],
+},
+]}
+
+>
+
+<ScrollView
+
+  showsVerticalScrollIndicator={false}
+  contentContainerStyle={styles.scroll}
+>
+
+  {/* Work categories */}
+  <View style={styles.section}>
+    <View style={styles.chipRow}>
+      {WORK_TYPES.map((w) => (
+        <View
+          key={w.labelKey}
+          style={[
+            styles.chip,
+            {
+              backgroundColor: isDark
+                ? theme.colors.surface
+                : '#FFF5EC',
+              borderColor: isDark
+                ? theme.colors.border
+                : '#FDD5B0',
+            },
+          ]}
+        >
+          <AppText style={styles.chipIcon}>
+            {w.icon}
+          </AppText>
+
+          <AppText
+            style={[
+              styles.chipLabel,
+              { color: BRAND },
+            ]}
+          >
+            {t(w.labelKey)}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  </View>
+
+  {/* Role boxes */}
+  <View style={styles.rolesRow}>
+    <TouchableOpacity
+      style={[
+        styles.roleBox,
+        {
+          backgroundColor: '#EBF1FF',
+          borderColor: '#C3D3F5',
+        },
+      ]}
+      onPress={() => navigation.navigate('Register')}
+      activeOpacity={0.82}
+    >
+      <View
         style={[
-          styles.body,
-          { backgroundColor: isDark ? theme.colors.background : '#FFFFFF' },
+          styles.roleIconWrap,
           {
-            opacity: bodyAnim,
-            transform: [{ translateY: bodyAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
+            backgroundColor:
+              'rgba(16,55,164,0.1)',
           },
         ]}
       >
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <AppText style={styles.roleEmoji}>
+          🤝
+        </AppText>
+      </View>
 
-        
+      <AppText
+        style={[
+          styles.roleTitle,
+          { color: BRAND },
+        ]}
+      >
+        {t('agentRole')}
+      </AppText>
 
-          {/* Work categories */}
-          <View style={styles.section}>
-            <View style={styles.chipRow}>
-              {WORK_TYPES.map((w) => (
-                <View
-                  key={w.label}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: isDark ? theme.colors.surface : '#FFF5EC',
-                      borderColor: isDark ? theme.colors.border : '#FDD5B0',
-                    },
-                  ]}
-                >
-                  <AppText style={styles.chipIcon}>{w.icon}</AppText>
-                  <AppText style={[styles.chipLabel, { color: BRAND }]}>{w.label}</AppText>
-                </View>
-              ))}
-            </View>
-          </View>
+      <AppText
+        style={[
+          styles.roleDesc,
+          { color: BRAND },
+        ]}
+      >
+        {t('agentRoleDesc')}
+      </AppText>
+    </TouchableOpacity>
 
-          {/* Role boxes */}
-          <View style={styles.rolesRow}>
-            <TouchableOpacity
-              style={[styles.roleBox, { backgroundColor: '#EBF1FF', borderColor: '#C3D3F5' }]}
-              onPress={() => navigation.navigate('Register')}
-              activeOpacity={0.82}
-            >
-              <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(16,55,164,0.1)' }]}>
-                <AppText style={styles.roleEmoji}>🤝</AppText>
-              </View>
-              <AppText style={[styles.roleTitle, { color: BRAND }]}>Agent</AppText>
-              <AppText style={[styles.roleDesc, { color: BRAND }]}>Send workers to jobs{'\n'}Earn on placement.</AppText>
-            </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.roleBox,
+        {
+          backgroundColor: '#FFF3E8',
+          borderColor: '#FDD5B0',
+        },
+      ]}
+      onPress={() => navigation.navigate('Register')}
+      activeOpacity={0.82}
+    >
+      <View
+        style={[
+          styles.roleIconWrap,
+          {
+            backgroundColor:
+              'rgba(249,115,22,0.1)',
+          },
+        ]}
+      >
+        <AppText style={styles.roleEmoji}>
+          👷
+        </AppText>
+      </View>
 
-            <TouchableOpacity
-              style={[styles.roleBox, { backgroundColor: '#FFF3E8', borderColor: '#FDD5B0' }]}
-              onPress={() => navigation.navigate('Register')}
-              activeOpacity={0.82}
-            >
-              <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(249,115,22,0.1)' }]}>
-                <AppText style={styles.roleEmoji}>👷</AppText>
-              </View>
-              <AppText style={[styles.roleTitle, { color: ORANGE }]}>Worker</AppText>
-              <AppText style={[styles.roleDesc, { color: ORANGE }]}>Find jobs near you.{'\n'}Get hired. Earn daily.</AppText>
-            </TouchableOpacity>
-          </View>
+      <AppText
+        style={[
+          styles.roleTitle,
+          { color: ORANGE },
+        ]}
+      >
+        {t('workerRole')}
+      </AppText>
 
-          {/* CTA */}
-          <View style={styles.cta}>
-            <AppButton
-              title="Get Started — Log In"
-              onPress={() => navigation.navigate('Login')}
-              size="lg"
-              fullWidth
-            />
-            <AppButton
-              title="Create New Account"
-              onPress={() => navigation.navigate('Register')}
-              variant="outline"
-              size="lg"
-              fullWidth
-              style={styles.outlineBtn}
-            />
-            <AppText variant="caption" color={theme.colors.mutedText} center style={styles.terms}>
-              By continuing you agree to our Terms of Service & Privacy Policy
-            </AppText>
-          </View>
+      <AppText
+        style={[
+          styles.roleDesc,
+          { color: ORANGE },
+        ]}
+      >
+        {t('workerRoleDesc')}
+      </AppText>
+    </TouchableOpacity>
+  </View>
 
-        </ScrollView>
-      </Animated.View>
-    </View>
+  {/* CTA */}
+  <View style={styles.cta}>
+    <AppButton
+      title={t('getStartedLogin')}
+      onPress={() => navigation.navigate('Login')}
+      size="lg"
+      fullWidth
+    />
+
+    <AppButton
+      title={t('createNewAccount')}
+      onPress={() => navigation.navigate('Register')}
+      variant="outline"
+      size="lg"
+      fullWidth
+      style={styles.outlineBtn}
+    />
+
+    <AppText
+      variant="caption"
+      color={theme.colors.mutedText}
+      center
+      style={styles.terms}
+    >
+      {t('termsPolicy')}
+    </AppText>
+  </View>
+</ScrollView>
+
+
+</Animated.View> </View>
+
   );
 };
 

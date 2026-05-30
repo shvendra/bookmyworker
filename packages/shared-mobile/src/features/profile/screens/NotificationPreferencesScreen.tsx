@@ -6,8 +6,8 @@ import {
   Switch,
   View,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -82,7 +82,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
       await notificationApi.savePreferences({ [key]: newVal });
     } catch {
       setPrefs((p) => ({ ...p, [key]: !newVal }));
-      Alert.alert('Error', 'Failed to update preference. Please try again.');
+      showAlert('Error', 'Failed to update preference. Please try again.');
     } finally {
       setSaving(null);
     }

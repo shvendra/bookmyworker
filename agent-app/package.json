@@ -8,7 +8,9 @@
     "android": "npx expo start --android",
     "ios": "npx expo start --ios",
     "typecheck": "tsc --noEmit",
-    "build:apk": "eas build --platform android --profile preview --local --output ./BookMyWorker-Agent.apk"
+    "prebuild": "npx expo prebuild --platform android --clean",
+    "build:aab": "cd android && ./gradlew bundleRelease && cd .. && cp android/app/build/outputs/bundle/release/app-release.aab ./BookMyWorker-Agent.aab",
+    "build:apk": "cd android && ./gradlew assembleRelease && cd .. && cp android/app/build/outputs/apk/release/app-release.apk ./BookMyWorker-Agent.apk"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -46,10 +48,15 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~18.3.0",
+    "axios-mock-adapter": "^2.1.0",
     "eslint": "^9.39.0",
     "eslint-config-expo": "~10.0.0",
-    "typescript": "~5.9.2"
+    "jest": "^30.4.2",
+    "jest-environment-node": "^30.4.1",
+    "ts-jest": "^29.4.11",
+    "typescript": "~5.7.0"
   },
   "private": true
 }

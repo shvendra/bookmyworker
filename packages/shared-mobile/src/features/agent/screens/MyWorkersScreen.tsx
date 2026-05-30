@@ -24,6 +24,8 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -51,7 +53,7 @@ interface RawWorker {
 const workerName = (w: RawWorker): string => w.fullName ?? w.name ?? '—';
 const workerStatus = (w: RawWorker): string => w.status?.toLowerCase() ?? 'pending';
 const workerLocation = (w: RawWorker): string =>
-  [w.district, w.state].filter(Boolean).join(', ') || '—';
+  getLocationStr({ district: w.district, state: w.state }, i18n.language, '—');
 const workerWork = (worker) => {
   const data = worker?.areasOfWork || worker?.skills; // Or however you pull it
   if (!data) return '—';

@@ -91,9 +91,10 @@ export const walletApi = {
       );
       return res.data;
     } catch (err: unknown) {
-      // Backend returns 404 when no completed transactions exist (not a real error)
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) return { transactions: [] };
+      // Backend returns 404 when no completed transactions exist (not a real error).
+      // The apiClient interceptor transforms AxiosError → ApiClientError with statusCode.
+      const statusCode = (err as { statusCode?: number })?.statusCode;
+      if (statusCode === 404) return { transactions: [] };
       throw err;
     }
   },

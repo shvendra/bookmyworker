@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Linking,
   Modal,
   ScrollView,
   StatusBar,
@@ -9,6 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { certificateApi } from '../../../core/api/endpoints/certificateApi';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +28,8 @@ import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
 import { useTranslation } from 'react-i18next';
 import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import i18n from '../../../core/i18n';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 type ProfileNav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -120,6 +126,18 @@ export const ProfileScreen = (): React.JSX.Element => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 const [showDeleteSection, setShowDeleteSection] = useState(false);
   const { pricing } = usePricingConfig();
+
+  // Fetch user's certificates & labour licence for inline display on profile
+  const showCerts = user?.role === 'worker' || user?.role === 'selfworker' || user?.role === 'agent';
+  const { data: certData } = useQuery({
+    queryKey: ['user-certificates'],
+    queryFn: () => certificateApi.getAll(),
+    staleTime: 60_000,
+    enabled: showCerts,
+  });
+  const certificates   = certData?.certificates ?? [];
+  const licenceUrl     = certData?.labourLicenceUrl ?? null;
+
   const currentLang = LANGUAGE_OPTIONS.find((l) => l.value === (user?.language ?? 'en'));
   const isDark = theme.mode === 'dark';
   const currentBackendRole = FRONTEND_TO_BACKEND[user?.role ?? ''] ?? (user?.role?.toUpperCase() ?? 'USER');
@@ -145,14 +163,13 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
 
   const confirmSignOut = (): void => {
     setSignOutModalVisible(false);
-    toast.info('Signing out…');
-    setTimeout(() => { signOut(); }, 300);
+    signOut();
   };
 
   const confirmDeleteAccount = async (): Promise<void> => {
     setIsDeletingAccount(true);
     try {
-      await apiClient.delete('api/v1/user/account');
+      await apiClient.delete('/api/v1/user/account');
       setDeleteAccountModalVisible(false);
       toast.success('Your account has been permanently deleted.');
       setTimeout(() => { signOut(); }, 800);
@@ -212,10 +229,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           </View>
         )}
         <AppText style={styles.profileName}>{user?.fullName ?? 'User'}</AppText>
-        <AppText style={styles.profileRole}>{currentBackendRole}</AppText>
         {(user?.district ?? user?.state) ? (
           <AppText style={styles.profileLocation}>
-            📍 {[user?.district, user?.state].filter(Boolean).join(', ')}
+            📍 {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
           </AppText>
         ) : null}
         {/* Edit Public Profile button */}
@@ -264,6 +280,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               ) : undefined
             }
           />
+          {/* Certificates — workers upload skill certs; agents upload labour licence */}
+          {(user?.role === 'worker' || user?.role === 'selfworker' || user?.role === 'agent') && (
+            <MenuItem
+              icon={user?.role === 'agent' ? '📋' : '🎓'}
+              label={user?.role === 'agent' ? t('cert_licenceMenuLabel') : t('cert_menuLabel')}
+              onPress={() => navigation.navigate('Certificates')}
+            />
+          )}
           {user?.role === 'agent' && (
             <MenuItem
               icon="🏆"
@@ -282,6 +306,120 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             />
           )}
         </MenuSection>
+
+        {/* ── Certificates / Labour Licence inline preview ─────────────── */}
+        {showCerts && (
+          <View style={[certStyles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            {/* Header row */}
+            <View style={certStyles.headerRow}>
+              <AppText style={[certStyles.title, { color: theme.colors.text }]}>
+                {user?.role === 'agent' ? t('cert_licencePageTitle') : t('cert_pageTitle')}
+              </AppText>
+              <TouchableOpacity onPress={() => navigation.navigate('Certificates')} activeOpacity={0.7}>
+                <AppText style={[certStyles.manageBtn, { color: theme.colors.primary }]}>
+                  {t('cert_view')} / {t('profile_editPublicProfile').split(' ')[0]} ›
+                </AppText>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Workers: horizontal scroll of cert thumbnails ── */}
+            {(user?.role === 'worker' || user?.role === 'selfworker') && (
+              <>
+                {certificates.length === 0 ? (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('Certificates')}
+                    activeOpacity={0.8}
+                    style={[certStyles.emptyRow, { borderColor: theme.colors.border }]}
+                  >
+                    <AppText style={certStyles.emptyIcon}>🎓</AppText>
+                    <AppText style={[certStyles.emptyText, { color: theme.colors.mutedText }]}>
+                      {t('cert_noCerts')}
+                    </AppText>
+                  </TouchableOpacity>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={certStyles.thumbRow}
+                  >
+                    {certificates.map((cert, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => void Linking.openURL(cert.url)}
+                        activeOpacity={0.8}
+                        style={[certStyles.thumbCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                      >
+                        {cert.fileType === 'pdf' ? (
+                          <View style={certStyles.pdfThumb}>
+                            <AppText style={certStyles.pdfIcon}>📄</AppText>
+                          </View>
+                        ) : (
+                          <Image source={{ uri: cert.url }} style={certStyles.thumbImg} resizeMode="cover" />
+                        )}
+                        <AppText style={[certStyles.thumbName, { color: theme.colors.mutedText }]} numberOfLines={2}>
+                          {cert.name || t('cert_untitled')}
+                        </AppText>
+                      </TouchableOpacity>
+                    ))}
+                    {/* Add more tile */}
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Certificates')}
+                      activeOpacity={0.8}
+                      style={[certStyles.addThumb, { borderColor: theme.colors.primary + '60', backgroundColor: theme.colors.primary + '08' }]}
+                    >
+                      <AppText style={[certStyles.addIcon, { color: theme.colors.primary }]}>＋</AppText>
+                      <AppText style={[certStyles.addText, { color: theme.colors.primary }]}>{t('cert_upload').split(' ')[0]}</AppText>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+                {/* Count badge */}
+                {certificates.length > 0 && (
+                  <View style={certStyles.countRow}>
+                    <View style={[certStyles.countPill, { backgroundColor: theme.colors.primary + '18' }]}>
+                      <AppText style={[certStyles.countTxt, { color: theme.colors.primary }]}>
+                        {certificates.length} {certificates.length === 1 ? t('cert_pageTitle').replace('My ', '') : t('cert_yourCerts')}
+                      </AppText>
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* ── Agents: labour licence status ── */}
+            {user?.role === 'agent' && (
+              licenceUrl ? (
+                <View style={certStyles.licenceRow}>
+                  <TouchableOpacity
+                    onPress={() => void Linking.openURL(licenceUrl)}
+                    activeOpacity={0.8}
+                    style={[certStyles.licencePreview, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}
+                  >
+                    <AppText style={certStyles.licenceFileIcon}>📄</AppText>
+                    <View style={{ flex: 1 }}>
+                      <AppText style={[certStyles.licenceLabel, { color: '#16A34A' }]}>
+                        ✓  {t('cert_licenceActive')}
+                      </AppText>
+                      <AppText style={[certStyles.licenceHint, { color: '#15803D' }]}>
+                        {t('cert_view')} →
+                      </AppText>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Certificates')}
+                  activeOpacity={0.8}
+                  style={[certStyles.emptyRow, { borderColor: theme.colors.border }]}
+                >
+                  <AppText style={certStyles.emptyIcon}>📋</AppText>
+                  <AppText style={[certStyles.emptyText, { color: theme.colors.mutedText }]}>
+                    {t('cert_noLicence')}
+                  </AppText>
+                </TouchableOpacity>
+              )
+            )}
+          </View>
+        )}
 
         {/* Account Settings */}
         <MenuSection label={t('profile_sectionAccount')}>
@@ -864,4 +1002,49 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
+});
+
+// ── Certificate inline card styles ─────────────────────────────────────────────
+const certStyles = StyleSheet.create({
+  card: {
+    borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 12,
+    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  title:      { fontSize: 14, fontWeight: '800' },
+  manageBtn:  { fontSize: 12, fontWeight: '700' },
+
+  // empty state
+  emptyRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', padding: 14 },
+  emptyIcon:  { fontSize: 22, lineHeight: 28, flexShrink: 0 },
+  emptyText:  { flex: 1, fontSize: 12, lineHeight: 17 },
+
+  // horizontal scroll of cert thumbnails
+  thumbRow:   { gap: 10, paddingBottom: 2 },
+  thumbCard: {
+    width: 90, borderRadius: 14, borderWidth: 1, overflow: 'hidden',
+    alignItems: 'center', padding: 8, gap: 6,
+  },
+  thumbImg:   { width: 74, height: 60, borderRadius: 8 },
+  pdfThumb:   { width: 74, height: 60, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF3C7' },
+  pdfIcon:    { fontSize: 28, lineHeight: 36 },
+  thumbName:  { fontSize: 10, textAlign: 'center', lineHeight: 14, width: 74 },
+
+  // add tile
+  addThumb:   { width: 74, height: 74, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, alignSelf: 'flex-start' },
+  addIcon:    { fontSize: 22, fontWeight: '300', lineHeight: 28 },
+  addText:    { fontSize: 10, fontWeight: '700' },
+
+  // count badge
+  countRow:   { marginTop: 10 },
+  countPill:  { alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  countTxt:   { fontSize: 11, fontWeight: '700' },
+
+  // agent licence
+  licenceRow:     { gap: 10 },
+  licencePreview: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, padding: 12 },
+  licenceFileIcon:{ fontSize: 28, lineHeight: 36, flexShrink: 0 },
+  licenceLabel:   { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  licenceHint:    { fontSize: 11, fontWeight: '600', marginTop: 2 },
 });

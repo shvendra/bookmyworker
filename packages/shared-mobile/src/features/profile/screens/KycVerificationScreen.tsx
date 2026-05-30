@@ -12,6 +12,7 @@ import {
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -41,22 +42,28 @@ const C = {
 
 interface DocState { uri: string; name: string; type: string }
 
-const pickImage = async (title: string, onPermissionDenied?: () => void): Promise<DocState | null> => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    onPermissionDenied?.();
+const pickImage = async (title: string): Promise<DocState | null> => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (result.canceled || !result.assets[0]) return null;
+
+    const asset = result.assets[0];
+    const ext = asset.uri.split('.').pop() ?? 'jpg';
+
+    return {
+      uri: asset.uri,
+      name: `${title.replace(/\s/g, '_').toLowerCase()}.${ext}`,
+      type: asset.mimeType ?? `image/${ext}`,
+    };
+  } catch {
     return null;
   }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    quality: 0.8,
-    allowsEditing: true,
-    aspect: [4, 3],
-  });
-  if (result.canceled || !result.assets[0]) return null;
-  const asset = result.assets[0];
-  const ext = asset.uri.split('.').pop() ?? 'jpg';
-  return { uri: asset.uri, name: `${title.replace(/\s/g, '_').toLowerCase()}.${ext}`, type: asset.mimeType ?? `image/${ext}` };
 };
 
 const kycBadgeVariant = (status: KycStatus) => {
@@ -87,6 +94,7 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
   label: string; doc: DocState | null; onPick: () => void; disabled?: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={disabled ? undefined : onPick}
@@ -101,15 +109,15 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
           <View style={ds.overlay}>
             <AppText style={ds.overlayTick}>✓</AppText>
             <AppText style={ds.overlayLabel}>{label}</AppText>
-            <AppText style={ds.overlayChange}>Tap to change</AppText>
+            <AppText style={ds.overlayChange}>{t('kyc_tapToChange')}</AppText>
           </View>
         </>
       ) : (
         <View style={ds.empty}>
           <View style={ds.camBox}><AppText style={{ fontSize: 22 }}>📷</AppText></View>
           <AppText style={ds.emptyLabel}>{label}</AppText>
-          <AppText style={ds.emptyHint}>Tap to upload</AppText>
-          <AppText style={ds.cropHint}>✂️ Crop &amp; rotate after selecting</AppText>
+          <AppText style={ds.emptyHint}>{t('kyc_tapToUpload')}</AppText>
+          <AppText style={ds.cropHint}>{t('kyc_cropRotate')}</AppText>
         </View>
       )}
     </Pressable>
@@ -133,6 +141,7 @@ const ds = StyleSheet.create({
 export const KycVerificationScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
+  const { t } = useTranslation();
   const toast = useToast();
   const navigation = useNavigation();
   const user = state.session?.user;
@@ -174,7 +183,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     setSubmitting(true);
     try {
       if (!front || !back) {
-        toast.warning('Please upload both front and back photos of your government ID.', 'Documents Required');
+        toast.warning(t('kyc_docsRequiredMsg'), t('kyc_docsRequired'));
         return;
       }
       const formData = new FormData();
@@ -184,11 +193,11 @@ export const KycVerificationScreen = (): React.JSX.Element => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setSuccess(true);
-      toast.success('Documents submitted. Verification usually takes 24–48 hours.', 'Documents Submitted');
+      toast.success(t('kyc_docsSubmittedMsg'), t('kyc_docsSubmitted'));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Upload failed. Please try again.';
+      const msg = e instanceof Error ? e.message : t('kyc_uploadFailed');
       setError(msg);
-      toast.error(msg, 'Submission Failed');
+      toast.error(msg, t('kyc_submissionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -197,7 +206,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="KYC Verification" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('kyc_title')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[scr.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={scr.content}
@@ -205,10 +214,8 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     >
       {/* ── Page title ──────────────────────────────────────────────── */}
       <View style={scr.pageHeader}>
-        <AppText style={[scr.pageTitle, { color: C.navy }]}>KYC Verification</AppText>
-        <AppText style={[scr.pageSub, { color: C.slate }]}>
-          Complete your KYC to unlock full platform access.
-        </AppText>
+        <AppText style={[scr.pageTitle, { color: C.navy }]}>{t('kyc_title')}</AppText>
+        <AppText style={[scr.pageSub, { color: C.slate }]}>{t('kyc_subtitle')}</AppText>
       </View>
 
       {/* ── Status banner ───────────────────────────────────────────── */}
@@ -221,17 +228,17 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           kycStatus === 'rejected' ? '#fca5a5' : C.amberLight,
       }]}>
         <View style={scr.statusRow}>
-          <AppText style={scr.statusLabel}>Verification Status</AppText>
+          <AppText style={scr.statusLabel}>{t('kyc_statusLabel')}</AppText>
           <Badge label={kycStatus} variant={kycBadgeVariant(kycStatus)} />
         </View>
         <AppText style={[scr.statusMsg, {
           color: kycStatus === 'verified' ? C.green : kycStatus === 'rejected' ? C.red : C.amber,
         }]}>
           {kycStatus === 'verified'
-            ? 'Your identity is verified. You have full platform access.'
+            ? t('kyc_statusVerified')
             : kycStatus === 'rejected'
-            ? 'Verification rejected. Please re-upload correct documents.'
-            : 'Submit your documents below. Verification takes 24–48 hours.'}
+            ? t('kyc_statusRejected')
+            : t('kyc_statusPending')}
         </AppText>
       </View>
 
@@ -240,30 +247,26 @@ export const KycVerificationScreen = (): React.JSX.Element => {
         <>
           {/* ── Government ID upload ──────────────────────────────────── */}
           <AppCard style={scr.card}>
-            <SectionTitle icon="🪪" text="Upload Government ID Card" />
-            <AppText style={[scr.fieldHint, { color: C.slate }]}>
-              Upload clear photos of both sides of any valid government-issued photo ID — Voter ID, PAN Card, Driving Licence, Passport, or any other official photo ID.
-            </AppText>
+            <SectionTitle icon="🪪" text={t('kyc_uploadIdTitle')} />
+            <AppText style={[scr.fieldHint, { color: C.slate }]}>{t('kyc_uploadIdHint')}</AppText>
             <View style={scr.docsRow}>
               <DocUploadSlot
-                label="ID Card Front"
+                label={t('kyc_idFront')}
                 doc={front}
-                onPick={() => void pickImage('ID Front', () => toast.warning('Photo library permission is needed to upload documents.', 'Permission Required')).then((d) => { if (d) setFront(d); })}
+                onPick={() => void pickImage('id_front').then((d) => { if (d) setFront(d); })}
                 disabled={submitting}
               />
               <DocUploadSlot
-                label="ID Card Back"
+                label={t('kyc_idBack')}
                 doc={back}
-                onPick={() => void pickImage('ID Back', () => toast.warning('Photo library permission is needed to upload documents.', 'Permission Required')).then((d) => { if (d) setBack(d); })}
+                onPick={() => void pickImage('id_back').then((d) => { if (d) setBack(d); })}
                 disabled={submitting}
               />
             </View>
             {/* File format hint */}
             <View style={scr.formatHint}>
               <AppText style={{ fontSize: 13 }}>📎</AppText>
-              <AppText style={[scr.formatHintTxt, { color: C.slate }]}>
-                Supported formats: JPG, JPEG, PNG · Max 5 MB per file
-              </AppText>
+              <AppText style={[scr.formatHintTxt, { color: C.slate }]}>{t('kyc_formatHint')}</AppText>
             </View>
           </AppCard>
 
@@ -277,9 +280,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           {success && (
             <View style={[scr.feedbackBox, { backgroundColor: C.greenSoft, borderColor: '#86efac' }]}>
               <AppText style={{ fontSize: 14 }}>✅</AppText>
-              <AppText style={[scr.feedbackText, { color: C.green }]}>
-                Submitted successfully. Pending review.
-              </AppText>
+              <AppText style={[scr.feedbackText, { color: C.green }]}>{t('kyc_successMsg')}</AppText>
             </View>
           )}
 
@@ -297,7 +298,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
               <ActivityIndicator color={C.white} size="small" />
             ) : (
               <AppText style={scr.submitTxt}>
-                {kycStatus === 'rejected' ? 'Re-submit Documents' : 'Submit for Verification'}
+                {kycStatus === 'rejected' ? t('kyc_resubmitBtn') : t('kyc_submitBtn')}
               </AppText>
             )}
           </TouchableOpacity>
@@ -306,13 +307,13 @@ export const KycVerificationScreen = (): React.JSX.Element => {
 
       {/* ── Info notes ──────────────────────────────────────────────── */}
       <AppCard style={scr.card}>
-        <SectionTitle icon="📌" text="Important Notes" />
-        {[
-          'Use original government ID card photos — not photocopies or screenshots.',
-          'Ensure all text is clearly visible and not blurry.',
-          'Files must be under 5 MB each.',
-          'Your data is encrypted and used only for verification.',
-        ].map((note, i) => (
+        <SectionTitle icon="📌" text={t('kyc_importantNotes')} />
+        {([
+          t('kyc_note1'),
+          t('kyc_note2'),
+          t('kyc_note3'),
+          t('kyc_note4'),
+        ] as string[]).map((note, i) => (
           <View key={i} style={scr.noteRow}>
             <AppText style={[scr.noteBullet, { color: C.blue }]}>›</AppText>
             <AppText style={[scr.noteText, { color: C.slate }]}>{note}</AppText>

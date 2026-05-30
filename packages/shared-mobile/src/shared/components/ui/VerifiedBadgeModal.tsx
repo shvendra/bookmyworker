@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
@@ -28,13 +29,37 @@ interface VerifiedBadgeModalProps {
 }
 
 const BENEFITS = [
-  '⭐ Premium visibility — appear at the top of employer searches',
-  '✅ Trust badge displayed on your profile and all cards',
-  '🔔 Priority notifications for new requirements in your area',
-  '💼 Access to exclusive high-paying requirements',
-  '📞 Direct employer contact details unlocked',
-  '🏆 Dedicated account support & faster KYC processing',
+  'Employers will trust you.',
+  'Get more work calls.',
+  'Trust lasts for long time.',
+  'Better opportunities come quickly.',
+  'Easy to contact employers.',
+  'Your profile looks professional and reliable.',
 ];
+
+const BenefitRow = ({ text, isLast }: { text: string; isLast: boolean }): React.JSX.Element => (
+  <View
+    style={[
+      benefitRow.row,
+      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E8ECF5' },
+    ]}
+  >
+    <View style={benefitRow.checkCircle}>
+      <AppText style={benefitRow.checkMark}>✓</AppText>
+    </View>
+    <AppText style={benefitRow.text}>{text}</AppText>
+  </View>
+);
+
+const benefitRow = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11 },
+  checkCircle: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  checkMark: { color: '#fff', fontSize: 11, fontWeight: '800', lineHeight: 16 },
+  text: { fontSize: 13, fontWeight: '500', color: '#334155', lineHeight: 18, flex: 1 },
+});
 
 export const VerifiedBadgeModal = ({
   visible,
@@ -46,10 +71,11 @@ export const VerifiedBadgeModal = ({
   userPhone,
 }: VerifiedBadgeModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [loading, setLoading] = useState(false);
 
-  const { pricing } = usePricingConfig();
+  const { pricing, isLoading: priceLoading } = usePricingConfig();
   const isAgent = userRole === 'agent';
   const price = isAgent ? pricing.verifiedBadge.agent : pricing.verifiedBadge.worker;
   const originalPrice = isAgent ? price * 5 : price * 10;
@@ -74,7 +100,6 @@ export const VerifiedBadgeModal = ({
         returnTo: 'Main',
       });
     } catch {
-      // Payment URL fetch failed — dismiss and let them retry from profile
       onDismiss();
     } finally {
       setLoading(false);
@@ -91,9 +116,13 @@ export const VerifiedBadgeModal = ({
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.card }]}>
 
+          {/* ── Close pill ──────────────────────────────────────── */}
+          <Pressable onPress={onDismiss} style={styles.closePill} hitSlop={12}>
+            <View style={styles.closePillBar} />
+          </Pressable>
+
           {/* ── Hero header ──────────────────────────────────────── */}
           <View style={styles.hero}>
-            {/* Decorative circles */}
             <View style={styles.heroCircle1} pointerEvents="none" />
             <View style={styles.heroCircle2} pointerEvents="none" />
 
@@ -101,14 +130,20 @@ export const VerifiedBadgeModal = ({
             <View style={styles.avatarWrap}>
               <Avatar name={userName} size={72} ring ringColor="rgba(255,255,255,0.55)" />
               <View style={styles.verifiedTag}>
-                <AppText style={styles.verifiedTagText}>✔ VERIFIED</AppText>
+                <AppText style={styles.verifiedTagText}>VERIFIED</AppText>
               </View>
             </View>
 
-            <AppText style={styles.heroTitle}>Become a Verified Agent</AppText>
+            <AppText style={styles.heroTitle}>Get Verified Now</AppText>
             <AppText style={styles.heroSub}>
-              Stand out from the crowd and unlock{'\n'}premium features instantly
+              Stand out from others & get more{'\n'}work opportunities
             </AppText>
+
+            {/* "Why get Verified?" pill */}
+            <View style={styles.whyPill}>
+              <View style={styles.whyDot} />
+              <AppText style={styles.whyText}>Why get Verified?</AppText>
+            </View>
           </View>
 
           <ScrollView
@@ -119,36 +154,34 @@ export const VerifiedBadgeModal = ({
             {/* ── Benefits ─────────────────────────────────────── */}
             <View style={[styles.benefitsCard, { borderColor: theme.colors.border }]}>
               {BENEFITS.map((b, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.benefitRow,
-                    i < BENEFITS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.divider },
-                  ]}
-                >
-                  <AppText style={styles.benefitText}>{b}</AppText>
-                </View>
+                <BenefitRow key={i} text={b} isLast={i === BENEFITS.length - 1} />
               ))}
             </View>
 
             {/* ── Price card ───────────────────────────────────── */}
             <View style={[styles.priceCard, { borderColor: '#DBEAFE' }]}>
               <View style={[styles.priceCardHeader, { backgroundColor: '#EFF6FF', borderBottomColor: '#DBEAFE' }]}>
-                <AppText style={styles.priceCardTitle}>One-time Verification Fee</AppText>
-                <AppText style={[styles.priceCardSub, { color: theme.colors.mutedText }]}>
-                  Unlock all premium features
+                <AppText style={styles.priceCardTitle}>Verified Badge Fee only:</AppText>
+                <AppText style={styles.priceCardSub}>
+                  Unlock premium trust and better response from employers.
                 </AppText>
               </View>
               <View style={styles.priceCardBody}>
                 <View style={styles.priceRow}>
-                  <AppText style={styles.priceOld}>₹{originalPrice.toLocaleString('en-IN')}</AppText>
-                  <AppText style={styles.priceNew}>₹{price.toLocaleString('en-IN')}</AppText>
-                  <View style={styles.discountBadge}>
-                    <AppText style={styles.discountText}>{discount}</AppText>
-                  </View>
+                  {priceLoading ? (
+                    <View style={styles.priceSkeleton} />
+                  ) : (
+                    <>
+                      <AppText style={styles.priceOld}>₹{originalPrice.toLocaleString('en-IN')}</AppText>
+                      <AppText style={styles.priceNew}>₹{price.toLocaleString('en-IN')}</AppText>
+                      <View style={styles.discountBadge}>
+                        <AppText style={styles.discountText}>{discount}</AppText>
+                      </View>
+                    </>
+                  )}
                 </View>
-                <AppText style={[styles.priceNote, { color: theme.colors.mutedText }]}>
-                  One-time payment · No renewal · Lifetime validity
+                <AppText style={styles.priceNote}>
+                  One-time verification · No hidden charges
                 </AppText>
               </View>
             </View>
@@ -172,15 +205,10 @@ export const VerifiedBadgeModal = ({
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <AppText style={styles.verifyBtnText}>✔ Get Verified Now</AppText>
+                <AppText style={styles.verifyBtnText}>Get Verified Now</AppText>
               )}
             </TouchableOpacity>
           </View>
-
-          {/* Close pill */}
-          <Pressable onPress={onDismiss} style={styles.closePill} hitSlop={12}>
-            <View style={[styles.closePillBar, { backgroundColor: theme.colors.border }]} />
-          </Pressable>
         </View>
       </View>
     </Modal>
@@ -200,14 +228,20 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
   },
 
-  // ── Hero ──────────────────────────────────────────────────────────────────
+  // ── Close pill ────────────────────────────────────────────────────────────────
+  closePill: {
+    position: 'absolute', top: 10, left: 0, right: 0,
+    alignItems: 'center', zIndex: 10,
+  },
+  closePillBar: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.45)' },
+
+  // ── Hero ──────────────────────────────────────────────────────────────────────
   hero: {
     backgroundColor: '#1037A4',
-    padding: 24,
-    paddingTop: 32,
+    paddingTop: 32, paddingBottom: 20, paddingHorizontal: 24,
     alignItems: 'center',
     overflow: 'hidden',
-    gap: 10,
+    gap: 8,
   },
   heroCircle1: {
     position: 'absolute', top: -60, right: -50,
@@ -221,34 +255,39 @@ const styles = StyleSheet.create({
   },
   avatarWrap: { position: 'relative', marginBottom: 4 },
   verifiedTag: {
-    position: 'absolute', top: -8, right: -16,
+    position: 'absolute', top: -6, left: -14,
     backgroundColor: '#22C55E',
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 999,
   },
   verifiedTagText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  heroTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', textAlign: 'center', lineHeight: 26 },
-  heroSub: { color: 'rgba(255,255,255,0.72)', fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  heroTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '800', textAlign: 'center', lineHeight: 28 },
+  heroSub: { color: 'rgba(255,255,255,0.75)', fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  whyPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 999,
+    paddingHorizontal: 14, paddingVertical: 6, marginTop: 4,
+  },
+  whyDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#4ADE80' },
+  whyText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
 
-  // ── Body ──────────────────────────────────────────────────────────────────
-  body: { maxHeight: 400 },
+  // ── Body ──────────────────────────────────────────────────────────────────────
+  body: { maxHeight: 420 },
   bodyContent: { padding: 16, gap: 12 },
 
   benefitsCard: {
     borderRadius: 18, borderWidth: 1, overflow: 'hidden',
     backgroundColor: '#FAFAFA',
   },
-  benefitRow: { paddingHorizontal: 16, paddingVertical: 11 },
-  benefitText: { fontSize: 13, fontWeight: '500', color: '#334155', lineHeight: 18 },
 
+  // ── Price card ────────────────────────────────────────────────────────────────
   priceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
-  priceCardHeader: {
-    padding: 14, borderBottomWidth: 1, gap: 3,
-  },
+  priceCardHeader: { padding: 14, borderBottomWidth: 1, gap: 4 },
   priceCardTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
-  priceCardSub: { fontSize: 12 },
-  priceCardBody: { padding: 16, gap: 10, backgroundColor: '#fff' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  priceCardSub: { fontSize: 12, color: '#64748B', lineHeight: 17 },
+  priceCardBody: { padding: 16, gap: 8, backgroundColor: '#fff' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', minHeight: 40 },
+  priceSkeleton: { height: 36, width: 120, borderRadius: 8, backgroundColor: '#E8ECF5' },
   priceOld: { fontSize: 14, color: '#94A3B8', fontWeight: '600', textDecorationLine: 'line-through' },
   priceNew: { fontSize: 30, fontWeight: '900', color: '#15803D', lineHeight: 36 },
   discountBadge: {
@@ -256,9 +295,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 4,
   },
   discountText: { fontSize: 11, fontWeight: '800', color: '#15803D' },
-  priceNote: { fontSize: 12, lineHeight: 16 },
+  priceNote: { fontSize: 12, color: '#64748B', lineHeight: 16 },
 
-  // ── Footer ────────────────────────────────────────────────────────────────
+  // ── Footer ────────────────────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row', gap: 10,
     padding: 16, borderTopWidth: StyleSheet.hairlineWidth,
@@ -273,12 +312,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#22C55E',
   },
-  verifyBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
-
-  // ── Close pill ────────────────────────────────────────────────────────────
-  closePill: {
-    position: 'absolute', top: 10, alignSelf: 'center', left: 0, right: 0,
-    alignItems: 'center',
-  },
-  closePillBar: { width: 40, height: 4, borderRadius: 2 },
+  verifyBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

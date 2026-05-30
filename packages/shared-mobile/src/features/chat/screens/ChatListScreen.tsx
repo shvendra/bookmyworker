@@ -10,6 +10,7 @@ import { Avatar } from '../../../shared/components/ui/Avatar';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
+import { useTranslation } from 'react-i18next';
 import type { ChatRoom } from '../../../shared/types/domain';
 
 interface ChatListScreenProps {
@@ -31,6 +32,7 @@ const formatTime = (iso?: string): string => {
 };
 
 export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const userId = state.session?.user.id ?? '';
@@ -45,18 +47,18 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
 
   const roomList: ChatRoom[] = [];
 
-  if (isLoading) return <LoadingState message="Loading conversations…" />;
-  if (isError) return <ErrorState title="Unable to Load Chats" message="Could not fetch your conversations. Please check your connection and try again." onRetry={() => void refetch()} />;
+  if (isLoading) return <LoadingState message={t('loading')} />;
+  if (isError) return <ErrorState title={t('error')} message={t('checkConnectionRetry')} onRetry={() => void refetch()} />;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Messages" />
+      <ScreenHeader title={t('chatTitle')} />
 
       {roomList.length === 0 ? (
         <EmptyState
-          title="No conversations yet"
-          message="Start a conversation from a worker or employer profile."
+          title={t('noChats')}
+          message={t('noChatsDesc')}
         />
       ) : (
         <FlatList
@@ -100,7 +102,7 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
                     numberOfLines={1}
                     style={item.unreadCount > 0 ? styles.boldCaption : undefined}
                   >
-                    {item.lastMessage ?? 'No messages yet'}
+                    {item.lastMessage ?? t('noChats')}
                   </AppText>
                 </View>
               </TouchableOpacity>

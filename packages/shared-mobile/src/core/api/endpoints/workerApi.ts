@@ -136,8 +136,18 @@ export const workerApi = {
     };
   },
 
-  unlockNumber: async (agentId: string): Promise<{ phone?: string; message?: string }> => {
-    const res = await apiClient.get<{ phone?: string; message?: string }>(`/api/v1/user/unlock-number/${agentId}`);
+  unlockNumber: async (agentId: string): Promise<{
+    phone?: string;
+    message?: string;
+    alreadyHired?: boolean;  // true when worker has Joined status — contact is free
+    code?: 'SUBSCRIPTION_REQUIRED' | 'SUBSCRIPTION_EXPIRED' | 'CONTACT_LIMIT';
+  }> => {
+    const res = await apiClient.get<{
+      phone?: string;
+      message?: string;
+      alreadyHired?: boolean;
+      code?: string;
+    }>(`/api/v1/user/unlock-number/${agentId}`);
     return res.data;
   },
 

@@ -26,6 +26,11 @@ config.resolver.extraNodeModules = {
   'react-native-reanimated':                  path.resolve(appModules, 'react-native-reanimated'),
   'react-native-gesture-handler':             path.resolve(appModules, 'react-native-gesture-handler'),
   '@react-navigation/native':                 path.resolve(appModules, '@react-navigation/native'),
+  '@react-navigation/bottom-tabs':            path.resolve(appModules, '@react-navigation/bottom-tabs'),
+  '@react-navigation/native-stack':           path.resolve(appModules, '@react-navigation/native-stack'),
+  '@react-navigation/elements':               path.resolve(appModules, '@react-navigation/elements'),
+  '@react-navigation/routers':                path.resolve(appModules, '@react-navigation/routers'),
+  '@react-navigation/stack':                  path.resolve(appModules, '@react-navigation/stack'),
   '@tanstack/react-query':                    path.resolve(appModules, '@tanstack/react-query'),
   '@tanstack/query-core':                     path.resolve(appModules, '@tanstack/query-core'),
   '@tanstack/react-query-persist-client':     path.resolve(appModules, '@tanstack/react-query-persist-client'),
@@ -33,6 +38,8 @@ config.resolver.extraNodeModules = {
   'expo':                                     path.resolve(appModules, 'expo'),
   'axios':                                    path.resolve(appModules, 'axios'),
   'socket.io-client':                         path.resolve(appModules, 'socket.io-client'),
+  'i18next':                                  path.resolve(appModules, 'i18next'),
+  'react-i18next':                            path.resolve(appModules, 'react-i18next'),
 };
 
 module.exports = config;

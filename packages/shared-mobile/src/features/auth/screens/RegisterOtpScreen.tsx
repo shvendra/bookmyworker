@@ -16,8 +16,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../../state/auth/AuthContext';
+import i18n from '../../../core/i18n';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
@@ -36,6 +38,7 @@ const RESEND_COOLDOWN = 60;
 const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -50,7 +53,6 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
   const [resendLoading, setResendLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [countdown, setCountdown]   = useState(RESEND_COOLDOWN);
-  const [phase, setPhase]           = useState<'register' | 'login'>('register');
 
   const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRefs  = useRef<Array<TextInput | null>>(Array(OTP_LENGTH).fill(null));
@@ -119,45 +121,60 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      if (phase === 'register') {
-        await authService.verifyOtpForRegistration(params.phone, otp);
-        await authService.register({
-          name: params.name, phone: params.phone, password: params.password,
-          role: params.role, state: params.state, district: params.district,
-          block: params.block, pinCode: params.pinCode, email: params.email,
-          referredBy: params.referredBy,
-          employerType: params.employerType ? (JSON.parse(params.employerType) as { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean }) : undefined,
-          gender: params.gender, dob: params.dob,
-          address: params.address, areasOfWork: params.areasOfWork, categories: params.categories,
-          workExperience: params.workExperience ? Number(params.workExperience.split(' ')[0]) : undefined,
-          salaryType: params.salaryType,
-          fixedSalary: params.fixedSalary ? Number(params.fixedSalary) : undefined,
-          salaryFrom: params.salaryFrom ? Number(params.salaryFrom) : undefined,
-          salaryTo: params.salaryTo ? Number(params.salaryTo) : undefined,
-          workerSubType: params.workerSubType,
-          agentType: params.agentType,
-        });
-        toast.success('Account created!', 'Registration Successful');
-        await authService.requestOtp(params.phone);
-        setDigits(Array(OTP_LENGTH).fill(''));
-        setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
-        startCountdown();
-        setPhase('login');
-      } else {
-        const roleHint = params.role === 'Employer' ? 'employer' : params.role === 'Agent' ? 'agent' : 'worker';
-        const session = await authService.loginAfterRegister(params.phone, otp, roleHint);
-        await signIn(session);
-        if (params.resumeUri && params.resumeName) {
-          try {
-            await workerApi.uploadResume(params.resumeUri, params.resumeName);
-          } catch {
-            // resume upload failure is non-fatal
-          }
-        }
-        toast.success('Welcome to BookMyWorker!', 'Registration Successful');
+      await authService.verifyOtpForRegistration(params.phone, otp);
+      // Use the language the user selected before registration (passed as a param).
+      // Fall back to the current i18n language so we never send undefined.
+      const selectedLang = params.language ?? i18n.language ?? 'hi';
+      await authService.register({
+        name: params.name, phone: params.phone, password: params.password,
+        role: params.role, language: selectedLang,
+        state: params.state, district: params.district,
+        block: params.block, pinCode: params.pinCode, email: params.email,
+        referredBy: params.referredBy,
+        employerType: params.employerType ? (JSON.parse(params.employerType) as { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean }) : undefined,
+        gender: params.gender,
+        // dob stores age as plain Number (e.g. 25)
+        dob: params.dob ? Number(params.dob) : undefined,
+        address: params.address, areasOfWork: params.areasOfWork, categories: params.categories,
+        workExperience: params.workExperience ? Number(params.workExperience.split(' ')[0]) : undefined,
+        salaryType: params.salaryType,
+        fixedSalary: params.fixedSalary ? Number(params.fixedSalary) : undefined,
+        salaryFrom: params.salaryFrom ? Number(params.salaryFrom) : undefined,
+        salaryTo: params.salaryTo ? Number(params.salaryTo) : undefined,
+        workerSubType: params.workerSubType,
+        agentType: params.agentType,
+      });
+      toast.success(t('accountCreated'), t('registrationSuccessful'));
+
+      // Login directly using the password set during registration — no second OTP
+      const roleHint = params.role === 'Employer' ? 'employer' : params.role === 'Agent' ? 'agent' : 'worker';
+      const session = await authService.loginWithPassword(params.phone, params.password, roleHint);
+      // For fresh employer registrations: mark onboarding incomplete so the employer
+      // navigator routes to EmployerKycScreen (language + GST/ID details) before Main.
+      if (params.role === 'Employer') {
+        session.onboardingCompleted = false;
       }
+      // For fresh SelfWorker/Worker registrations: mark onboarding incomplete so the
+      // app routes to WorkerProfileCompletionScreen to collect gender, age & areas of work.
+      if (params.role === 'SelfWorker' || params.role === 'Worker') {
+        session.onboardingCompleted = false;
+      }
+      if (params.resumeUri && params.resumeName) {
+        try {
+          await workerApi.uploadResume(params.resumeUri, params.resumeName);
+        } catch {
+          // resume upload failure is non-fatal
+        }
+      }
+      // Re-apply the selected language immediately before navigating to the main app.
+      // This guards against any race between useLangSync's async DB read and the first render.
+      if (i18n.language !== selectedLang) {
+        await i18n.changeLanguage(selectedLang);
+      }
+      await signIn(session);
+      toast.success(t('welcomeToApp'), t('registrationSuccessful'));
     } catch (error) {
-      const msg = error instanceof Error ? error.message : (phase === 'register' ? 'Registration failed.' : 'Login failed.');
+      const msg = error instanceof Error ? error.message : t('registrationFailed');
       setErrorMessage(msg);
       shakeBoxes();
       setDigits(Array(OTP_LENGTH).fill(''));
@@ -169,6 +186,8 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
   const handleVerify = (): void => { void submitOtp(digits.join('')); };
 
+  const filled = digits.filter(Boolean).length;
+
   const resendOtp = async (): Promise<void> => {
     if (countdown > 0) return;
     setResendLoading(true);
@@ -178,16 +197,14 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
       startCountdown();
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
-      toast.success(`OTP resent to +91 ${params.phone}`, 'OTP Resent');
+      toast.success(`${t('otpResentToNumber')} ${params.phone}`, t('otpResent'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to resend OTP');
+      toast.error(error instanceof Error ? error.message : t('failedResendOtp'));
     } finally {
       setResendLoading(false);
     }
   };
 
-  const isRegisterPhase = phase === 'register';
-  const filled = digits.filter(Boolean).length;
 
   return (
     <View style={[s.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
@@ -205,19 +222,10 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
             </View>
             <View>
               <AppText style={s.brandName}>BookMyWorker</AppText>
-              <AppText style={s.brandSub}>
-                {isRegisterPhase ? 'Step 1 of 2 — Verify & Register' : 'Step 2 of 2 — Log In'}
-              </AppText>
+              <AppText style={s.brandSub}>{t('step1Of2Verify')}</AppText>
             </View>
           </View>
           <View style={{ width: 40 }} />
-        </View>
-
-        {/* Phase dots */}
-        <View style={s.phaseRow}>
-          <View style={[s.phaseDot, { backgroundColor: '#fff' }]} />
-          <View style={[s.phaseLine, { backgroundColor: isRegisterPhase ? 'rgba(255,255,255,0.3)' : '#22C55E' }]} />
-          <View style={[s.phaseDot, { backgroundColor: isRegisterPhase ? 'rgba(255,255,255,0.3)' : '#22C55E' }]} />
         </View>
 
         <View style={[s.deco, s.deco1]} />
@@ -237,27 +245,23 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
           ]}>
             {/* Header */}
             <View style={s.cardHeader}>
-              <View style={[s.iconCircle, { backgroundColor: isRegisterPhase ? theme.colors.primaryLight : '#DCFCE7' }]}>
-                <AppText style={s.iconEmoji}>{isRegisterPhase ? '📱' : '✅'}</AppText>
+              <View style={[s.iconCircle, { backgroundColor: theme.colors.primaryLight }]}>
+                <AppText style={s.iconEmoji}>📱</AppText>
               </View>
               <AppText variant="heading" color={theme.colors.text} style={s.heading}>
-                {isRegisterPhase ? 'Verify Your Number' : 'Account Created!'}
+                {t('verifyYourNumber')}
               </AppText>
               <AppText variant="body" color={theme.colors.mutedText} style={s.subText}>
-                {isRegisterPhase
-                  ? `A 6-digit OTP was sent via `
-                  : `Account registered! A new OTP was sent via `}
+                {t('otpCodeSentPrefix')}{' '}
                 <AppText variant="body" color="#25D366" style={{ fontWeight: '700' }}>WhatsApp</AppText>
-                {' '}to{'\n'}
+                {' '}{t('otpCodeSentTo')}{'\n'}
                 <AppText variant="bodyMd" color={theme.colors.text}>+91 {params.phone}</AppText>
               </AppText>
-              {isRegisterPhase && (
-                <Pressable onPress={() => navigation.goBack()}>
-                  <AppText variant="caption" color={theme.colors.primary} style={s.changeLink}>
-                    ← Change details
-                  </AppText>
-                </Pressable>
-              )}
+              <Pressable onPress={() => navigation.goBack()}>
+                <AppText variant="caption" color={theme.colors.primary} style={s.changeLink}>
+                  ← {t('changeDetails')}
+                </AppText>
+              </Pressable>
             </View>
 
             {/* OTP Boxes */}
@@ -322,7 +326,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
             )}
 
             <AppButton
-              title={isLoading ? 'Processing…' : isRegisterPhase ? 'Verify & Register →' : 'Log In to Dashboard →'}
+              title={isLoading ? t('processing') : `${t('verifyAndRegister')} →`}
               onPress={handleVerify}
               loading={isLoading}
               disabled={filled < OTP_LENGTH}
@@ -335,13 +339,13 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
             <View style={s.resendRow}>
               {countdown > 0 ? (
                 <AppText variant="caption" color={theme.colors.mutedText} center>
-                  Resend OTP in{' '}
+                  {t('resendOtpIn')}{' '}
                   <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>{countdown}s</AppText>
                 </AppText>
               ) : (
                 <Pressable onPress={resendOtp} disabled={resendLoading}>
                   <AppText variant="caption" color={theme.colors.primary} style={s.resendLink}>
-                    {resendLoading ? 'Sending…' : '↩ Resend OTP via WhatsApp'}
+                    {resendLoading ? t('sending') : `↩ ${t('resendOtpBtn')}`}
                   </AppText>
                 </Pressable>
               )}
@@ -350,7 +354,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
           {/* Trust row */}
           <View style={s.trustRow}>
-            {['🔒 Secure', '💬 WhatsApp OTP', '✅ Instant'].map((item) => (
+            {[t('registerTrustBadge1'), t('registerTrustBadge2'), t('registerTrustBadge3')].map((item) => (
               <View key={item} style={[s.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>

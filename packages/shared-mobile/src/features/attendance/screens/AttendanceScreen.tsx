@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -124,7 +125,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
                 <AppButton
                   title="Check In"
                   onPress={() => {
-                    Alert.alert(
+                    showAlert(
                       'Check In',
                       'Mark attendance for your current requirement?',
                       [
@@ -140,7 +141,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
                 <AppButton
                   title="Check Out"
                   onPress={() => {
-                    Alert.alert(
+                    showAlert(
                       'Check Out',
                       'Record your check-out for today?',
                       [

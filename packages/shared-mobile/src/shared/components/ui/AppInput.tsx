@@ -7,6 +7,7 @@ import {
   View,
   type TextInputProps,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 
@@ -35,11 +36,15 @@ export const AppInput = ({
   onChangeText,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
+  secureTextEntry,
   ...rest
 }: AppInputProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef<TextInput | null>(null);
+
+  const isPasswordField = secureTextEntry === true;
 
   const hasError = Boolean(errorText);
   const isDark = theme.mode === 'dark';
@@ -121,6 +126,7 @@ export const AppInput = ({
           maxLength={maxLength}
           value={value}
           onChangeText={onChangeText}
+          secureTextEntry={isPasswordField ? !showPassword : false}
           onFocus={(e) => {
             setFocused(true);
             onFocusProp?.(e);
@@ -137,7 +143,20 @@ export const AppInput = ({
           {...rest}
         />
 
-        {trailingIcon ? (
+        {isPasswordField ? (
+          <TouchableOpacity
+            onPress={() => setShowPassword((v) => !v)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.trailingBtn}
+            activeOpacity={0.6}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={focused ? theme.colors.primary : theme.colors.mutedText}
+            />
+          </TouchableOpacity>
+        ) : trailingIcon ? (
           <TouchableOpacity
             onPress={onTrailingPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

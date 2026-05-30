@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import categoriesRaw from '../../data/categories.json';
+import { getSubCatLabel } from '../../utils/labelUtils';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
 
@@ -45,22 +47,31 @@ export const CategorySelector = ({
   required = false,
 }: CategorySelectorProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { i18n } = useTranslation();
   const [mode, setMode] = useState<PickerMode>(null);
   const [query, setQuery] = useState('');
 
   const selectedCat = CATEGORIES.find((c) => c.value === category);
   const subList = selectedCat?.subcategories ?? [];
 
-  const categoryLabel = selectedCat?.label ?? '';
-  const subLabel = subList.find((s) => s.value === subCategory)?.label ?? '';
+  const categoryLabel = selectedCat ? (getSubCatLabel(selectedCat.value, i18n.language) || selectedCat.label) : '';
+  const subLabel = subCategory ? getSubCatLabel(subCategory, i18n.language) : '';
 
   const filteredCats = useMemo(
-    () => CATEGORIES.filter((c) => c.label.toLowerCase().includes(query.toLowerCase())),
-    [query]
+    () => CATEGORIES.filter((c) => {
+      const translated = getSubCatLabel(c.value, i18n.language) || c.label;
+      return translated.toLowerCase().includes(query.toLowerCase()) ||
+        c.label.toLowerCase().includes(query.toLowerCase());
+    }),
+    [query, i18n.language]
   );
   const filteredSubs = useMemo(
-    () => subList.filter((s) => s.label.toLowerCase().includes(query.toLowerCase())),
-    [query, subList]
+    () => subList.filter((s) => {
+      const translated = getSubCatLabel(s.value, i18n.language);
+      return translated.toLowerCase().includes(query.toLowerCase()) ||
+        s.label.toLowerCase().includes(query.toLowerCase());
+    }),
+    [query, subList, i18n.language]
   );
 
   const openPicker = (m: PickerMode): void => {
@@ -157,7 +168,7 @@ export const CategorySelector = ({
                           variant="body"
                           color={selected ? theme.colors.primary : theme.colors.text}
                         >
-                          {item.label}
+                          {getSubCatLabel(item.value, i18n.language) || item.label}
                         </AppText>
                         <AppText variant="caption" color={theme.colors.mutedText}>
                           {item.subcategories.length} sub-types
@@ -190,7 +201,7 @@ export const CategorySelector = ({
                         variant="body"
                         color={selected ? theme.colors.primary : theme.colors.text}
                       >
-                        {item.label}
+                        {getSubCatLabel(item.value, i18n.language)}
                       </AppText>
                       {selected && (
                         <AppText variant="caption" color={theme.colors.primary}>✓</AppText>

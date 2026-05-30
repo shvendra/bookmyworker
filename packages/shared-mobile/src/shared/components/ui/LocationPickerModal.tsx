@@ -12,7 +12,6 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   StyleSheet,
@@ -20,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../state/alert/AppAlertContext';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 
@@ -141,7 +141,7 @@ export const LocationPickerModal = ({
 
   const handleGPS = (): void => {
     if (!navigator.geolocation) {
-      Alert.alert('Not available', 'Location services are not available on this device.');
+      showAlert('Not available', 'Location services are not available on this device.');
       return;
     }
     setGpsLoading(true);
@@ -164,7 +164,7 @@ export const LocationPickerModal = ({
       },
       (err) => {
         setGpsLoading(false);
-        Alert.alert(
+        showAlert(
           'Location Error',
           err.code === 1
             ? 'Location permission denied. Please enable location access in Settings.'

@@ -10,6 +10,7 @@ import {
   View,
   Image,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ROUTES } from '../../../shared/constants/routes';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
@@ -23,15 +24,16 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 const { width: W, height: H } = Dimensions.get('window');
 
 export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const { config } = useAppConfig();
   const workerLabel = formatStat(config.stats.workerCount);
 
   const FEATURES = [
-    { icon: '👷', title: 'Direct Worker Hiring',     desc: `Access ${workerLabel} verified skilled & unskilled workers across India. Connect and call them directly with zero middlemen.` },
-    { icon: '📋', title: 'Smart Manpower CRM',   desc: 'Post job requirements, track prospects, and manage your workforce pipeline using our advanced built-in CRM.' },
-    { icon: '💼', title: 'Local Agent Network',         desc: 'Connect directly with district-level agents sourcing pre-verified bulk manpower. Pay them directly with no platform cuts.' },
-    { icon: '💳', title: 'Fixed Subscription Pricing',      desc: 'No commission on worker wages or agent fees. Pay one simple subscription to unlock access and job posting.' },
+    { icon: '👷', title: t('featureHiringTitle'), desc: t('featureHiringDesc') },
+    { icon: '📋', title: t('featureCrmTitle'),    desc: t('featureCrmDesc') },
+    { icon: '💼', title: t('featureAgentTitle'),  desc: t('featureAgentDesc') },
+    { icon: '💳', title: t('featurePricingTitle'), desc: t('featurePricingDesc') },
   ];
 
   const heroAnim = useRef(new Animated.Value(0)).current;
@@ -70,7 +72,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
               BookMyWorker
             </AppText>
             <AppText variant="body" color="rgba(255,255,255,0.78)" style={styles.heroSubtitle}>
-              India's trusted platform connecting{'\n'}employers, agents & workers
+              {t('landingSubtitle')}
             </AppText>
             <View style={styles.proofPill}>
               <View style={styles.proofDots}>
@@ -79,7 +81,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
                 ))}
               </View>
               <AppText variant="micro" color="rgba(255,255,255,0.9)" style={styles.proofText}>
-                {workerLabel} workers active today
+                {workerLabel} {t('workersActiveToday')}
               </AppText>
             </View>
           </Animated.View>
@@ -130,13 +132,13 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
           ]}
         >
           <AppButton
-            title="Get Started — Log In"
+            title={t('getStartedLogin')}
             onPress={() => navigation.navigate(ROUTES.AUTH.LOGIN)}
             size="lg"
             fullWidth
           />
           <AppButton
-            title="Create New Account"
+            title={t('createNewAccount')}
             onPress={() => navigation.navigate(ROUTES.AUTH.REGISTER)}
             variant="outline"
             size="lg"
@@ -144,7 +146,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
             style={styles.registerBtn}
           />
           <AppText variant="caption" color={theme.colors.mutedText} center style={styles.terms}>
-            By continuing, you agree to our Terms of Service & Privacy Policy
+            {t('termsPolicy')}
           </AppText>
         </Animated.View>
       </Animated.View>

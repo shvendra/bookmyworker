@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { Controller, useForm } from 'react-hook-form';
@@ -11,6 +11,8 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
+import { useTranslation } from 'react-i18next';
+import { getSubCatLabel } from '../../../shared/utils/labelUtils';
 import { authService } from '../services/authService';
 import { registerStep2Schema, type RegisterStep2Values } from '../validation/authSchemas';
 import { ROUTES } from '../../../shared/constants/routes';
@@ -46,6 +48,7 @@ const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
 
 export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { i18n } = useTranslation();
   const toast = useToast();
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role | null>(null);
@@ -56,6 +59,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const [resumeUri, setResumeUri] = useState<string | null>(null);
   const [resumeName, setResumeName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const submitting = useRef(false);
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterStep2Values>({
     resolver: zodResolver(registerStep2Schema),
@@ -123,11 +127,13 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   };
 
   const onSubmit = handleSubmit(async (values) => {
+    if (submitting.current) return;
     if (!role) return;
     if (!values.state || !values.district) {
       toast.warning('Please select your state and district.', 'Required');
       return;
     }
+    submitting.current = true;
     setIsLoading(true);
     try {
       await authService.requestOtp(values.phone, undefined);
@@ -151,6 +157,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
       toast.error(error instanceof Error ? error.message : 'Failed to send OTP. Please try again.', 'Error');
     } finally {
       setIsLoading(false);
+      submitting.current = false;
     }
   });
 
@@ -322,7 +329,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
             )}
           />
 
-          <FormInput control={control} name="dob" label="Date of Birth" placeholder="DD/MM/YYYY" keyboardType="numbers-and-punctuation" />
+          <FormInput control={control} name="dob" label="Age" placeholder="e.g. 25" keyboardType="number-pad" maxLength={2} />
           <FormInput control={control} name="address" label="Village / Town / Address" placeholder="Your local address" />
 
           <Controller
@@ -360,7 +367,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
                   SUBCATEGORY ({selectedSubcategories.length} selected)
                 </AppText>
                 <CategoryChips
-                  items={cat.subcategories.map(s => ({ label: s.label, value: s.value }))}
+                  items={cat.subcategories.map(s => ({ label: getSubCatLabel(s.value, i18n.language), value: s.value }))}
                   selected={selectedSubcategories}
                   onToggle={toggleSubcategory}
                   theme={theme}

@@ -6,6 +6,7 @@ export const queryClient = new QueryClient({
       staleTime: 60 * 1000,
       gcTime: 1000 * 60 * 60,
       refetchOnReconnect: true,
+      refetchOnWindowFocus: false, // no window focus in React Native — prevents spurious refetches
       retry: 1,
     },
     mutations: {

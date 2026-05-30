@@ -22,6 +22,7 @@ import { ForgotPasswordScreen } from '../../features/auth/screens/ForgotPassword
 // Onboarding screens
 import { RoleSelectionScreen } from '../../features/onboarding/screens/RoleSelectionScreen';
 import { KycScreen } from '../../features/onboarding/screens/KycScreen';
+import { WorkerProfileCompletionScreen } from '../../features/onboarding/screens/WorkerProfileCompletionScreen';
 
 // Main tabs
 import { RoleTabsNavigator } from './RoleTabsNavigator';
@@ -47,6 +48,7 @@ import { ChatRoomScreen } from '../../features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../features/payment/screens/SubscriptionScreen';
 import { ShortlistScreen } from '../../features/employer/screens/ShortlistScreen';
 import { PipelineScreen } from '../../features/employer/screens/PipelineScreen';
+import { EmployerAnalyticsScreen } from '../../features/employer/screens/EmployerAnalyticsScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
 import { PdfViewerScreen } from '../../features/profile/screens/PdfViewerScreen';
 
@@ -104,12 +106,14 @@ export const AppNavigator = (): React.JSX.Element => {
         const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
         const type = (data.type as string | undefined) ?? 'system';
 
-        // Wait for nav container to be ready
+        // Wait for nav container to be ready AND user to be authenticated
         const navigate = (): void => {
           if (!navigationRef.isReady()) {
             setTimeout(navigate, 150);
             return;
           }
+          // Don't deep-link if session has expired — auth screens don't have these routes
+          if (state.status !== 'authenticated') return;
           switch (type) {
             case 'newWorker':
               navigationRef.navigate('WorkerSearch' as never);
@@ -158,7 +162,7 @@ export const AppNavigator = (): React.JSX.Element => {
   );
 
   if (state.status === 'loading') {
-    return <LoadingState message="Preparing your workspace…" />;
+    return <LoadingState fullscreen message="Preparing your workspace…" />;
   }
 
   return (
@@ -173,12 +177,6 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          </>
-        ) : !state.session?.onboardingCompleted ? (
-          // ── Onboarding screens ────────────────────────────────────
-          <>
-            <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-            <Stack.Screen name="Kyc" component={KycScreen} />
           </>
         ) : (
           // ── Authenticated: tabs + inner screens in one flat stack ─
@@ -207,7 +205,9 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_bottom', headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="Shortlist" component={ShortlistScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerAnalytics" component={EmployerAnalyticsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="WorkerProfileCompletion" component={WorkerProfileCompletionScreen} options={{ animation: 'slide_from_bottom', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

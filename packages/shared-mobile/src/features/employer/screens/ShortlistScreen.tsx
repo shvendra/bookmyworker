@@ -17,6 +17,9 @@ import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import i18n from '../../../core/i18n';
+import { useTranslation } from 'react-i18next';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Shortlist'>;
 
@@ -65,12 +68,13 @@ function WorkerCard({
   onRemove: () => void;
   removing: boolean;
 }): React.JSX.Element {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length]!;
   const name = worker.name ?? 'Unknown';
   const initials = name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const areas = formatAreas(worker.areasOfWork ?? []);
-  const location = [worker.block, worker.district, worker.state].filter(Boolean).join(', ');
+  const location = getLocationStr({ tehsil: worker.block, district: worker.district, state: worker.state }, i18n.language, '');
   const wage = worker.fixedSalary ?? worker.salaryFrom;
   const isVerified = worker.status === 'Verified' || worker.veryfiedBage === true;
 
@@ -138,7 +142,7 @@ function WorkerCard({
 
       {/* Footer */}
       <View style={wc.footer}>
-        <AppText style={wc.viewProfile}>View Profile  →</AppText>
+        <AppText style={wc.viewProfile}>{t('viewProfile')}</AppText>
       </View>
     </TouchableOpacity>
   );
@@ -165,20 +169,17 @@ const wc = StyleSheet.create({
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 function EmptyShortlist(): React.JSX.Element {
+  const { t } = useTranslation('employer');
   return (
     <View style={es.wrap}>
       <View style={es.iconWrap}>
         <AppText style={es.icon}>🤍</AppText>
       </View>
-      <AppText style={es.title}>No Shortlisted Workers</AppText>
-      <AppText style={es.sub}>
-        Tap the ❤️ button on any worker's profile to save them here for quick access.
-      </AppText>
+      <AppText style={es.title}>{t('shortlistEmpty')}</AppText>
+      <AppText style={es.sub}>{t('shortlistEmptyDesc')}</AppText>
       <View style={es.tipRow}>
         <AppText style={es.tipIcon}>💡</AppText>
-        <AppText style={es.tipTxt}>
-          Browse workers from the dashboard or worker search and shortlist the best ones.
-        </AppText>
+        <AppText style={es.tipTxt}>{t('shortlistTip')}</AppText>
       </View>
     </View>
   );
@@ -197,6 +198,7 @@ const es = StyleSheet.create({
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -233,9 +235,9 @@ export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
     try {
       await shortlistStorage.remove(id);
       setWorkers((prev) => prev.filter((w) => w._id !== id));
-      toast.success('Removed from shortlist.', 'Removed');
+      toast.success(t('removedFromShortlist'), '');
     } catch {
-      toast.error('Failed to remove worker.', 'Error');
+      toast.error(t('failedToRemove'), t('error'));
     } finally {
       setRemovingId(null);
     }
@@ -258,9 +260,9 @@ export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
             <AppText style={hdr.backArrow}>←</AppText>
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <AppText style={hdr.title}>My Shortlist</AppText>
+            <AppText style={hdr.title}>{t('shortlistTitle')}</AppText>
             <AppText style={hdr.sub}>
-              {loading ? 'Loading…' : workers.length === 0 ? 'No saved workers' : `${workers.length} saved worker${workers.length !== 1 ? 's' : ''}`}
+              {loading ? t('shortlistLoading') : workers.length === 0 ? t('shortlistEmpty') : t(workers.length === 1 ? 'shortlistSaved' : 'shortlistSaved_plural', { count: workers.length })}
             </AppText>
           </View>
           <View style={hdr.heartWrap}>

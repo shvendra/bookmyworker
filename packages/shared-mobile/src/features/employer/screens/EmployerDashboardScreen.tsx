@@ -26,6 +26,7 @@ import type { RawRequirement, PastWorker } from '../../../core/api/endpoints/req
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -38,6 +39,9 @@ import { buildPhotoUrl } from '../../../core/config/env';
 import { apiClient } from '../../../core/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmployerSubscriptionModal } from '../../payment/components/EmployerSubscriptionModal';
+import i18n from '../../../core/i18n';
+import { useTranslation } from 'react-i18next';
+import { getLocationStr } from '../../../shared/utils/labelUtils';
 
 const EMPLOYER_SUB_MODAL_KEY = 'employer_sub_modal_shown';
 
@@ -46,11 +50,7 @@ const EMPLOYER_SUB_MODAL_KEY = 'employer_sub_modal_shown';
 type ReqTab = 'all' | 'open' | 'closed';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
-const REQ_TABS: Array<{ label: string; value: ReqTab }> = [
-  { label: 'All',   value: 'all' },
-  { label: 'Open',  value: 'open' },
-  { label: 'Close', value: 'closed' },
-];
+// REQ_TABS is built inside the screen using t() — see renderHeader
 
 const NEARBY_SHOW = 10;
 
@@ -86,11 +86,11 @@ const agentStars = (id: string): number => {
   return 4.0 + (hash % 10) / 10;
 };
 
-const getGreeting = (): string => {
+const getGreetingKey = (): 'goodMorning' | 'goodAfternoon' | 'goodEvening' => {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'goodMorning';
+  if (h < 17) return 'goodAfternoon';
+  return 'goodEvening';
 };
 
 // ─── Stat Card Component ───────────────────────────────────────────────────────
@@ -122,11 +122,12 @@ interface CardProps {
 }
 
 const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: CardProps): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const closed    = isClosed(req);
   const assigned  = isAssigned(req);
   const interested = req.intrestedAgents?.length ?? 0;
 
-  const statusLabel = closed ? 'Closed' : assigned ? 'Ongoing' : 'Open';
+  const statusLabel = closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
   const statusColor = closed ? '#64748B' : assigned ? '#7C3AED' : '#059669';
   const accentColor = closed ? '#94A3B8' : assigned ? '#7C3AED' : '#059669';
 
@@ -185,14 +186,14 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={[card.agentName, { color: '#4C1D95' }]}>
-                {req.assignedAgentName ?? 'Agent Assigned'}
+                {req.assignedAgentName ?? t('agentAssigned')}
               </AppText>
               {req.assignedAgentPhone ? (
                 <AppText style={card.agentPhone}>📞 {req.assignedAgentPhone}</AppText>
               ) : null}
             </View>
             <View style={card.agentBadge}>
-              <AppText style={card.agentBadgeTxt}>Tap to call</AppText>
+              <AppText style={card.agentBadgeTxt}>{t('tapToCall')}</AppText>
             </View>
           </TouchableOpacity>
         )}
@@ -210,10 +211,10 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={[card.interestPrimary, { color: interested > 0 ? '#92400E' : colors.text }]}>
-                {interested > 0 ? `${interested} Agent${interested === 1 ? '' : 's'} Interested` : 'No agents yet'}
+                {interested > 0 ? t(interested === 1 ? 'agentsInterested' : 'agentsInterested_plural', { count: interested }) : t('noAgentsYet')}
               </AppText>
               <AppText style={[card.interestSub, { color: interested > 0 ? '#B45309' : colors.mutedText }]}>
-                {interested > 0 ? 'Tap to review and take action' : 'Share your requirement to get responses'}
+                {interested > 0 ? t('tapToReview') : t('shareRequirement')}
               </AppText>
             </View>
             {interested > 0 && (
@@ -229,7 +230,7 @@ const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: 
           {(req.district || req.state) ? (
             <View style={[card.metaChip, { backgroundColor: colors.surface1, borderColor: colors.border }]}>
               <AppText style={[card.metaTxt, { color: colors.mutedText }]}>
-                📍 {[req.district, req.state].filter(Boolean).join(', ')}
+                📍 {getLocationStr({ district: req.district, state: req.state }, i18n.language, '')}
               </AppText>
             </View>
           ) : null}
@@ -342,13 +343,15 @@ const AgentTile = React.memo(({ agent, onPress }: { agent: RawAgent; onPress: (i
 });
 AgentTile.displayName = 'AgentTile';
 
-const MoreTile = React.memo(({ count, onPress }: { count: number; onPress: () => void }): React.JSX.Element => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={tile.moreTile}>
-    <AppText style={tile.moreCount}>+{count}</AppText>
-    <AppText style={tile.moreLabel}>More</AppText>
-    <AppText style={tile.moreLabel}>Workers</AppText>
-  </TouchableOpacity>
-));
+const MoreTile = React.memo(({ count, onPress }: { count: number; onPress: () => void }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={tile.moreTile}>
+      <AppText style={tile.moreCount}>+{count}</AppText>
+      <AppText style={tile.moreLabel}>{t('moreWorkers')}</AppText>
+    </TouchableOpacity>
+  );
+});
 MoreTile.displayName = 'MoreTile';
 
 const tile = StyleSheet.create({
@@ -400,6 +403,7 @@ const ACTION_COLOR: Record<string, { bg: string; color: string; border: string }
 const NearbyWorkerCard = React.memo(({
   agent, onPress,
 }: { agent: RawAgent; onPress: (id: string) => void }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const photoUrl = buildPhotoUrl(agent.profilePhoto);
   const firstName = (agent.name ?? '?').trim().split(' ')[0] ?? '?';
@@ -422,11 +426,10 @@ const NearbyWorkerCard = React.memo(({
           <AppText style={[nwc.name, { color: theme.colors.text }]} numberOfLines={1}>{agent.name ?? displayName}</AppText>
           {agent.veryfiedBage && (
             <View style={nwc.verifiedBadge}>
-              <AppText style={nwc.verifiedTxt}>✓ Verified</AppText>
+              <AppText style={nwc.verifiedTxt}>{t('verified')}</AppText>
             </View>
           )}
         </View>
-        {agent.role ? <AppText style={nwc.role} numberOfLines={1}>{agent.role}</AppText> : null}
         {(agent as any).categories?.length > 0 && (
           <AppText style={nwc.cats} numberOfLines={1}>
             {((agent as any).categories as string[]).slice(0, 2).join(' · ')}
@@ -550,10 +553,17 @@ const qa = StyleSheet.create({
 
 // ─── Main Screen Component ─────────────────────────────────────────────────────
 export const EmployerDashboardScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const { config } = useAppConfig();
   const { pricing } = usePricingConfig();
+
+  const REQ_TABS: Array<{ label: string; value: ReqTab }> = [
+    { label: t('tabAll'),    value: 'all' },
+    { label: t('tabOpen'),   value: 'open' },
+    { label: t('tabClosed'), value: 'closed' },
+  ];
   const user = state.session?.user;
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
@@ -608,6 +618,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     const exp = profile.subscriptionExpery;
     if (!exp) return true;
     return new Date(exp).getTime() > Date.now();
+  })();
+
+  // True when they were subscribed but the expiry date has passed
+  const isExpired = (() => {
+    if (!profileQuery.isSuccess || !profile?.isSubscribed) return false;
+    const exp = profile.subscriptionExpery;
+    if (!exp) return false;
+    return new Date(exp).getTime() <= Date.now();
   })();
 
   const remainingContacts = profile?.remainingContacts ?? 0;
@@ -676,9 +694,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
       setClosingId(null);
-      toast.success('Requirement closed.', 'Closed');
+      toast.success(t('requirementClosed'), t('closedToast'));
     },
-    onError: () => { setClosingId(null); toast.error('Failed to close requirement.'); },
+    onError: () => { setClosingId(null); toast.error(t('failedToClose')); },
   });
 
   // ── Memoized Computations ──────────────────────────────────────────────────
@@ -755,8 +773,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     navigation.navigate('PostRequirement');
   }, [isSubscribed, remainingContacts, profileQuery.isLoading, navigation]);
 
-  const handleWorkerSearchNavigate = useCallback(() => navigation.navigate('WorkerSearch'), [navigation]);
-  const handlePipelineNavigate = useCallback(() => navigation.navigate('EmployerPipeline'), [navigation]);
+  const handleWorkerSearchNavigate  = useCallback(() => navigation.navigate('WorkerSearch'), [navigation]);
+  const handlePipelineNavigate      = useCallback(() => navigation.navigate('EmployerPipeline'), [navigation]);
+  const handleAnalyticsNavigate     = useCallback(() => navigation.navigate('EmployerAnalytics'), [navigation]);
+  const handleCalendarNavigate      = useCallback(() => navigation.navigate('RequirementCalendar'), [navigation]);
+  const handleCallHistoryNavigate   = useCallback(() => navigation.navigate('CallHistory'), [navigation]);
   const handleSubscriptionNavigate = useCallback(() => navigation.navigate('Subscription'), [navigation]);
   const handleOpenSubModal = useCallback(() => setSubModalVisible(true), []);
   const handleKycNavigate = useCallback(() => navigation.navigate('KycVerification'), [navigation]);
@@ -772,39 +793,57 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         <View style={styles.greetTop}>
           <View style={{ flex: 1 }}>
             <AppText style={[styles.greetTitle, { color: theme.colors.text }]}>
-              {getGreeting()}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
+              {t(getGreetingKey())}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
             </AppText>
             <AppText style={[styles.greetSub, { color: theme.colors.mutedText }]}>
               {kycUnverified
-                ? 'Your profile is pending verification.'
+                ? t('dashGreetSub_pending')
                 : isSubscribed
-                ? `Premium active · ${remainingContacts} contacts remaining`
-                : 'Welcome to BookMyWorker'}
+                ? t('dashGreetSub_premium', { count: remainingContacts })
+                : t('dashGreetSub_welcome')}
             </AppText>
           </View>
           <AppText style={styles.greetEmoji}>👋</AppText>
         </View>
         {kycUnverified && (
           <TouchableOpacity onPress={handleKycNavigate} style={[styles.greetBtn, { borderColor: theme.colors.primary }]} activeOpacity={0.8}>
-            <AppText style={[styles.greetBtnTxt, { color: theme.colors.primary }]}>Complete Verification</AppText>
+            <AppText style={[styles.greetBtnTxt, { color: theme.colors.primary }]}>{t('completeVerification')}</AppText>
           </TouchableOpacity>
         )}
         {profileQuery.isSuccess && !isSubscribed && !kycUnverified && (
           <TouchableOpacity onPress={handleSubscriptionNavigate} style={[styles.greetBtn, { borderColor: '#ea580c' }]} activeOpacity={0.8}>
-            <AppText style={[styles.greetBtnTxt, { color: '#ea580c' }]}>🔓 Subscribe to Unlock Features</AppText>
+            <AppText style={[styles.greetBtnTxt, { color: '#ea580c' }]}>{t('subscribeToUnlock')}</AppText>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* ── Subscription upsell banner (non-subscribed only) ── */}
-      {profileQuery.isSuccess && !isSubscribed && (
+      {/* ── Subscription expired warning banner ── */}
+      {profileQuery.isSuccess && isExpired && (
+        <TouchableOpacity onPress={handleSubscriptionNavigate} activeOpacity={0.85} style={expBanner.wrap}>
+          <View style={expBanner.iconWrap}>
+            <AppText style={expBanner.icon}>⏰</AppText>
+          </View>
+          <View style={expBanner.body}>
+            <AppText style={expBanner.title}>{t('subscriptionExpired')}</AppText>
+            <AppText style={expBanner.sub}>
+              {t('expiredOn', { date: profile?.subscriptionExpery ? new Date(profile.subscriptionExpery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—' })}
+            </AppText>
+          </View>
+          <View style={expBanner.btn}>
+            <AppText style={expBanner.btnTxt}>{t('renew')}</AppText>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* ── Subscription upsell banner (never subscribed) ── */}
+      {profileQuery.isSuccess && !isSubscribed && !isExpired && (
         <TouchableOpacity onPress={handleOpenSubModal} activeOpacity={0.85} style={subBanner.wrap}>
           <View style={subBanner.iconWrap}>
             <AppText style={subBanner.icon}>⭐</AppText>
           </View>
           <View style={subBanner.body}>
-            <AppText style={subBanner.title}>Unlock Premium Access</AppText>
-            <AppText style={subBanner.sub}>From ₹{pricing.subscription.individual['1m']}/month · Post jobs & connect with workers</AppText>
+            <AppText style={subBanner.title}>{t('unlockPremiumAccess')}</AppText>
+            <AppText style={subBanner.sub}>{t('premiumFromPrice', { price: pricing.subscription.individual['1m'] })}</AppText>
           </View>
           <AppText style={subBanner.arrow}>→</AppText>
         </TouchableOpacity>
@@ -820,16 +859,16 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </View>
             <View style={styles.qaNewBadge}>
               <AppText style={styles.qaNewTxt}>
-                {openCount > 0 ? 'ACTIVE' : 'POST NEW'}
+                {openCount > 0 ? t('badgeActive') : t('badgePostNew')}
               </AppText>
             </View>
           </View>
           <AppText style={styles.qaCount}>
             {reqQuery.isLoading ? '—' : String(openCount)}
           </AppText>
-          <AppText style={styles.qaTitle}>Post Requirement</AppText>
+          <AppText style={styles.qaTitle}>{t('postRequirement')}</AppText>
           <AppText style={styles.qaSub}>
-            {openCount > 0 ? `${openCount} active requirement${openCount !== 1 ? 's' : ''}` : 'Publish a new\nworker requirement'}
+            {openCount > 0 ? t(openCount === 1 ? 'activeRequirements' : 'activeRequirements_plural', { count: openCount }) : t('publishNew')}
           </AppText>
           <View style={styles.qaArrow}>
             <AppText style={styles.qaArrowTxt}>→</AppText>
@@ -843,12 +882,12 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <AppText style={styles.qaIcon}>👷</AppText>
             </View>
             <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
-              <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>AVAILABLE</AppText>
+              <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>{t('badgeAvailable')}</AppText>
             </View>
           </View>
           <AppText style={[styles.qaCount, styles.qaCountGreen]}>{totalWorkersDisplay}</AppText>
-          <AppText style={[styles.qaTitle, styles.qaTitleGreen]}>Browse Workers</AppText>
-          <AppText style={[styles.qaSub, styles.qaSubGreen]}>Explore verified{'\n'}workers & agents</AppText>
+          <AppText style={[styles.qaTitle, styles.qaTitleGreen]}>{t('browseWorkers')}</AppText>
+          <AppText style={[styles.qaSub, styles.qaSubGreen]}>{t('exploreVerified')}</AppText>
           <View style={[styles.qaArrow, styles.qaArrowGreen]}>
             <AppText style={[styles.qaArrowTxt, { color: '#065f46' }]}>→</AppText>
           </View>
@@ -860,18 +899,18 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         <View style={styles.subStatusCard}>
           <View style={styles.subStatusLeft}>
             <View style={styles.subActiveBadge}>
-              <AppText style={styles.subActiveBadgeText}>✓ Active</AppText>
+              <AppText style={styles.subActiveBadgeText}>{t('subActive')}</AppText>
             </View>
-            <AppText style={styles.subStatusTitle}>Premium Subscription</AppText>
+            <AppText style={styles.subStatusTitle}>{t('premiumSubscription')}</AppText>
             <AppText style={styles.subStatusMeta}>
-              Expires: {fmtDate(profile?.subscriptionExpery)}
+              {t('subExpires', { date: fmtDate(profile?.subscriptionExpery) })}
             </AppText>
           </View>
           <View style={styles.subStatusRight}>
             <AppText style={styles.subContactsCount}>{remainingContacts}</AppText>
-            <AppText style={styles.subContactsLabel}>Contacts{'\n'}Remaining</AppText>
+            <AppText style={styles.subContactsLabel}>{t('contactsRemaining')}</AppText>
             <TouchableOpacity onPress={handleSubscriptionNavigate} style={styles.subTopupBtn} activeOpacity={0.8}>
-              <AppText style={styles.subTopupTxt}>Top-up</AppText>
+              <AppText style={styles.subTopupTxt}>{t('topUp')}</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -881,8 +920,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       {isSubscribed && (
         <TouchableOpacity onPress={handlePipelineNavigate} activeOpacity={0.85} style={pip.card}>
           <View style={pip.header}>
-            <AppText style={pip.title}>Hiring Pipeline</AppText>
-            <AppText style={pip.viewAll}>View All  ›</AppText>
+            <AppText style={pip.title}>{t('hiringPipeline')}</AppText>
+            <AppText style={pip.viewAll}>{t('viewAll')}</AppText>
           </View>
           <View style={pip.row}>
             {([
@@ -895,28 +934,62 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 <AppText style={[pip.count, { color: s.color }]}>
                   {pipelineQuery.isLoading ? '—' : String(pipelineQuery.data?.[s.key] ?? 0)}
                 </AppText>
-                <AppText style={[pip.label, { color: s.color }]}>{s.key}</AppText>
+                <AppText style={[pip.label, { color: s.color }]}>{t(s.key.toLowerCase() as 'shortlisted' | 'selected' | 'joined')}</AppText>
               </View>
             ))}
           </View>
         </TouchableOpacity>
       )}
 
+      {/* ── Analytics entry strip ── */}
+      <TouchableOpacity onPress={handleAnalyticsNavigate} activeOpacity={0.85} style={an.card}>
+        <View style={an.left}>
+          <View style={an.iconWrap}>
+            <AppText style={an.icon}>📊</AppText>
+          </View>
+          <View style={an.body}>
+            <AppText style={an.title}>{t('hiringAnalytics')}</AppText>
+            <AppText style={an.sub}>{t('analyticsSubtitle')}</AppText>
+          </View>
+        </View>
+        <AppText style={an.arrow}>→</AppText>
+      </TouchableOpacity>
+
+      {/* ── Employer Tools Row (Calendar + Call History) ── */}
+      <View style={tl.row}>
+        <TouchableOpacity onPress={handleCalendarNavigate} activeOpacity={0.85} style={tl.card}>
+          <View style={[tl.iconBox, { backgroundColor: '#EBF1FF' }]}>
+            <AppText style={tl.icon}>📅</AppText>
+          </View>
+          <AppText style={tl.title}>{t('requirementCalendar')}</AppText>
+          <AppText style={tl.sub}>{t('calendarSubtitle')}</AppText>
+          <AppText style={tl.arrow}>→</AppText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleCallHistoryNavigate} activeOpacity={0.85} style={tl.card}>
+          <View style={[tl.iconBox, { backgroundColor: '#F5F3FF' }]}>
+            <AppText style={tl.icon}>📞</AppText>
+          </View>
+          <AppText style={tl.title}>{t('callHistory')}</AppText>
+          <AppText style={tl.sub}>{t('callHistorySubtitle')}</AppText>
+          <AppText style={tl.arrow}>→</AppText>
+        </TouchableOpacity>
+      </View>
+
       {/* ── Pending Tasks ── */}
       {(kycUnverified || !isSubscribed) && (
         <View style={[styles.pendingSection, { backgroundColor: theme.colors.card }]}>
-          <AppText style={[styles.pendingTitle, { color: theme.colors.text }]}>Pending Tasks</AppText>
+          <AppText style={[styles.pendingTitle, { color: theme.colors.text }]}>{t('pendingTasks')}</AppText>
           {kycUnverified && (
             <TouchableOpacity onPress={handleKycNavigate} style={styles.pendingTask} activeOpacity={0.8}>
               <View style={styles.pendingTaskIcon}>
                 <AppText style={{ fontSize: 20 }}>🪪</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>KYC Verification — <AppText style={{ color: '#d97706' }}>Important</AppText></AppText>
-                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>Complete KYC to unlock full features</AppText>
+                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>{t('kycVerification')} — <AppText style={{ color: '#d97706' }}>{t('kycImportant')}</AppText></AppText>
+                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>{t('kycComplete')}</AppText>
               </View>
               <TouchableOpacity onPress={handleKycNavigate} style={styles.pendingTaskBtn} activeOpacity={0.8}>
-                <AppText style={styles.pendingTaskBtnTxt}>Submit documents</AppText>
+                <AppText style={styles.pendingTaskBtnTxt}>{t('submitDocuments')}</AppText>
               </TouchableOpacity>
             </TouchableOpacity>
           )}
@@ -926,11 +999,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 <AppText style={{ fontSize: 20 }}>🔒</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>Activate Subscription</AppText>
-                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>Post requirements & view contacts</AppText>
+                <AppText style={[styles.pendingTaskTitle, { color: theme.colors.text }]}>{t('activateSubscription')}</AppText>
+                <AppText style={[styles.pendingTaskSub, { color: theme.colors.mutedText }]}>{t('postAndViewContacts')}</AppText>
               </View>
               <TouchableOpacity onPress={handleSubscriptionNavigate} style={styles.pendingTaskBtn} activeOpacity={0.8}>
-                <AppText style={styles.pendingTaskBtnTxt}>Subscribe</AppText>
+                <AppText style={styles.pendingTaskBtnTxt}>{t('subscribeCta')}</AppText>
               </TouchableOpacity>
             </TouchableOpacity>
           )}
@@ -942,7 +1015,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         {/* Header */}
         <View style={nws.header}>
           <View style={nws.headerLeft}>
-            <AppText style={[nws.title, { color: theme.colors.text }]}>Workers Near You</AppText>
+            <AppText style={[nws.title, { color: theme.colors.text }]}>{t('workersNearYou')}</AppText>
             {nearbyQuery.isSuccess && nearbyTotal > 0 && (
               <View style={nws.countPill}>
                 <AppText style={nws.countPillTxt}>
@@ -954,11 +1027,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             )}
           </View>
           <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.7}>
-            <AppText style={nws.viewAllTxt}>View All  ›</AppText>
+            <AppText style={nws.viewAllTxt}>{t('viewAll')}</AppText>
           </TouchableOpacity>
         </View>
         <AppText style={[nws.sub, { color: theme.colors.mutedText }]}>
-          Verified workers in {user?.district ?? user?.state ?? 'your area'}
+          {t('verifiedWorkersIn', { location: user?.district ?? user?.state ?? 'your area' })}
         </AppText>
 
         {nearbyQuery.isLoading ? (
@@ -967,9 +1040,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </View>
         ) : displayedNearby.length === 0 ? (
           <View style={nws.emptyWrap}>
-            <AppText style={nws.emptyTxt}>No verified workers found near {user?.district ?? 'your location'}.</AppText>
+            <AppText style={nws.emptyTxt}>{t('noWorkersNear', { location: user?.district ?? 'your location' })}</AppText>
             <TouchableOpacity onPress={handleWorkerSearchNavigate} style={nws.browseBtn} activeOpacity={0.8}>
-              <AppText style={nws.browseBtnTxt}>Browse All Workers  ›</AppText>
+              <AppText style={nws.browseBtnTxt}>{t('browseAllWorkers')}</AppText>
             </TouchableOpacity>
           </View>
         ) : (
@@ -980,10 +1053,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             {/* Footer */}
             <View style={nws.footer}>
               <AppText style={nws.footerTxt}>
-                {nearbyTotal.toLocaleString('en-IN')} workers available near you
+                {t('workersAvailableNear', { count: nearbyTotal.toLocaleString('en-IN') })}
               </AppText>
               <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.7}>
-                <AppText style={nws.footerLink}>View All Workers  ›</AppText>
+                <AppText style={nws.footerLink}>{t('viewAllWorkers')}</AppText>
               </TouchableOpacity>
             </View>
           </>
@@ -991,7 +1064,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       </View>
 
       <View style={styles.sectionHeader}>
-        <AppText style={[styles.sectionTitle, { color: theme.colors.text }]}>New Requirements</AppText>
+        <AppText style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('newRequirements')}</AppText>
         {reqQuery.isFetching && !isRefreshing && (
           <ActivityIndicator size="small" color={theme.colors.primary} />
         )}
@@ -1018,16 +1091,16 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         })}
       </View>
     </View>
-  ), [theme, user, isSubscribed, remainingContacts, profile, handleSubscriptionNavigate, handleOpenSubModal, kycUnverified, handleKycNavigate, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, profileQuery.isLoading, dashQuery.isSuccess, dashQuery.isLoading, totalWorkersDisplay, navigation, shortlistCount, handlePipelineNavigate, pipelineQuery.isLoading, pipelineQuery.data]);
+  ), [theme, user, isSubscribed, remainingContacts, profile, handleSubscriptionNavigate, handleOpenSubModal, kycUnverified, handleKycNavigate, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, profileQuery.isLoading, dashQuery.isSuccess, dashQuery.isLoading, totalWorkersDisplay, navigation, shortlistCount, handlePipelineNavigate, handleAnalyticsNavigate, pipelineQuery.isLoading, pipelineQuery.data]);
 
   const renderFooter = useMemo(() => (
     <View>
       {/* ── Recent Activity ── */}
       <View style={[act.card, { backgroundColor: theme.colors.card }]}>
         <View style={act.header}>
-          <AppText style={[act.title, { color: theme.colors.text }]}>Recent Activity</AppText>
+          <AppText style={[act.title, { color: theme.colors.text }]}>{t('recentActivity')}</AppText>
           <TouchableOpacity onPress={() => navigation.navigate('MyActivity')} activeOpacity={0.7}>
-            <AppText style={act.viewAll}>View All  ›</AppText>
+            <AppText style={act.viewAll}>{t('viewAll')}</AppText>
           </TouchableOpacity>
         </View>
 
@@ -1038,8 +1111,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         ) : (activityQuery.data?.length ?? 0) === 0 ? (
           <View style={act.emptyWrap}>
             <AppText style={act.emptyIcon}>📋</AppText>
-            <AppText style={act.emptyTxt}>No activity recorded yet.</AppText>
-            <AppText style={act.emptySub}>Actions you take will appear here.</AppText>
+            <AppText style={act.emptyTxt}>{t('noActivityYet')}</AppText>
+            <AppText style={act.emptySub}>{t('actionsAppearHere')}</AppText>
           </View>
         ) : (
           <>
@@ -1055,7 +1128,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               style={act.footer}
               activeOpacity={0.7}
             >
-              <AppText style={act.footerTxt}>See full activity log  →</AppText>
+              <AppText style={act.footerTxt}>{t('seeFullActivityLog')}</AppText>
             </TouchableOpacity>
           </>
         )}
@@ -1068,12 +1141,15 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={ub.icon}>🚀</AppText>
           </View>
           <View style={ub.body}>
-            <AppText style={[ub.title, { color: theme.colors.text }]}>Upgrade to Premium & Hire Better!</AppText>
-            <AppText style={ub.desc}>
-              Boost your job visibility, get more applications and connect with verified & experienced workers.
-            </AppText>
+            <AppText style={[ub.title, { color: theme.colors.text }]}>{t('upgradeToPremium')}</AppText>
+            <AppText style={ub.desc}>{t('upgradeBannerDesc')}</AppText>
             <View style={ub.features}>
-              {['Top priority in search', 'Featured employer badge', 'Unlimited job posts', 'Priority support'].map((f) => (
+              {([
+                t('featureTopPriority'),
+                t('featureFeaturedBadge'),
+                t('featureUnlimitedPosts'),
+                t('featurePrioritySupport'),
+              ] as string[]).map((f) => (
                 <View key={f} style={ub.featureRow}>
                   <AppText style={ub.featureTick}>✅</AppText>
                   <AppText style={ub.featureTxt}>{f}</AppText>
@@ -1081,7 +1157,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               ))}
             </View>
             <TouchableOpacity onPress={handleSubscriptionNavigate} style={ub.btn} activeOpacity={0.85}>
-              <AppText style={ub.btnTxt}>⭐  Upgrade Now</AppText>
+              <AppText style={ub.btnTxt}>{t('upgradeNow')}</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -1092,14 +1168,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         <View style={[pw.card, { backgroundColor: theme.colors.card }]}>
           <View style={pw.header}>
             <View style={pw.headerLeft}>
-              <AppText style={[pw.title, { color: theme.colors.text }]}>Past Workers</AppText>
+              <AppText style={[pw.title, { color: theme.colors.text }]}>{t('pastWorkers')}</AppText>
               {(pastWorkersQuery.data?.length ?? 0) > 0 && (
                 <View style={pw.countPill}>
                   <AppText style={pw.countPillTxt}>{pastWorkersQuery.data!.length}</AppText>
                 </View>
               )}
             </View>
-            <AppText style={pw.sub}>Workers you've hired before</AppText>
+            <AppText style={pw.sub}>{t('workersHiredBefore')}</AppText>
           </View>
 
           {pastWorkersQuery.isLoading ? (
@@ -1143,7 +1219,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                     <AppText style={pw.workerDate}>{hireDate}</AppText>
                     {worker.workerId && (
                       <View style={pw.viewBtn}>
-                        <AppText style={pw.viewBtnTxt}>View</AppText>
+                        <AppText style={pw.viewBtnTxt}>{t('view')}</AppText>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -1157,9 +1233,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       {/* ── Support Footer ── */}
       <View style={sf.card}>
         {[
-          { emoji: '🎧', title: 'Need help?', desc: 'Our support team is here for you.' },
-          { emoji: '💬', title: 'Support', desc: config.contact.supportEmail },
-          { emoji: '💼', title: 'Business Support', desc: config.contact.businessEmail },
+          { emoji: '🎧', title: t('needHelp'), desc: t('supportTeamReady') },
+          { emoji: '💬', title: t('support'), desc: config.contact.supportEmail },
+          { emoji: '💼', title: t('businessSupport'), desc: config.contact.businessEmail },
         ].map(({ emoji, title, desc }) => (
           <View key={title} style={sf.row}>
             <AppText style={sf.emoji}>{emoji}</AppText>
@@ -1176,14 +1252,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const renderEmptyComponent = useCallback(() => (
     <View>
       <EmptyState
-        title={reqTab === 'all' ? 'No requirements yet' : `No ${reqTab} requirements`}
-        message={reqTab === 'all' ? 'Post your first requirement to get started.' : `You have no ${reqTab} requirements right now.`}
+        title={reqTab === 'all' ? t('noRequirementsYet') : t('noTabRequirements', { tab: reqTab })}
+        message={reqTab === 'all' ? t('postFirstReq') : t('noTabReqNow', { tab: reqTab })}
       />
       {all.length === 0 && !reqQuery.isLoading && (
-        <AppButton title="Post First Requirement" onPress={handlePost} style={{ marginTop: 12 }} />
+        <AppButton title={t('postFirstRequirement')} onPress={handlePost} style={{ marginTop: 12 }} />
       )}
     </View>
-  ), [reqTab, all.length, reqQuery.isLoading, handlePost]);
+  ), [reqTab, all.length, reqQuery.isLoading, handlePost, t]);
 
   const renderItem = useCallback(({ item }: { item: RawRequirement }) => (
     <RequirementCard
@@ -1215,18 +1291,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={fh.brandLogo}>BookMyWorker</AppText>
           </View>
           <View style={fh.headerActions}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('EmployerPipeline')}
-              style={fh.shortlistBtn}
-              activeOpacity={0.8}
-            >
-              <AppText style={fh.shortlistIcon}>❤️</AppText>
-              {shortlistCount > 0 && (
-                <View style={fh.shortlistBadge}>
-                  <AppText style={fh.shortlistBadgeTxt}>{shortlistCount}</AppText>
-                </View>
-              )}
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('ChatRoom', {
                 roomId: `support_${user?.id ?? ''}`,
@@ -1279,7 +1343,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <View style={confirm.iconWrap}>
                 <AppText style={confirm.iconEmoji}>⚠️</AppText>
               </View>
-              <AppText style={confirm.headerTitle}>Close Requirement?</AppText>
+              <AppText style={confirm.headerTitle}>{t('closeRequirementTitle')}</AppText>
             </View>
 
             {/* Body */}
@@ -1288,7 +1352,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 "{closeTarget?.workType ?? 'This requirement'}"
               </AppText>
               <AppText style={[confirm.bodyMsg, { color: theme.colors.mutedText }]}>
-                This will permanently close the requirement. Interested agents will no longer be able to apply. This action cannot be undone.
+                {t('closeRequirementBody')}
               </AppText>
             </View>
 
@@ -1298,7 +1362,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 onPress={() => setCloseTarget(null)}
                 style={[confirm.btn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               >
-                <AppText style={[confirm.btnTxt, { color: theme.colors.text }]}>Cancel</AppText>
+                <AppText style={[confirm.btnTxt, { color: theme.colors.text }]}>{t('cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -1308,12 +1372,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 }}
                 style={[confirm.btn, confirm.btnDanger]}
               >
-                <AppText style={[confirm.btnTxt, { color: '#fff' }]}>Yes, Close It</AppText>
+                <AppText style={[confirm.btnTxt, { color: '#fff' }]}>{t('yesCloseIt')}</AppText>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {user && <ProfileCompletionModal user={user} />}
     </>
   );
 };
@@ -1495,6 +1561,18 @@ const subBanner = StyleSheet.create({
   arrow:   { fontSize: 18, color: 'rgba(255,255,255,0.8)', fontWeight: '700' },
 });
 
+// ── Subscription expired banner ────────────────────────────────────────────────
+const expBanner = StyleSheet.create({
+  wrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF7ED', borderRadius: 14, padding: 12, marginBottom: 14, borderWidth: 1.5, borderColor: '#FED7AA' },
+  iconWrap:{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFEDD5', alignItems: 'center', justifyContent: 'center' },
+  icon:    { fontSize: 18, lineHeight: 22 },
+  body:    { flex: 1, gap: 1 },
+  title:   { fontSize: 13, fontWeight: '800', color: '#C2410C' },
+  sub:     { fontSize: 11, color: '#EA580C', lineHeight: 15 },
+  btn:     { backgroundColor: '#EA580C', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  btnTxt:  { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+});
+
 // ─── Pipeline Strip Styles ─────────────────────────────────────────────────────
 const pip = StyleSheet.create({
   card:   { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: '#fff', padding: 14, marginBottom: 14, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
@@ -1530,4 +1608,27 @@ const fh = StyleSheet.create({
   proBadgeTxt:   { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   // Body lifts over hero
   body:          { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, overflow: Platform.OS === 'android' ? 'hidden' : 'visible' },
+});
+
+// ─── Analytics strip ──────────────────────────────────────────────────────────
+const an = StyleSheet.create({
+  card:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EBF1FF', borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE' },
+  left:    { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  iconWrap:{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#1037A4', alignItems: 'center', justifyContent: 'center' },
+  icon:    { fontSize: 20, lineHeight: 24 },
+  body:    { flex: 1 },
+  title:   { fontSize: 14, fontWeight: '800', color: '#0f172a' },
+  sub:     { fontSize: 11, color: '#2563eb', marginTop: 1 },
+  arrow:   { fontSize: 18, fontWeight: '700', color: '#2563eb' },
+});
+
+// ── Tools row (Calendar + Call History) ───────────────────────────────────────
+const tl = StyleSheet.create({
+  row:    { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  card:   { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#fff', padding: 14, gap: 6, elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  iconBox:{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  icon:   { fontSize: 20, lineHeight: 24 },
+  title:  { fontSize: 13, fontWeight: '800', color: '#0f172a', lineHeight: 17 },
+  sub:    { fontSize: 11, color: '#64748b', lineHeight: 15 },
+  arrow:  { fontSize: 14, fontWeight: '700', color: '#1037A4', marginTop: 4 },
 });

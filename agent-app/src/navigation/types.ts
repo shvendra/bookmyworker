@@ -2,6 +2,8 @@ import type { AppRole } from '../../../packages/shared-mobile/src/shared/types/d
 
 // Agent-app route param list — Agent + Worker + SelfWorker, no employer, no admin
 export type AgentStackParamList = {
+  // First-launch language selection
+  LanguageSelect: undefined;
   // Auth
   Welcome: undefined;
   Login: { roleHint?: AppRole; appContext?: 'agent-app' } | undefined;
@@ -12,9 +14,10 @@ export type AgentStackParamList = {
     role: 'Agent' | 'SelfWorker';
     name: string;
     password: string;
-    state: string;
-    district: string;
-    block: string;
+    language?: string;
+    state?: string;
+    district?: string;
+    block?: string;
     pinCode?: string;
     email?: string;
     referredBy?: string;
@@ -35,7 +38,9 @@ export type AgentStackParamList = {
   };
   ForgotPassword: { roleHint?: AppRole } | undefined;
   // Onboarding
+  WorkCategorySelect: undefined;
   Kyc: undefined;
+  WorkerProfileCompletion: undefined;
   // Main
   Main: undefined;
   EditProfile: undefined;
@@ -48,6 +53,7 @@ export type AgentStackParamList = {
   AddWorker: undefined;
   AgentWorkers: undefined;
   SwitchAccount: undefined;
+  Certificates: undefined;
   KycVerification: undefined;
   NotificationPreferences: undefined;
   Notifications: undefined;
@@ -55,10 +61,9 @@ export type AgentStackParamList = {
   Support: undefined;
   TermsPrivacy: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
-  // Worker-specific
-  Wallet: undefined;
-  Attendance: undefined;
   Profile: undefined;
+  // Placements
+  MyPlacements: undefined;
   // Subscription / badge purchase
   Subscription: { agentId?: string } | undefined;
   PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };

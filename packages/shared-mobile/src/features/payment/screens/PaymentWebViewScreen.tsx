@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Platform,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { WebView, type WebViewNavigation, type ShouldStartLoadRequest, type WebViewErrorEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -69,14 +69,14 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         void queryClient.invalidateQueries({ queryKey: ['subscription-screen-profile'] });
       })();
 
-      Alert.alert(
+      showAlert(
         'Payment Successful! 🎉',
         `Your subscription has been activated.${amount ? `\nAmount paid: ₹${amount}` : ''}`,
         [{ text: 'Great!', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     } else if (status === 'failed') {
-      Alert.alert(
+      showAlert(
         'Payment Failed',
         'Your payment could not be processed. Please try again.',
         [{ text: 'OK', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
@@ -84,7 +84,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
       );
     } else {
       // pending or unknown — just go back
-      Alert.alert(
+      showAlert(
         'Payment Pending',
         'Your payment is being processed. You will be notified once confirmed.',
         [{ text: 'OK', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
@@ -107,7 +107,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
           onPress={() => {
-            Alert.alert(
+            showAlert(
               'Cancel Payment?',
               'Are you sure you want to cancel this payment?',
               [
@@ -151,13 +151,19 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         mediaPlaybackRequiresUserAction={false}
         cacheEnabled={false}
         userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
-        // Intercept non-http schemes before WebView tries to navigate (works on iOS;
-        // on Android this runs async so onError below is the reliable fallback)
+        // Intercept callback before WebView renders the website, and block non-http deep links
         onShouldStartLoadWithRequest={(req: ShouldStartLoadRequest) => {
           const { url: reqUrl } = req;
+          // Payment callback — intercept here so website never loads in the WebView
+          if (CALLBACK_PATTERNS.some((p) => reqUrl.includes(p))) {
+            const { status: s, amount: a } = parseCallbackParams(reqUrl);
+            handleDone(s, a);
+            return false;
+          }
+          // Non-http scheme (UPI deep links like phonepe://, gpay://, etc.)
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
             void Linking.openURL(reqUrl).catch(() => {
-              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
             });
             return false;
           }
@@ -167,7 +173,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         onError={({ nativeEvent }: WebViewErrorEvent) => {
           if (nativeEvent.code === -10 && nativeEvent.url) {
             void Linking.openURL(nativeEvent.url).catch(() => {
-              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
             });
             webViewRef.current?.goBack();
           }
@@ -215,16 +221,16 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         void queryClient.invalidateQueries({ queryKey: ['search-user-profile'] });
         void queryClient.invalidateQueries({ queryKey: ['subscription-screen-profile'] });
       })();
-      Alert.alert(
+      showAlert(
         'Top-up Successful! 🎉',
         `Contacts added to your account.${amount ? `\nAmount paid: ₹${amount}` : ''}`,
         [{ text: 'Great!', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     } else if (status === 'failed') {
-      Alert.alert('Payment Failed', 'Please try again.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
+      showAlert('Payment Failed', 'Please try again.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
     } else {
-      Alert.alert('Payment Pending', 'You will be notified once confirmed.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
+      showAlert('Payment Pending', 'You will be notified once confirmed.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
     }
   };
 
@@ -240,7 +246,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
     <View style={[s.root, { backgroundColor: '#0f172a' }]}>
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
-          onPress={() => Alert.alert('Cancel Payment?', 'Are you sure?', [
+          onPress={() => showAlert('Cancel Payment?', 'Are you sure?', [
             { text: 'No, Continue', style: 'cancel' },
             { text: 'Yes, Cancel', style: 'destructive', onPress: () => navigation.goBack() },
           ])}
@@ -280,9 +286,15 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36"
         onShouldStartLoadWithRequest={(req: ShouldStartLoadRequest) => {
           const { url: reqUrl } = req;
+          // Payment callback — block website from loading, handle in-app
+          if (CALLBACK_PATTERNS.some((p) => reqUrl.includes(p))) {
+            const { status: s, amount: a } = parseCallbackParams(reqUrl);
+            handleDone(s, a);
+            return false;
+          }
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
             void Linking.openURL(reqUrl).catch(() => {
-              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
             });
             return false;
           }
@@ -291,7 +303,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         onError={({ nativeEvent }: WebViewErrorEvent) => {
           if (nativeEvent.code === -10 && nativeEvent.url) {
             void Linking.openURL(nativeEvent.url).catch(() => {
-              Alert.alert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
             });
             webViewRef.current?.goBack();
           }

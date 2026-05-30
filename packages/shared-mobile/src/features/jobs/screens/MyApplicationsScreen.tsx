@@ -1,6 +1,7 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { FlatList, StatusBar, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -29,6 +30,7 @@ const applicationStatusVariant = (status: Application['status']) => {
 
 export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['my-applications'],
@@ -38,30 +40,27 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
 
   const applications: Application[] = data?.applications ?? [];
 
-  if (isLoading) return <LoadingState message="Loading your applications…" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Could not load applications"
-        description="Check your connection and try again."
-        onRetry={refetch}
-      />
-    );
-  }
+  if (isLoading) return <LoadingState message={t('loadingApplications')} />;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="My Applications" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('myApplicationsTab')} onBack={() => navigation.goBack()} />
 
-      {applications.length === 0 ? (
+      {isError ? (
+        <ErrorState
+          title={t('couldNotLoadApps')}
+          description={t('checkConnectionRetry')}
+          onRetry={refetch}
+        />
+      ) : applications.length === 0 ? (
         <EmptyState
           icon="📋"
-          title="No applications yet"
-          description="Browse the job marketplace and apply to jobs that match your skills."
+          title={t('noApplicationsTitle')}
+          description={t('noApplicationsDesc')}
           action={
             <AppButton
-              title="Browse Jobs"
+              title={t('browseJobs')}
               onPress={() => navigation.navigate('JobMarketplace')}
             />
           }
@@ -74,7 +73,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.count}>
-              {applications.length} application{applications.length !== 1 ? 's' : ''}
+              {t('applicationsCount', { count: applications.length })}
             </AppText>
           }
           renderItem={({ item }) => (
@@ -97,7 +96,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
 
               <View style={styles.cardMeta}>
                 <AppText variant="caption" color={theme.colors.mutedText}>
-                  📅 Applied {new Date(item.appliedAt).toLocaleDateString('en-IN', {
+                  {t('appliedLabel')} {new Date(item.appliedAt).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',
@@ -105,7 +104,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
                 </AppText>
                 {item.updatedAt && item.updatedAt !== item.appliedAt ? (
                   <AppText variant="caption" color={theme.colors.mutedText}>
-                    Updated {new Date(item.updatedAt).toLocaleDateString('en-IN', {
+                    {t('updatedLabel')} {new Date(item.updatedAt).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
                     })}
@@ -116,7 +115,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
               {item.status === 'Invited' && (
                 <View style={[styles.inviteNote, { backgroundColor: theme.colors.primary + '15', borderColor: theme.colors.primary + '40' }]}>
                   <AppText variant="caption" color={theme.colors.primary}>
-                    🎉 You have been invited for this job! Contact the employer to confirm.
+                    {t('invitedToJobMsg')}
                   </AppText>
                 </View>
               )}

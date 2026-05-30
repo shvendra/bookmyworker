@@ -1,0 +1,18 @@
+export const Platform = { OS: 'android' as const, select: (obj: Record<string, unknown>) => obj.android ?? obj.default };
+export const Alert = { alert: jest.fn() };
+export const Linking = { openURL: jest.fn(async () => {}) };
+export const Dimensions = { get: jest.fn(() => ({ width: 375, height: 812 })) };
+export const StyleSheet = { create: <T extends object>(styles: T) => styles, hairlineWidth: 0.5, absoluteFillObject: {} };
+export const View = 'View';
+export const Text = 'Text';
+export const Image = 'Image';
+export const TextInput = 'TextInput';
+export const ScrollView = 'ScrollView';
+export const TouchableOpacity = 'TouchableOpacity';
+export const Modal = 'Modal';
+export const ActivityIndicator = 'ActivityIndicator';
+export const KeyboardAvoidingView = 'KeyboardAvoidingView';
+export const FlatList = 'FlatList';
+export const Pressable = 'Pressable';
+export const RefreshControl = 'RefreshControl';
+export const StatusBar = 'StatusBar';
