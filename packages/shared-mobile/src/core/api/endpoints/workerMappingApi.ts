@@ -88,6 +88,14 @@ export const workerMappingApi = {
       .delete<{ success: boolean; message: string }>(`/api/v1/mapping/${mappingId}`)
       .then((r) => r.data),
 
+  // Revert one pipeline step: Joined → Selected, Selected → Shortlisted
+  revertMappingStatus: (mappingId: string) =>
+    apiClient
+      .put<{ success: boolean; message: string; mapping: WorkerMapping }>(
+        `/api/v1/mapping/${mappingId}/revert`
+      )
+      .then((r) => r.data),
+
   // Full pipeline overview for employer (totals + per-requirement worker lists)
   getEmployerPipelineOverview: () =>
     apiClient

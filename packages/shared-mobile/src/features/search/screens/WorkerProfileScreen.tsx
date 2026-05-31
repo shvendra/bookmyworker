@@ -228,6 +228,7 @@ interface FullUserProfile {
   subscriptionExpery?: string;
   remainingContacts?: number;
   employerType?: string;
+  planFeatures?: { inviteEnabled?: boolean; pipelineEnabled?: boolean };
 }
 
 // ─── Status meta ──────────────────────────────────────────────────────────────
@@ -1048,8 +1049,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             </View>
           )}
 
-          {/* Invite to Requirement button — employer only */}
-          {isEmployer && (
+          {/* Invite to Requirement button — employer only, requires inviteEnabled plan feature */}
+          {isEmployer && (!empProfileLoaded || empProfile?.planFeatures?.inviteEnabled === true) && (
             <TouchableOpacity
               onPress={() => setInviteVisible(true)}
               style={s.inviteBtn}

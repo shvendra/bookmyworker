@@ -554,6 +554,53 @@ export const employerTranslation = {
   pricingAgentBen12m3:           'Early access to new agent tools',
 
   // ── Employer subscription promo slider ────────────────────────────────────
+  // ── Pipeline confirmation & revert actions ────────────────────────────────
+  pipelineConfirmSelectTitle:   'Mark as Selected?',
+  pipelineConfirmSelectBody:    'Move {{name}} to Selected? This marks them as a strong candidate for this role.',
+  pipelineConfirmRemoveTitle:   'Remove from Pipeline?',
+  pipelineConfirmRemoveBody:    'Remove {{name}} from the shortlist? This action cannot be undone.',
+  pipelineConfirmUnselectTitle: 'Revert to Shortlisted?',
+  pipelineConfirmUnselectBody:  'Move {{name}} back to Shortlisted?',
+  pipelineConfirmUnjoinTitle:   'Revert to Selected?',
+  pipelineConfirmUnjoinBody:    'Move {{name}} back to Selected? Their joined date and agreed rate will be cleared.',
+  pipelineUnselect:             '← Shortlisted',
+  pipelineUnjoin:               '← Selected',
+  yesSelect:                    'Yes, Select',
+  yesRemove:                    'Yes, Remove',
+  yesRevert:                    'Yes, Revert',
+  pipelineRemovedSuccess:       'Worker removed from pipeline.',
+  pipelineRevertedSuccess:      'Worker status reverted.',
+  pipelineSelectBtn:            'Select',
+  pipelineJoinBtn:              'Mark Joined',
+
+  // ── Pipeline join rate modal ───────────────────────────────────────────────
+  pipelineJoinModalTitle:       'Mark as Joined',
+  pipelineJoinModalDesc:        'Enter the agreed rate for {{name}} before marking as joined.',
+  pipelineAgreedRateLabel:      'Agreed Rate (₹)',
+  pipelineAgreedRatePlaceholder:'Enter amount',
+  pipelineRateTypeDaily:        'Daily',
+  pipelineRateTypeMonthly:      'Monthly',
+  pipelineConfirmJoin:          'Confirm & Mark Joined',
+  pipelineJoinedSuccess:        'Worker marked as joined.',
+  pipelineJoinRateRequired:     'Please enter a valid rate amount.',
+
+  // ── Pipeline plan upgrade screen ─────────────────────────────────────────
+  pipelinePlanTitle:            'Plan Upgrade Required',
+  pipelinePlanDesc:             'The Hiring Pipeline is available on Contractor, Agency, and Industry plans. Your current plan does not include this feature.',
+  pipelinePlanBenefit1:         'Track shortlisted, selected & joined workers',
+  pipelinePlanBenefit2:         'Manage workers across all your requirements',
+  pipelinePlanBenefit3:         'Advance workers through the hiring stages',
+  pipelinePlanBenefit4:         'Call & WhatsApp workers directly from pipeline',
+  pipelinePlanUpgradeBtn:       'Upgrade Plan',
+
+  // ── Pipeline workers section ──────────────────────────────────────────────
+  pipelineWorkersInPipeline:    '{{count}} in pipeline',
+  pipelineNoWorkers:            'No workers in pipeline yet',
+  pipelineNoWorkersSub:         'Browse interested workers to start shortlisting.',
+  pipelineViewInterested:       'View Interested Workers',
+  pipelineExpandWorkers:        'Show Workers',
+  pipelineCollapseWorkers:      'Hide Workers',
+
   empHireNowBtn:                 'Subscribe & Hire Now',
   empPromo_tag_1:                '⚡ Fast Hiring',
   empPromo_title_1:              'Hire Construction Workers Fast',
@@ -570,4 +617,27 @@ export const employerTranslation = {
   empPromo_tag_5:                '🔒 Verified',
   empPromo_title_5:              'Domestic & Security Staff',
   empPromo_sub_5:                'Verified cooks, guards & housekeeping staff available now',
+
+  // ── Guided tour ────────────────────────────────────────────────────────────
+  tour_skip:                     'Skip',
+  tour_next:                     'Next →',
+  tour_back:                     '← Back',
+  tour_getStarted:               'Get Started →',
+  tour_stepOf:                   'Step {{step}} of {{total}}',
+
+  tour_emp_1_icon:               '👋',
+  tour_emp_1_title:              'Welcome to BookMyWorker!',
+  tour_emp_1_desc:               'This quick tour shows you how to post requirements and hire workers efficiently.',
+  tour_emp_2_icon:               '📋',
+  tour_emp_2_title:              'Post Requirements',
+  tour_emp_2_desc:               'Tap the Post tab to publish your worker requirement and receive responses from agents.',
+  tour_emp_3_icon:               '🔍',
+  tour_emp_3_title:              'Find Workers',
+  tour_emp_3_desc:               'Browse verified workers near you and contact them directly from the Workers tab.',
+  tour_emp_4_icon:               '📊',
+  tour_emp_4_title:              'Hiring Pipeline',
+  tour_emp_4_desc:               'Track shortlisted, selected, and joined workers across all your requirements.',
+  tour_emp_5_icon:               '📈',
+  tour_emp_5_title:              'Hiring Analytics',
+  tour_emp_5_desc:               'Monitor your hiring performance — fill rates, work types, and time-to-hire.',
 };

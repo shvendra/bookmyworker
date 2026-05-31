@@ -37,6 +37,7 @@ import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategory
 import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/utils/labelUtils';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
 import i18n from '../../../core/i18n';
 
@@ -877,6 +878,40 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
       />
 
       {user && <ProfileCompletionModal user={user} />}
+
+      {isAgent ? (
+        <GuidedTour
+          tourKey="agent_tour_v1"
+          steps={[
+            { icon: t('tour_agent_1_icon'), title: t('tour_agent_1_title'), desc: t('tour_agent_1_desc') },
+            { icon: t('tour_agent_2_icon'), title: t('tour_agent_2_title'), desc: t('tour_agent_2_desc') },
+            { icon: t('tour_agent_3_icon'), title: t('tour_agent_3_title'), desc: t('tour_agent_3_desc') },
+            { icon: t('tour_agent_4_icon'), title: t('tour_agent_4_title'), desc: t('tour_agent_4_desc') },
+            { icon: t('tour_agent_5_icon'), title: t('tour_agent_5_title'), desc: t('tour_agent_5_desc') },
+          ]}
+          skipLabel={t('tour_skip')}
+          nextLabel={t('tour_next')}
+          backLabel={t('tour_back')}
+          finishLabel={t('tour_getStarted')}
+          stepOfLabel={t('tour_stepOf')}
+        />
+      ) : (
+        <GuidedTour
+          tourKey="worker_tour_v1"
+          steps={[
+            { icon: t('tour_worker_1_icon'), title: t('tour_worker_1_title'), desc: t('tour_worker_1_desc') },
+            { icon: t('tour_worker_2_icon'), title: t('tour_worker_2_title'), desc: t('tour_worker_2_desc') },
+            { icon: t('tour_worker_3_icon'), title: t('tour_worker_3_title'), desc: t('tour_worker_3_desc') },
+            { icon: t('tour_worker_4_icon'), title: t('tour_worker_4_title'), desc: t('tour_worker_4_desc') },
+            { icon: t('tour_worker_5_icon'), title: t('tour_worker_5_title'), desc: t('tour_worker_5_desc') },
+          ]}
+          skipLabel={t('tour_skip')}
+          nextLabel={t('tour_next')}
+          backLabel={t('tour_back')}
+          finishLabel={t('tour_getStarted')}
+          stepOfLabel={t('tour_stepOf')}
+        />
+      )}
     </View>
   );
 };

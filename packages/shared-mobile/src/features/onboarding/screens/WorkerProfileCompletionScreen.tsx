@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -20,6 +21,7 @@ import { indianStates } from '../../../shared/data/stateDistrict';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
+import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfileCompletion'>;
 
@@ -47,7 +49,6 @@ function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
 }
 
 // ── Location data ─────────────────────────────────────────────────────────────
-const STATE_LIST = Object.keys(indianStates).sort();
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 // All districts flattened for the areasOfWork search step
@@ -106,72 +107,13 @@ const tagS = StyleSheet.create({
   x:    { fontSize: 16, fontWeight: '700', lineHeight: 18 },
 });
 
-// ── Picker row ────────────────────────────────────────────────────────────────
-const PickerRow = ({
-  value, placeholder, onPress, color, border, disabled,
-}: { value: string; placeholder: string; onPress: () => void; color: string; border: string; disabled?: boolean }) => (
-  <TouchableOpacity
-    onPress={onPress}
-    activeOpacity={disabled ? 1 : 0.8}
-    style={[pickerS.row, { borderColor: value ? color : border, opacity: disabled ? 0.45 : 1 }]}
-  >
-    <AppText style={[pickerS.label, { color: value ? '#1E293B' : '#94A3B8' }]} numberOfLines={1}>
-      {value || placeholder}
-    </AppText>
-    <AppText style={[pickerS.arrow, { color: value ? color : '#94A3B8' }]}>▾</AppText>
-  </TouchableOpacity>
-);
-const pickerS = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, marginTop: 10 },
-  label: { flex: 1, fontSize: 15, fontWeight: '500' },
-  arrow: { fontSize: 18, marginLeft: 8 },
-});
-
-// ── Dropdown list ─────────────────────────────────────────────────────────────
-const DropList = ({
-  items, onSelect, onClose, color,
-}: { items: string[]; onSelect: (v: string) => void; onClose: () => void; color: string }) => {
-  const [q, setQ] = useState('');
-  const filtered = useMemo(() => {
-    if (!q.trim()) return items;
-    return items.filter((i) => i.toLowerCase().includes(q.toLowerCase()));
-  }, [q, items]);
-  const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  return (
-    <View style={[dropS.box, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
-      <View style={[dropS.searchRow, { borderBottomColor: isDark ? theme.colors.border : '#E8EEF6' }]}>
-        <TextInput
-          style={[dropS.input, { color: theme.colors.text }]}
-          value={q}
-          onChangeText={setQ}
-          placeholder="Search…"
-          placeholderTextColor={theme.colors.mutedText}
-          autoFocus
-        />
-        <TouchableOpacity onPress={onClose} style={{ padding: 10 }}>
-          <AppText style={{ color: theme.colors.mutedText, fontWeight: '700', fontSize: 16 }}>✕</AppText>
-        </TouchableOpacity>
-      </View>
-      <ScrollView style={dropS.list} keyboardShouldPersistTaps="handled">
-        {filtered.map((item) => (
-          <TouchableOpacity key={item} onPress={() => onSelect(item)} style={[dropS.item, { borderBottomColor: isDark ? theme.colors.border : '#F1F5F9' }]}>
-            <AppText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '500' }}>{item}</AppText>
-          </TouchableOpacity>
-        ))}
-        {filtered.length === 0 && (
-          <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', padding: 16 }}>—</AppText>
-        )}
-      </ScrollView>
-    </View>
-  );
-};
-const dropS = StyleSheet.create({
-  box:       { borderWidth: 1, borderRadius: 14, marginTop: 6, overflow: 'hidden' },
-  searchRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, paddingHorizontal: 14 },
-  input:     { flex: 1, fontSize: 14, paddingVertical: 10 },
-  list:      { maxHeight: 220 },
-  item:      { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+// ── Location summary card (shown in step 5 once state+district are confirmed) ─
+const locSummaryS = StyleSheet.create({
+  wrap:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 16, padding: 16, marginTop: 20 },
+  pin:   { fontSize: 22 },
+  title: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 3 },
+  text:  { fontSize: 14, fontWeight: '700' },
+  check: { fontSize: 22, fontWeight: '700' },
 });
 
 // ── Main screen ───────────────────────────────────────────────────────────────
@@ -222,9 +164,23 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   const [selectedState, setSelectedState] = useState(user?.state ?? '');
   const [selectedDistrict, setSelectedDistrict] = useState(user?.district ?? '');
   const [selectedBlock, setSelectedBlock] = useState(user?.block ?? '');
-  const [openDrop, setOpenDrop] = useState<'state' | 'district' | 'block' | null>(null);
-
   const [saving, setSaving] = useState(false);
+
+  // Block the Android hardware back button until the user has saved state+district.
+  // If they are mid-wizard (step > 1), back goes to the previous step instead.
+  // This prevents escaping the mandatory location gate without completing it.
+  useEffect(() => {
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      const locationSaved = !!(user?.state && user?.district);
+      if (locationSaved) return false; // allow normal back once location is saved
+      if (step > 1) {
+        setStep((s) => s - 1);
+        return true; // handled — go to previous step
+      }
+      return true; // block exit on step 1 when location not yet saved
+    });
+    return () => handler.remove();
+  }, [step, user?.state, user?.district]);
 
   // All subcategories from all selected categories combined
   const allAvailableSubs = useMemo(() => {
@@ -252,17 +208,6 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   const toggleArea = useCallback((district: string) => {
     setAreas((prev) => prev.includes(district) ? prev.filter((a) => a !== district) : [...prev, district]);
   }, []);
-
-  const districtList = useMemo(
-    () => selectedState ? Object.keys(indianStates[selectedState] ?? {}).sort() : [],
-    [selectedState],
-  );
-  const blockList = useMemo(
-    () => selectedState && selectedDistrict
-      ? (indianStates[selectedState]?.[selectedDistrict] ?? []).sort()
-      : [],
-    [selectedState, selectedDistrict],
-  );
 
   const toggleCat = useCallback((val: string) => {
     setSelectedCats((prev) => {
@@ -523,59 +468,33 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_locationQ')}</AppText>
-              <AppText style={[styles.hint, { color: theme.colors.mutedText }]}>{t('wpc_locationHint')}</AppText>
+              <AppText style={[styles.hint, { color: theme.colors.mutedText, marginBottom: 12 }]}>{t('wpc_locationHint')}</AppText>
 
-              <AppText style={[styles.fieldLabel, { color: theme.colors.text }]}>{t('wpc_stateLabel')}</AppText>
-              <PickerRow
-                value={selectedState}
-                placeholder={t('wpc_selectState')}
-                onPress={() => setOpenDrop('state')}
-                color={theme.colors.primary}
-                border={isDark ? theme.colors.border : '#DDE3F0'}
+              <LocationSelector
+                state={selectedState}
+                district={selectedDistrict}
+                block={selectedBlock}
+                onStateChange={(v) => { setSelectedState(v); setSelectedDistrict(''); setSelectedBlock(''); }}
+                onDistrictChange={(v) => { setSelectedDistrict(v); setSelectedBlock(''); }}
+                onBlockChange={setSelectedBlock}
               />
-              {openDrop === 'state' && (
-                <DropList
-                  items={STATE_LIST}
-                  color={theme.colors.primary}
-                  onSelect={(v) => { setSelectedState(v); setSelectedDistrict(''); setSelectedBlock(''); setOpenDrop(null); }}
-                  onClose={() => setOpenDrop(null)}
-                />
-              )}
 
-              <AppText style={[styles.fieldLabel, { color: theme.colors.text, marginTop: 14 }]}>{t('wpc_districtLabel')}</AppText>
-              <PickerRow
-                value={selectedDistrict}
-                placeholder={t('wpc_selectDistrict')}
-                onPress={() => selectedState && setOpenDrop('district')}
-                color={theme.colors.primary}
-                border={isDark ? theme.colors.border : '#DDE3F0'}
-                disabled={!selectedState}
-              />
-              {openDrop === 'district' && (
-                <DropList
-                  items={districtList}
-                  color={theme.colors.primary}
-                  onSelect={(v) => { setSelectedDistrict(v); setSelectedBlock(''); setOpenDrop(null); }}
-                  onClose={() => setOpenDrop(null)}
-                />
-              )}
-
-              <AppText style={[styles.fieldLabel, { color: theme.colors.text, marginTop: 14 }]}>{t('wpc_blockLabel')}</AppText>
-              <PickerRow
-                value={selectedBlock}
-                placeholder={t('wpc_selectBlock')}
-                onPress={() => selectedDistrict && setOpenDrop('block')}
-                color={theme.colors.primary}
-                border={isDark ? theme.colors.border : '#DDE3F0'}
-                disabled={!selectedDistrict}
-              />
-              {openDrop === 'block' && (
-                <DropList
-                  items={blockList}
-                  color={theme.colors.primary}
-                  onSelect={(v) => { setSelectedBlock(v); setOpenDrop(null); }}
-                  onClose={() => setOpenDrop(null)}
-                />
+              {selectedState !== '' && selectedDistrict !== '' && (
+                <View style={[locSummaryS.wrap, {
+                  backgroundColor: isDark ? '#15803D18' : '#F0FDF4',
+                  borderColor: isDark ? '#22C55E33' : '#BBF7D0',
+                }]}>
+                  <AppText style={locSummaryS.pin}>📍</AppText>
+                  <View style={{ flex: 1 }}>
+                    <AppText style={[locSummaryS.title, { color: isDark ? '#4ADE80' : '#15803D' }]}>
+                      {t('wpc_locationSummary')}
+                    </AppText>
+                    <AppText style={[locSummaryS.text, { color: isDark ? '#86EFAC' : '#166534' }]}>
+                      {selectedState} › {selectedDistrict}{selectedBlock ? ` › ${selectedBlock}` : ''}
+                    </AppText>
+                  </View>
+                  <AppText style={[locSummaryS.check, { color: isDark ? '#4ADE80' : '#22C55E' }]}>✓</AppText>
+                </View>
               )}
             </View>
           )}
@@ -703,7 +622,6 @@ const styles = StyleSheet.create({
   hint:      { fontSize: 12.5 },
   chipRow:   { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   errorText: { fontSize: 12, fontWeight: '600', marginTop: 6 },
-  fieldLabel:{ fontSize: 12, fontWeight: '700', marginTop: 8 },
 
   ageInput: {
     fontSize: 36, fontWeight: '900', textAlign: 'center',

@@ -9,7 +9,7 @@ import Constants from 'expo-constants';
 import { useAppTheme } from '../../core/theme';
 import { useAuth } from '../../state/auth/AuthContext';
 import { LoadingState } from '../../shared/components/feedback/LoadingState';
-import { navigationRef, resetToWelcome } from '../../core/navigation/navigationRef';
+import { navigationRef, resetToWelcome, resetToProfileCompletion } from '../../core/navigation/navigationRef';
 
 // Auth screens
 import { WelcomeScreen } from '../../features/auth/screens/WelcomeScreen';
@@ -74,6 +74,30 @@ export const AppNavigator = (): React.JSX.Element => {
     }
     return undefined;
   }, [state.status]);
+
+  // ── Location gate: worker/agent/selfworker must have state+district ─────────
+  // Resets to WorkerProfileCompletion whenever an agent/worker is authenticated
+  // but has not yet provided their state and district. The 50 ms delay mirrors
+  // the sign-out redirect pattern above so the navigator is ready before dispatch.
+  useEffect(() => {
+    if (state.status !== 'authenticated') return undefined;
+    const user = state.session?.user;
+    const role = (user?.role ?? '').toLowerCase();
+    const isWorkerOrAgent = role === 'worker' || role === 'selfworker' || role === 'agent';
+    if (isWorkerOrAgent && !(user?.state && user?.district)) {
+      const handle = setTimeout(() => { resetToProfileCompletion(); }, 50);
+      return () => clearTimeout(handle);
+    }
+    return undefined;
+  }, [
+    state.status,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.state,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.district,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.role,
+  ]);
 
   // ── Push notification listeners (foreground + tap deep-link) ──────────────
   const notifReceivedSub = useRef<{ remove: () => void } | null>(null);

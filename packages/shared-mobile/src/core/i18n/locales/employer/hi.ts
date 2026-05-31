@@ -479,6 +479,23 @@ export const employerTranslation = {
   pricingAgentBen12m3:           'नए एजेंट टूल्स तक अर्ली एक्सेस',
 
   // ── Employer subscription promo slider ────────────────────────────────────
+  // ── Pipeline confirmation & revert actions ────────────────────────────────
+  pipelineConfirmSelectTitle:   'चयनित के रूप में चिह्नित करें?',
+  pipelineConfirmSelectBody:    '{{name}} को चयनित में ले जाएं? यह उन्हें इस भूमिका के लिए एक मजबूत उम्मीदवार के रूप में चिह्नित करता है।',
+  pipelineConfirmRemoveTitle:   'पाइपलाइन से हटाएं?',
+  pipelineConfirmRemoveBody:    '{{name}} को शॉर्टलिस्ट से हटाएं? यह क्रिया वापस नहीं की जा सकती।',
+  pipelineConfirmUnselectTitle: 'शॉर्टलिस्टेड में वापस?',
+  pipelineConfirmUnselectBody:  '{{name}} को वापस शॉर्टलिस्टेड में ले जाएं?',
+  pipelineConfirmUnjoinTitle:   'चयनित में वापस?',
+  pipelineConfirmUnjoinBody:    '{{name}} को वापस चयनित में ले जाएं? उनकी ज्वाइनिंग तिथि और सहमत दर हट जाएगी।',
+  pipelineUnselect:             '← शॉर्टलिस्टेड',
+  pipelineUnjoin:               '← चयनित',
+  yesSelect:                    'हाँ, चुनें',
+  yesRemove:                    'हाँ, हटाएं',
+  yesRevert:                    'हाँ, वापस करें',
+  pipelineRemovedSuccess:       'कर्मचारी पाइपलाइन से हटाया गया।',
+  pipelineRevertedSuccess:      'कर्मचारी की स्थिति वापस की गई।',
+
   empHireNowBtn:                 'सदस्यता लें और काम पर रखें',
   empPromo_tag_1:                '⚡ तुरंत भर्ती',
   empPromo_title_1:              'निर्माण कर्मचारी जल्दी पाएं',
@@ -495,4 +512,27 @@ export const employerTranslation = {
   empPromo_tag_5:                '🔒 सत्यापित',
   empPromo_title_5:              'घरेलू और सुरक्षा स्टाफ',
   empPromo_sub_5:                'सत्यापित रसोइया, गार्ड और हाउसकीपिंग — अभी उपलब्ध',
+
+  // ── Guided tour ────────────────────────────────────────────────────────────
+  tour_skip:                     'छोड़ें',
+  tour_next:                     'आगे →',
+  tour_back:                     '← पीछे',
+  tour_getStarted:               'शुरू करें →',
+  tour_stepOf:                   'चरण {{step}} / {{total}}',
+
+  tour_emp_1_icon:               '👋',
+  tour_emp_1_title:              'BookMyWorker में आपका स्वागत है!',
+  tour_emp_1_desc:               'यह क्विक टूर आपको रिक्वायरमेंट पोस्ट करने और कुशलता से वर्कर हायर करने का तरीका दिखाता है।',
+  tour_emp_2_icon:               '📋',
+  tour_emp_2_title:              'रिक्वायरमेंट पोस्ट करें',
+  tour_emp_2_desc:               'Post टैब पर टैप करके अपनी वर्कर रिक्वायरमेंट पब्लिश करें और एजेंटों से प्रतिक्रियाएं पाएं।',
+  tour_emp_3_icon:               '🔍',
+  tour_emp_3_title:              'वर्कर खोजें',
+  tour_emp_3_desc:               'Workers टैब से अपने नज़दीकी वेरिफाइड वर्करों को ब्राउज़ करें और सीधे संपर्क करें।',
+  tour_emp_4_icon:               '📊',
+  tour_emp_4_title:              'हायरिंग पाइपलाइन',
+  tour_emp_4_desc:               'सभी रिक्वायरमेंट्स में शॉर्टलिस्ट, सेलेक्टेड और जॉइन किए वर्करों को ट्रैक करें।',
+  tour_emp_5_icon:               '📈',
+  tour_emp_5_title:              'हायरिंग एनालिटिक्स',
+  tour_emp_5_desc:               'अपनी हायरिंग परफॉर्मेंस मॉनिटर करें — फिल रेट, वर्क टाइप और टाइम-टू-हायर।',
 };

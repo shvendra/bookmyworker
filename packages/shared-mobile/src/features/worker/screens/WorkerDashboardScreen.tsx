@@ -27,6 +27,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
@@ -861,6 +862,22 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
       />
 
       {user && <ProfileCompletionModal user={user} />}
+
+      <GuidedTour
+        tourKey="worker_tour_v1"
+        steps={[
+          { icon: t('tour_worker_1_icon'), title: t('tour_worker_1_title'), desc: t('tour_worker_1_desc') },
+          { icon: t('tour_worker_2_icon'), title: t('tour_worker_2_title'), desc: t('tour_worker_2_desc') },
+          { icon: t('tour_worker_3_icon'), title: t('tour_worker_3_title'), desc: t('tour_worker_3_desc') },
+          { icon: t('tour_worker_4_icon'), title: t('tour_worker_4_title'), desc: t('tour_worker_4_desc') },
+          { icon: t('tour_worker_5_icon'), title: t('tour_worker_5_title'), desc: t('tour_worker_5_desc') },
+        ]}
+        skipLabel={t('tour_skip')}
+        nextLabel={t('tour_next')}
+        backLabel={t('tour_back')}
+        finishLabel={t('tour_getStarted')}
+        stepOfLabel={t('tour_stepOf')}
+      />
     </View>
   );
 };

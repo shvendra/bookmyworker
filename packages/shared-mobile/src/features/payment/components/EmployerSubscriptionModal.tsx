@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -11,7 +12,12 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { useAppTheme } from '../../../core/theme';
-import { usePricingConfig, calcDiscount } from '../../../core/api/endpoints/pricingApi';
+import {
+  usePricingConfig,
+  calcDiscount,
+  EMPLOYER_PLANS_DEFAULTS,
+} from '../../../core/api/endpoints/pricingApi';
+import type { EmployerTypeKey, PlanFeatures } from '../../../core/api/endpoints/pricingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 
@@ -19,231 +25,356 @@ interface EmployerSubscriptionModalProps {
   visible: boolean;
   onDismiss: () => void;
   userName: string;
+  employerType?: EmployerTypeKey;
 }
 
-const BENEFITS = [
-  '📋 Post unlimited job requirements',
-  '👷 Access verified worker & agent profiles',
-  '📍 Priority listing in search results',
-  '📞 Direct contact with workers and agents',
-  '⚡ Faster worker placement with smart matching',
-  '🏆 Dedicated account support from BookMyWorker',
+// ─── Static + dynamic benefit groups ──────────────────────────────────────────
+// Each group has:
+//   staticItems — always shown regardless of plan config (2 per group)
+//   dynamicItems — shown only when the matching feature flag is true
+
+interface BenefitGroup {
+  icon:      string;
+  label:     string;
+  color:     string;
+  colorDark: string;
+  bg:        string;
+  bgDark:    string;
+  items:     string[];   // resolved at render time
+}
+
+const SCOPE_TEXT = { district: 'your district', state: 'your state (state-wide)', india: 'all of India' };
+
+function buildBenefitGroups(features: PlanFeatures, contacts1m: number): BenefitGroup[] {
+  // ── ⚡ Priority & Speed — 2 static always + conditional ───────────────────
+  const speed: string[] = [
+    'Verified workers get job alerts for subscribed employers',
+    'Your employer account is whitelisted for faster responses',
+  ];
+  if (features.priorityListing) speed.push('Priority listing — your requirements shown first to workers');
+
+  // ── 🔓 Full Access — 2 static always + conditional ────────────────────────
+  const access: string[] = [
+    'View verified worker profiles & work history',
+    `Unlock up to ${contacts1m} worker contacts in the first month`,
+  ];
+  // Scope line only when state/india — district is the default minimum
+  if (features.workerSearchScope === 'state') access.push('Search workers state-wide — not limited to your district');
+  if (features.workerSearchScope === 'india') access.push('Search workers across all of India — no location cap');
+
+  // ── 🎯 Smart Matching — 2 static always + conditional ─────────────────────
+  const match: string[] = [
+    'Advanced filters: location, skill, age, gender',
+    'Real-time job-worker matching notifications',
+  ];
+  if (features.pipelineEnabled)  match.push('Full hiring pipeline — Shortlist → Interview → Join');
+  if (features.inviteEnabled)    match.push('Directly invite workers to apply for your jobs');
+  if (features.bulkPostEnabled)  match.push('Bulk post multiple requirements at once');
+  if (features.unlimitedPosts)   match.push('Unlimited job requirement posts — no daily cap');
+
+  // ── 🛡️ Trust & Support — 2 static always + conditional ───────────────────
+  const trust: string[] = [
+    'All workers verified with skills & background checks',
+    'Secure payment with BookMyWorker guarantee',
+  ];
+  if (features.analyticsEnabled) trust.push(`Hiring analytics dashboard (${features.analyticsMonths}-month history)`);
+  if (features.dedicatedSupport) trust.push('Dedicated BookMyWorker account manager assigned');
+
+  return [
+    {
+      icon: '⚡', label: 'Priority & Speed',
+      color: '#F59E0B', colorDark: '#FBBF24', bg: '#FFFBEB', bgDark: '#451A03',
+      items: speed,
+    },
+    {
+      icon: '🔓', label: 'Full Access',
+      color: '#1A56DB', colorDark: '#4F7CF8', bg: '#EBF1FF', bgDark: '#1C2E58',
+      items: access,
+    },
+    {
+      icon: '🎯', label: 'Smart Matching',
+      color: '#059669', colorDark: '#10B981', bg: '#ECFDF5', bgDark: '#064E3B',
+      items: match,
+    },
+    {
+      icon: '🛡️', label: 'Trust & Support',
+      color: '#7C3AED', colorDark: '#A78BFA', bg: '#F3EFFE', bgDark: '#2E1B5E',
+      items: trust,
+    },
+  ];
+}
+
+const STATS = [
+  { value: '50K+', label: 'Verified\nWorkers' },
+  { value: '3×',   label: 'Faster\nResponses' },
+  { value: '98%',  label: 'Hire\nSuccess' },
 ];
 
+// ─── Component ─────────────────────────────────────────────────────────────────
 export const EmployerSubscriptionModal = ({
   visible,
   onDismiss,
   userName,
+  employerType = 'individual',
 }: EmployerSubscriptionModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { pricing } = usePricingConfig();
-  const monthlyPrice = pricing.subscription.individual['1m'];
-  const monthlyMrp   = pricing.subscriptionMrp.individual['1m'];
-  const monthlyDisc  = calcDiscount(monthlyMrp, monthlyPrice);
+  const isDark = theme.mode === 'dark';
+  const { pricing, employerPlans } = usePricingConfig();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+
+  // Resolve this employer type's plan config
+  const typePlan   = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
+  const features   = typePlan.features;
+  const contacts1m = typePlan.limits['1m'].contacts;
+
+  // Pricing teaser (1-month entry price)
+  const monthlyPrice = pricing.subscription[employerType]?.['1m'] ?? pricing.subscription.individual['1m'];
+  const monthlyMrp   = pricing.subscriptionMrp[employerType]?.['1m'] ?? pricing.subscriptionMrp.individual['1m'];
+  const monthlyDisc  = calcDiscount(monthlyMrp, monthlyPrice);
+
+  const benefitGroups = buildBenefitGroups(features, contacts1m);
+
+  // Slide-up animation
+  const slideAnim   = useRef(new Animated.Value(60)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      slideAnim.setValue(60);
+      opacityAnim.setValue(0);
+      Animated.parallel([
+        Animated.spring(slideAnim,   { toValue: 0,   useNativeDriver: true, tension: 80, friction: 12 }),
+        Animated.timing(opacityAnim, { toValue: 1,   duration: 220, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
 
   const handleViewPlans = (): void => {
     onDismiss();
     navigation.navigate('Subscription');
   };
 
+  const heroBg    = isDark ? '#07112A' : '#1037A4';
+  const heroText  = '#FFFFFF';
+  const heroMuted = isDark ? 'rgba(241,245,249,0.60)' : 'rgba(255,255,255,0.72)';
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onDismiss}
-    >
-      <View style={styles.backdrop}>
-        <View style={[styles.sheet, { backgroundColor: theme.colors.card }]}>
-
-          {/* ── Hero header ─────────────────────────────────────── */}
-          <View style={styles.hero}>
-            <View style={styles.heroCircle1} pointerEvents="none" />
-            <View style={styles.heroCircle2} pointerEvents="none" />
-
-            <View style={styles.avatarWrap}>
-              <Avatar name={userName} size={72} ring ringColor="rgba(255,255,255,0.55)" />
-              <View style={styles.premiumTag}>
-                <AppText style={styles.premiumTagText}>⭐ PREMIUM</AppText>
-              </View>
-            </View>
-
-            <AppText style={styles.heroTitle}>Unlock Premium Access</AppText>
-            <AppText style={styles.heroSub}>
-              Post requirements & connect with{'\n'}verified workers across India
-            </AppText>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={onDismiss}>
+      <Animated.View style={[styles.backdrop, { opacity: opacityAnim }]}>
+        <Animated.View
+          style={[styles.sheet, { backgroundColor: theme.colors.card, transform: [{ translateY: slideAnim }] }]}
+        >
+          {/* Drag pill */}
+          <View style={styles.pillWrap} pointerEvents="none">
+            <View style={[styles.pill, { backgroundColor: isDark ? '#2A3E5E' : '#D1D5DB' }]} />
           </View>
 
-          <ScrollView
-            style={styles.body}
-            contentContainerStyle={styles.bodyContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* ── Benefits ──────────────────────────────────────── */}
-            <View style={[styles.benefitsCard, { borderColor: theme.colors.border }]}>
-              {BENEFITS.map((b, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.benefitRow,
-                    i < BENEFITS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.divider },
-                  ]}
-                >
-                  <AppText style={styles.benefitText}>{b}</AppText>
-                </View>
-              ))}
+          {/* ── Hero ── */}
+          <View style={[styles.hero, { backgroundColor: heroBg }]}>
+            <View style={[styles.circle1, { backgroundColor: 'rgba(255,255,255,0.06)' }]}  pointerEvents="none" />
+            <View style={[styles.circle2, { backgroundColor: 'rgba(255,255,255,0.04)' }]}  pointerEvents="none" />
+            <View style={[styles.circle3, { backgroundColor: 'rgba(79,124,248,0.18)' }]}   pointerEvents="none" />
+
+            <View style={styles.avatarWrap}>
+              <Avatar name={userName} size={68} ring ringColor="rgba(255,255,255,0.50)" />
+              <View style={styles.premiumBadge}>
+                <AppText style={styles.premiumBadgeText}>⭐ PRO</AppText>
+              </View>
             </View>
 
-            {/* ── Price card ────────────────────────────────────── */}
-            <View style={[styles.priceCard, { borderColor: '#DBEAFE' }]}>
-              <View style={[styles.priceCardHeader, { backgroundColor: '#EFF6FF', borderBottomColor: '#DBEAFE' }]}>
-                <AppText style={styles.priceCardTitle}>Flexible Subscription Plans</AppText>
-                <AppText style={[styles.priceCardSub, { color: theme.colors.mutedText }]}>
-                  Choose a plan that fits your hiring needs
-                </AppText>
-              </View>
-              <View style={styles.priceCardBody}>
-                {monthlyMrp > monthlyPrice && (
-                  <View style={styles.mrpRow}>
-                    <AppText style={styles.mrpText}>₹{monthlyMrp}</AppText>
-                    {monthlyDisc && (
-                      <View style={styles.discountBadge}>
-                        <AppText style={styles.discountText}>{monthlyDisc}% OFF</AppText>
-                      </View>
-                    )}
+            <AppText style={[styles.heroTitle, { color: heroText }]}>
+              Hire Smarter with Premium
+            </AppText>
+            <AppText style={[styles.heroSub, { color: heroMuted }]}>
+              Employers who subscribe get{' '}
+              <AppText style={styles.heroBold}>3× more responses</AppText>
+              {'\n'}and fill roles faster.
+            </AppText>
+
+            {/* Stats strip */}
+            <View style={styles.statsRow}>
+              {STATS.map((s, i) => (
+                <React.Fragment key={s.value}>
+                  <View style={styles.statItem}>
+                    <AppText style={[styles.statValue, { color: heroText }]}>{s.value}</AppText>
+                    <AppText style={[styles.statLabel, { color: heroMuted }]}>{s.label}</AppText>
                   </View>
-                )}
+                  {i < STATS.length - 1 && (
+                    <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.18)' }]} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
+
+            {/* ── Dynamic benefit groups ── */}
+            {benefitGroups.map((group) => {
+              const iconBg    = isDark ? group.bgDark    : group.bg;
+              const iconColor = isDark ? group.colorDark : group.color;
+              return (
+                <View key={group.label} style={[styles.benefitGroup, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                  <View style={styles.groupHeader}>
+                    <View style={[styles.groupIconWrap, { backgroundColor: iconBg }]}>
+                      <AppText style={styles.groupIcon}>{group.icon}</AppText>
+                    </View>
+                    <AppText style={[styles.groupLabel, { color: iconColor }]}>{group.label}</AppText>
+                  </View>
+                  {group.items.map((item) => (
+                    <View key={item} style={styles.benefitRow}>
+                      <View style={[styles.checkDot, { backgroundColor: iconColor }]}>
+                        <AppText style={styles.checkTick}>✓</AppText>
+                      </View>
+                      <AppText style={[styles.benefitText, { color: theme.colors.textSecondary }]}>
+                        {item}
+                      </AppText>
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
+
+            {/* ── Pricing teaser ── */}
+            <View style={[styles.priceCard, {
+              backgroundColor: theme.colors.primaryLight,
+              borderColor:     isDark ? theme.colors.borderStrong : '#BFDBFE',
+            }]}>
+              <View style={styles.priceCardInner}>
+                <View style={styles.priceTitleRow}>
+                  <AppText style={[styles.pricePlanLabel, { color: theme.colors.primary }]}>
+                    Flexible Plans — {employerType.charAt(0).toUpperCase() + employerType.slice(1)} Pricing
+                  </AppText>
+                  {monthlyDisc && (
+                    <View style={[styles.savingsBadge, { backgroundColor: theme.colors.success }]}>
+                      <AppText style={styles.savingsBadgeText}>Save {monthlyDisc}%</AppText>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.priceRow}>
-                  <AppText style={styles.priceFrom}>From</AppText>
-                  <AppText style={styles.priceNew}>₹{monthlyPrice}</AppText>
-                  <AppText style={styles.pricePerMonth}>/month</AppText>
+                  <AppText style={[styles.priceFrom, { color: theme.colors.mutedText }]}>Starting from</AppText>
+                  {monthlyMrp > monthlyPrice && (
+                    <AppText style={styles.priceMrp}>₹{monthlyMrp}</AppText>
+                  )}
+                  <AppText style={[styles.priceAmount, { color: theme.colors.primary }]}>₹{monthlyPrice}</AppText>
+                  <AppText style={[styles.priceUnit, { color: theme.colors.mutedText }]}>/mo</AppText>
                 </View>
                 <AppText style={[styles.priceNote, { color: theme.colors.mutedText }]}>
-                  Individual · Contractor · Agency · Industry
+                  Plans for Individual · Contractor · Agency · Industry
                 </AppText>
               </View>
+            </View>
+
+            {/* ── Social proof ── */}
+            <View style={[styles.proofRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <AppText style={[styles.proofText, { color: theme.colors.mutedText }]}>
+                🏢 Trusted by{' '}
+                <AppText style={[styles.proofBold, { color: theme.colors.text }]}>2,000+ employers</AppText>
+                {' '}across India — from solo contractors to large industries.
+              </AppText>
             </View>
           </ScrollView>
 
-          {/* ── Action buttons ──────────────────────────────────── */}
-          <View style={[styles.footer, { borderTopColor: theme.colors.divider }]}>
-            <TouchableOpacity
-              onPress={onDismiss}
-              style={[styles.laterBtn, { borderColor: theme.colors.border }]}
-              activeOpacity={0.75}
-            >
-              <AppText style={[styles.laterBtnText, { color: theme.colors.mutedText }]}>Maybe Later</AppText>
+          {/* ── Footer ── */}
+          <View style={[styles.footer, { borderTopColor: theme.colors.divider, backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity onPress={onDismiss} style={[styles.laterBtn, { borderColor: theme.colors.border }]} activeOpacity={0.7}>
+              <AppText style={[styles.laterText, { color: theme.colors.mutedText }]}>Later</AppText>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleViewPlans}
-              style={styles.plansBtn}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity onPress={handleViewPlans} style={[styles.plansBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.88}>
               <AppText style={styles.plansBtnText}>View Plans  →</AppText>
             </TouchableOpacity>
           </View>
+          <AppText style={[styles.noCommit, { color: theme.colors.mutedText }]}>
+            No commitment · Cancel anytime
+          </AppText>
 
-          {/* Close pill */}
-          <Pressable onPress={onDismiss} style={styles.closePill} hitSlop={12}>
-            <View style={[styles.closePillBar, { backgroundColor: theme.colors.border }]} />
+          {/* Close pill (pressable) */}
+          <Pressable onPress={onDismiss} style={styles.closePill} hitSlop={14}>
+            <View style={[styles.pillBar, { backgroundColor: isDark ? '#2A3E5E' : '#D1D5DB' }]} />
           </Pressable>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
-    maxHeight: '92%',
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.60)', justifyContent: 'flex-end' },
+  sheet:    { borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', maxHeight: '94%' },
 
-  hero: {
-    backgroundColor: '#1037A4',
-    padding: 24,
-    paddingTop: 32,
-    alignItems: 'center',
-    overflow: 'hidden',
-    gap: 10,
-  },
-  heroCircle1: {
-    position: 'absolute', top: -60, right: -50,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  heroCircle2: {
-    position: 'absolute', bottom: -40, left: -30,
-    width: 140, height: 140, borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  avatarWrap: { position: 'relative', marginBottom: 4 },
-  premiumTag: {
-    position: 'absolute', top: -8, right: -20,
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 999,
-  },
-  premiumTagText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  heroTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', textAlign: 'center', lineHeight: 26 },
-  heroSub: { color: 'rgba(255,255,255,0.72)', fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  pillWrap: { position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
+  pill:     { width: 38, height: 4, borderRadius: 2 },
 
-  body: { maxHeight: 400 },
-  bodyContent: { padding: 16, gap: 12 },
+  hero: { paddingTop: 34, paddingBottom: 20, paddingHorizontal: 20, alignItems: 'center', overflow: 'hidden', gap: 8 },
+  circle1:{ position: 'absolute', top: -70, right: -60, width: 220, height: 220, borderRadius: 110 },
+  circle2:{ position: 'absolute', bottom: -50, left: -40, width: 160, height: 160, borderRadius: 80 },
+  circle3:{ position: 'absolute', top: 20, left: -20, width: 120, height: 120, borderRadius: 60 },
 
-  benefitsCard: {
-    borderRadius: 18, borderWidth: 1, overflow: 'hidden',
-    backgroundColor: '#FAFAFA',
+  avatarWrap:       { position: 'relative', marginBottom: 2 },
+  premiumBadge:     {
+    position: 'absolute', top: -6, right: -28,
+    backgroundColor: '#F59E0B', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
+    shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 4,
   },
-  benefitRow: { paddingHorizontal: 16, paddingVertical: 11 },
-  benefitText: { fontSize: 13, fontWeight: '500', color: '#334155', lineHeight: 18 },
+  premiumBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  heroTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center', lineHeight: 26, letterSpacing: -0.3 },
+  heroSub:   { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  heroBold:  { fontWeight: '700', color: '#FFFFFF' },
 
-  priceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
-  priceCardHeader: { padding: 14, borderBottomWidth: 1, gap: 3 },
-  priceCardTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
-  priceCardSub: { fontSize: 12 },
-  priceCardBody: { padding: 16, gap: 10, backgroundColor: '#fff' },
-  mrpRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  mrpText: { fontSize: 13, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '500' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  priceFrom: { fontSize: 14, color: '#94A3B8', fontWeight: '600' },
-  priceNew: { fontSize: 30, fontWeight: '900', color: '#1037A4', lineHeight: 36 },
-  pricePerMonth: { fontSize: 14, color: '#64748B', fontWeight: '600', alignSelf: 'flex-end', marginBottom: 4 },
-  discountBadge: {
-    backgroundColor: '#EFF6FF', borderRadius: 999,
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderWidth: 1, borderColor: '#BFDBFE',
+  statsRow:    {
+    flexDirection: 'row', marginTop: 6,
+    backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 14,
+    paddingVertical: 10, paddingHorizontal: 6, alignSelf: 'stretch',
   },
-  discountText: { fontSize: 10, fontWeight: '700', color: '#1D4ED8' },
-  priceNote: { fontSize: 12, lineHeight: 16 },
+  statItem:    { flex: 1, alignItems: 'center', gap: 2 },
+  statValue:   { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+  statLabel:   { fontSize: 10, textAlign: 'center', lineHeight: 13 },
+  statDivider: { width: 1, marginVertical: 4 },
+
+  body:        { maxHeight: 420 },
+  bodyContent: { padding: 14, gap: 10 },
+
+  benefitGroup:  { borderRadius: 18, borderWidth: 1, padding: 14, gap: 8 },
+  groupHeader:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  groupIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  groupIcon:     { fontSize: 16 },
+  groupLabel:    { fontSize: 13, fontWeight: '800', letterSpacing: 0.1 },
+  benefitRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  checkDot:      { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 },
+  checkTick:     { fontSize: 10, color: '#fff', fontWeight: '900', lineHeight: 12 },
+  benefitText:   { flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '500' },
+
+  priceCard:      { borderRadius: 18, borderWidth: 1.5, overflow: 'hidden' },
+  priceCardInner: { padding: 16, gap: 6 },
+  priceTitleRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pricePlanLabel: { fontSize: 13, fontWeight: '800', flex: 1 },
+  savingsBadge:   { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  savingsBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  priceRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  priceFrom:   { fontSize: 12, fontWeight: '500' },
+  priceMrp:    { fontSize: 13, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '500' },
+  priceAmount: { fontSize: 28, fontWeight: '900', lineHeight: 34, letterSpacing: -0.5 },
+  priceUnit:   { fontSize: 13, fontWeight: '600', alignSelf: 'flex-end', marginBottom: 3 },
+  priceNote:   { fontSize: 11, lineHeight: 15 },
+
+  proofRow:    { borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
+  proofText:   { fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  proofBold:   { fontWeight: '700' },
 
   footer: {
     flexDirection: 'row', gap: 10,
-    padding: 16, borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  laterBtn: {
-    flex: 1, borderRadius: 14, borderWidth: 1,
-    paddingVertical: 14, alignItems: 'center',
+  laterBtn:     { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 14, alignItems: 'center' },
+  laterText:    { fontSize: 14, fontWeight: '600' },
+  plansBtn:     {
+    flex: 1.8, borderRadius: 14, paddingVertical: 14, alignItems: 'center', justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 10, elevation: 5,
   },
-  laterBtnText: { fontSize: 14, fontWeight: '700' },
-  plansBtn: {
-    flex: 1.6, borderRadius: 14, paddingVertical: 14,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#1037A4',
-  },
-  plansBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  plansBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
+  noCommit:     { textAlign: 'center', fontSize: 11, paddingBottom: 18, fontStyle: 'italic' },
 
-  closePill: {
-    position: 'absolute', top: 10, alignSelf: 'center', left: 0, right: 0,
-    alignItems: 'center',
-  },
-  closePillBar: { width: 40, height: 4, borderRadius: 2 },
+  closePill: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center' },
+  pillBar:   { width: 38, height: 4, borderRadius: 2 },
 });

@@ -8,11 +8,39 @@ export interface ApiClientError extends Error {
   details?: unknown;
 }
 
-const toApiError = (error: AxiosError<{ message?: string; errors?: unknown }>): ApiClientError => {
-  const apiError = new Error(
-    error.response?.data?.message ?? error.message ?? 'Something went wrong. Please try again.'
-  ) as ApiClientError;
+/** Maps Axios raw error codes / HTTP statuses → human-readable messages. */
+const humanMessage = (error: AxiosError<{ message?: string }>): string => {
+  // Server returned a message — use it directly.
+  const serverMsg = error.response?.data?.message;
+  if (serverMsg) return serverMsg;
 
+  // No response at all → network-level failure.
+  if (!error.response) {
+    if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message)) {
+      return 'Request timed out. Please check your internet connection and try again.';
+    }
+    // Axios fires "Network Error" when the device is offline or the server is unreachable.
+    return 'Unable to connect. Please check your internet connection and try again.';
+  }
+
+  // Response received but HTTP error status.
+  switch (error.response.status) {
+    case 400: return 'Invalid request. Please check your details and try again.';
+    case 401: return 'Session expired. Please log in again.';
+    case 403: return 'You do not have permission to perform this action.';
+    case 404: return 'The requested information could not be found.';
+    case 409: return 'This action conflicts with existing data. Please refresh and try again.';
+    case 422: return 'Some fields are invalid. Please review your details and try again.';
+    case 429: return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+    case 502:
+    case 503: return 'Our server is temporarily unavailable. Please try again in a moment.';
+    default:  return 'Something went wrong. Please try again.';
+  }
+};
+
+const toApiError = (error: AxiosError<{ message?: string; errors?: unknown }>): ApiClientError => {
+  const apiError = new Error(humanMessage(error)) as ApiClientError;
   apiError.statusCode = error.response?.status;
   apiError.details = error.response?.data?.errors;
   return apiError;

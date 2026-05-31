@@ -20,3 +20,12 @@ export const resetToMain = (): void => {
     );
   }
 };
+
+/** Reset the stack to WorkerProfileCompletion — used when user has no location saved. */
+export const resetToProfileCompletion = (): void => {
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'WorkerProfileCompletion' }] })
+    );
+  }
+};

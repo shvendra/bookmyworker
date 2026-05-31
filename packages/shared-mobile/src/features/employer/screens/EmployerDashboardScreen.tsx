@@ -22,12 +22,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
+import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
@@ -1112,6 +1114,12 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
   const remainingContacts = profile?.remainingContacts ?? 0;
 
+  // Resolve employerType string to one of the four known EmployerTypeKey values
+  const resolvedEmployerType: EmployerTypeKey = (
+    (['industry', 'agency', 'contractor', 'individual'] as const)
+      .find((t) => String(profile?.employerType ?? user?.employerType ?? '').toLowerCase().includes(t))
+  ) ?? 'individual';
+
   // Only show KYC warning when profile has loaded and status is explicitly 'Unverified'
   const kycUnverified = profileQuery.isSuccess && profile?.status === 'Unverified';
 
@@ -1606,6 +1614,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         visible={subModalVisible}
         onDismiss={() => setSubModalVisible(false)}
         userName={user?.fullName ?? 'Employer'}
+        employerType={resolvedEmployerType}
       />
 
       {/* ── Scrollable Body — lifts over header with rounded top ───────── */}
@@ -1668,6 +1677,22 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       </Modal>
 
       {user && <ProfileCompletionModal user={user} />}
+
+      <GuidedTour
+        tourKey="employer_tour_v1"
+        steps={[
+          { icon: t('tour_emp_1_icon'), title: t('tour_emp_1_title'), desc: t('tour_emp_1_desc') },
+          { icon: t('tour_emp_2_icon'), title: t('tour_emp_2_title'), desc: t('tour_emp_2_desc') },
+          { icon: t('tour_emp_3_icon'), title: t('tour_emp_3_title'), desc: t('tour_emp_3_desc') },
+          { icon: t('tour_emp_4_icon'), title: t('tour_emp_4_title'), desc: t('tour_emp_4_desc') },
+          { icon: t('tour_emp_5_icon'), title: t('tour_emp_5_title'), desc: t('tour_emp_5_desc') },
+        ]}
+        skipLabel={t('tour_skip')}
+        nextLabel={t('tour_next')}
+        backLabel={t('tour_back')}
+        finishLabel={t('tour_getStarted')}
+        stepOfLabel={t('tour_stepOf')}
+      />
     </>
   );
 };

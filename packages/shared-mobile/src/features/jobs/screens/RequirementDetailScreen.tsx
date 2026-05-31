@@ -565,10 +565,80 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['requirement-mappings', requirementId] });
       void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
-      toast.success('Removed from pipeline.');
+      toast.success(i18n.t('pipelineRemovedSuccess', { ns: 'employer' }));
     },
     onError: () => toast.error('Failed to remove. Please try again.'),
   });
+
+  const revertStatusMutation = useMutation({
+    mutationFn: (mappingId: string) => workerMappingApi.revertMappingStatus(mappingId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement-mappings', requirementId] });
+      void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
+      toast.success(i18n.t('pipelineRevertedSuccess', { ns: 'employer' }));
+    },
+    onError: () => toast.error('Failed to revert status. Please try again.'),
+  });
+
+  const handleAdvanceToSelected = (mappingId: string, workerName: string): void => {
+    showAlert(
+      i18n.t('pipelineConfirmSelectTitle', { ns: 'employer' }),
+      i18n.t('pipelineConfirmSelectBody', { ns: 'employer', name: workerName }),
+      [
+        { text: i18n.t('cancel', { ns: 'employer' }), style: 'cancel' },
+        {
+          text: i18n.t('yesSelect', { ns: 'employer' }),
+          style: 'default',
+          onPress: () => advanceStatusMutation.mutate({ mappingId, status: 'Selected' }),
+        },
+      ]
+    );
+  };
+
+  const handleRemoveFromPipeline = (mappingId: string, workerName: string): void => {
+    showAlert(
+      i18n.t('pipelineConfirmRemoveTitle', { ns: 'employer' }),
+      i18n.t('pipelineConfirmRemoveBody', { ns: 'employer', name: workerName }),
+      [
+        { text: i18n.t('cancel', { ns: 'employer' }), style: 'cancel' },
+        {
+          text: i18n.t('yesRemove', { ns: 'employer' }),
+          style: 'destructive',
+          onPress: () => removeShortlistMutation.mutate(mappingId),
+        },
+      ]
+    );
+  };
+
+  const handleRevertToShortlisted = (mappingId: string, workerName: string): void => {
+    showAlert(
+      i18n.t('pipelineConfirmUnselectTitle', { ns: 'employer' }),
+      i18n.t('pipelineConfirmUnselectBody', { ns: 'employer', name: workerName }),
+      [
+        { text: i18n.t('cancel', { ns: 'employer' }), style: 'cancel' },
+        {
+          text: i18n.t('yesRevert', { ns: 'employer' }),
+          style: 'default',
+          onPress: () => revertStatusMutation.mutate(mappingId),
+        },
+      ]
+    );
+  };
+
+  const handleRevertToSelected = (mappingId: string, workerName: string): void => {
+    showAlert(
+      i18n.t('pipelineConfirmUnjoinTitle', { ns: 'employer' }),
+      i18n.t('pipelineConfirmUnjoinBody', { ns: 'employer', name: workerName }),
+      [
+        { text: i18n.t('cancel', { ns: 'employer' }), style: 'cancel' },
+        {
+          text: i18n.t('yesRevert', { ns: 'employer' }),
+          style: 'default',
+          onPress: () => revertStatusMutation.mutate(mappingId),
+        },
+      ]
+    );
+  };
 
   const isSubscribed = (() => {
     if (!isEmployer) return false;
@@ -1083,38 +1153,58 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   {/* Actions */}
                   <View style={{ gap: 6, alignItems: 'flex-end' }}>
                     {m.status === 'Shortlisted' && (
-                      <TouchableOpacity
-                        style={[pl.advanceBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
-                        onPress={() => advanceStatusMutation.mutate({ mappingId: m._id, status: 'Selected' })}
-                        disabled={advanceStatusMutation.isPending}
-                        activeOpacity={0.8}
-                      >
-                        <AppText style={[pl.advanceTxt, { color: '#7C3AED' }]}>{'→'} Select</AppText>
-                      </TouchableOpacity>
+                      <>
+                        <TouchableOpacity
+                          style={[pl.advanceBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
+                          onPress={() => handleAdvanceToSelected(m._id, m.workerName)}
+                          disabled={advanceStatusMutation.isPending}
+                          activeOpacity={0.8}
+                        >
+                          <AppText style={[pl.advanceTxt, { color: '#7C3AED' }]}>{'→'} {i18n.t('selected', { ns: 'employer' })}</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleRemoveFromPipeline(m._id, m.workerName)}
+                          disabled={removeShortlistMutation.isPending}
+                          style={pl.removeBtn}
+                          activeOpacity={0.7}
+                        >
+                          <AppText style={pl.removeTxt}>{i18n.t('yesRemove', { ns: 'employer' }).replace('Yes, ', '')}</AppText>
+                        </TouchableOpacity>
+                      </>
                     )}
                     {m.status === 'Selected' && (
-                      <TouchableOpacity
-                        style={[pl.advanceBtn, { backgroundColor: '#ECFDF5', borderColor: GREEN_BDR }]}
-                        onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
-                        activeOpacity={0.8}
-                      >
-                        <AppText style={[pl.advanceTxt, { color: GREEN }]}>{'→'} Join</AppText>
-                      </TouchableOpacity>
+                      <>
+                        <TouchableOpacity
+                          style={[pl.advanceBtn, { backgroundColor: '#ECFDF5', borderColor: GREEN_BDR }]}
+                          onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
+                          activeOpacity={0.8}
+                        >
+                          <AppText style={[pl.advanceTxt, { color: GREEN }]}>{'→'} {i18n.t('joined', { ns: 'employer' })}</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[pl.advanceBtn, { backgroundColor: '#FFF7ED', borderColor: '#FDE68A' }]}
+                          onPress={() => handleRevertToShortlisted(m._id, m.workerName)}
+                          disabled={revertStatusMutation.isPending}
+                          activeOpacity={0.8}
+                        >
+                          <AppText style={[pl.advanceTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnselect', { ns: 'employer' })}</AppText>
+                        </TouchableOpacity>
+                      </>
                     )}
                     {m.status === 'Joined' && (
-                      <View style={[pl.joinedBadge]}>
-                        <AppText style={pl.joinedTxt}>{'✓'} Joined</AppText>
-                      </View>
-                    )}
-                    {m.status !== 'Joined' && (
-                      <TouchableOpacity
-                        onPress={() => removeShortlistMutation.mutate(m._id)}
-                        disabled={removeShortlistMutation.isPending}
-                        style={pl.removeBtn}
-                        activeOpacity={0.7}
-                      >
-                        <AppText style={pl.removeTxt}>Remove</AppText>
-                      </TouchableOpacity>
+                      <>
+                        <View style={[pl.joinedBadge]}>
+                          <AppText style={pl.joinedTxt}>{'✓'} {i18n.t('joined', { ns: 'employer' })}</AppText>
+                        </View>
+                        <TouchableOpacity
+                          style={[pl.advanceBtn, { backgroundColor: '#FFF7ED', borderColor: '#FDE68A' }]}
+                          onPress={() => handleRevertToSelected(m._id, m.workerName)}
+                          disabled={revertStatusMutation.isPending}
+                          activeOpacity={0.8}
+                        >
+                          <AppText style={[pl.advanceTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnjoin', { ns: 'employer' })}</AppText>
+                        </TouchableOpacity>
+                      </>
                     )}
                   </View>
                 </View>

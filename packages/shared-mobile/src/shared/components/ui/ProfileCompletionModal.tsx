@@ -388,7 +388,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
   const canContinue = (): boolean => {
     if (!step) return false;
     switch (step.id) {
-      case 'location':        return !!locState;
+      case 'location':        return !!locState && !!locDist;
       case 'agentType':       return !!agentType;
       case 'workerSubType':   return !!workerSub;
       case 'categories':      return selCats.length > 0;
@@ -587,13 +587,28 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
           {/* Nav row */}
           <View style={[s.navRow, { paddingTop: Platform.OS === 'ios' ? 54 : 36 }]}>
-            <TouchableOpacity
-              onPress={stepIdx > 0 ? handleBack : handleDismiss}
-              style={s.navIconBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={s.navIconTxt}>{stepIdx > 0 ? '←' : '✕'}</Text>
-            </TouchableOpacity>
+            {/* Back / dismiss button — hidden on location step (mandatory) */}
+            {step.id !== 'location' ? (
+              <TouchableOpacity
+                onPress={stepIdx > 0 ? handleBack : handleDismiss}
+                style={s.navIconBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={s.navIconTxt}>{stepIdx > 0 ? '←' : '✕'}</Text>
+              </TouchableOpacity>
+            ) : (
+              stepIdx > 0 ? (
+                <TouchableOpacity
+                  onPress={handleBack}
+                  style={s.navIconBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.navIconTxt}>←</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={s.navIconBtn} />
+              )
+            )}
 
             {/* Step dots */}
             <View style={s.dotsRow}>
@@ -607,9 +622,14 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               ))}
             </View>
 
-            <TouchableOpacity onPress={handleSkipStep} style={s.skipBtn} activeOpacity={0.7}>
-              <Text style={s.skipTxt}>{t('wizard_skip')}</Text>
-            </TouchableOpacity>
+            {/* Skip header button — hidden on location step */}
+            {step.id !== 'location' ? (
+              <TouchableOpacity onPress={handleSkipStep} style={s.skipBtn} activeOpacity={0.7}>
+                <Text style={s.skipTxt}>{t('wizard_skip')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={s.skipBtn} />
+            )}
           </View>
 
           {/* Icon + title */}
@@ -868,9 +888,11 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleSkipStep} style={s.skipStepBtn} activeOpacity={0.6}>
-                <Text style={s.skipStepTxt}>{t('wizard_skipStep')}</Text>
-              </TouchableOpacity>
+              {step.id !== 'location' && (
+                <TouchableOpacity onPress={handleSkipStep} style={s.skipStepBtn} activeOpacity={0.6}>
+                  <Text style={s.skipStepTxt}>{t('wizard_skipStep')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Animated.View>
         </KeyboardAvoidingView>

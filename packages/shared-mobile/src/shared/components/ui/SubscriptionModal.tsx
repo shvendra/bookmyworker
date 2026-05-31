@@ -15,7 +15,13 @@ import {
 import { showAlert } from '../../state/alert/AppAlertContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
-import { usePricingConfig, calcDiscount } from '../../../core/api/endpoints/pricingApi';
+import {
+  usePricingConfig,
+  calcDiscount,
+  buildFeatureBenefits,
+  EMPLOYER_PLANS_DEFAULTS,
+} from '../../../core/api/endpoints/pricingApi';
+import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { apiClient } from '../../../core/api/client';
@@ -26,23 +32,23 @@ import { AppButton } from './AppButton';
 const FILE_BASE = ENV.API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = 90;
-// ─── Subscription Pricing (matches CRM PricingPage.jsx) ────────────────────────
-type EmployerType = 'industry' | 'agency' | 'contractor' | 'individual';
+
 type PlanId = '1m' | '6m' | '12m';
 
 interface Plan {
   id: PlanId;
   label: string;
   duration: string;
-  workers: number;
-  posts: number;
+  contacts: number;
+  posts: number;           // 999 = unlimited
   badge?: string;
+  benefits: string[];      // 2 static always-on + dynamic feature lines
 }
 
-const PLANS: Plan[] = [
-  { id: '1m',  label: 'Monthly Plan',     duration: '1 Month',   workers: 100,  posts: 25 },
-  { id: '6m',  label: 'Half-Yearly Plan', duration: '6 Months',  workers: 800,  posts: 50, badge: 'Popular' },
-  { id: '12m', label: 'Yearly Plan',      duration: '12 Months', workers: 1600, posts: 75, badge: 'Best Value' },
+// Two benefits shown on every plan regardless of config
+const STATIC_BENEFITS = [
+  'Access verified worker & agent profiles',
+  'Unlock worker contacts & connect directly',
 ];
 
 // ─── Agent Carousel ────────────────────────────────────────────────────────────
@@ -104,22 +110,22 @@ const AgentCarousel = ({ agents }: { agents: RawAgent[] }): React.JSX.Element =>
 };
 
 const carStyles = StyleSheet.create({
-  wrap: { height: 110, overflow: 'hidden' },
-  list: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
-  card: { width: CARD_W, borderRadius: 14, borderWidth: 1, padding: 8, alignItems: 'center', gap: 4 },
-  avatar: { width: 54, height: 54, borderRadius: 27 },
+  wrap:         { height: 110, overflow: 'hidden' },
+  list:         { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
+  card:         { width: CARD_W, borderRadius: 14, borderWidth: 1, padding: 8, alignItems: 'center', gap: 4 },
+  avatar:       { width: 54, height: 54, borderRadius: 27 },
   avatarFallback: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
-  initials: { fontSize: 18, fontWeight: '700' },
-  verBadge: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#fff' },
-  verTick: { fontSize: 8, color: '#fff', fontWeight: '700', lineHeight: 10 },
-  name: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  initials:     { fontSize: 18, fontWeight: '700' },
+  verBadge:     { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#fff' },
+  verTick:      { fontSize: 8, color: '#fff', fontWeight: '700', lineHeight: 10 },
+  name:         { fontSize: 10, fontWeight: '600', textAlign: 'center' },
 });
 
 // ─── Main Modal ────────────────────────────────────────────────────────────────
 interface SubscriptionModalProps {
   visible: boolean;
   onClose: () => void;
-  employerType?: EmployerType;
+  employerType?: EmployerTypeKey;
   employerId?: string;
   employerName?: string;
   email?: string;
@@ -136,9 +142,10 @@ export const SubscriptionModal = ({
   employerPhone,
 }: SubscriptionModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
   const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('1m');
-  const { pricing: pricingConfig, gstRate } = usePricingConfig();
+  const { pricing: pricingConfig, employerPlans, gstRate } = usePricingConfig();
 
   const { data: agentsData } = useQuery({
     queryKey: ['subscription-agents-preview'],
@@ -148,26 +155,76 @@ export const SubscriptionModal = ({
   });
 
   const agents = agentsData?.rawAgents ?? [];
+
+  // ── Resolve employer-type plan config ─────────────────────────────────────────
+  const typePlan       = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
+  const featureBenefits = buildFeatureBenefits(typePlan.features);
+  const sharedBenefits  = [...STATIC_BENEFITS, ...featureBenefits];
+  const contacts1m      = typePlan.limits['1m'].contacts;
+
+  const makePlanBenefits = (id: PlanId, contacts: number, posts: number): string[] => {
+    const postsLabel = posts >= 999 ? 'unlimited' : String(posts);
+    if (id === '1m') return [
+      `${contacts} contact unlocks — try risk-free, no commitment`,
+      `Post up to ${postsLabel} job requirements this month`,
+      ...sharedBenefits,
+    ];
+    const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : 'more';
+    if (id === '6m') return [
+      `${contacts} contacts — ${mul}× more reach than monthly`,
+      'Better cost-per-contact vs paying month by month',
+      ...sharedBenefits,
+    ];
+    return [
+      `${contacts} contacts — ${mul}× more reach than monthly`,
+      'Lowest cost-per-contact — best long-term value',
+      ...sharedBenefits,
+    ];
+  };
+
+  const PLANS: Plan[] = [
+    {
+      id: '1m',  label: 'Monthly Plan',     duration: '1 Month',
+      contacts: typePlan.limits['1m'].contacts,
+      posts:    typePlan.limits['1m'].posts,
+      benefits: makePlanBenefits('1m', typePlan.limits['1m'].contacts, typePlan.limits['1m'].posts),
+    },
+    {
+      id: '6m',  label: 'Half-Yearly Plan', duration: '6 Months',
+      contacts: typePlan.limits['6m'].contacts,
+      posts:    typePlan.limits['6m'].posts,
+      badge: 'Popular',
+      benefits: makePlanBenefits('6m', typePlan.limits['6m'].contacts, typePlan.limits['6m'].posts),
+    },
+    {
+      id: '12m', label: 'Yearly Plan',      duration: '12 Months',
+      contacts: typePlan.limits['12m'].contacts,
+      posts:    typePlan.limits['12m'].posts,
+      badge: 'Best Value',
+      benefits: makePlanBenefits('12m', typePlan.limits['12m'].contacts, typePlan.limits['12m'].posts),
+    },
+  ];
+
   const pricing    = pricingConfig.subscription[employerType]    ?? pricingConfig.subscription.individual;
   const pricingMrp = pricingConfig.subscriptionMrp[employerType] ?? pricingConfig.subscriptionMrp.individual;
-  const plan = PLANS.find((p) => p.id === selectedPlan) ?? PLANS[0]!;
+  const plan       = PLANS.find((p) => p.id === selectedPlan) ?? PLANS[0]!;
   const baseAmount = pricing[plan.id];
-  const gstAmt = Number((baseAmount * gstRate).toFixed(2));
-  const totalAmt = Number((baseAmount + gstAmt).toFixed(2));
+  const gstAmt     = Number((baseAmount * gstRate).toFixed(2));
+  const totalAmt   = Number((baseAmount + gstAmt).toFixed(2));
 
   const payMutation = useMutation({
     mutationFn: async () => {
       const res = await apiClient.post<{ url?: string; paymentUrl?: string }>('/api/v1/payment/add-trans', {
         employerId,
-        firstName: employerName ?? '',
-        email: email ?? '',
+        firstName:      employerName ?? '',
+        email:          email ?? '',
         employerType,
         employer_phone: employerPhone ?? '',
-        paymentType: 'subscription',
-        amount: totalAmt,
-        gstCharges: gstAmt,
-        productName: `Subscription Plan - ${plan.duration}`,
-        planId: plan.id,
+        paymentType:    'subscription',
+        amount:         totalAmt,
+        gstCharges:     gstAmt,
+        productName:    `Subscription Plan - ${plan.duration}`,
+        planId:         plan.id,
       });
       return res.data;
     },
@@ -175,31 +232,20 @@ export const SubscriptionModal = ({
       const url = data.url ?? data.paymentUrl;
       if (url) {
         const supported = await Linking.canOpenURL(url);
-        if (supported) {
-          await Linking.openURL(url);
-          onClose();
-        } else {
-          showAlert('Error', 'Cannot open payment URL. Please try again.');
-        }
+        if (supported) { await Linking.openURL(url); onClose(); }
+        else showAlert('Error', 'Cannot open payment URL. Please try again.');
       } else {
         showAlert('Subscribed!', 'Your subscription has been activated.');
         onClose();
       }
     },
-    onError: () => {
-      showAlert('Payment Error', 'Could not initiate payment. Please try again.');
-    },
+    onError: () => { showAlert('Payment Error', 'Could not initiate payment. Please try again.'); },
   });
-
-  const PLAN_BENEFITS: Record<PlanId, string[]> = {
-    '1m':  ['Filter workers by a specific location', 'Access limited worker profiles', 'Post basic job requirements'],
-    '6m':  ['Filter workers from anywhere within your state', 'Higher worker profile visibility', 'Priority job post listing'],
-    '12m': ['Filter workers from any location across India', 'Maximum worker profile access', 'Priority leads & faster matching', 'Dedicated support from BookMyWorker team'],
-  };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+
         {/* Header */}
         <View style={[styles.topBar, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
           <AppText variant="title" style={styles.title}>Unlock Full Access</AppText>
@@ -209,6 +255,7 @@ export const SubscriptionModal = ({
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+
           {/* Workers preview carousel */}
           <View style={[styles.carouselSection, { backgroundColor: theme.colors.surface }]}>
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.carouselLabel}>
@@ -220,7 +267,7 @@ export const SubscriptionModal = ({
             </AppText>
           </View>
 
-          {/* Employer type label */}
+          {/* Employer type chip */}
           <View style={[styles.typeChip, { backgroundColor: theme.colors.primary + '12', borderColor: theme.colors.primary + '30' }]}>
             <AppText style={[styles.typeChipText, { color: theme.colors.primary }]}>
               {employerType.charAt(0).toUpperCase() + employerType.slice(1)} Pricing Applied
@@ -235,16 +282,16 @@ export const SubscriptionModal = ({
             const pTotal   = Number((pBase * (1 + gstRate)).toFixed(0));
             const discount = calcDiscount(pMrp, pBase);
             const isActive = selectedPlan === p.id;
-            const benefits = PLAN_BENEFITS[p.id];
             return (
               <TouchableOpacity
                 key={p.id}
                 onPress={() => setSelectedPlan(p.id)}
                 style={[styles.planCard, {
-                  borderColor: isActive ? theme.colors.primary : theme.colors.border,
+                  borderColor:     isActive ? theme.colors.primary : theme.colors.border,
                   backgroundColor: isActive ? theme.colors.primary + '08' : theme.colors.card,
                 }]}
               >
+                {/* Plan header row */}
                 <View style={styles.planTop}>
                   <View style={styles.planLeft}>
                     <View style={styles.planLabelRow}>
@@ -258,7 +305,7 @@ export const SubscriptionModal = ({
                       )}
                     </View>
                     <AppText variant="caption" color={theme.colors.mutedText}>
-                      {p.duration} · {p.workers}+ Workers · {p.posts} Posts
+                      {p.duration} · {p.contacts} Contacts · {p.posts >= 999 ? '∞' : p.posts} Posts
                     </AppText>
                   </View>
                   <View style={styles.planRight}>
@@ -275,15 +322,22 @@ export const SubscriptionModal = ({
                     <AppText variant="label" color={isActive ? theme.colors.primary : theme.colors.text}>
                       ₹{pTotal}
                     </AppText>
-                    <AppText style={[styles.perMonth, { color: theme.colors.mutedText }]}>incl. GST</AppText>
+                    <AppText style={[styles.infoText, { color: theme.colors.mutedText }]}>incl. GST</AppText>
                   </View>
                 </View>
+
+                {/* Expanded benefits when selected */}
                 {isActive && (
                   <View style={[styles.benefitsBox, { borderTopColor: theme.colors.border }]}>
-                    {benefits.map((b) => (
-                      <AppText key={b} variant="caption" color={theme.colors.text} style={styles.benefitItem}>
-                        ✔ {b}
-                      </AppText>
+                    {p.benefits.map((b) => (
+                      <View key={b} style={styles.benefitRow}>
+                        <View style={[styles.checkDot, { backgroundColor: theme.colors.primary }]}>
+                          <AppText style={styles.checkTick}>✓</AppText>
+                        </View>
+                        <AppText variant="caption" color={theme.colors.text} style={styles.benefitText}>
+                          {b}
+                        </AppText>
+                      </View>
                     ))}
                   </View>
                 )}
@@ -309,11 +363,27 @@ export const SubscriptionModal = ({
             </View>
           </View>
 
-          {/* Benefits highlight */}
-          <View style={[styles.benefitsHighlight, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={styles.benefitsHighlightTitle}>🌟 Why Subscribe?</AppText>
-            {['Get Immediate Daily Workers', 'Verified and Skilled Workers', 'Hire as per your Budget & Work', 'Faster coordination and quicker hiring'].map((b) => (
-              <AppText key={b} variant="caption" color="#1e40af" style={styles.benefitHighlightItem}>✅ {b}</AppText>
+          {/* Why Subscribe highlight */}
+          <View style={[styles.whyBox, {
+            backgroundColor: isDark ? theme.colors.primaryLight : '#EFF6FF',
+            borderColor:     isDark ? theme.colors.borderStrong : '#BFDBFE',
+          }]}>
+            <AppText style={[styles.whyTitle, { color: isDark ? theme.colors.primary : '#1e40af' }]}>
+              🌟 Why Subscribe?
+            </AppText>
+            {[
+              'Get Immediate Daily Workers',
+              'Verified and Skilled Workers',
+              'Hire as per your Budget & Work',
+              'Faster coordination and quicker hiring',
+              'Track every hire with built-in status updates',
+            ].map((b) => (
+              <View key={b} style={styles.whyRow}>
+                <AppText style={[styles.whyCheck, { color: isDark ? theme.colors.success : '#059669' }]}>✅</AppText>
+                <AppText variant="caption" color={isDark ? theme.colors.text : '#1e40af'} style={styles.whyText}>
+                  {b}
+                </AppText>
+              </View>
             ))}
           </View>
 
@@ -335,41 +405,53 @@ export const SubscriptionModal = ({
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  topBar: {
+  root:    { flex: 1 },
+  topBar:  {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: { fontSize: 18 },
-  closeBtn: { fontSize: 18, fontWeight: '600' },
-  scroll: { padding: 16, paddingBottom: 40 },
+  title:   { fontSize: 18 },
+  closeBtn:{ fontSize: 18, fontWeight: '600' },
+  scroll:  { padding: 16, paddingBottom: 40 },
+
   carouselSection: { borderRadius: 16, paddingVertical: 16, marginBottom: 12, overflow: 'hidden' },
-  carouselLabel: { textAlign: 'center', fontWeight: '700', marginBottom: 10 },
-  carouselSub: { textAlign: 'center', paddingHorizontal: 20, marginTop: 10 },
-  typeChip: { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 16 },
+  carouselLabel:   { textAlign: 'center', fontWeight: '700', marginBottom: 10 },
+  carouselSub:     { textAlign: 'center', paddingHorizontal: 20, marginTop: 10 },
+
+  typeChip:     { alignSelf: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 16 },
   typeChipText: { fontSize: 12, fontWeight: '700' },
   sectionTitle: { marginBottom: 10 },
-  planCard: { borderWidth: 1.5, borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
-  planTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 14 },
-  planLeft: { flex: 1, gap: 4 },
-  planLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  planRight: { alignItems: 'flex-end', gap: 2 },
-  planBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+
+  planCard:    { borderWidth: 1.5, borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
+  planTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 14 },
+  planLeft:    { flex: 1, gap: 4 },
+  planLabelRow:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
+  planRight:   { alignItems: 'flex-end', gap: 2 },
+  planBadge:   { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   planBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  perMonth: { fontSize: 10 },
-  mrpRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  mrpText: { fontSize: 11, color: '#94A3B8', textDecorationLine: 'line-through' },
+  infoText:    { fontSize: 10 },
+  mrpRow:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mrpText:     { fontSize: 11, color: '#94A3B8', textDecorationLine: 'line-through' },
   discountBadge: { backgroundColor: '#DCFCE7', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   discountBadgeText: { fontSize: 9, fontWeight: '800', color: '#15803D' },
-  benefitsBox: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, gap: 4 },
-  benefitItem: { fontSize: 12, lineHeight: 18 },
-  summary: { borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 4, marginBottom: 12 },
+
+  benefitsBox: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
+  benefitRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  checkDot:    { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 },
+  checkTick:   { fontSize: 8, color: '#fff', fontWeight: '900', lineHeight: 10 },
+  benefitText: { flex: 1, fontSize: 12, lineHeight: 17 },
+
+  summary:      { borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 4, marginBottom: 12 },
   summaryTitle: { marginBottom: 10 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  totalRow: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 6, paddingTop: 10 },
-  benefitsHighlight: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 16, gap: 6 },
-  benefitsHighlightTitle: { fontSize: 15, fontWeight: '700', color: '#1e40af', marginBottom: 4 },
-  benefitHighlightItem: { fontSize: 13, lineHeight: 20 },
-  payBtn: { marginTop: 4 },
+  summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  totalRow:     { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 6, paddingTop: 10 },
+
+  whyBox:   { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 16, gap: 2 },
+  whyTitle: { fontSize: 15, fontWeight: '700', marginBottom: 6 },
+  whyRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingVertical: 2 },
+  whyCheck: { fontSize: 13, lineHeight: 18 },
+  whyText:  { flex: 1, fontSize: 13, lineHeight: 18 },
+
+  payBtn:     { marginTop: 4 },
   disclaimer: { textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
 });

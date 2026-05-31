@@ -19,7 +19,12 @@ import { useAppTheme } from '../../../core/theme';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { apiClient } from '../../../core/api/client';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
-import { usePricingConfig, calcDiscount } from '../../../core/api/endpoints/pricingApi';
+import {
+  usePricingConfig, calcDiscount,
+  buildFeatureBenefits,
+  EMPLOYER_PLANS_DEFAULTS,
+} from '../../../core/api/endpoints/pricingApi';
+import type { EmployerPlansConfig } from '../../../core/api/endpoints/pricingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
 
@@ -48,10 +53,10 @@ interface Plan {
   price: number;
   mrp: number;
   discount: number | null;
-  workers: number;
-  posts: number;
+  contacts: number;        // unlockable contacts this plan grants
+  posts: number;           // job posts allowed (999 = unlimited)
   tier: 'basic' | 'popular' | 'premium';
-  benefitKeys: string[];
+  benefits: string[];      // ready-to-render strings (static common + dynamic features)
 }
 
 function resolveEmployerType(
@@ -62,33 +67,71 @@ function resolveEmployerType(
   return 'individual';
 }
 
+// Two static benefits always shown for every employer plan (regardless of config)
+const STATIC_EMPLOYER_BENEFITS = [
+  'Access verified worker & agent profiles',
+  'Unlock worker contacts & connect directly',
+];
+
+// Duration-specific lines computed from dynamic contacts/posts — unique per card
+function buildDurationBenefits(planId: PlanId, contacts: number, posts: number, contacts1m: number): string[] {
+  const postsLabel = posts >= 999 ? 'unlimited' : String(posts);
+  if (planId === '1m') return [
+    `${contacts} contact unlocks — try risk-free, no commitment`,
+    `Post up to ${postsLabel} job requirements this month`,
+  ];
+  const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : 'more';
+  if (planId === '6m') return [
+    `${contacts} contacts — ${mul}× more reach than monthly`,
+    'Better cost-per-contact vs paying month by month',
+  ];
+  return [
+    `${contacts} contacts — ${mul}× more reach than monthly`,
+    'Lowest cost-per-contact — best long-term value',
+  ];
+}
+
+type PlanId = '1m' | '6m' | '12m';
+
+// Two static benefits always shown for every agent plan
+const STATIC_AGENT_BENEFITS = [
+  'Verified badge on your profile — stand out to employers',
+  'Priority placement in employer search results',
+];
+
 function buildPlans(
   employerType: EmployerTypeKey,
   subscriptionPricing?: Record<string, Record<string, number>>,
   subscriptionMrp?: Record<string, Record<string, number>>,
+  employerPlans: EmployerPlansConfig = EMPLOYER_PLANS_DEFAULTS,
 ): Plan[] {
-  const p = (subscriptionPricing?.[employerType] ?? FALLBACK_PRICING[employerType]) as Record<string, number>;
-  const m = (subscriptionMrp?.[employerType] ?? {}) as Record<string, number>;
-  return [
-    {
-      id: '1m', labelKey: 'pricingPlanMonthly', accessKey: 'pricing1MonthAccess',
-      price: p['1m'], mrp: m['1m'] ?? 0, discount: calcDiscount(m['1m'] ?? 0, p['1m']),
-      workers: 100, posts: 25, tier: 'basic',
-      benefitKeys: ['pricingEmpBen1m1', 'pricingEmpBen1m2', 'pricingEmpBen1m3'],
-    },
-    {
-      id: '6m', labelKey: 'pricingPlanHalfYearly', accessKey: 'pricing6MonthAccess',
-      price: p['6m'], mrp: m['6m'] ?? 0, discount: calcDiscount(m['6m'] ?? 0, p['6m']),
-      workers: 800, posts: 50, tier: 'popular',
-      benefitKeys: ['pricingEmpBen6m1', 'pricingEmpBen6m2', 'pricingEmpBen6m3'],
-    },
-    {
-      id: '12m', labelKey: 'pricingPlanYearly', accessKey: 'pricing12MonthAccess',
-      price: p['12m'], mrp: m['12m'] ?? 0, discount: calcDiscount(m['12m'] ?? 0, p['12m']),
-      workers: 1600, posts: 75, tier: 'premium',
-      benefitKeys: ['pricingEmpBen12m1', 'pricingEmpBen12m2', 'pricingEmpBen12m3', 'pricingEmpBen12m4'],
-    },
-  ];
+  const p       = (subscriptionPricing?.[employerType] ?? FALLBACK_PRICING[employerType]) as Record<string, number>;
+  const m       = (subscriptionMrp?.[employerType] ?? {}) as Record<string, number>;
+  const typePlan = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
+  const featureBenefits = buildFeatureBenefits(typePlan.features);
+  const sharedBenefits  = [...STATIC_EMPLOYER_BENEFITS, ...featureBenefits];
+  const contacts1m      = typePlan.limits['1m'].contacts;
+
+  const makePlan = (id: PlanId, tier: Plan['tier']) => {
+    const lim = typePlan.limits[id];
+    return {
+      id, tier,
+      labelKey:  id === '1m' ? 'pricingPlanMonthly' : id === '6m' ? 'pricingPlanHalfYearly' : 'pricingPlanYearly',
+      accessKey: id === '1m' ? 'pricing1MonthAccess' : id === '6m' ? 'pricing6MonthAccess' : 'pricing12MonthAccess',
+      price:    p[id]!,
+      mrp:      m[id] ?? 0,
+      discount: calcDiscount(m[id] ?? 0, p[id]!),
+      contacts: lim.contacts,
+      posts:    lim.posts,
+      // Duration-specific lines first so each card looks distinct
+      benefits: [
+        ...buildDurationBenefits(id, lim.contacts, lim.posts, contacts1m),
+        ...sharedBenefits,
+      ],
+    };
+  };
+
+  return [makePlan('1m', 'basic'), makePlan('6m', 'popular'), makePlan('12m', 'premium')];
 }
 
 function buildAgentPlans(
@@ -97,24 +140,27 @@ function buildAgentPlans(
 ): Plan[] {
   const p = { ...AGENT_FALLBACK, ...(agentPricing ?? {}) };
   const m = agentMrp ?? {};
+  const benefits = [
+    ...STATIC_AGENT_BENEFITS,
+    'Appear in employer worker-search results',
+    'Manage group workers under your agent profile',
+    'Receive direct job invitations from employers',
+  ];
   return [
     {
       id: '1m', labelKey: 'pricingPlanMonthly', accessKey: 'pricing1MonthAccess',
       price: p['1m']!, mrp: m['1m'] ?? 0, discount: calcDiscount(m['1m'] ?? 0, p['1m']!),
-      workers: 0, posts: 0, tier: 'basic',
-      benefitKeys: ['pricingAgentBen1m1', 'pricingAgentBen1m2', 'pricingAgentBen1m3'],
+      contacts: 0, posts: 0, tier: 'basic', benefits,
     },
     {
       id: '6m', labelKey: 'pricingPlanHalfYearly', accessKey: 'pricing6MonthAccess',
       price: p['6m']!, mrp: m['6m'] ?? 0, discount: calcDiscount(m['6m'] ?? 0, p['6m']!),
-      workers: 0, posts: 0, tier: 'popular',
-      benefitKeys: ['pricingAgentBen6m1', 'pricingAgentBen6m2', 'pricingAgentBen6m3'],
+      contacts: 0, posts: 0, tier: 'popular', benefits,
     },
     {
       id: '12m', labelKey: 'pricingPlanYearly', accessKey: 'pricing12MonthAccess',
       price: p['12m']!, mrp: m['12m'] ?? 0, discount: calcDiscount(m['12m'] ?? 0, p['12m']!),
-      workers: 0, posts: 0, tier: 'premium',
-      benefitKeys: ['pricingAgentBen12m1', 'pricingAgentBen12m2', 'pricingAgentBen12m3'],
+      contacts: 0, posts: 0, tier: 'premium', benefits,
     },
   ];
 }
@@ -154,6 +200,7 @@ const PlanCard = React.memo(({
   loadingPlanId: string | null;
   onBuy: (plan: Plan) => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
+  // t kept for translated header strings (plan name, duration, badge labels)
 }) => {
   const gst   = parseFloat((plan.price * gstRate).toFixed(2));
   const total = parseFloat((plan.price + gst).toFixed(2));
@@ -222,15 +269,15 @@ const PlanCard = React.memo(({
         <View style={pc.statsRow}>
           <View style={[pc.statChip, { backgroundColor: isPremium ? C.navyLight : isPopular ? C.blueDark : C.slate100 }]}>
             <AppText style={[pc.statVal, { color: isPremium ? C.gold : isPopular ? C.white : C.navy }]}>
-              {plan.workers}+
+              {plan.contacts}
             </AppText>
-            <AppText style={[pc.statKey, { color: textMuted }]}>{t('pricingWorkers')}</AppText>
+            <AppText style={[pc.statKey, { color: textMuted }]}>Contacts</AppText>
           </View>
           <View style={[pc.statChip, { backgroundColor: isPremium ? C.navyLight : isPopular ? C.blueDark : C.slate100 }]}>
             <AppText style={[pc.statVal, { color: isPremium ? C.gold : isPopular ? C.white : C.navy }]}>
-              {plan.posts}
+              {plan.posts >= 999 ? '∞' : plan.posts}
             </AppText>
-            <AppText style={[pc.statKey, { color: textMuted }]}>{t('pricingPosts')}</AppText>
+            <AppText style={[pc.statKey, { color: textMuted }]}>Posts</AppText>
           </View>
         </View>
       )}
@@ -238,12 +285,12 @@ const PlanCard = React.memo(({
       {/* Divider */}
       <View style={[pc.divider, { backgroundColor: isPremium ? '#1e293b' : isPopular ? '#1d4ed8' : C.slate200 }]} />
 
-      {/* Benefits */}
+      {/* Benefits — rendered from dynamic benefits array */}
       <View style={pc.benefits}>
-        {plan.benefitKeys.map((key) => (
-          <View key={key} style={pc.benefitRow}>
+        {plan.benefits.map((b) => (
+          <View key={b} style={pc.benefitRow}>
             <AppText style={[pc.checkMark, { color: checkColor }]}>✓</AppText>
-            <AppText style={[pc.benefitTxt, { color: textPrimary }]}>{t(key)}</AppText>
+            <AppText style={[pc.benefitTxt, { color: textPrimary }]}>{b}</AppText>
           </View>
         ))}
       </View>
@@ -310,7 +357,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const user        = authState.session?.user;
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const { pricing, gstRate } = usePricingConfig();
+  const { pricing, employerPlans, gstRate } = usePricingConfig();
   const isAgent = user?.role === 'agent';
 
   const profileQuery = useQuery({
@@ -341,7 +388,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
   const plans = isAgent
     ? buildAgentPlans(sub?.['agent'], mrp?.['agent'])
-    : buildPlans(employerType, sub, mrp);
+    : buildPlans(employerType, sub, mrp, employerPlans);
 
   const handleBuyPlan = async (plan: Plan): Promise<void> => {
     if (!user) return;
