@@ -348,18 +348,18 @@ export const CertificatesScreen = (): React.JSX.Element => {
 
         {/* ── Worker: certificate list ─────────────────────────── */}
         {isWorker && (
-          <View style={s.section}>
+          <View style={[s.section, s.certListCard, { backgroundColor: theme.colors.card, borderColor: BORDER }]}>
             <View style={s.sectionHeader}>
-              <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('cert_yourCerts')}</AppText>
+              <AppText style={[s.sectionTitle, { color: theme.colors.text, flex: 1 }]}>{t('cert_yourCerts')}</AppText>
               <View style={[s.countPill, { backgroundColor: BRAND + '18' }]}>
                 <AppText style={[s.countPillTxt, { color: BRAND }]}>{certificates.length}</AppText>
               </View>
             </View>
 
             {isLoading ? (
-              <ActivityIndicator color={BRAND} style={{ marginTop: 20 }} />
+              <ActivityIndicator color={BRAND} style={{ marginTop: 12 }} />
             ) : certificates.length === 0 ? (
-              <View style={[s.emptyBox, { backgroundColor: theme.colors.card, borderColor: BORDER }]}>
+              <View style={s.emptyInner}>
                 <AppText style={s.emptyEmoji}>📂</AppText>
                 <AppText style={[s.emptyText, { color: SLATE }]}>{t('cert_noCerts')}</AppText>
               </View>
@@ -489,8 +489,10 @@ const s = StyleSheet.create({
   hint: { fontSize: 12, marginTop: 8, lineHeight: 17, textAlign: 'center' },
 
   section:       { marginBottom: 20 },
+  certListCard:  { borderRadius: 18, borderWidth: 1, padding: 18 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   sectionTitle:  { fontSize: 16, fontWeight: '800' },
+  emptyInner:    { alignItems: 'center', gap: 10, paddingVertical: 20 },
   optionalTag:   { fontSize: 12, fontWeight: '600', marginBottom: 14 },
   countPill: {
     minWidth: 26, height: 22, borderRadius: 11,

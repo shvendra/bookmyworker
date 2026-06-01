@@ -136,8 +136,6 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <AppText variant="title" style={styles.title}>Terms & Privacy</AppText>
-
       {/* Tab Switcher */}
       <View style={[styles.tabBar, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {(['terms', 'privacy'] as Tab[]).map((t) => (

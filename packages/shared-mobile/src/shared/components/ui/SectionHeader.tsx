@@ -31,7 +31,7 @@ export const SectionHeader = ({
         {accent && <View style={[styles.accentBar, { backgroundColor: theme.colors.primary }]} />}
         {icon ? <AppText style={styles.icon}>{icon}</AppText> : null}
         <View style={styles.texts}>
-          <AppText variant="subtitle" color={theme.colors.text} style={styles.title}>
+          <AppText variant="subtitle" color={theme.colors.text} style={styles.title} numberOfLines={1}>
             {title}
           </AppText>
           {subtitle ? (
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 2,
   },
-  texts: { gap: 1 },
+  texts: { gap: 1, flex: 1 },
   icon: { fontSize: 20, lineHeight: 24 },
   title: { fontSize: 17, lineHeight: 22 },
   subtitle: { lineHeight: 16, marginTop: 1 },

@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  FlatList,
   Image,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -23,21 +23,30 @@ export const AGENT_LANG_KEY = 'bmw_agent_lang';
 const BRAND = '#1037A4';
 const { width: W } = Dimensions.get('window');
 const CARD_GAP = 12;
-const CARD_SIZE = (W - 48 - CARD_GAP) / 2;
+const CARD_HALF = (W - 48 - CARD_GAP) / 2;
+const CARD_FULL = W - 48;
 
 const LANGUAGES: { code: AppLanguage; native: string; english: string }[] = [
-  { code: 'hi', native: 'हिंदी', english: 'Hindi' },
-  { code: 'en', native: 'English', english: 'English' },
-  { code: 'mr', native: 'मराठी', english: 'Marathi' },
-  { code: 'gu', native: 'ગુજરાતી', english: 'Gujarati' },
-  { code: 'ta', native: 'தமிழ்', english: 'Tamil' },
-  { code: 'te', native: 'తెలుగు', english: 'Telugu' },
-  { code: 'kn', native: 'ಕನ್ನಡ', english: 'Kannada' },
-  { code: 'ml', native: 'മലയാളം', english: 'Malayalam' },
-  { code: 'bn', native: 'বাংলা', english: 'Bengali' },
-  { code: 'or', native: 'ଓଡ଼ିଆ', english: 'Odia' },
-  { code: 'pa', native: 'ਪੰਜਾਬੀ', english: 'Punjabi' },
+  { code: 'hi', native: 'हिंदी',     english: 'Hindi' },
+  { code: 'en', native: 'English',   english: 'English' },
+  { code: 'mr', native: 'मराठी',     english: 'Marathi' },
+  { code: 'gu', native: 'ગુજરાતી',   english: 'Gujarati' },
+  { code: 'ta', native: 'தமிழ்',     english: 'Tamil' },
+  { code: 'te', native: 'తెలుగు',    english: 'Telugu' },
+  { code: 'kn', native: 'ಕನ್ನಡ',     english: 'Kannada' },
+  { code: 'ml', native: 'മലയാളം',   english: 'Malayalam' },
+  { code: 'bn', native: 'বাংলা',     english: 'Bengali' },
+  { code: 'or', native: 'ଓଡ଼ିଆ',     english: 'Odia' },
+  { code: 'pa', native: 'ਪੰਜਾਬੀ',    english: 'Punjabi' },
 ];
+
+// Pair languages into rows of 2; last row may have 1 item
+type LangItem = (typeof LANGUAGES)[number];
+type Row = [LangItem, LangItem | null];
+const ROWS: Row[] = [];
+for (let i = 0; i < LANGUAGES.length; i += 2) {
+  ROWS.push([LANGUAGES[i], LANGUAGES[i + 1] ?? null]);
+}
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'LanguageSelect'>;
 
@@ -46,13 +55,13 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
   const [selected, setSelected] = useState<AppLanguage>('hi');
   const [saving, setSaving] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 450, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 60, useNativeDriver: true }),
     ]).start();
@@ -63,26 +72,56 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
     setSaving(true);
     await AsyncStorage.setItem(AGENT_LANG_KEY, selected);
     await i18n.changeLanguage(selected);
-    // First-time: go to Welcome/landing so user can explore before logging in
     navigation.replace('Welcome');
   };
 
+  const LangCard = ({ item, fullWidth }: { item: LangItem; fullWidth?: boolean }) => {
+    const isSelected = selected === item.code;
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          fullWidth ? styles.cardFull : styles.cardHalf,
+          isSelected && styles.cardSelected,
+          pressed && !isSelected && styles.cardPressed,
+        ]}
+        onPress={() => setSelected(item.code)}
+        android_ripple={{ color: 'rgba(16,55,164,0.1)', borderless: false }}
+      >
+        {isSelected && (
+          <View style={styles.checkBadge}>
+            <Text style={styles.checkIcon}>✓</Text>
+          </View>
+        )}
+        <Text style={[styles.nativeText, isSelected && styles.textWhite]} numberOfLines={1}>
+          {item.native}
+        </Text>
+        <Text style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
+          {item.english}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
-      {/* ── Blue header ─────────────────────────────────────── */}
-      <View style={styles.header}>
+      {/* ── Blue header ───────────────────────────────────────── */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.circleTopRight} />
         <View style={styles.circleBottomLeft} />
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+          {/* Logo — same style as login page */}
           <View style={styles.logoRow}>
-            <Image
-              source={require('../../../assets/logo.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <View style={styles.logoBox}>
+              <Image
+                source={require('../../../../packages/shared-mobile/assets/logo.png')}
+                style={styles.logoImg}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.brandName}>BookMyWorker</Text>
           </View>
 
@@ -99,53 +138,28 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
         </Animated.View>
       </View>
 
-      {/* ── Language grid ────────────────────────────────────── */}
+      {/* ── Language grid ─────────────────────────────────────── */}
       <Animated.View
-        style={[
-          styles.gridContainer,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-        ]}
+        style={[styles.gridContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
       >
-        <FlatList
-          data={LANGUAGES}
-          keyExtractor={(item) => item.code}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
+        <ScrollView
           contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const isSelected = selected === item.code;
+        >
+          {ROWS.map((row, idx) => {
+            const [first, second] = row;
+            const isLastSingle = second === null;
             return (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.card,
-                  isSelected && styles.cardSelected,
-                  pressed && !isSelected && styles.cardPressed,
-                ]}
-                onPress={() => setSelected(item.code)}
-                android_ripple={{ color: 'rgba(16,55,164,0.1)', borderless: false }}
-              >
-                {isSelected && (
-                  <View style={styles.checkBadge}>
-                    <Text style={styles.checkIcon}>✓</Text>
-                  </View>
-                )}
-                <Text
-                  style={[styles.nativeText, isSelected && styles.textWhite]}
-                  numberOfLines={1}
-                >
-                  {item.native}
-                </Text>
-                <Text style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
-                  {item.english}
-                </Text>
-              </Pressable>
+              <View key={idx} style={[styles.row, isLastSingle && styles.rowFull]}>
+                <LangCard item={first} fullWidth={isLastSingle} />
+                {second && <LangCard item={second} />}
+              </View>
             );
-          }}
-        />
+          })}
+        </ScrollView>
       </Animated.View>
 
-      {/* ── Continue CTA ─────────────────────────────────────── */}
+      {/* ── Continue CTA ──────────────────────────────────────── */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         {selected ? (
           <Text style={styles.selectedHint}>
@@ -175,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F4FF',
   },
 
-  // ── Header ──────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────────
   header: {
     backgroundColor: BRAND,
     paddingHorizontal: 24,
@@ -186,33 +200,38 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   circleTopRight: {
-    position: 'absolute',
-    top: -40,
-    right: -40,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    position: 'absolute', top: -40, right: -40,
+    width: 130, height: 130, borderRadius: 65,
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   circleBottomLeft: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    position: 'absolute', bottom: -30, left: -30,
+    width: 90, height: 90, borderRadius: 45,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
+
+  // Logo row — matches login page style
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 18,
+    gap: 12,
   },
-  logoImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    marginRight: 10,
+  logoBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoImg: {
+    width: 52,
+    height: 52,
   },
   brandName: {
     color: '#fff',
@@ -220,6 +239,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.3,
   },
+
   heroTitle: {
     color: '#fff',
     fontSize: 24,
@@ -236,39 +256,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 8, height: 8, borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.35)',
   },
   stepDotActive: {
     backgroundColor: '#fff',
-    width: 20,
-    borderRadius: 4,
+    width: 20, borderRadius: 4,
   },
   stepLine: {
-    flex: 1,
-    height: 2,
-    maxWidth: 24,
+    flex: 1, height: 2, maxWidth: 24,
     backgroundColor: 'rgba(255,255,255,0.25)',
     marginHorizontal: 4,
   },
 
-  // ── Grid ─────────────────────────────────────────
-  gridContainer: {
-    flex: 1,
-  },
+  // ── Grid ──────────────────────────────────────────────────────
+  gridContainer: { flex: 1 },
   grid: {
     padding: 18,
     paddingTop: 16,
     paddingBottom: 12,
+    gap: CARD_GAP,
   },
   row: {
-    justifyContent: 'space-between',
-    marginBottom: CARD_GAP,
+    flexDirection: 'row',
+    gap: CARD_GAP,
   },
+  rowFull: {
+    // last single item row — no gap needed
+  },
+
+  // Card base
   card: {
-    width: CARD_SIZE,
     paddingVertical: 16,
     paddingHorizontal: 14,
     backgroundColor: '#fff',
@@ -284,6 +302,12 @@ const styles = StyleSheet.create({
     minHeight: 78,
     justifyContent: 'center',
   },
+  cardHalf: {
+    width: CARD_HALF,
+  },
+  cardFull: {
+    width: CARD_FULL,  // last odd item spans full row
+  },
   cardSelected: {
     backgroundColor: BRAND,
     borderColor: BRAND,
@@ -296,40 +320,22 @@ const styles = StyleSheet.create({
     borderColor: BRAND,
   },
   checkBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    position: 'absolute', top: 8, right: 8,
+    width: 20, height: 20, borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
-  checkIcon: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '900',
-  },
+  checkIcon: { color: '#fff', fontSize: 11, fontWeight: '900' },
   nativeText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 3,
+    fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 3,
   },
   englishLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#9CA3AF',
+    fontSize: 12, fontWeight: '500', color: '#9CA3AF',
   },
-  textWhite: {
-    color: '#fff',
-  },
-  textWhiteFaded: {
-    color: 'rgba(255,255,255,0.70)',
-  },
+  textWhite:       { color: '#fff' },
+  textWhiteFaded:  { color: 'rgba(255,255,255,0.70)' },
 
-  // ── Footer ──────────────────────────────────────
+  // ── Footer ────────────────────────────────────────────────────
   footer: {
     backgroundColor: '#fff',
     paddingTop: 14,
@@ -343,13 +349,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   selectedHint: {
-    fontSize: 13,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 10,
+    fontSize: 13, color: '#6B7280',
+    textAlign: 'center', marginBottom: 10,
   },
-  selectedHintBold: {
-    fontWeight: '700',
-    color: BRAND,
-  },
+  selectedHintBold: { fontWeight: '700', color: BRAND },
 });

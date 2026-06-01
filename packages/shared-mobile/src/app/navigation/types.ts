@@ -43,6 +43,7 @@ export type RootStackParamList = {
   Main: undefined;
   EditProfile: undefined;
   JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean; likedOnly?: boolean } | undefined;
+  JobMarketplaceDetail: { requirementId: string };
   JobDetail: { jobId: string };
   MyApplications: undefined;
   RequirementDetail: { requirementId: string };

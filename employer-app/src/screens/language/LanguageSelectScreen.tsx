@@ -67,11 +67,11 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* ── Blue header ─────────────────────────────────────── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.circleTopRight} />
         <View style={styles.circleBottomLeft} />
 

@@ -21,6 +21,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -155,7 +156,7 @@ interface ReqCardProps {
 const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyInterested, isLiked, onInterest, onLike, onCallPress }: ReqCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t, i18n } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
+  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const visual = getVisual(req.workType, req.subCategory);
   const isDark = theme.mode === 'dark';
 
@@ -171,6 +172,8 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
   const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
   const categoryLabel = getCategoryLabel(req.workType, t);
 
+  const APP_STORE_URL = 'https://play.google.com/store/apps/details?id=com.app.myworker';
+
   const handleShare = async (): Promise<void> => {
     try {
       const msg = [
@@ -180,18 +183,27 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         workers > 0 ? `👷 ${workers} workers needed` : null,
         req.workerNeedDate ? `📅 Start: ${fmtDate(req.workerNeedDate)}` : null,
         '',
-        '📲 Apply on BookMyWorker App:',
-        'https://play.google.com/store/apps/details?id=com.app.myworker&pcampaignid=web_share',
+        '📲 Download BookMyWorker App & Apply Now:',
+        APP_STORE_URL,
       ].filter((l) => l !== null).join('\n');
-      await Share.share({ message: msg, title: `Job: ${jobTitle}` });
+      // Pass url separately so iOS share sheet shows it as a clickable link
+      await Share.share({ message: msg, url: APP_STORE_URL, title: `Job: ${jobTitle}` });
     } catch { /* user dismissed */ }
   };
 
   const cardBg = isDark ? theme.colors.card : '#FFFFFF';
   const borderCol = isDark ? theme.colors.border : '#E8EEF6';
 
+  const handleCardPress = (): void => {
+    navigation.navigate('JobMarketplaceDetail', { requirementId: req._id });
+  };
+
   return (
-    <View style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }]}>
+    <TouchableOpacity
+      onPress={handleCardPress}
+      activeOpacity={0.97}
+      style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }]}
+    >
 
       {/* ── Top: logo + title + like ─────────────────────────── */}
       <View style={styles.cardTop}>
@@ -295,45 +307,16 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         )}
       </View>
 
-      {/* ── Expanded details ─────────────────────────────────── */}
-      {expanded && (
-        <View style={[styles.expandedBlock, { borderTopColor: theme.colors.border }]}>
-          {[
-            [t('detailEmployer'), req.employerName],
-            [t('detailStartDate'), fmtDate(req.workerNeedDate)],
-            [t('detailTiming'), req.inTime && req.outTime ? `${fmtTime(req.inTime)} – ${fmtTime(req.outTime)}` : null],
-            [t('detailWorkLocation'), req.workLocation],
-            [t('detailRemarks'), req.remarks],
-            req.ERN_NUMBER ? [t('detailErn'), req.ERN_NUMBER] : null,
-          ].filter((row): row is [string, string] => Boolean(row) && Boolean(row![1])).map(([k, v]) => (
-            <View key={k} style={styles.detailRow}>
-              <AppText variant="caption" color={theme.colors.mutedText} style={styles.detailKey}>{k}:</AppText>
-              <AppText variant="caption" color={theme.colors.text} style={{ flex: 1 }} numberOfLines={2}>{v}</AppText>
-            </View>
-          ))}
-        </View>
-      )}
-
       {/* ── Action row ───────────────────────────────────────── */}
       <View style={[styles.actionRow, { borderTopColor: isDark ? theme.colors.border : '#F1F5F9' }]}>
-        <TouchableOpacity
-          onPress={() => setExpanded((v) => !v)}
-          style={styles.detailsBtn}
-          activeOpacity={0.7}
-        >
-          <AppText style={[styles.detailsBtnText, { color: theme.colors.mutedText }]}>
-            {expanded ? `${t('hideDetails')} ▲` : `${t('seeDetails')} ▼`}
-          </AppText>
-        </TouchableOpacity>
-
         <View style={styles.actionRight}>
           <TouchableOpacity
             onPress={() => { void handleShare(); }}
             style={[styles.shareBtn, { borderColor: isDark ? theme.colors.border : '#E2E8F0', backgroundColor: isDark ? theme.colors.surface : '#F8FAFC' }]}
             activeOpacity={0.75}
           >
-            <AppText style={styles.shareBtnIcon}>📤</AppText>
-            <AppText style={[styles.shareBtnLabel, { color: theme.colors.mutedText }]}>{t('share')}</AppText>
+            <Ionicons name="share-social" size={14} color={isDark ? theme.colors.mutedText : '#64748B'} />
+            <AppText style={[styles.shareBtnLabel, { color: isDark ? theme.colors.mutedText : '#64748B' }]}>{t('shareWithFriends')}</AppText>
           </TouchableOpacity>
 
           {/* Call button — only visible when employer has an active subscription.
@@ -356,7 +339,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
               style={styles.viewContactBtn}
             >
               <AppText style={styles.viewContactIcon}>👁️</AppText>
-              <AppText style={styles.viewContactText}>View Contact</AppText>
+              <AppText style={styles.viewContactText}>{t('viewContact')}</AppText>
             </TouchableOpacity>
           )}
 
@@ -373,7 +356,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
           )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -389,6 +372,7 @@ interface ContactModalProps {
 
 const ContactModal = ({ visible, name, phone, loading, error, onClose }: ContactModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -409,8 +393,8 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                 <AppText style={{ fontSize: 32 }}>📞</AppText>
               </View>
-              <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text, marginBottom: 4, textAlign: 'center' }}>{name || 'Employer'}</AppText>
-              <AppText style={{ fontSize: 12, color: theme.colors.mutedText, marginBottom: 20 }}>Employer Contact</AppText>
+              <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text, marginBottom: 4, textAlign: 'center' }}>{name || t('detailEmployer')}</AppText>
+              <AppText style={{ fontSize: 12, color: theme.colors.mutedText, marginBottom: 20 }}>{t('employerContact')}</AppText>
 
               {/* Phone number card */}
               <View style={{
@@ -429,7 +413,7 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
                 {loading ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <ActivityIndicator size="small" color="#1037A4" />
-                    <AppText style={{ fontSize: 14, color: '#1037A4', fontWeight: '600' }}>Fetching contact…</AppText>
+                    <AppText style={{ fontSize: 14, color: '#1037A4', fontWeight: '600' }}>{t('fetchingContact')}</AppText>
                   </View>
                 ) : error ? (
                   <View style={{ alignItems: 'center', gap: 4 }}>
@@ -438,22 +422,22 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
                   </View>
                 ) : phone ? (
                   <View style={{ alignItems: 'center', gap: 4 }}>
-                    <AppText style={{ fontSize: 11, fontWeight: '700', color: '#1037A4', letterSpacing: 0.5, textTransform: 'uppercase' }}>Mobile Number</AppText>
+                    <AppText style={{ fontSize: 11, fontWeight: '700', color: '#1037A4', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t('mobileNumber')}</AppText>
                     <AppText style={{ fontSize: 26, fontWeight: '900', color: '#1037A4', letterSpacing: 2 }}>{phone}</AppText>
                   </View>
                 ) : (
                   <View style={{ alignItems: 'center', gap: 4 }}>
                     <AppText style={{ fontSize: 20 }}>📵</AppText>
-                    <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600' }}>Phone number not available</AppText>
+                    <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600' }}>{t('phoneUnavailable')}</AppText>
                   </View>
                 )}
               </View>
             </View>
 
             <View style={styles.modalActions}>
-              <AppButton title="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <AppButton title={t('cancel')} variant="secondary" onPress={onClose} style={{ flex: 1 }} />
               <AppButton
-                title="📞 Call Now"
+                title={`📞 ${t('callNow')}`}
                 onPress={() => { if (phone) void Linking.openURL(`tel:${phone}`); onClose(); }}
                 style={{ flex: 1 }}
                 disabled={!phone || loading}
@@ -720,9 +704,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       setInterestedIds((prev) => new Set([...prev, reqId]));
       setWageModalReq(null);
       void queryClient.invalidateQueries({ queryKey: ['requirements-role'] });
-      showAlert('Applied! 🎉', 'Your application was submitted successfully.');
+      showAlert(t('alertAppliedTitle'), t('alertAppliedMsg'));
     },
-    onError: () => showAlert('Error', 'Could not submit application. Please try again.'),
+    onError: () => showAlert(t('alertError'), t('alertSubmitError')),
   });
 
   const handleInterest = useCallback((req: RawRequirement): void => {
@@ -1171,8 +1155,10 @@ const styles = StyleSheet.create({
     borderRadius: 999, borderWidth: 1,
     paddingHorizontal: 11, paddingVertical: 5,
     flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  chipText: { fontSize: 11.5, fontWeight: '600', flexShrink: 0 },
+  chipText: { fontSize: 11.5, fontWeight: '600' },
 
   // Expanded
   expandedBlock: { borderTopWidth: StyleSheet.hairlineWidth, padding: 14, gap: 8 },
@@ -1181,23 +1167,23 @@ const styles = StyleSheet.create({
 
   // Action row
   actionRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
     paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth,
     marginTop: 4,
   },
   detailsBtn: { paddingVertical: 4, paddingHorizontal: 4 },
   detailsBtnText: { fontSize: 11, fontWeight: '600' },
-  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
+  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10, flexShrink: 0 },
   shareBtnIcon: { fontSize: 13, lineHeight: 17 },
   shareBtnLabel: { fontSize: 12, fontWeight: '600' },
   viewContactBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    borderRadius: 10, paddingHorizontal: 8, paddingVertical: 8,
-    backgroundColor: '#1037A4', flexShrink: 1,
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8,
+    backgroundColor: '#1037A4', flexShrink: 0,
   },
   viewContactIcon: { fontSize: 13, lineHeight: 17 },
-  viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', flexShrink: 0 },
   applyBtn: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, flexShrink: 0 },
   applyBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 

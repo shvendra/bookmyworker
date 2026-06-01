@@ -37,6 +37,7 @@ import { SupportScreen } from '../../features/profile/screens/SupportScreen';
 import { SwitchAccountScreen } from '../../features/profile/screens/SwitchAccountScreen';
 import { TermsPrivacyScreen } from '../../features/profile/screens/TermsPrivacyScreen';
 import { JobMarketplaceScreen } from '../../features/jobs/screens/JobMarketplaceScreen';
+import { JobMarketplaceDetailScreen } from '../../features/jobs/screens/JobMarketplaceDetailScreen';
 import { JobDetailScreen } from '../../features/jobs/screens/JobDetailScreen';
 import { MyApplicationsScreen } from '../../features/jobs/screens/MyApplicationsScreen';
 import { RequirementDetailScreen } from '../../features/jobs/screens/RequirementDetailScreen';
@@ -227,6 +228,7 @@ export const AppNavigator = (): React.JSX.Element => {
             </Stack.Screen>
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JobMarketplace" component={JobMarketplaceScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="JobMarketplaceDetail" component={JobMarketplaceDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="RequirementDetail" component={RequirementDetailScreen} options={{ animation: 'slide_from_right' }} />

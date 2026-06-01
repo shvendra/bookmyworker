@@ -4,3 +4,10 @@
 android/app/build/
 android/.gradle/
 .gradle/
+
+# Large dirs not needed on EAS (it installs its own deps)
+node_modules/
+dist/
+next/
+.expo/
+ios/Pods/

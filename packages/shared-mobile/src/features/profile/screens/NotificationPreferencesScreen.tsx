@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -29,27 +30,28 @@ const DEFAULT_PREFS: NotificationPreferences = {
 
 interface PrefRow {
   key: keyof NotificationPreferences;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
 }
 
 const AGENT_PREF_ROWS: PrefRow[] = [
-  { key: 'newRequirement',   label: 'New Requirements',    description: 'When an employer posts a new job requirement' },
-  { key: 'kycUpdate',        label: 'KYC Status',          description: 'When your KYC verification status changes' },
-  { key: 'chat',             label: 'Chat Messages',       description: 'New messages in your conversations' },
-  { key: 'promotions',       label: 'Promotions & Updates',description: 'Offers, tips, and platform announcements' },
+  { key: 'newRequirement',   labelKey: 'notifPrefNewReqLabel',     descKey: 'notifPrefNewReqDesc' },
+  { key: 'kycUpdate',        labelKey: 'notifPrefKycLabel',        descKey: 'notifPrefKycDesc' },
+  { key: 'chat',             labelKey: 'notifPrefChatLabel',       descKey: 'notifPrefChatDesc' },
+  { key: 'promotions',       labelKey: 'notifPrefPromoLabel',      descKey: 'notifPrefPromoDesc' },
 ];
 
 const EMPLOYER_PREF_ROWS: PrefRow[] = [
-  { key: 'callOutcome',      label: 'Call Outcome Updates',description: 'When an employer updates the outcome of a call with you' },
-  { key: 'expressedInterest',label: 'Interest Expressed',  description: 'When a worker shows interest in your requirement' },
-  { key: 'kycUpdate',        label: 'KYC Status',          description: 'When your KYC verification status changes' },
-  { key: 'chat',             label: 'Chat Messages',       description: 'New messages in your conversations' },
-  { key: 'promotions',       label: 'Promotions & Updates',description: 'Offers, tips, and platform announcements' },
+  { key: 'callOutcome',      labelKey: 'notifPrefCallOutcomeLabel',descKey: 'notifPrefCallOutcomeDesc' },
+  { key: 'expressedInterest',labelKey: 'notifPrefInterestLabel',   descKey: 'notifPrefInterestDesc' },
+  { key: 'kycUpdate',        labelKey: 'notifPrefKycLabel',        descKey: 'notifPrefKycDesc' },
+  { key: 'chat',             labelKey: 'notifPrefChatLabel',       descKey: 'notifPrefChatDesc' },
+  { key: 'promotions',       labelKey: 'notifPrefPromoLabel',      descKey: 'notifPrefPromoDesc' },
 ];
 
 export const NotificationPreferencesScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const appType = (route.params as { appType?: string } | undefined)?.appType;
@@ -82,7 +84,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
       await notificationApi.savePreferences({ [key]: newVal });
     } catch {
       setPrefs((p) => ({ ...p, [key]: !newVal }));
-      showAlert('Error', 'Failed to update preference. Please try again.');
+      showAlert(t('alertError'), t('notifPrefUpdateError'));
     } finally {
       setSaving(null);
     }
@@ -91,16 +93,15 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Notification Preferences" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('notifPrefTitle')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <AppText variant="title">Notification Preferences</AppText>
         <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
-          Choose which notifications you want to receive.
+          {t('notifPrefSubtitle')}
         </AppText>
       </View>
 
@@ -117,9 +118,9 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
               ]}
             >
               <View style={styles.rowText}>
-                <AppText variant="label">{row.label}</AppText>
+                <AppText variant="label">{t(row.labelKey)}</AppText>
                 <AppText variant="caption" color={theme.colors.mutedText} style={styles.desc}>
-                  {row.description}
+                  {t(row.descKey)}
                 </AppText>
               </View>
               <Switch
@@ -135,7 +136,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
       )}
 
       <AppText variant="caption" color={theme.colors.mutedText} style={styles.note}>
-        Changes are saved immediately. You can update these anytime.
+        {t('notifPrefSavedNote')}
       </AppText>
     </ScrollView>
     </View>

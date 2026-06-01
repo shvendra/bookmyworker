@@ -290,7 +290,7 @@ const HCatSlider = ({
                   {cat.jobTypes != null && (
                     <View style={[hStyles.jobPill, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.3)' }]}>
                       <AppText style={hStyles.jobPillTxt}>
-                        {cat.jobTypes} job types
+                        {t('catJobTypes', { count: cat.jobTypes })}
                       </AppText>
                     </View>
                   )}

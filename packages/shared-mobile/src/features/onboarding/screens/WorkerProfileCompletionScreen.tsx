@@ -11,6 +11,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Cross-device status bar height helper.
+// On some Android devices insets.top returns 0 even though the status bar is
+// visible. StatusBar.currentHeight is the reliable Android fallback.
+// Math.max ensures we never clip content behind the status bar.
+const getStatusBarHeight = (insetsTop: number): number =>
+  Math.max(insetsTop, Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0);
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -83,7 +90,7 @@ const Chip = ({ label, selected, onPress, color }: {
   );
 };
 const chipS = StyleSheet.create({
-  chip: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8, marginBottom: 8 },
+  chip: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8, marginBottom: 8, flexShrink: 0 },
   text: { fontSize: 13, fontWeight: '600' },
 });
 
@@ -291,7 +298,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             activeOpacity={0.85}
             style={[doneS.btn, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
           >
-            <AppText style={doneS.btnTxt}>{t('wizard_goDashboard')} →</AppText>
+            <AppText style={doneS.btnTxt}>{t('wizard_findWork')} →</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -304,7 +311,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
 
         {/* ── Header ── */}
-        <View style={[styles.header, { paddingTop: insets.top + 14, backgroundColor: theme.colors.primaryDark }]}>
+        <View style={[styles.header, { paddingTop: getStatusBarHeight(insets.top) + 14, backgroundColor: theme.colors.primaryDark }]}>
           <View style={styles.stepRow}>
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <View key={i} style={[styles.stepDot, (i + 1) === step && styles.stepDotActive, (i + 1) < step && styles.stepDotDone]} />
@@ -327,6 +334,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_genderQ')}</AppText>
+              <AppText style={[styles.hint, { color: theme.colors.mutedText, marginBottom: 14 }]}>{t('wpc_genderHint')}</AppText>
               <View style={styles.chipRow}>
                 {GENDER_OPTIONS.map((g) => (
                   <Chip
@@ -429,16 +437,29 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
                 <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{t('wpc_subCatRequired')}</AppText>
               )}
 
-              <View style={[styles.chipRow, { marginTop: 12 }]}>
-                {filteredSubs.map((sub) => (
-                  <Chip
-                    key={sub.value}
-                    label={getSubLabel(sub, lang)}
-                    selected={selectedSubs.includes(sub.value)}
-                    onPress={() => toggleSub(sub.value)}
-                    color={theme.colors.primary}
-                  />
-                ))}
+              <View style={[styles.subGrid, { marginTop: 12 }]}>
+                {filteredSubs.map((sub) => {
+                  const sel = selectedSubs.includes(sub.value);
+                  return (
+                    <TouchableOpacity
+                      key={sub.value}
+                      onPress={() => toggleSub(sub.value)}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.subCard,
+                        {
+                          backgroundColor: sel ? theme.colors.primary : (isDark ? theme.colors.surface1 : '#F1F5F9'),
+                          borderColor: sel ? theme.colors.primary : (isDark ? theme.colors.border : '#DDE3F0'),
+                        },
+                      ]}
+                    >
+                      <AppText style={[styles.subLabel, { color: sel ? '#fff' : theme.colors.text }]} numberOfLines={2}>
+                        {getSubLabel(sub, lang)}
+                      </AppText>
+                      {sel && <AppText style={styles.subCheck}>✓</AppText>}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {selectedSubs.length > 0 && (
@@ -636,6 +657,11 @@ const styles = StyleSheet.create({
   catLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center', lineHeight: 16 },
   catCheck: { fontSize: 14, color: '#fff', fontWeight: '800', marginTop: 4 },
 
+  subGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  subCard:  { width: '47%', borderWidth: 1.5, borderRadius: 14, padding: 10, alignItems: 'center', justifyContent: 'center', minHeight: 56 },
+  subLabel: { fontSize: 12.5, fontWeight: '600', textAlign: 'center', lineHeight: 17 },
+  subCheck: { fontSize: 12, color: '#fff', fontWeight: '800', marginTop: 2 },
+
   searchBox: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14,
     paddingHorizontal: 14, paddingVertical: 11, marginTop: 12, gap: 8,
@@ -682,12 +708,12 @@ const doneS = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   emoji: { fontSize: 52 },
-  title: { fontSize: 26, fontWeight: '900', textAlign: 'center', letterSpacing: -0.4 },
+  title: { fontSize: 24, fontWeight: '800', textAlign: 'center', lineHeight: 34 },
   sub:   { fontSize: 14, textAlign: 'center', lineHeight: 22, paddingHorizontal: 4 },
   btn:   {
     marginTop: 8, borderRadius: 16, width: '100%', height: 56,
     alignItems: 'center', justifyContent: 'center',
     shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8,
   },
-  btnTxt:{ color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+  btnTxt:{ color: '#fff', fontSize: 16, fontWeight: '800' },
 });

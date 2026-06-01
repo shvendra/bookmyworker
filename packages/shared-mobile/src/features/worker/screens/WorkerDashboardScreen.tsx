@@ -757,7 +757,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
                       onApply={() => setWageModalReq(req)}
                       onLike={() => handleLike(req._id)}
                       onShare={() => { void handleShare(req); }}
-                      onViewAll={() => navigation.navigate('JobMarketplace', { workType: req.workType })}
+                      onViewAll={() => navigation.navigate('JobMarketplaceDetail', { requirementId: req._id })}
                     />
                   ))}
                   <ViewAllCard onPress={() => navigation.navigate('JobMarketplace')} />
