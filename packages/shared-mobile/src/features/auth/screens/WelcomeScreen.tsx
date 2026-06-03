@@ -112,10 +112,10 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
               ]}
             >
               <AppText style={styles.featureIcon}>{feat.icon}</AppText>
-              <AppText variant="labelSm" color={theme.colors.text} style={styles.featureTitle}>
+              <AppText variant="labelSm" color={theme.colors.text} numberOfLines={2} style={styles.featureTitle}>
                 {feat.title}
               </AppText>
-              <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2} style={styles.featureDesc}>
+              <AppText variant="caption" color={theme.colors.mutedText} style={styles.featureDesc}>
                 {feat.desc}
               </AppText>
             </View>
@@ -185,10 +185,10 @@ const styles = StyleSheet.create({
     flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -24, paddingTop: 28, paddingHorizontal: 20, paddingBottom: 20,
   },
-  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24, flex: 1, alignContent: 'flex-start' },
-  featureCard: { width: (W - 40 - 10) / 2, borderRadius: 16, padding: 14, borderWidth: 1, gap: 6 },
+  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24, alignContent: 'flex-start' },
+  featureCard: { width: (W - 40 - 10) / 2, minHeight: 168, borderRadius: 16, padding: 14, borderWidth: 1, gap: 6 },
   featureIcon: { fontSize: 26, lineHeight: 32 },
-  featureTitle: { lineHeight: 18 },
+  featureTitle: { lineHeight: 18, minHeight: 36 },
   featureDesc: { lineHeight: 16 },
 
   cta: { gap: 10 },

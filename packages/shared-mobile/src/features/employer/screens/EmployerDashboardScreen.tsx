@@ -1198,8 +1198,12 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   }, [all, reqTab]);
 
   const nearbyAgents: RawAgent[] = nearbyQuery.data?.rawAgents ?? [];
-  const nearbyTotal = (nearbyQuery.data?.total ?? 0) + 150;
-  const displayedNearby = useMemo(() => nearbyAgents.slice(0, NEARBY_SHOW), [nearbyAgents]);
+  const nearbyTotal = nearbyQuery.data?.total ?? 0;
+  // Only surface workers that have a profile photo (skip initials-only avatars).
+  const displayedNearby = useMemo(
+    () => nearbyAgents.filter((a) => !!a.profilePhoto).slice(0, NEARBY_SHOW),
+    [nearbyAgents],
+  );
 
   const interestedCount = useMemo(
     () => all.reduce((sum, r) => sum + (r.intrestedAgents?.length ?? 0), 0),
@@ -1365,7 +1369,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
         <AppText style={[nws.sub, { color: theme.colors.mutedText }]}>
-          {t('verifiedWorkersIn', { location: user?.district ?? user?.state ?? 'your area' })}
+          {t('verifiedWorkersIn', { location: user?.district ?? user?.state ?? t('dashYourArea') })}
         </AppText>
 
         {nearbyQuery.isLoading ? (
@@ -1374,7 +1378,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </View>
         ) : displayedNearby.length === 0 ? (
           <View style={nws.emptyWrap}>
-            <AppText style={[nws.emptyTxt, { color: theme.colors.mutedText }]}>{t('noWorkersNear', { location: user?.district ?? 'your location' })}</AppText>
+            <AppText style={[nws.emptyTxt, { color: theme.colors.mutedText }]}>{t('noWorkersNear', { location: user?.district ?? t('dashYourArea') })}</AppText>
             <TouchableOpacity onPress={handleWorkerSearchNavigate} style={nws.browseBtn} activeOpacity={0.8}>
               <AppText style={nws.browseBtnTxt}>{t('browseAllWorkers')}</AppText>
             </TouchableOpacity>
@@ -1421,7 +1425,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         {/* Card header */}
         <View style={reqCard.header}>
           <View style={reqCard.headerLeft}>
-            <AppText style={[reqCard.title, { color: theme.colors.text }]}>{t('newRequirements')}</AppText>
+            <AppText style={[reqCard.title, { color: theme.colors.text }]} numberOfLines={1}>{t('newRequirements')}</AppText>
             {all.length > 0 && (
               <View style={[reqCard.countPill, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
                 <AppText style={[reqCard.countPillTxt, { color: theme.colors.primary }]}>{all.length}</AppText>
@@ -1432,7 +1436,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             )}
           </View>
           <TouchableOpacity onPress={handlePost} activeOpacity={0.8} style={[reqCard.postBtn, { backgroundColor: theme.colors.primary }]}>
-            <AppText style={reqCard.postBtnTxt}>＋ {t('postRequirement')}</AppText>
+            <AppText style={reqCard.postBtnTxt} numberOfLines={1}>＋ {t('postShort')}</AppText>
           </TouchableOpacity>
         </View>
 
@@ -1609,7 +1613,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
       {/* ── Support Footer ── */}
       <View style={[sf.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <AppText style={[sf.sectionLabel, { color: theme.colors.mutedText }]}>Support</AppText>
+        <AppText style={[sf.sectionLabel, { color: theme.colors.mutedText }]}>{t('support')}</AppText>
         {[
           { emoji: '🎧', title: t('needHelp'),         desc: t('supportTeamReady'),            iconBg: '#EBF1FF', iconColor: '#1037A4' },
           { emoji: '💬', title: t('support'),           desc: config.contact.supportEmail,       iconBg: '#ECFDF5', iconColor: '#059669' },
@@ -1830,8 +1834,8 @@ const nws = StyleSheet.create({
   card:         { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20 },
   header:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 4 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  title:        { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  countPill:    { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa' },
+  title:        { fontSize: 15, fontWeight: '800', color: '#0f172a', flexShrink: 1 },
+  countPill:    { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa', flexShrink: 0 },
   countPillTxt: { fontSize: 11, fontWeight: '700', color: '#ea580c' },
   sub:          { fontSize: 11, paddingHorizontal: 14, paddingBottom: 6 },
   viewAllTxt:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
@@ -1991,14 +1995,14 @@ const reqCard = StyleSheet.create({
   wrap:        { borderRadius: 16, borderWidth: 1, marginBottom: 14, overflow: 'hidden', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
 
   // Header row
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
-  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  title:       { fontSize: 15, fontWeight: '800', letterSpacing: -0.1 },
-  countPill:   { borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
+  title:       { flexShrink: 1, fontSize: 15, lineHeight: 20, fontWeight: '800', letterSpacing: -0.1 },
+  countPill:   { borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0 },
   countPillTxt:{ fontSize: 11, fontWeight: '800' },
 
   // Post button
-  postBtn:     { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  postBtn:     { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexShrink: 0 },
   postBtnTxt:  { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 
   // Tab row

@@ -86,19 +86,22 @@ const C = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+type SubEntry = { label: string; value: string; [field: string]: string };
 interface CatEntry {
   label: string;
   value: string;
-  subcategories?: Array<{ label: string; value: string }>;
+  subcategories?: SubEntry[];
 }
 const CATEGORIES = WORKER_CATEGORIES as CatEntry[];
 
 // Top-level category names have full 11-language translations under the `cat_*`
 // keys (default `translation` namespace, shared with the agent app). categories.json
-// only ships EN/HI/MR/GU labels, so we translate the 13 category NAMES via these
-// keys while keeping the English label as the stored filter value (the API + the
-// subcategory lookup both still match on the English label). Subcategories remain
-// English for now (their 11-language source does not exist yet).
+// ships per-language label fields (label/hindilabel/marathilabel/gujaratilabel and
+// now tamillabel/telugulabel/kannadalabel/malayalamlabel/banglalabel/odialabel/
+// punjabilabel) for all 13 categories AND all 269 subcategories. We translate the 13
+// category NAMES via the `cat_*` keys, and the subcategories via `subcatDisplay`
+// (below) reading those JSON fields — keeping the English label as the stored filter
+// value (the API + worker areasOfWork still match on the English label).
 const CAT_KEY_BY_VALUE: Record<string, string> = {
   construction_project_workers: 'cat_construction',
   manufacturing_industrial_workers: 'cat_manufacturing',
@@ -127,6 +130,53 @@ const CAT_KEY_BY_LABEL: Record<string, string> = Object.fromEntries(
 const catDisplay = (label: string): string => {
   const key = CAT_KEY_BY_LABEL[label];
   return key ? i18n.t(key) : label;
+};
+
+/** Map active i18n language → the categories.json subcategory label field. */
+const SUBCAT_LANG_FIELD: Record<string, string> = {
+  hi: 'hindilabel', mr: 'marathilabel', gu: 'gujaratilabel', ta: 'tamillabel',
+  te: 'telugulabel', kn: 'kannadalabel', ml: 'malayalamlabel', bn: 'banglalabel',
+  or: 'odialabel', pa: 'punjabilabel',
+};
+/** English subcategory label (case-insensitive) → its categories.json entry. */
+const SUBCAT_BY_LABEL: Map<string, SubEntry> = (() => {
+  const m = new Map<string, SubEntry>();
+  CATEGORIES.forEach((c) =>
+    (c.subcategories ?? []).forEach((s) => {
+      if (s?.label) m.set(String(s.label).trim().toLowerCase(), s);
+    }),
+  );
+  return m;
+})();
+/** Translate a subcategory's English label to the active language using the
+ *  per-language fields in categories.json. Display-only — the stored filter value
+ *  and worker areasOfWork keep the English label. Falls back to English when a
+ *  translation (or the subcategory) is missing. Reactive via useTranslation. */
+const subcatDisplay = (label: string): string => {
+  if (!label) return label;
+  const s = SUBCAT_BY_LABEL.get(String(label).trim().toLowerCase());
+  if (!s) return label;
+  const lang = (i18n.language || 'en').split('-')[0];
+  const field = SUBCAT_LANG_FIELD[lang];
+  return (field && s[field]) ? s[field] : (s.label || label);
+};
+
+/** Worker-card meta values (gender, qualification/sub-type, agent-type) are stored
+ *  as fixed English enums on the backend. Translate the DISPLAY via employer-ns
+ *  keys while the stored value (used for filtering/API) stays English. Unmapped
+ *  values fall back to raw. */
+const META_KEY_BY_VALUE: Record<string, string> = {
+  Male: 'ws_male', Female: 'ws_female', Other: 'ws_other',
+  'ITI/Diploma': 'ws_iti_diploma', Graduate: 'ws_graduate',
+  'Group worker supplier':     'ws_agentType_group',
+  'Skilled worker supplier':   'ws_agentType_skilled',
+  'Unskilled worker supplier': 'ws_agentType_unskilled',
+  'Contract worker supplier':  'ws_agentType_contract',
+};
+const metaDisplay = (val?: string | null): string => {
+  if (!val) return '';
+  const key = META_KEY_BY_VALUE[val];
+  return key ? i18n.t(`employer:${key}`) : val;
 };
 
 interface WorkerFilters {
@@ -405,7 +455,7 @@ const pm = StyleSheet.create({
   searchIcon: { fontSize: 18, paddingHorizontal: 12 },
   searchInput:{ flex: 1, paddingVertical: 12, fontSize: 15 },
   item:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  itemText:   { fontSize: 15 },
+  itemText:   { flex: 1, fontSize: 15, marginRight: 12 },
   checkCircle:{ width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
   checkTxt:   { color: WHITE, fontSize: 12, fontWeight: '800' },
 });
@@ -630,7 +680,7 @@ const FilterSheet = ({
             {f.workerType && subCatLabels.length > 0 && (
               <DropField
                 label={t('ws_sub_category')}
-                value={f.subCategory}
+                value={f.subCategory ? subcatDisplay(f.subCategory) : ''}
                 placeholder={t('ws_all_sub_categories')}
                 onPress={() => setPicker('subcat')}
               />
@@ -829,6 +879,7 @@ const FilterSheet = ({
           onSelect={(v) => set('subCategory', v)}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_sub_categories_opt')}
+          labelFor={subcatDisplay}
         />
         <PickerModal
           visible={picker === 'state'}
@@ -1033,7 +1084,7 @@ const co = StyleSheet.create({
   closeBtn:    { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   closeTxt:    { fontSize: 13, fontWeight: '700' },
   item:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  itemText:    { fontSize: 15 },
+  itemText:    { flex: 1, fontSize: 15, marginRight: 12 },
   checkCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
 });
 
@@ -1111,8 +1162,6 @@ const AgentCard = ({
               <AppText style={[wc.initials, { color: accentColor }]}>{initials}</AppText>
             </View>
           )}
-          {/* Green availability dot — bottom-left */}
-          <View style={wc.statusDot} />
           {agent.veryfiedBage && (
             <View style={wc.verifiedBadge}>
               <AppText style={wc.verifiedTxt}>✓</AppText>
@@ -1133,15 +1182,15 @@ const AgentCard = ({
           )}
 
           <View style={wc.metaRow}>
-            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
-            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
-            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{agent.gender}</AppText></View>}
-            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
+            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
+            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
+            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
+            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText numberOfLines={1} style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
           </View>
 
           {!!(agent.workerSubType || agent.agentType) && (
             <View style={[wc.subTypeBadge, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '50' }]}>
-              <AppText style={[wc.subTypeTxt, { color: theme.colors.warning }]}>{agent.workerSubType ?? agent.agentType}</AppText>
+              <AppText style={[wc.subTypeTxt, { color: theme.colors.warning }]}>{metaDisplay(agent.workerSubType ?? agent.agentType)}</AppText>
             </View>
           )}
         </View>
@@ -1168,7 +1217,7 @@ const AgentCard = ({
           {matchedAreas.map((area, idx) => (
             <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
               <AppText style={[wc.skillChipTxt, { color: theme.colors.text }]}>
-                {area.charAt(0).toUpperCase() + area.slice(1)}
+                {subcatDisplay(area)}
               </AppText>
             </View>
           ))}
@@ -1273,7 +1322,6 @@ const wc = StyleSheet.create({
   avatar:         { width: 46, height: 46, borderRadius: 23, borderWidth: 2 },
   avatarFallback: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   initials:       { fontSize: 17, fontWeight: '800' },
-  statusDot:      { position: 'absolute', bottom: 0, left: 0, width: 13, height: 13, borderRadius: 6.5, backgroundColor: GREEN, borderWidth: 2, borderColor: WHITE },
   verifiedBadge:  { position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: WHITE },
   verifiedTxt:    { color: WHITE, fontSize: 7, fontWeight: '900' },
 
@@ -1283,8 +1331,8 @@ const wc = StyleSheet.create({
   roleTxt:        { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
   location:       { fontSize: 11, marginBottom: 5 },
   metaRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
-  metaChipTxt:    { fontSize: 11, fontWeight: '600' },
+  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, flexShrink: 0 },
+  metaChipTxt:    { fontSize: 11, fontWeight: '600', lineHeight: 16 },
   wageChip:       { backgroundColor: GREEN_SOFT },
   wageTxt:        { color: GREEN, fontWeight: '800' },
 
@@ -1420,9 +1468,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
   // ── Plan worker-search scope gate ──────────────────────────────────────────
   const plan = usePlanFeatures();
-  // Match CRM (VerifiedAgentsPage): a non-subscriber is locked to their own
-  // district; subscribers get their plan's scope. 'india' = unrestricted.
-  const scope = plan.isSubscribed ? plan.workerSearchScope : 'district'; // 'district' | 'state' | 'india'
+  // Non-subscriber: default to their own STATE only (state pre-selected, district
+  // left open). Subscribers get their plan's scope. 'india' = unrestricted.
+  const scope = plan.isSubscribed ? plan.workerSearchScope : 'state'; // 'district' | 'state' | 'india'
   // Only constrain when we actually know the user's location (graceful fallback).
   const districtScoped = scope === 'district' && !!userState && !!userDistrict;
   const stateScoped    = scope === 'state'    && !!userState;
@@ -1674,7 +1722,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     },
     appliedFilters.subCategory && {
       key: 'sc',
-      label: appliedFilters.subCategory,
+      label: subcatDisplay(appliedFilters.subCategory),
       onRemove: () => setAppliedFilters((p) => ({ ...p, subCategory: '' })),
     },
     appliedFilters.state && appliedFilters.state !== userState && {
@@ -1829,7 +1877,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
                   activeOpacity={0.75}
                 >
                   <AppText style={[sc.chipTxt, { color: active ? WHITE : theme.colors.mutedText }, active && sc.chipTxtActive]}>
-                    {chip.label}{'  '}{chip.count}
+                    {subcatDisplay(chip.label)}{'  '}{chip.count}
                   </AppText>
                 </TouchableOpacity>
               );
@@ -1863,10 +1911,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
       {/* ── Result count + sort bar ── */}
       {!isLoading && !isError && displayedAgents.length > 0 && (
-        <View style={[sc.resultBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
-          <AppText style={[sc.resultCount, { color: theme.colors.text }]}>
+        <View style={[sc.resultBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border, justifyContent: 'flex-end' }]}>
+          {/* Worker count hidden for now */}
+          {/* <AppText style={[sc.resultCount, { color: theme.colors.text }]}>
             {t('ws_workers_found', { count: displayedAgents.length })}
-          </AppText>
+          </AppText> */}
           <TouchableOpacity onPress={() => setShowFilters(true)} style={sc.sortBtn} activeOpacity={0.8}>
             <AppText style={sc.sortIcon}>⇅</AppText>
             <AppText style={sc.sortTxt}>{t('ws_relevance')}</AppText>

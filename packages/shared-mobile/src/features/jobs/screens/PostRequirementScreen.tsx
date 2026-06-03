@@ -782,6 +782,7 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 );
 
 // ─── Subscription Gate ────────────────────────────────────────────────────────
+const GATE_BRAND = '#1037A4';
 const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -795,37 +796,82 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={[styles.typeContent, { alignItems: 'center', justifyContent: 'center', flexGrow: 1 }]}
+      contentContainerStyle={gate.content}
+      showsVerticalScrollIndicator={false}
     >
-      <View style={{ alignItems: 'center', marginTop: 20 }}>
-        <AppText style={{ fontSize: 56, marginBottom: 16 }}>🔐</AppText>
-        <AppText variant="title" style={{ textAlign: 'center', color: theme.colors.text, marginBottom: 8 }}>
-          {t('jp_gateTitle')}
-        </AppText>
-        <AppText variant="body" color={theme.colors.mutedText} style={{ textAlign: 'center', lineHeight: 22, marginBottom: 28 }}>
-          {t('jp_gateBody')}
-        </AppText>
+      <View style={[gate.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        {/* Premium icon + PRO badge */}
+        <View style={gate.iconWrap}>
+          <View style={gate.iconCircle}>
+            <AppText style={gate.iconEmoji}>🔒</AppText>
+          </View>
+          <View style={gate.proPill}>
+            <AppText style={gate.proTxt}>★ PRO</AppText>
+          </View>
+        </View>
 
-        <View style={{ width: '100%', backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, marginBottom: 24, gap: 10, borderWidth: 1, borderColor: theme.colors.border }}>
+        <AppText style={[gate.title, { color: theme.colors.text }]}>{t('jp_gateTitle')}</AppText>
+        <AppText style={[gate.sub, { color: theme.colors.mutedText }]}>{t('jp_gateBody')}</AppText>
+
+        {/* Benefits */}
+        <View style={gate.benefits}>
           {benefits.map((benefit) => (
-            <AppText key={benefit} variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>{`✅ ${benefit}`}</AppText>
+            <View key={benefit} style={gate.benefitRow}>
+              <View style={gate.checkCircle}>
+                <AppText style={gate.checkTick}>✓</AppText>
+              </View>
+              <AppText style={[gate.benefitTxt, { color: theme.colors.text }]}>{benefit}</AppText>
+            </View>
           ))}
         </View>
 
+        {/* Primary CTA */}
         <TouchableOpacity
           onPress={() => navigation.navigate('Subscription')}
-          style={{ backgroundColor: '#2563eb', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 32, width: '100%', alignItems: 'center', marginBottom: 12 }}
+          style={gate.cta}
+          activeOpacity={0.9}
         >
-          <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('jp_viewPlansSubscribe')}</AppText>
+          <AppText style={gate.ctaTxt}>{t('jp_viewPlansSubscribe')}  →</AppText>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onBack}>
-          <AppText variant="body" color={theme.colors.mutedText}>{t('jp_maybeLater')}</AppText>
+        <TouchableOpacity onPress={onBack} style={gate.laterBtn} activeOpacity={0.7}>
+          <AppText style={[gate.laterTxt, { color: theme.colors.mutedText }]}>{t('jp_maybeLater')}</AppText>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
+
+const gate = StyleSheet.create({
+  content:     { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  card:        {
+    borderRadius: 24, borderWidth: 1, paddingVertical: 28, paddingHorizontal: 22, alignItems: 'center',
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 5,
+  },
+  iconWrap:    { marginBottom: 18, position: 'relative' },
+  iconCircle:  { width: 78, height: 78, borderRadius: 39, backgroundColor: '#EBF1FF', alignItems: 'center', justifyContent: 'center' },
+  iconEmoji:   { fontSize: 34 },
+  proPill:     {
+    position: 'absolute', top: -4, right: -16,
+    backgroundColor: '#F59E0B', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3,
+    shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 3,
+  },
+  proTxt:      { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  title:       { fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: -0.4, marginBottom: 8 },
+  sub:         { fontSize: 13.5, textAlign: 'center', lineHeight: 20, marginBottom: 22, paddingHorizontal: 4 },
+  benefits:    { width: '100%', gap: 14, marginBottom: 26 },
+  benefitRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#16A34A', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkTick:   { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  benefitTxt:  { flex: 1, fontSize: 14, fontWeight: '600', lineHeight: 19 },
+  cta:         {
+    width: '100%', backgroundColor: GATE_BRAND, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 4,
+    shadowColor: GATE_BRAND, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  ctaTxt:      { color: '#fff', fontSize: 15.5, fontWeight: '800', letterSpacing: 0.2 },
+  laterBtn:    { paddingVertical: 12 },
+  laterTxt:    { fontSize: 14, fontWeight: '600' },
+});
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const PostRequirementScreen = (): React.JSX.Element => {

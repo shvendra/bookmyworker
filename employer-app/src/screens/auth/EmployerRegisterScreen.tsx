@@ -179,12 +179,10 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             fullWidth
           />
 
-          <View style={styles.loginRow}>
-            <AppText variant="body" color={theme.colors.mutedText}>{t('alreadyHaveAccount')} </AppText>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <AppText variant="body" color={BRAND} style={styles.loginLink}>{t('signIn')}</AppText>
-            </TouchableOpacity>
-          </View>
+          <AppText variant="body" color={theme.colors.mutedText} style={styles.loginRow}>
+            {t('alreadyHaveAccount')}{' '}
+            <AppText variant="body" color={BRAND} style={styles.loginLink} onPress={() => navigation.navigate('Login')}>{t('signIn')}</AppText>
+          </AppText>
         </ScrollView>
       </View>
     );
@@ -299,12 +297,10 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             />
           </View>
 
-          <View style={styles.loginRow}>
-            <AppText variant="body" color={theme.colors.mutedText}>{t('alreadyHaveAccount')} </AppText>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <AppText variant="body" color={BRAND} style={styles.loginLink}>{t('signIn')}</AppText>
-            </TouchableOpacity>
-          </View>
+          <AppText variant="body" color={theme.colors.mutedText} style={styles.loginRow}>
+            {t('alreadyHaveAccount')}{' '}
+            <AppText variant="body" color={BRAND} style={styles.loginLink} onPress={() => navigation.navigate('Login')}>{t('signIn')}</AppText>
+          </AppText>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -389,6 +385,6 @@ const styles = StyleSheet.create({
   label:     { letterSpacing: 0.3, marginBottom: 6 },
   submitBtn: { marginTop: 8 },
 
-  loginRow:  { flexDirection: 'row', justifyContent: 'center', marginTop: 24, flexWrap: 'wrap' },
+  loginRow:  { marginTop: 24, textAlign: 'center' },
   loginLink: { fontWeight: '700' },
 });

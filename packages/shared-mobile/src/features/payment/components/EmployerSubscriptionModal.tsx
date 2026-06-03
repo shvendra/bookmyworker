@@ -260,8 +260,10 @@ export const EmployerSubscriptionModal = ({
                   {monthlyMrp > monthlyPrice && (
                     <AppText style={styles.priceMrp}>₹{monthlyMrp}</AppText>
                   )}
-                  <AppText style={[styles.priceAmount, { color: theme.colors.primary }]}>₹{monthlyPrice}</AppText>
-                  <AppText style={[styles.priceUnit, { color: theme.colors.mutedText }]}>{t('esm_perMo')}</AppText>
+                  <View style={styles.priceAmountWrap}>
+                    <AppText style={[styles.priceAmount, { color: theme.colors.primary }]}>₹{monthlyPrice}</AppText>
+                    <AppText style={[styles.priceUnit, { color: theme.colors.mutedText }]}>{t('esm_perMo')}</AppText>
+                  </View>
                 </View>
                 <AppText style={[styles.priceNote, { color: theme.colors.mutedText }]}>
                   {t('esm_plansFor')}
@@ -356,11 +358,12 @@ const styles = StyleSheet.create({
   pricePlanLabel: { fontSize: 13, fontWeight: '800', flex: 1 },
   savingsBadge:   { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   savingsBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  priceRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  priceFrom:   { fontSize: 12, fontWeight: '500' },
-  priceMrp:    { fontSize: 13, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '500' },
+  priceRow:    { flexDirection: 'row', alignItems: 'flex-end', gap: 6, flexWrap: 'wrap' },
+  priceFrom:   { fontSize: 12, fontWeight: '500', marginBottom: 4 },
+  priceMrp:    { fontSize: 13, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '500', marginBottom: 4 },
+  priceAmountWrap: { flexDirection: 'row', alignItems: 'flex-end', flexShrink: 0 },
   priceAmount: { fontSize: 28, fontWeight: '900', lineHeight: 34, letterSpacing: -0.5 },
-  priceUnit:   { fontSize: 13, fontWeight: '600', alignSelf: 'flex-end', marginBottom: 3 },
+  priceUnit:   { fontSize: 13, fontWeight: '600', lineHeight: 20, marginLeft: 2, paddingRight: 2, flexShrink: 0 },
   priceNote:   { fontSize: 11, lineHeight: 15 },
 
   proofRow:    { borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
