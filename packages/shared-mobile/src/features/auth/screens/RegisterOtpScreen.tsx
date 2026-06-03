@@ -154,9 +154,11 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
       if (params.role === 'Employer') {
         session.onboardingCompleted = false;
       }
-      // For fresh SelfWorker/Worker registrations: mark onboarding incomplete so the
-      // app routes to WorkerProfileCompletionScreen to collect gender, age & areas of work.
-      if (params.role === 'SelfWorker' || params.role === 'Worker') {
+      // For fresh SelfWorker/Worker/Agent registrations: mark onboarding incomplete so
+      // the app routes to WorkerProfileCompletionScreen to collect gender, age,
+      // experience, work categories, sub-categories & areas of work. (The AppNavigator
+      // profile gate also enforces this based on missing gender/age.)
+      if (params.role === 'SelfWorker' || params.role === 'Worker' || params.role === 'Agent') {
         session.onboardingCompleted = false;
       }
       if (params.resumeUri && params.resumeName) {

@@ -392,7 +392,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
           </View>
           {totalWorkers > 0 && (
             <View style={S.workerBadge}>
-              <AppText style={S.workerBadgeText}>👷 {totalWorkers} {t('workerNeeded', { count: totalWorkers })}</AppText>
+              <AppText style={S.workerBadgeText}>👷 {t('workerNeeded', { count: totalWorkers })}</AppText>
             </View>
           )}
         </View>
@@ -452,7 +452,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
               {PERKS.map((p, i) => (
                 <View key={i} style={[S.perkItem, { backgroundColor: p.bg, borderColor: p.border }]}>
                   <AppText style={S.perkEmoji}>{p.icon}</AppText>
-                  <AppText style={[S.perkLabel, { color: p.color }]}>{p.label}</AppText>
+                  <AppText style={[S.perkLabel, { color: p.color }]} numberOfLines={1}>{p.label}</AppText>
                 </View>
               ))}
             </View>

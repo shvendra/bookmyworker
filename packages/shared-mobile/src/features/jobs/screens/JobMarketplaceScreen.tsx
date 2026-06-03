@@ -257,52 +257,52 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         </View>
         {req.accommodationAvailable && (
           <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <AppText style={[styles.chipText, { color: '#15803D' }]}>🏠 {t('perkStay')}</AppText>
+            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}>🏠 {t('perkStay')}</AppText>
           </View>
         )}
         {req.foodAvailable && (
           <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <AppText style={[styles.chipText, { color: '#C2410C' }]}>🍱 {t('perkFood')}</AppText>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}>🍱 {t('perkFood')}</AppText>
           </View>
         )}
         {req.transportProvided && (
           <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🚌 {t('perkTransport')}</AppText>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}>🚌 {t('perkTransport')}</AppText>
           </View>
         )}
         {req.bonus && (
           <View style={[styles.chip, { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' }]}>
-            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🎁 {t('perkBonus')}</AppText>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}>🎁 {t('perkBonus')}</AppText>
           </View>
         )}
         {req.incentive && (
           <View style={[styles.chip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-            <AppText style={[styles.chipText, { color: '#92400E' }]}>🌟 {t('perkIncentive')}</AppText>
+            <AppText style={[styles.chipText, { color: '#92400E' }]} numberOfLines={1}>🌟 {t('perkIncentive')}</AppText>
           </View>
         )}
         {req.weeklyOff && (
           <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <AppText style={[styles.chipText, { color: '#15803D' }]}>📅 {t('perkWeeklyOff')}</AppText>
+            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}>📅 {t('perkWeeklyOff')}</AppText>
           </View>
         )}
         {req.overtimeAvailable && (
           <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <AppText style={[styles.chipText, { color: '#C2410C' }]}>⏱ {t('perkOvertime')}</AppText>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}>⏱ {t('perkOvertime')}</AppText>
           </View>
         )}
         {req.insuranceAvailable && (
           <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={[styles.chipText, { color: '#1D4ED8' }]}>🛡 {t('perkInsurance')}</AppText>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}>🛡 {t('perkInsurance')}</AppText>
           </View>
         )}
         {req.pfAvailable && (
           <View style={[styles.chip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
-            <AppText style={[styles.chipText, { color: '#7C3AED' }]}>🏦 {t('perkPf')}</AppText>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}>🏦 {t('perkPf')}</AppText>
           </View>
         )}
         {req.esicAvailable && (
           <View style={[styles.chip, { backgroundColor: '#ECFEFF', borderColor: '#A5F3FC' }]}>
-            <AppText style={[styles.chipText, { color: '#0E7490' }]}>🏥 {t('perkEsic')}</AppText>
+            <AppText style={[styles.chipText, { color: '#0E7490' }]} numberOfLines={1}>🏥 {t('perkEsic')}</AppText>
           </View>
         )}
       </View>

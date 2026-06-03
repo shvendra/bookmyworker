@@ -469,6 +469,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           {user?.role === 'employer' && (
             <MenuItem icon="📞" label={t('profile_callHistory')} onPress={() => navigation.navigate('CallHistory')} />
           )}
+          {user?.role === 'employer' && (
+            <MenuItem icon="👁️" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
+          )}
           <MenuItem icon="⚙️" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 

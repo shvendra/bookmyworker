@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
@@ -172,6 +173,7 @@ const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
   onPress: () => void; isLast?: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -186,7 +188,7 @@ const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
         <AppText style={dr.meta}>{meta}</AppText>
       </View>
       <View style={dr.pill}>
-        <AppText style={dr.pillTxt}>View →</AppText>
+        <AppText style={dr.pillTxt}>{t('wp_view')}</AppText>
       </View>
     </TouchableOpacity>
   );
@@ -232,10 +234,10 @@ interface FullUserProfile {
 }
 
 // ─── Status meta ──────────────────────────────────────────────────────────────
-const STATUS_META: Record<MappingStatus, { label: string; color: string; bg: string }> = {
-  Shortlisted: { label: 'Shortlist',   color: '#2563eb', bg: '#eff6ff' },
-  Selected:    { label: 'Select',      color: '#6d28d9', bg: '#f5f3ff' },
-  Joined:      { label: 'Mark Joined', color: '#15803d', bg: '#f0fdf4' },
+const STATUS_META: Record<MappingStatus, { labelKey: string; color: string; bg: string }> = {
+  Shortlisted: { labelKey: 'wp_actShortlist',  color: '#2563eb', bg: '#eff6ff' },
+  Selected:    { labelKey: 'wp_actSelect',     color: '#6d28d9', bg: '#f5f3ff' },
+  Joined:      { labelKey: 'wp_actMarkJoined', color: '#15803d', bg: '#f0fdf4' },
 };
 
 // ─── Requirement Picker Modal ─────────────────────────────────────────────────
@@ -255,6 +257,7 @@ const RequirementPickerModal = ({
   visible, onClose, workerName, workerPhone, workerId, workerSkill, status, onSuccess, toast,
 }: RequirementPickerProps): React.JSX.Element => {
   const navPicker = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const { t } = useTranslation('employer');
   const [requirements, setRequirements] = useState<OpenRequirement[]>([]);
   const [selected,     setSelected]     = useState<string[]>([]);
   const [loading,      setLoading]      = useState(false);
@@ -273,7 +276,7 @@ const RequirementPickerModal = ({
       const reqs = await workerMappingApi.getEmployerOpenRequirements();
       setRequirements(reqs);
     } catch {
-      toast.error('Could not load requirements');
+      toast.error(t('wp_toastLoadReqFail'));
     } finally {
       setLoading(false);
     }
@@ -288,7 +291,7 @@ const RequirementPickerModal = ({
 
   // For Joined, first go to the rate step; for others, save directly.
   const handleNext = () => {
-    if (selected.length === 0) { toast.error('Select at least one requirement'); return; }
+    if (selected.length === 0) { toast.error(t('wp_toastSelectReq')); return; }
     if (status === 'Joined') { setStep('rate'); return; }
     void handleSave();
   };
@@ -297,7 +300,7 @@ const RequirementPickerModal = ({
     if (status === 'Joined') {
       const rate = parseFloat(agreedRate);
       if (!agreedRate || isNaN(rate) || rate <= 0) {
-        toast.error('Enter a valid agreed rate (e.g. 500)');
+        toast.error(t('wp_toastValidRate'));
         return;
       }
     }
@@ -315,12 +318,12 @@ const RequirementPickerModal = ({
         status,
         ...hireRate,
       });
-      toast.success(`${workerName} marked as Joined for ${selected.length} requirement(s)`);
+      toast.success(t('wp_toastJoined', { name: workerName, count: selected.length }));
       onSuccess();
       onClose();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || 'Failed to save');
+      toast.error(e?.response?.data?.message || t('wp_toastSaveFail'));
     } finally {
       setSaving(false);
     }
@@ -333,7 +336,7 @@ const RequirementPickerModal = ({
           {/* Header */}
           <View style={[pm.header, { backgroundColor: meta.color }]}>
             <View style={{ flex: 1 }}>
-              <AppText style={pm.headerTitle}>{meta.label} Worker</AppText>
+              <AppText style={pm.headerTitle}>{t('wp_pmTitle', { action: t(meta.labelKey) })}</AppText>
               <AppText style={pm.headerSub}>{workerName}{workerPhone ? ` · ${workerPhone}` : ''}</AppText>
             </View>
             <TouchableOpacity onPress={onClose} style={pm.closeBtn}>
@@ -345,7 +348,7 @@ const RequirementPickerModal = ({
             // ── Step 2: Hire rate input (Joined only) ──────────────────────
             <>
               <View style={pm.rateStepWrap}>
-                <AppText style={pm.hint}>Set the agreed pay rate for {workerName}:</AppText>
+                <AppText style={pm.hint}>{t('wp_pmRateHint', { name: workerName })}</AppText>
 
                 {/* Rate type toggle */}
                 <View style={pm.rateTypeRow}>
@@ -357,7 +360,7 @@ const RequirementPickerModal = ({
                       activeOpacity={0.8}
                     >
                       <AppText style={[pm.rateTypeTxt, rateType === rt && { color: '#fff' }]}>
-                        {rt === 'Daily' ? '📅 Per Day' : '📆 Per Month'}
+                        {rt === 'Daily' ? t('wp_perDay') : t('wp_perMonth')}
                       </AppText>
                     </TouchableOpacity>
                   ))}
@@ -368,7 +371,7 @@ const RequirementPickerModal = ({
                   <AppText style={pm.rateRupee}>₹</AppText>
                   <TextInput
                     style={pm.rateInput}
-                    placeholder={rateType === 'Daily' ? 'e.g. 500' : 'e.g. 12000'}
+                    placeholder={rateType === 'Daily' ? t('wp_egDaily') : t('wp_egMonthly')}
                     placeholderTextColor="#94A3B8"
                     keyboardType="numeric"
                     value={agreedRate}
@@ -376,17 +379,17 @@ const RequirementPickerModal = ({
                     maxLength={7}
                     autoFocus
                   />
-                  <AppText style={pm.rateUnit}>/{rateType === 'Daily' ? 'day' : 'month'}</AppText>
+                  <AppText style={pm.rateUnit}>/{rateType === 'Daily' ? t('wp_unitDay') : t('wp_unitMonth')}</AppText>
                 </View>
 
                 <AppText style={pm.rateNote}>
-                  This rate is used to calculate salary from attendance records. It doesn't process any payment — you pay workers directly.
+                  {t('wp_rateNote')}
                 </AppText>
               </View>
 
               <View style={pm.footer}>
                 <TouchableOpacity onPress={() => setStep('pick')} style={pm.cancelBtn}>
-                  <AppText style={pm.cancelTxt}>← Back</AppText>
+                  <AppText style={pm.cancelTxt}>{t('wp_back')}</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => void handleSave()}
@@ -396,7 +399,7 @@ const RequirementPickerModal = ({
                 >
                   {saving
                     ? <ActivityIndicator color="#fff" size="small" />
-                    : <AppText style={pm.saveTxt}>Confirm Hire</AppText>}
+                    : <AppText style={pm.saveTxt}>{t('wp_confirmHire')}</AppText>}
                 </TouchableOpacity>
               </View>
             </>
@@ -404,7 +407,7 @@ const RequirementPickerModal = ({
             // ── Step 1: Pick requirement(s) ────────────────────────────────
             <>
               <AppText style={pm.hint}>
-                Select requirement(s) to link this worker:
+                {t('wp_pmPickHint')}
               </AppText>
 
               {loading ? (
@@ -414,16 +417,16 @@ const RequirementPickerModal = ({
                   <View style={pm.emptyIcon}>
                     <AppText style={{ fontSize: 30 }}>📋</AppText>
                   </View>
-                  <AppText style={pm.emptyTitle}>No Open Requirements</AppText>
+                  <AppText style={pm.emptyTitle}>{t('wp_noOpenReqs')}</AppText>
                   <AppText style={pm.emptyDesc}>
-                    You need to post a requirement before adding workers to your pipeline.
+                    {t('wp_pmEmptyDesc')}
                   </AppText>
                   <TouchableOpacity
                     onPress={() => { onClose(); navPicker.navigate('PostRequirement'); }}
                     style={[pm.postBtn, { backgroundColor: meta.color }]}
                     activeOpacity={0.85}
                   >
-                    <AppText style={pm.postBtnTxt}>+ Post a Requirement</AppText>
+                    <AppText style={pm.postBtnTxt}>{t('wp_postReq')}</AppText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -463,7 +466,7 @@ const RequirementPickerModal = ({
 
               <View style={pm.footer}>
                 <TouchableOpacity onPress={onClose} style={pm.cancelBtn}>
-                  <AppText style={pm.cancelTxt}>Cancel</AppText>
+                  <AppText style={pm.cancelTxt}>{t('wp_cancel')}</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleNext}
@@ -474,7 +477,7 @@ const RequirementPickerModal = ({
                   {saving
                     ? <ActivityIndicator color="#fff" size="small" />
                     : <AppText style={pm.saveTxt}>
-                        {status === 'Joined' ? `Next →` : `${meta.label} (${selected.length})`}
+                        {status === 'Joined' ? t('wp_next') : `${t(meta.labelKey)} (${selected.length})`}
                       </AppText>}
                 </TouchableOpacity>
               </View>
@@ -537,6 +540,7 @@ interface InviteModalProps {
 
 const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, workerPhone, toast }: InviteModalProps): React.JSX.Element => {
   const navInv = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const { t } = useTranslation('employer');
   const [requirements, setRequirements] = useState<OpenRequirement[]>([]);
   const [selected, setSelected]   = useState<string | null>(null);
   const [loading, setLoading]     = useState(false);
@@ -548,7 +552,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
       const reqs = await workerMappingApi.getEmployerOpenRequirements();
       setRequirements(reqs);
     } catch {
-      toast.error('Could not load requirements');
+      toast.error(t('wp_toastLoadReqFail'));
     } finally {
       setLoading(false);
     }
@@ -559,15 +563,15 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
   }, [visible, load]);
 
   const handleSend = async () => {
-    if (!selected) { toast.error('Select a requirement first'); return; }
+    if (!selected) { toast.error(t('wp_toastSelectReqFirst')); return; }
     setSaving(true);
     try {
       await requirementsApi.inviteWorker(selected, { workerId, workerName, workerPhone });
-      toast.success(`Invitation sent to ${workerName}!`, 'Invited');
+      toast.success(t('wp_toastInviteSent', { name: workerName }), t('wp_invited'));
       onClose();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || 'Failed to send invite');
+      toast.error(e?.response?.data?.message || t('wp_toastInviteFail'));
     } finally {
       setSaving(false);
     }
@@ -579,7 +583,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
         <View style={inv.sheet}>
           <View style={[inv.header, { backgroundColor: '#7C3AED' }]}>
             <View style={{ flex: 1 }}>
-              <AppText style={inv.headerTitle}>Invite to Requirement</AppText>
+              <AppText style={inv.headerTitle}>{t('wp_inviteTitle')}</AppText>
               <AppText style={inv.headerSub}>{workerName}</AppText>
             </View>
             <TouchableOpacity onPress={onClose} style={inv.closeBtn}>
@@ -587,17 +591,17 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
             </TouchableOpacity>
           </View>
 
-          <AppText style={inv.hint}>Select which requirement to invite this worker for:</AppText>
+          <AppText style={inv.hint}>{t('wp_inviteHint')}</AppText>
 
           {loading ? (
             <View style={inv.center}><ActivityIndicator color="#7C3AED" size="small" /></View>
           ) : requirements.length === 0 ? (
             <View style={inv.emptyBox}>
               <AppText style={{ fontSize: 30, marginBottom: 8 }}>📋</AppText>
-              <AppText style={inv.emptyTitle}>No Open Requirements</AppText>
-              <AppText style={inv.emptyDesc}>Post a requirement first to invite workers.</AppText>
+              <AppText style={inv.emptyTitle}>{t('wp_noOpenReqs')}</AppText>
+              <AppText style={inv.emptyDesc}>{t('wp_inviteEmptyDesc')}</AppText>
               <TouchableOpacity onPress={() => { onClose(); navInv.navigate('PostRequirement'); }} style={[inv.postBtn, { backgroundColor: '#7C3AED' }]} activeOpacity={0.85}>
-                <AppText style={inv.postBtnTxt}>+ Post a Requirement</AppText>
+                <AppText style={inv.postBtnTxt}>{t('wp_postReq')}</AppText>
               </TouchableOpacity>
             </View>
           ) : (
@@ -626,7 +630,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
 
           <View style={inv.footer}>
             <TouchableOpacity onPress={onClose} style={inv.cancelBtn}>
-              <AppText style={inv.cancelTxt}>Cancel</AppText>
+              <AppText style={inv.cancelTxt}>{t('wp_cancel')}</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => void handleSend()}
@@ -634,7 +638,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
               style={[inv.saveBtn, (!selected || saving) && { opacity: 0.5 }]}
               activeOpacity={0.85}
             >
-              {saving ? <ActivityIndicator color="#fff" size="small" /> : <AppText style={inv.saveTxt}>Send Invite 🔔</AppText>}
+              {saving ? <ActivityIndicator color="#fff" size="small" /> : <AppText style={inv.saveTxt}>{t('wp_sendInvite')}</AppText>}
             </TouchableOpacity>
           </View>
         </View>
@@ -673,6 +677,7 @@ const inv = StyleSheet.create({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const { workerId } = route.params;
   const { state: authState } = useAuth();
   const toast = useToast();
@@ -715,8 +720,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     void shortlistStorage.toggle(workerId).then((added) => {
       setIsShortlisted(added);
       toast[added ? 'success' : 'info'](
-        added ? 'Added to your shortlist.' : 'Removed from shortlist.',
-        added ? 'Shortlisted ❤️' : 'Removed',
+        added ? t('wp_toastShortlistAdded') : t('wp_toastShortlistRemoved'),
+        added ? t('wp_shortlistedTitle') : t('wp_removedTitle'),
       );
     }).finally(() => setShortlistBusy(false));
   };
@@ -782,16 +787,16 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         setUnlockedPhone(res.phone);
         setAlreadyHired(res.alreadyHired === true);
         if (res.alreadyHired) {
-          toast.success('Contact available — this worker is already hired by you.', 'Already Hired');
+          toast.success(t('wp_toastAlreadyHired'), t('wp_alreadyHiredTitle'));
         } else {
-          toast.success('Contact number unlocked.', 'Unlocked');
+          toast.success(t('wp_toastUnlocked'), t('wp_unlockedTitle'));
           // Decrement happened on backend — refresh remaining contacts immediately
           void refetchEmpProfile();
           void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
         }
       } else {
-        const errMsg = res.message ?? 'Unable to unlock contact. Please check your subscription.';
-        toast.error(errMsg, 'Unlock Failed');
+        const errMsg = res.message ?? t('wp_unlockFailDefault');
+        toast.error(errMsg, t('wp_unlockFailTitle'));
         if (errMsg.toLowerCase().includes('subscribe') || errMsg.toLowerCase().includes('expired')) {
           navigation.navigate('Subscription');
         }
@@ -803,16 +808,16 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       const msg    = data?.message ?? errObj?.message;
 
       if (code === 'SUBSCRIPTION_EXPIRED') {
-        toast.warning('Your subscription has expired. Renew to unlock new contacts.', 'Expired');
+        toast.warning(t('wp_toastExpired'), t('wp_expiredTitle'));
         navigation.navigate('Subscription');
       } else if (code === 'SUBSCRIPTION_REQUIRED') {
-        toast.error('Subscribe to BookMyWorker to unlock contact details.', 'Subscribe');
+        toast.error(t('wp_toastSubscribe'), t('wp_subscribeTitle'));
         navigation.navigate('Subscription');
       } else if (code === 'CONTACT_LIMIT') {
-        toast.warning('Contact limit exhausted. Top-up your plan.', 'Limit Reached');
+        toast.warning(t('wp_toastLimit'), t('wp_limitTitle'));
         navigation.navigate('Subscription');
       } else {
-        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Error');
+        toast.error(msg ?? t('wp_toastUnlockFail'), t('wp_errorTitle'));
       }
     } finally {
       setUnlocking(false);
@@ -826,14 +831,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-        <ScreenHeader title="Worker Profile" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('wp_title')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>Profile Unavailable</AppText>
+          <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>{t('wp_profileUnavailable')}</AppText>
           <AppText style={{ fontSize: 13, color: C.slate, textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
-            Could not load this worker's profile. Please check your connection and try again.
+            {t('wp_profileUnavailableDesc')}
           </AppText>
           <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: C.navy, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}>
-            <AppText style={{ color: C.white, fontWeight: '800', fontSize: 14 }}>Retry</AppText>
+            <AppText style={{ color: C.white, fontWeight: '800', fontSize: 14 }}>{t('wp_retry')}</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -862,7 +867,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
-        title="Worker Profile"
+        title={t('wp_title')}
         onBack={() => navigation.goBack()}
         rightIcon={isEmployer ? (isShortlisted ? '❤️' : '🤍') : undefined}
         onRightPress={isEmployer ? handleToggleShortlist : undefined}
@@ -912,14 +917,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           <View style={s.badgeRow}>
             {isAgent && (
               <View style={[s.badge, { backgroundColor: 'rgba(79,70,229,0.25)' }]}>
-                <AppText style={[s.badgeTxt, { color: '#a5b4fc' }]}>AGENT</AppText>
+                <AppText style={[s.badgeTxt, { color: '#a5b4fc' }]}>{t('wp_agent')}</AppText>
               </View>
             )}
             <View style={[s.badge, {
               backgroundColor: isVerified ? 'rgba(22,163,74,0.25)' : 'rgba(217,119,6,0.25)',
             }]}>
               <AppText style={[s.badgeTxt, { color: isVerified ? '#4ade80' : '#fcd34d' }]}>
-                {isVerified ? 'VERIFIED' : 'UNVERIFIED'}
+                {isVerified ? t('wp_verified') : t('wp_unverified')}
               </AppText>
             </View>
             {!!worker.gender && (
@@ -936,21 +941,21 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           {/* Stats row */}
           <View style={s.statsRow}>
             <StatTile
-              value={exp && exp > 0 ? `${exp}y` : 'New'}
-              label="Experience"
+              value={exp && exp > 0 ? `${exp}y` : t('wp_new')}
+              label={t('wp_expLabel')}
               color={C.blue}
               bg={C.blueSoft}
             />
             <StatTile
               value={wageDisplay ?? '—'}
-              label="Daily Rate"
+              label={t('wp_dailyRate')}
               color={C.green}
               bg={C.greenSoft}
             />
             {!!age && (
               <StatTile
-                value={`${age} yrs`}
-                label="Age"
+                value={`${age} ${t('wp_yrs')}`}
+                label={t('wp_age')}
                 color={C.amber}
                 bg={C.amberSoft}
               />
@@ -958,7 +963,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             {(worker.rating ?? 0) > 0 && (
               <StatTile
                 value={`${worker.rating}★`}
-                label={`${worker.totalRatings ?? 0} ratings`}
+                label={t('wp_ratings', { count: worker.totalRatings ?? 0 })}
                 color={C.indigo}
                 bg={C.indigoSoft}
               />
@@ -967,7 +972,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* Skills */}
           {areas.length > 0 && (
-            <Section title="Areas of Work" accent={C.blue}>
+            <Section title={t('wp_areasOfWork')} accent={C.blue}>
               <View style={s.skillsGrid}>
                 {areas.map((skill, i) => (
                   <View key={i} style={s.skillChip}>
@@ -979,15 +984,15 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           )}
 
           {/* Profile details */}
-          <Section title="Profile Details" accent={C.indigo}>
-            <InfoRow icon="⏳" label="Experience"  value={exp && exp > 0 ? `${exp} years` : 'Fresher'} iconBg="#EBF1FF" />
-            <InfoRow icon="👤" label="Gender"      value={worker.gender} iconBg="#F1F5F9" />
-            <InfoRow icon="🎂" label="Age"         value={age ? `${age} years` : null} iconBg="#FFF7ED" />
-            <InfoRow icon="🔖" label="Worker Type" value={isAgent ? 'Agent / Group' : 'Individual Worker'} iconBg="#F5F3FF" />
-            <InfoRow icon="📊" label="Status"      value={worker.status} iconBg="#F0FDF4" />
+          <Section title={t('wp_profileDetails')} accent={C.indigo}>
+            <InfoRow icon="⏳" label={t('wp_expLabel')}  value={exp && exp > 0 ? t('wp_years', { count: exp }) : t('wp_fresher')} iconBg="#EBF1FF" />
+            <InfoRow icon="👤" label={t('wp_gender')}      value={worker.gender} iconBg="#F1F5F9" />
+            <InfoRow icon="🎂" label={t('wp_age')}         value={age ? t('wp_years', { count: Number(age) }) : null} iconBg="#FFF7ED" />
+            <InfoRow icon="🔖" label={t('wp_workerType')} value={isAgent ? t('wp_agentGroup') : t('wp_individualWorker')} iconBg="#F5F3FF" />
+            <InfoRow icon="📊" label={t('wp_statusLabel')}      value={worker.status} iconBg="#F0FDF4" />
             {!!bio && (
               <View style={s.bioWrap}>
-                <AppText style={s.bioLabel}>About</AppText>
+                <AppText style={s.bioLabel}>{t('wp_about')}</AppText>
                 <AppText style={[s.bioText, { color: theme.colors.text }]}>{bio}</AppText>
               </View>
             )}
@@ -995,14 +1000,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* ── Documents & Certificates ── */}
           {(!!worker.resumeUrl || !!worker.labourLicenceUrl || (worker.certificates?.length ?? 0) > 0) && (
-            <Section title="Documents & Certificates" accent="#7C3AED">
+            <Section title={t('wp_documents')} accent="#7C3AED">
               {!!worker.resumeUrl && (
                 <DocRow
                   icon="📄"
                   iconBg="#EBF1FF"
-                  name="Resume / CV"
-                  meta={worker.resumeUrl.endsWith('.pdf') ? 'PDF Document' : worker.resumeUrl.endsWith('.docx') || worker.resumeUrl.endsWith('.doc') ? 'Word Document' : 'Document'}
-                  onPress={() => openDocument(worker.resumeUrl!, 'Resume')}
+                  name={t('wp_resumeCV')}
+                  meta={worker.resumeUrl.endsWith('.pdf') ? t('wp_pdfDoc') : worker.resumeUrl.endsWith('.docx') || worker.resumeUrl.endsWith('.doc') ? t('wp_wordDoc') : t('wp_doc')}
+                  onPress={() => openDocument(worker.resumeUrl!, t('wp_resume'))}
                   isLast={!worker.labourLicenceUrl && (worker.certificates?.length ?? 0) === 0}
                 />
               )}
@@ -1010,9 +1015,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                 <DocRow
                   icon="📋"
                   iconBg="#F0FDF4"
-                  name="Labour Licence"
-                  meta="Official Licence Document"
-                  onPress={() => openDocument(worker.labourLicenceUrl!, 'Labour Licence')}
+                  name={t('wp_labourLicence')}
+                  meta={t('wp_officialLicence')}
+                  onPress={() => openDocument(worker.labourLicenceUrl!, t('wp_labourLicence'))}
                   isLast={(worker.certificates?.length ?? 0) === 0}
                 />
               )}
@@ -1021,9 +1026,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                   key={i}
                   icon={cert.fileType === 'pdf' ? '📄' : '🎓'}
                   iconBg="#FFF7ED"
-                  name={cert.name || `Certificate ${i + 1}`}
-                  meta={cert.fileType ? cert.fileType.toUpperCase() + ' Certificate' : 'Skill Certificate'}
-                  onPress={() => openDocument(cert.url, cert.name || `Certificate ${i + 1}`)}
+                  name={cert.name || t('wp_certificateN', { n: i + 1 })}
+                  meta={cert.fileType ? `${cert.fileType.toUpperCase()} ${t('wp_certificateWord')}` : t('wp_skillCert')}
+                  onPress={() => openDocument(cert.url, cert.name || t('wp_certificateN', { n: i + 1 }))}
                   isLast={i === (worker.certificates!.length - 1)}
                 />
               ))}
@@ -1042,7 +1047,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     style={[s.pipelineBtn, { backgroundColor: m.bg }]}
                     activeOpacity={0.8}
                   >
-                    <AppText style={[s.pipelineTxt, { color: m.color }]}>{m.label}</AppText>
+                    <AppText style={[s.pipelineTxt, { color: m.color }]}>{t(m.labelKey)}</AppText>
                   </TouchableOpacity>
                 );
               })}
@@ -1056,7 +1061,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
               style={s.inviteBtn}
               activeOpacity={0.85}
             >
-              <AppText style={s.inviteTxt}>🔔  Invite to My Requirement</AppText>
+              <AppText style={s.inviteTxt}>{t('wp_inviteToMyReq')}</AppText>
             </TouchableOpacity>
           )}
 
@@ -1089,7 +1094,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* Contact — employer only */}
           {isEmployer && (
-            <Section title="Contact Worker" accent={C.green}>
+            <Section title={t('wp_contactWorker')} accent={C.green}>
               {unlockedPhone ? (
                 // ─ Unlocked (either via credit or free because already hired)
                 <View style={s.unlockedBox}>
@@ -1098,7 +1103,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     <View style={s.hiredBadge}>
                       <AppText style={s.hiredBadgeEmoji}>🤝</AppText>
                       <AppText style={s.hiredBadgeTxt}>
-                        Already hired — contact available for free
+                        {t('wp_alreadyHiredFree')}
                       </AppText>
                     </View>
                   )}
@@ -1107,7 +1112,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       <AppText style={{ fontSize: 20 }}>📞</AppText>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <AppText style={s.phoneLabel}>Phone Number</AppText>
+                      <AppText style={s.phoneLabel}>{t('wp_phoneNumber')}</AppText>
                       <AppText style={s.phoneNum}>{unlockedPhone}</AppText>
                     </View>
                   </View>
@@ -1117,14 +1122,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       style={s.callBtn}
                       activeOpacity={0.85}
                     >
-                      <AppText style={s.callBtnTxt}>Call Now</AppText>
+                      <AppText style={s.callBtnTxt}>{t('wp_callNow')}</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
                       style={s.waBtn}
                       activeOpacity={0.85}
                     >
-                      <AppText style={s.waBtnTxt}>WhatsApp</AppText>
+                      <AppText style={s.waBtnTxt}>{t('wp_whatsapp')}</AppText>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1137,12 +1142,12 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     <View style={s.unlockBox}>
                       <View style={s.unlockHint}>
                         <AppText style={s.unlockHintTxt}>
-                          {'Uses 1 contact credit · '}
+                          {t('wp_uses1Credit') + ' · '}
                           <AppText style={[s.unlockHintTxt, {
                             color: contacts <= 0 ? C.red : C.blue,
                             fontWeight: '800',
                           }]}>
-                            {empProfileLoaded ? `${contacts} remaining` : 'Loading…'}
+                            {empProfileLoaded ? t('wp_remaining', { count: contacts }) : t('wp_loading')}
                           </AppText>
                         </AppText>
                       </View>
@@ -1153,7 +1158,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                             <AppText style={[s.viewContactIcon, { fontSize: 18 }]}>🔒</AppText>
                           </View>
                           <AppText style={{ fontSize: 10, color: C.red, textAlign: 'center', marginTop: 6, fontWeight: '700' }}>
-                            No contacts remaining.{'\n'}Top up to unlock.
+                            {t('wp_noContactsRemaining')}{'\n'}{t('wp_topUpToUnlock')}
                           </AppText>
                         </View>
                       ) : (
@@ -1181,15 +1186,13 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     </AppText>
                   </View>
                   <AppText style={s.lockTitle}>
-                    {empProfile?.isSubscribed ? 'Subscription Expired' : 'No Active Subscription'}
+                    {empProfile?.isSubscribed ? t('wp_subExpired') : t('wp_noSub')}
                   </AppText>
                   <AppText style={[s.lockSub, { color: C.slate }]}>
-                    {empProfile?.isSubscribed
-                      ? 'Your subscription has expired. Renew to unlock new contacts. Workers you\'ve already hired are always accessible for free.'
-                      : 'Subscribe to BookMyWorker to access worker contact details and hire directly.'}
+                    {empProfile?.isSubscribed ? t('wp_expiredDesc') : t('wp_subDesc')}
                   </AppText>
                   <View style={s.lockBenefits}>
-                    {['View & call worker contact numbers', 'Direct WhatsApp messaging', 'Unlimited access to interested agents'].map((b, i) => (
+                    {[t('wp_benefit1'), t('wp_benefit2'), t('wp_benefit3')].map((b, i) => (
                       <View key={i} style={s.benefitRow}>
                         <View style={s.benefitDot} />
                         <AppText style={[s.benefitTxt, { color: C.slate }]}>{b}</AppText>
@@ -1205,11 +1208,11 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                   >
                     {unlocking
                       ? <ActivityIndicator color={C.green} size="small" />
-                      : <AppText style={s.hiredCheckTxt}>Check if Already Hired (Free)</AppText>}
+                      : <AppText style={s.hiredCheckTxt}>{t('wp_checkHired')}</AppText>}
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={s.subscribeBtn} activeOpacity={0.85}>
                     <AppText style={s.subscribeTxt}>
-                      {empProfile?.isSubscribed ? 'Renew Subscription' : 'View Subscription Plans'}
+                      {empProfile?.isSubscribed ? t('wp_renewSub') : t('wp_viewPlans')}
                     </AppText>
                   </TouchableOpacity>
                 </View>

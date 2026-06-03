@@ -1,6 +1,7 @@
 import { type NativeStackScreenProps, type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -85,24 +86,25 @@ const formatTime = (t?: string): string => {
   } catch { return t; }
 };
 
-const statusMeta = (status?: string, isAssigned?: boolean): { label: string; color: string; bg: string; border: string } => {
-  if (isAssigned) return { label: 'Ongoing',  color: '#7C3AED', bg: '#F5F3FF', border: '#C4B5FD' };
+const statusMeta = (status?: string, isAssigned?: boolean): { labelKey: string; color: string; bg: string; border: string } => {
+  if (isAssigned) return { labelKey: 'rd_statusOngoing',  color: '#7C3AED', bg: '#F5F3FF', border: '#C4B5FD' };
   const s = (status ?? '').toLowerCase();
-  if (s === 'closed' || s === 'expired') return { label: 'Closed', color: '#64748B', bg: '#F1F5F9', border: '#CBD5E1' };
-  return { label: 'Open', color: GREEN, bg: GREEN_SOFT, border: GREEN_BDR };
+  if (s === 'closed' || s === 'expired') return { labelKey: 'rd_statusClosed', color: '#64748B', bg: '#F1F5F9', border: '#CBD5E1' };
+  return { labelKey: 'rd_statusOpen', color: GREEN, bg: GREEN_SOFT, border: GREEN_BDR };
 };
 
-const perkIcon: Record<string, string> = {
-  accommodationAvailable: '🏠 Accommodation',
-  foodAvailable:          '🍽️ Food',
-  transportProvided:      '🚌 Transport',
-  weeklyOff:              '📅 Weekly Off',
-  overtimeAvailable:      '⏰ Overtime',
-  bonus:                  '🎁 Bonus',
-  incentive:              '🏆 Incentive',
-  insuranceAvailable:     '🛡️ Insurance',
-  pfAvailable:            '🏦 PF',
-  esicAvailable:          '🏥 ESIC',
+// Emoji for each perk; the label text is translated via `rd_perk_<field>` keys.
+const perkEmoji: Record<string, string> = {
+  accommodationAvailable: '🏠',
+  foodAvailable:          '🍽️',
+  transportProvided:      '🚌',
+  weeklyOff:              '📅',
+  overtimeAvailable:      '⏰',
+  bonus:                  '🎁',
+  incentive:              '🏆',
+  insuranceAvailable:     '🛡️',
+  pfAvailable:            '🏦',
+  esicAvailable:          '🏥',
 };
 
 // ─── InfoTile — 2-column grid tile ────────────────────────────────────────────
@@ -154,6 +156,7 @@ const AgentCard = ({
   onProfile: () => void;
   isSubscribed: boolean;
 }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<ReqDetailNav>();
   const toast = useToast();
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
@@ -184,9 +187,9 @@ const AgentCard = ({
         setUnlockedPhone(res.phone);
         setAlreadyHired(res.alreadyHired === true);
       } else {
-        const msg = res.message ?? 'Unable to view contact. Please check your subscription.';
+        const msg = res.message ?? t('rd_unlockFailDefault');
         setUnlockError(msg);
-        toast.error(msg, 'Access Denied');
+        toast.error(msg, t('rd_accessDenied'));
         if (msg.toLowerCase().includes('subscri') || msg.toLowerCase().includes('expired')) {
           navigation.navigate('Subscription');
         }
@@ -195,7 +198,7 @@ const AgentCard = ({
       const errObj = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
       const data   = errObj?.response?.data;
       const code   = data?.code;
-      const msg    = data?.message ?? errObj?.message ?? 'Unable to view contact.';
+      const msg    = data?.message ?? errObj?.message ?? t('rd_unlockFailShort');
       setUnlockError(msg);
       if (code === 'SUBSCRIPTION_EXPIRED' || code === 'SUBSCRIPTION_REQUIRED' || code === 'CONTACT_LIMIT') {
         navigation.navigate('Subscription');
@@ -219,13 +222,13 @@ const AgentCard = ({
 
         {/* Info */}
         <View style={{ flex: 1 }}>
-          <AppText style={ac.name} numberOfLines={1}>{agent.name || `Agent ${idx + 1}`}</AppText>
+          <AppText style={ac.name} numberOfLines={1}>{agent.name || t('rd_agentN', { n: idx + 1 })}</AppText>
           {!!location && (
             <AppText style={ac.location} numberOfLines={1}>📍 {location}</AppText>
           )}
           {agent.agentRequiredWage != null && (
             <View style={ac.wagePill}>
-              <AppText style={ac.wageText}>₹{agent.agentRequiredWage}/day</AppText>
+              <AppText style={ac.wageText}>₹{agent.agentRequiredWage}/{t('rd_unitDay')}</AppText>
             </View>
           )}
         </View>
@@ -238,7 +241,7 @@ const AgentCard = ({
             activeOpacity={0.75}
           >
             <AppText style={ac.lockedIcon}>🔒</AppText>
-            <AppText style={ac.lockedTxt}>Check</AppText>
+            <AppText style={ac.lockedTxt}>{t('rd_check')}</AppText>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -250,7 +253,7 @@ const AgentCard = ({
             {unlocking ? (
               <ActivityIndicator size="small" color={BRAND} />
             ) : (
-              <AppText style={ac.viewTxt}>View{'\n'}Contact</AppText>
+              <AppText style={ac.viewTxt}>{t('rd_viewContactBtn')}</AppText>
             )}
           </TouchableOpacity>
         )}
@@ -260,10 +263,10 @@ const AgentCard = ({
       {!!unlockedPhone && (
         <View style={[ac.phoneRevealedRow, alreadyHired && { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' }]}>
           {alreadyHired && (
-            <AppText style={ac.hiredBadge}>🤝 Already hired — free</AppText>
+            <AppText style={ac.hiredBadge}>{t('rd_alreadyHiredFree')}</AppText>
           )}
           <View style={ac.phoneRevealedLeft}>
-            <AppText style={ac.phoneRevealedLabel}>Contact Number</AppText>
+            <AppText style={ac.phoneRevealedLabel}>{t('rd_contactNumber')}</AppText>
             <AppText style={ac.phoneRevealedNum}>📞 {unlockedPhone}</AppText>
           </View>
           <TouchableOpacity
@@ -271,7 +274,7 @@ const AgentCard = ({
             style={ac.callNowBtn}
             activeOpacity={0.85}
           >
-            <AppText style={ac.callNowTxt}>Call Now</AppText>
+            <AppText style={ac.callNowTxt}>{t('rd_callNow')}</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -311,19 +314,22 @@ const ac = StyleSheet.create({
 });
 
 // ─── Blurred agent row (non-subscribed) ───────────────────────────────────────
-const BlurredAgentRow = ({ idx }: { idx: number }): React.JSX.Element => (
-  <View style={ba.row}>
-    <View style={ba.avatar} />
-    <View style={{ flex: 1, gap: 5 }}>
-      <View style={[ba.line, { width: '55%' }]} />
-      <View style={[ba.line, { width: '35%' }]} />
-      <View style={[ba.line, { width: '25%' }]} />
+const BlurredAgentRow = ({ idx: _idx }: { idx: number }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
+  return (
+    <View style={ba.row}>
+      <View style={ba.avatar} />
+      <View style={{ flex: 1, gap: 5 }}>
+        <View style={[ba.line, { width: '55%' }]} />
+        <View style={[ba.line, { width: '35%' }]} />
+        <View style={[ba.line, { width: '25%' }]} />
+      </View>
+      <View style={ba.chipWrap}>
+        <AppText style={ba.chipTxt}>● {t('rd_interested')}</AppText>
+      </View>
     </View>
-    <View style={ba.chipWrap}>
-      <AppText style={ba.chipTxt}>● Interested</AppText>
-    </View>
-  </View>
-);
+  );
+};
 const ba = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: BORDER, opacity: 0.45 },
   avatar:  { width: 46, height: 46, borderRadius: 23, backgroundColor: BORDER, flexShrink: 0 },
@@ -333,7 +339,7 @@ const ba = StyleSheet.create({
 });
 
 // ─── Status Pipeline ──────────────────────────────────────────────────────────
-const PIPE_LABELS = ['Posted', 'Responding', 'Shortlisted', 'Hired', 'Completed'] as const;
+const PIPE_LABEL_KEYS = ['rd_pipePosted', 'rd_pipeResponding', 'rd_pipeShortlisted', 'rd_pipeHired', 'rd_pipeCompleted'] as const;
 
 function deriveStageIdx(
   req: RawRequirement,
@@ -353,15 +359,16 @@ function StatusPipeline({ req, grouped }: {
   req: RawRequirement;
   grouped?: { Shortlisted: unknown[]; Selected: unknown[]; Joined: unknown[] };
 }): React.JSX.Element {
+  const { t } = useTranslation('employer');
   const statusRaw   = (req.status ?? '').toLowerCase();
   const isCancelled = statusRaw === 'cancelled';
   const activeIdx   = isCancelled ? -1 : deriveStageIdx(req, grouped);
 
   return (
     <View style={pipe.wrap}>
-      <AppText style={pipe.heading}>Hiring Progress</AppText>
+      <AppText style={pipe.heading}>{t('rd_hiringProgress')}</AppText>
       <View style={pipe.stepsRow}>
-        {PIPE_LABELS.map((label, i) => {
+        {PIPE_LABEL_KEYS.map((labelKey, i) => {
           const done    = activeIdx >= 0 && i < activeIdx;
           const current = activeIdx >= 0 && i === activeIdx;
           const future  = !done && !current;
@@ -370,10 +377,10 @@ function StatusPipeline({ req, grouped }: {
           const ringColor   = done || current ? BRAND : isCancelled ? '#9CA3AF' : '#CBD5E1';
           const labelColor  = current ? BRAND : done ? '#334155' : isCancelled ? '#9CA3AF' : '#94A3B8';
           const leftLine    = i > 0 ? (done || current ? BRAND : '#E2E8F0') : 'transparent';
-          const rightLine   = i < PIPE_LABELS.length - 1 ? (done ? BRAND : '#E2E8F0') : 'transparent';
+          const rightLine   = i < PIPE_LABEL_KEYS.length - 1 ? (done ? BRAND : '#E2E8F0') : 'transparent';
 
           return (
-            <View key={label} style={pipe.step}>
+            <View key={labelKey} style={pipe.step}>
               <View style={pipe.connRow}>
                 <View style={[pipe.connLine, { backgroundColor: leftLine }]} />
                 {current ? (
@@ -392,7 +399,7 @@ function StatusPipeline({ req, grouped }: {
                 <View style={[pipe.connLine, { backgroundColor: rightLine }]} />
               </View>
               <AppText style={[pipe.stepLabel, { color: labelColor, fontWeight: current ? '900' : done ? '700' : '500' }]} numberOfLines={2}>
-                {label}
+                {t(labelKey)}
               </AppText>
             </View>
           );
@@ -401,7 +408,7 @@ function StatusPipeline({ req, grouped }: {
 
       {isCancelled && (
         <View style={pipe.cancelRow}>
-          <AppText style={pipe.cancelTxt}>{'✕'}  This requirement was cancelled</AppText>
+          <AppText style={pipe.cancelTxt}>{'✕'}  {t('rd_reqCancelled')}</AppText>
         </View>
       )}
     </View>
@@ -410,6 +417,7 @@ function StatusPipeline({ req, grouped }: {
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const queryClient = useQueryClient();
   const { state: authState } = useAuth();
@@ -458,18 +466,18 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
       void queryClient.invalidateQueries({ queryKey: ['agent-reqs'] });
-      toast.success('Interest submitted! The employer will be notified.', 'Interest Shown');
+      toast.success(t('rd_interestSubmitted'), t('rd_interestShown'));
       setWageInput('');
     },
-    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : 'Failed to submit interest.'),
+    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : t('rd_interestFail')),
   });
 
   const handleExpressInterest = (): void => {
     if (!req) return;
     const wage = parseInt(wageInput, 10);
-    if (!wage || isNaN(wage)) { toast.warning('Please enter your per-head wage quote.'); return; }
+    if (!wage || isNaN(wage)) { toast.warning(t('rd_enterWageQuote')); return; }
     const min = req.minBudgetPerWorker ?? 0;
-    if (wage < min) { toast.warning(`Wage must be at least ₹${min}/${getSalaryType(req)}.`); return; }
+    if (wage < min) { toast.warning(t('rd_wageMinWarn', { amount: min, unit: getSalaryType(req) })); return; }
     expressInterestMutation.mutate({ id: req._id, wage });
   };
 
@@ -478,9 +486,9 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
-      toast.success('Requirement has been closed successfully.', 'Requirement Closed');
+      toast.success(t('rd_closeSuccess'), t('rd_reqClosedTitle'));
     },
-    onError: () => toast.error('Failed to close requirement. Please try again.', 'Error'),
+    onError: () => toast.error(t('rd_closeFail'), t('rd_errorTitle')),
   });
 
   const completeMutation = useMutation({
@@ -488,9 +496,9 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
-      toast.success('Requirement marked as completed!', 'Completed');
+      toast.success(t('rd_completedSuccess'), t('rd_completedTitle'));
     },
-    onError: () => toast.error('Failed to mark as completed. Please try again.', 'Error'),
+    onError: () => toast.error(t('rd_completeFail'), t('rd_errorTitle')),
   });
 
   const proposeWorkerMutation = useMutation({
@@ -501,11 +509,11 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       setShowProposeModal(false);
       setProposeWorkerName('');
       setProposeWorkerPhone('');
-      toast.success('Worker proposed successfully. Waiting for employer approval.', 'Proposed');
+      toast.success(t('rd_proposeSuccess'), t('rd_proposedTitle'));
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message ?? 'Failed to propose worker.', 'Error');
+      toast.error(e?.response?.data?.message ?? t('rd_proposeFail'), t('rd_errorTitle'));
     },
   });
 
@@ -520,9 +528,12 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
       setRejectReasonInputId(null);
       setRejectReasonText('');
-      toast.success(`Worker ${vars.status} successfully.`, vars.status === 'approved' ? 'Approved' : 'Rejected');
+      toast.success(
+        vars.status === 'approved' ? t('rd_workerApprovedMsg') : t('rd_workerRejectedMsg'),
+        vars.status === 'approved' ? t('rd_approvedTitle') : t('rd_rejectedTitle'),
+      );
     },
-    onError: () => toast.error('Failed to update worker status. Please try again.', 'Error'),
+    onError: () => toast.error(t('rd_workerStatusFail'), t('rd_errorTitle')),
   });
 
   // Employer subscription — shares the same cache key as EmployerDashboardScreen
@@ -555,9 +566,9 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
       setJoinTarget(null);
       setJoinRate('');
-      toast.success(`Worker moved to ${vars.status}!`);
+      toast.success(t('rd_workerMovedTo', { status: vars.status === 'Selected' ? t('selected', { ns: 'employer' }) : t('joined', { ns: 'employer' }) }));
     },
-    onError: () => toast.error('Failed to update status. Please try again.'),
+    onError: () => toast.error(t('rd_statusUpdateFail')),
   });
 
   const removeShortlistMutation = useMutation({
@@ -567,7 +578,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
       toast.success(i18n.t('pipelineRemovedSuccess', { ns: 'employer' }));
     },
-    onError: () => toast.error('Failed to remove. Please try again.'),
+    onError: () => toast.error(t('rd_removeFail')),
   });
 
   const revertStatusMutation = useMutation({
@@ -577,7 +588,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       void queryClient.invalidateQueries({ queryKey: ['employer-pipeline-totals'] });
       toast.success(i18n.t('pipelineRevertedSuccess', { ns: 'employer' }));
     },
-    onError: () => toast.error('Failed to revert status. Please try again.'),
+    onError: () => toast.error(t('rd_revertFail')),
   });
 
   const handleAdvanceToSelected = (mappingId: string, workerName: string): void => {
@@ -674,16 +685,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     };
   });
 
-  if (isLoading) return <LoadingState message="Loading requirement details…" />;
+  if (isLoading) return <LoadingState message={t('rd_loading')} />;
   if (isError || !req) {
     const errMsg = error instanceof Error ? error.message : undefined;
     return (
       <ErrorState
-        title={errMsg === 'Requirement not found' ? 'Requirement Not Found' : 'Unable to Load'}
+        title={errMsg === 'Requirement not found' ? t('rd_notFoundTitle') : t('rd_unableToLoadTitle')}
         message={
           errMsg === 'Requirement not found'
-            ? 'This requirement may have been deleted or you do not have access to it.'
-            : 'Something went wrong. Please check your connection and try again.'
+            ? t('rd_notFoundMsg')
+            : t('rd_genericErrorMsg')
         }
         onRetry={() => void refetch()}
       />
@@ -695,7 +706,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   const isOpen      = !isAssigned && statusRaw !== 'closed' && statusRaw !== 'expired';
   const isClosed    = statusRaw === 'closed' || statusRaw === 'expired';
   const interestedAgents = req.intrestedAgents ?? [];
-  const activePerks = Object.entries(perkIcon).filter(([key]) => (req as unknown as Record<string, unknown>)[key] === true);
+  const activePerks = Object.entries(perkEmoji).filter(([key]) => (req as unknown as Record<string, unknown>)[key] === true);
   const isAlreadyInterested = req.intrestedAgents?.some((a: IntrestedEntry) => String(a.agentId) === String(user?.id)) ?? false;
   const isAssignedToMe = String(req.assignedAgentId) === String(user?.id);
   const sMeta = statusMeta(req.status, isAssigned);
@@ -706,19 +717,19 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     (mappingData?.grouped?.Joined?.length ?? 0) > 0;
 
   const handleClose = (): void => {
-    showAlert('Close Requirement', 'Are you sure you want to close this requirement?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Close', style: 'destructive', onPress: () => closeMutation.mutate() },
+    showAlert(t('rd_closeAlertTitle'), t('rd_closeAlertBody'), [
+      { text: t('rd_cancel'), style: 'cancel' },
+      { text: t('rd_close'), style: 'destructive', onPress: () => closeMutation.mutate() },
     ]);
   };
 
   const handleComplete = (): void => {
     showAlert(
-      'Mark as Completed',
-      'This will mark the requirement as completed. Workers who joined will be recorded.',
+      t('rd_completeAlertTitle'),
+      t('rd_completeAlertBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark Completed', style: 'default', onPress: () => completeMutation.mutate() },
+        { text: t('rd_cancel'), style: 'cancel' },
+        { text: t('rd_markCompleted'), style: 'default', onPress: () => completeMutation.mutate() },
       ]
     );
   };
@@ -801,7 +812,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           <TouchableOpacity onPress={() => navigation.goBack()} style={hero.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <AppText style={hero.backArrow}>←</AppText>
           </TouchableOpacity>
-          <AppText style={hero.navTitle} numberOfLines={1}>Requirement Details</AppText>
+          <AppText style={hero.navTitle} numberOfLines={1}>{t('rd_headerTitle')}</AppText>
           {req.ERN_NUMBER ? (
             <View style={hero.ernChip}>
               <AppText style={hero.ernTxt}>#{req.ERN_NUMBER}</AppText>
@@ -824,7 +835,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           </View>
           <View style={[hero.statusBadge, { backgroundColor: sMeta.bg, borderColor: sMeta.border }]}>
             <View style={[hero.statusDot, { backgroundColor: sMeta.color }]} />
-            <AppText style={[hero.statusLabel, { color: sMeta.color }]}>{sMeta.label}</AppText>
+            <AppText style={[hero.statusLabel, { color: sMeta.color }]}>{t(sMeta.labelKey)}</AppText>
           </View>
         </View>
 
@@ -847,7 +858,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           {(req.workerQuantitySkilled != null || req.workerQuantityUnskilled != null) ? (
             <View style={hero.pill}>
               <AppText style={hero.pillIcon}>👷</AppText>
-              <AppText style={hero.pillTxt}>{(req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0)} workers</AppText>
+              <AppText style={hero.pillTxt}>{t('rd_workersCount', { count: (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0) })}</AppText>
             </View>
           ) : null}
         </View>
@@ -864,40 +875,40 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
         {/* ── Info Grid ────────────────────────────────────────────────── */}
         <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <SecHead title="Job Overview" />
+          <SecHead title={t('rd_jobOverview')} />
           <View style={pg.grid}>
             {req.workerNeedDate ? (
-              <InfoTile emoji="📅" label="Start Date" value={formatDate(req.workerNeedDate)} />
+              <InfoTile emoji="📅" label={t('rd_startDate')} value={formatDate(req.workerNeedDate)} />
             ) : null}
             {req.estimated_days ? (
-              <InfoTile emoji="⏱️" label="Duration" value={`${req.estimated_days} day${Number(req.estimated_days) > 1 ? 's' : ''}`} />
+              <InfoTile emoji="⏱️" label={t('rd_duration')} value={t('rd_daysValue', { count: Number(req.estimated_days) })} />
             ) : null}
             {(req.workerQuantitySkilled != null) ? (
-              <InfoTile emoji="🧑‍🔧" label="Skilled Workers" value={String(req.workerQuantitySkilled)} accent={BRAND_MID} />
+              <InfoTile emoji="🧑‍🔧" label={t('rd_skilledWorkers')} value={String(req.workerQuantitySkilled)} accent={BRAND_MID} />
             ) : null}
             {(req.workerQuantityUnskilled != null) ? (
-              <InfoTile emoji="👷" label="Unskilled Workers" value={String(req.workerQuantityUnskilled)} />
+              <InfoTile emoji="👷" label={t('rd_unskilledWorkers')} value={String(req.workerQuantityUnskilled)} />
             ) : null}
             {(req.minBudgetPerWorker != null) ? (
               <InfoTile
                 emoji="💰"
-                label="Budget / Worker"
+                label={t('rd_budgetPerWorker')}
                 value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${getSalaryType(req)}`}
                 accent={GREEN}
               />
             ) : null}
             {req.workLocation ? (
-              <InfoTile emoji="🗺️" label="Work Site" value={req.workLocation} />
+              <InfoTile emoji="🗺️" label={t('rd_workSite')} value={req.workLocation} />
             ) : null}
             {(req.inTime || req.outTime) ? (
               <InfoTile
                 emoji="🕐"
-                label="Shift Timing"
+                label={t('rd_shiftTiming')}
                 value={`${formatTime(req.inTime)} – ${formatTime(req.outTime)}`}
               />
             ) : null}
             {req.createdAt ? (
-              <InfoTile emoji="🗓️" label="Posted On" value={formatDate(req.createdAt)} />
+              <InfoTile emoji="🗓️" label={t('rd_postedOn')} value={formatDate(req.createdAt)} />
             ) : null}
           </View>
         </View>
@@ -905,11 +916,11 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Perks & Benefits ─────────────────────────────────────────── */}
         {activePerks.length > 0 && (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <SecHead title="Perks & Benefits" accent={GREEN} />
+            <SecHead title={t('rd_perksTitle')} accent={GREEN} />
             <View style={pg.perksWrap}>
-              {activePerks.map(([, label]) => (
-                <View key={label} style={pg.perkChip}>
-                  <AppText style={pg.perkTxt}>{label}</AppText>
+              {activePerks.map(([field, emoji]) => (
+                <View key={field} style={pg.perkChip}>
+                  <AppText style={pg.perkTxt} numberOfLines={1}>{emoji} {t(`rd_perk_${field}`)}</AppText>
                 </View>
               ))}
             </View>
@@ -919,7 +930,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Remarks ──────────────────────────────────────────────────── */}
         {req.remarks ? (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <SecHead title="Additional Notes" accent={AMBER} />
+            <SecHead title={t('rd_additionalNotes')} accent={AMBER} />
             <View style={pg.remarksBox}>
               <AppText style={pg.remarksIcon}>📝</AppText>
               <AppText style={[pg.remarksTxt, { color: theme.colors.text }]}>{req.remarks}</AppText>
@@ -930,7 +941,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Assigned Agent (employer view) ───────────────────────────── */}
         {isAssigned && !isAgentOrWorker && (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <SecHead title="Assigned Agent" accent="#7C3AED" />
+            <SecHead title={t('rd_assignedAgent')} accent="#7C3AED" />
             <View style={pg.assignedCard}>
               <View style={pg.assignedAvatar}>
                 <AppText style={pg.assignedInitials}>
@@ -942,7 +953,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   {req.assignedAgentName ?? '—'}
                 </AppText>
                 {req.finalAgentRequiredWage != null && (
-                  <AppText style={pg.assignedWage}>₹{req.finalAgentRequiredWage}/day agreed</AppText>
+                  <AppText style={pg.assignedWage}>{t('rd_wagePerDayAgreed', { amount: req.finalAgentRequiredWage })}</AppText>
                 )}
                 {req.assignedAgentPhone && (
                   isSubscribed ? (
@@ -953,12 +964,12 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       <AppText style={pg.assignedPhone}>📞 {req.assignedAgentPhone}</AppText>
                     </TouchableOpacity>
                   ) : (
-                    <AppText style={pg.lockedContact}>🔒 Contact hidden — subscription inactive</AppText>
+                    <AppText style={pg.lockedContact}>🔒 {t('rd_contactHiddenInactive')}</AppText>
                   )
                 )}
               </View>
               <View style={pg.assignedBadge}>
-                <AppText style={pg.assignedBadgeTxt}>✓ Assigned</AppText>
+                <AppText style={pg.assignedBadgeTxt}>✓ {t('rd_assignedBadge')}</AppText>
               </View>
             </View>
           </View>
@@ -968,7 +979,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {isEmployer && isAssigned && (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <View style={pg.interestedHeader}>
-              <SecHead title="Proposed Workers" accent={GREEN} />
+              <SecHead title={t('rd_proposedWorkers')} accent={GREEN} />
               {(req.proposedWorkers ?? []).length > 0 && (
                 <View style={[pg.countBadge, { backgroundColor: GREEN }]}>
                   <AppText style={pg.countBadgeTxt}>{(req.proposedWorkers ?? []).length}</AppText>
@@ -981,16 +992,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <View style={pg.noAgentsIconWrap}>
                   <AppText style={{ fontSize: 28 }}>👷</AppText>
                 </View>
-                <AppText style={[pg.noAgentsTitle, { color: theme.colors.text }]}>No workers proposed yet</AppText>
+                <AppText style={[pg.noAgentsTitle, { color: theme.colors.text }]}>{t('rd_noWorkersProposed')}</AppText>
                 <AppText style={[pg.noAgentsSub, { color: theme.colors.mutedText }]}>
-                  Your assigned agent will propose workers for your approval.
+                  {t('rd_noWorkersProposedSub')}
                 </AppText>
               </View>
             ) : (
               (req.proposedWorkers ?? []).map((pw, idx) => {
                 const statusColor = pw.status === 'approved' ? GREEN : pw.status === 'rejected' ? RED : AMBER;
                 const statusBg    = pw.status === 'approved' ? GREEN_SOFT : pw.status === 'rejected' ? '#FEF2F2' : AMBER_SOFT;
-                const statusLabel = pw.status === 'approved' ? '✓ Approved' : pw.status === 'rejected' ? '✗ Rejected' : '● Pending';
+                const statusLabel = pw.status === 'approved' ? `✓ ${t('rd_statusApproved')}` : pw.status === 'rejected' ? `✗ ${t('rd_statusRejected')}` : `● ${t('rd_statusPending')}`;
                 const isPhone     = !pw.workerId;
                 const workerKey   = pw.workerId ?? pw.workerPhone ?? String(idx);
                 const showRejectInput = rejectReasonInputId === workerKey;
@@ -1004,10 +1015,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       <AppText style={pws.name}>{pw.workerName ?? '—'}</AppText>
                       {isSubscribed
                         ? <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
-                        : <AppText style={pws.phoneLocked}>🔒 Contact hidden</AppText>
+                        : <AppText style={pws.phoneLocked}>🔒 {t('rd_contactHidden')}</AppText>
                       }
                       {pw.status === 'rejected' && pw.rejectionReason ? (
-                        <AppText style={pws.reason}>Reason: {pw.rejectionReason}</AppText>
+                        <AppText style={pws.reason}>{t('rd_reasonLabel')}: {pw.rejectionReason}</AppText>
                       ) : null}
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -1023,14 +1034,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                             disabled={respondProposalMutation.isPending}
                             activeOpacity={0.8}
                           >
-                            <AppText style={pws.approveTxt}>Approve</AppText>
+                            <AppText style={pws.approveTxt}>{t('rd_approve')}</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={pws.rejectBtn}
                             onPress={() => { setRejectReasonInputId(workerKey); setRejectReasonText(''); }}
                             activeOpacity={0.8}
                           >
-                            <AppText style={pws.rejectTxt}>Reject</AppText>
+                            <AppText style={pws.rejectTxt}>{t('rd_reject')}</AppText>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -1042,13 +1053,13 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           style={pws.rejectInput}
                           value={rejectReasonText}
                           onChangeText={setRejectReasonText}
-                          placeholder="Reason for rejection (optional)"
+                          placeholder={t('rd_rejectReasonPlaceholder')}
                           placeholderTextColor={SLATE}
                           autoFocus
                         />
                         <View style={pws.rejectConfirmRow}>
                           <TouchableOpacity onPress={() => setRejectReasonInputId(null)} style={pws.rejectCancelChip} activeOpacity={0.8}>
-                            <AppText style={{ fontSize: 12, color: SLATE, fontWeight: '600' }}>Cancel</AppText>
+                            <AppText style={{ fontSize: 12, color: SLATE, fontWeight: '600' }}>{t('rd_cancel')}</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={pws.rejectConfirmBtn}
@@ -1056,7 +1067,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                             disabled={respondProposalMutation.isPending}
                             activeOpacity={0.85}
                           >
-                            <AppText style={{ fontSize: 12, color: WHITE, fontWeight: '700' }}>{respondProposalMutation.isPending ? '…' : 'Confirm Reject'}</AppText>
+                            <AppText style={{ fontSize: 12, color: WHITE, fontWeight: '700' }}>{respondProposalMutation.isPending ? '…' : t('rd_confirmReject')}</AppText>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1073,7 +1084,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             {/* Header */}
             <View style={pl.headerRow}>
-              <SecHead title="Hiring Pipeline" accent="#7C3AED" />
+              <SecHead title={t('rd_hiringPipeline')} accent="#7C3AED" />
               <View style={[pl.totalBadge, { backgroundColor: '#7C3AED' }]}>
                 <AppText style={pl.totalTxt}>{mappingData!.mappings.length}</AppText>
               </View>
@@ -1093,6 +1104,12 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   Joined:      { bg: '#059669', text: '#fff', border: '#059669' },
                 };
                 const c = colors[f]!;
+                const filterLabel: Record<string, string> = {
+                  All: t('rd_filterAll'),
+                  Shortlisted: t('rd_filterShortlisted'),
+                  Selected: t('rd_filterSelected'),
+                  Joined: t('rd_filterJoined'),
+                };
                 return (
                   <TouchableOpacity
                     key={f}
@@ -1102,7 +1119,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       : { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
                     activeOpacity={0.75}
                   >
-                    <AppText style={[pl.chipTxt, { color: active ? c.text : theme.colors.mutedText }]}>{f}</AppText>
+                    <AppText style={[pl.chipTxt, { color: active ? c.text : theme.colors.mutedText }]}>{filterLabel[f]}</AppText>
                     <View style={[pl.chipBadge, { backgroundColor: active ? 'rgba(255,255,255,0.25)' : theme.colors.border }]}>
                       <AppText style={[pl.chipBadgeTxt, { color: active ? '#fff' : theme.colors.mutedText }]}>{cnt}</AppText>
                     </View>
@@ -1136,16 +1153,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
                         <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
-                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{m.status}</AppText>
+                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{t(`rd_status_${m.status}`)}</AppText>
                       </View>
                       {m.agreedRate != null && (
-                        <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? 'day'}</AppText>
+                        <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>
                       )}
                     </View>
                     {m.workerPhone
                       ? isSubscribed
                         ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
-                        : <AppText style={pl.phoneLocked}>{'🔒'} Contact hidden</AppText>
+                        : <AppText style={pl.phoneLocked}>{'🔒'} {t('rd_contactHidden')}</AppText>
                       : null
                     }
                   </View>
@@ -1228,8 +1245,8 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={{ fontSize: 20 }}>📬</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={pg.invitationsTitle}>Worker Invitations</AppText>
-                <AppText style={pg.invitationsSub}>Track who accepted or declined your invites</AppText>
+                <AppText style={pg.invitationsTitle}>{t('rd_workerInvitations')}</AppText>
+                <AppText style={pg.invitationsSub}>{t('rd_workerInvitationsSub')}</AppText>
               </View>
             </View>
             <AppText style={pg.invitationsArrow}>›</AppText>
@@ -1240,7 +1257,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {isEmployer && !isAssigned && (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <View style={pg.interestedHeader}>
-              <SecHead title={`Interested Agents`} />
+              <SecHead title={t('rd_interestedAgents')} />
               {interestedAgents.length > 0 && (
                 <View style={pg.countBadge}>
                   <AppText style={pg.countBadgeTxt}>{interestedAgents.length}</AppText>
@@ -1252,16 +1269,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {isEmployer && !profileLoaded && !profileError ? (
               <View style={pg.profilesLoading}>
                 <ActivityIndicator size="small" color={BRAND} />
-                <AppText style={{ fontSize: 12, color: SLATE }}>Checking subscription…</AppText>
+                <AppText style={{ fontSize: 12, color: SLATE }}>{t('rd_checkingSubscription')}</AppText>
               </View>
             ) : interestedAgents.length === 0 ? (
               <View style={pg.noAgentsWrap}>
                 <View style={pg.noAgentsIconWrap}>
                   <AppText style={{ fontSize: 28 }}>👀</AppText>
                 </View>
-                <AppText style={[pg.noAgentsTitle, { color: theme.colors.text }]}>No agents yet</AppText>
+                <AppText style={[pg.noAgentsTitle, { color: theme.colors.text }]}>{t('rd_noAgentsYet')}</AppText>
                 <AppText style={[pg.noAgentsSub, { color: theme.colors.mutedText }]}>
-                  Agents who express interest will appear here.
+                  {t('rd_noAgentsYetSub')}
                 </AppText>
               </View>
             ) : !isSubscribed ? (
@@ -1282,13 +1299,13 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       <AppText style={{ fontSize: 26 }}>🔒</AppText>
                     </View>
                     <AppText style={pg.subOverlayTitle}>
-                      {interestedAgents.length} Agent{interestedAgents.length !== 1 ? 's' : ''} Interested
+                      {t('rd_agentsInterestedCount', { count: interestedAgents.length })}
                     </AppText>
                     <AppText style={[pg.subOverlaySub, { color: theme.colors.mutedText }]}>
-                      You don't have an active subscription. Subscribe to view agent profiles and contact them directly.
+                      {t('rd_noSubscriptionMsg')}
                     </AppText>
                     <TouchableOpacity style={pg.subOverlayBtn} onPress={() => navigation.navigate('Subscription')} activeOpacity={0.85}>
-                      <AppText style={pg.subOverlayBtnTxt}>View Plans  →</AppText>
+                      <AppText style={pg.subOverlayBtnTxt}>{t('rd_viewPlans')}  →</AppText>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1298,8 +1315,8 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   <View style={pg.suggestionBox}>
                     <AppText style={{ fontSize: 16 }}>💡</AppText>
                     <AppText style={pg.suggestionTxt}>
-                      <AppText style={pg.suggestionBold}>Tip: </AppText>
-                      Few agents have responded. For faster hiring, browse workers directly and reach out to matching profiles.
+                      <AppText style={pg.suggestionBold}>{t('rd_tipLabel')} </AppText>
+                      {t('rd_tipFewAgents')}
                     </AppText>
                   </View>
                 )}
@@ -1310,7 +1327,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 {profilesLoading && (
                   <View style={pg.profilesLoading}>
                     <ActivityIndicator size="small" color={theme.colors.primary} />
-                    <AppText style={{ fontSize: 12, color: theme.colors.mutedText }}>Loading agent details…</AppText>
+                    <AppText style={{ fontSize: 12, color: theme.colors.mutedText }}>{t('rd_loadingAgentDetails')}</AppText>
                   </View>
                 )}
 
@@ -1328,8 +1345,8 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   <View style={pg.suggestionBox}>
                     <AppText style={{ fontSize: 16 }}>💡</AppText>
                     <AppText style={pg.suggestionTxt}>
-                      <AppText style={pg.suggestionBold}>Tip: </AppText>
-                      Few agents have responded. For faster hiring, browse workers directly and reach out to matching profiles.
+                      <AppText style={pg.suggestionBold}>{t('rd_tipLabel')} </AppText>
+                      {t('rd_tipFewAgents')}
                     </AppText>
                   </View>
                 )}
@@ -1341,37 +1358,37 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Express Interest (agent / self-worker) ────────────────────── */}
         {isAgentOrWorker && isOpen && (
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <SecHead title="Express Interest" accent={GREEN} />
+            <SecHead title={t('rd_expressInterest')} accent={GREEN} />
             {userRole === 'agent' && !user?.veryfiedBage ? (
               /* Agent without verified badge — gate access */
               <View style={pg.interestDone}>
                 <View style={[pg.interestDoneIcon, { backgroundColor: AMBER_SOFT }]}>
                   <AppText style={{ fontSize: 26 }}>🏆</AppText>
                 </View>
-                <AppText style={[pg.interestDoneTitle, { color: AMBER }]}>Verified Badge Required</AppText>
+                <AppText style={[pg.interestDoneTitle, { color: AMBER }]}>{t('rd_verifiedBadgeRequired')}</AppText>
                 <AppText style={[pg.interestDoneSub, { color: theme.colors.mutedText }]}>
-                  Only verified agents can show interest in requirements. Get your badge to unlock this feature.
+                  {t('rd_verifiedBadgeRequiredSub')}
                 </AppText>
                 <TouchableOpacity
                   style={[pg.expressBtn, { backgroundColor: AMBER, marginTop: 8 }]}
                   onPress={() => setBadgeModalVisible(true)}
                   activeOpacity={0.85}
                 >
-                  <AppText style={pg.expressBtnTxt}>🏆  Get Verified Badge</AppText>
+                  <AppText style={pg.expressBtnTxt}>🏆  {t('rd_getVerifiedBadge')}</AppText>
                 </TouchableOpacity>
               </View>
             ) : isAlreadyInterested ? (
               <View style={pg.interestDone}>
                 <View style={pg.interestDoneIcon}><AppText style={{ fontSize: 26 }}>✅</AppText></View>
-                <AppText style={pg.interestDoneTitle}>Interest Already Shown</AppText>
+                <AppText style={pg.interestDoneTitle}>{t('rd_interestAlreadyShown')}</AppText>
                 <AppText style={[pg.interestDoneSub, { color: theme.colors.mutedText }]}>
-                  The employer has been notified. You'll be contacted if selected.
+                  {t('rd_interestAlreadyShownSub')}
                 </AppText>
               </View>
             ) : (
               <View style={pg.interestForm}>
                 <View style={pg.minWageRow}>
-                  <AppText style={pg.minWageLabel}>Minimum wage by employer</AppText>
+                  <AppText style={pg.minWageLabel}>{t('rd_minWageByEmployer')}</AppText>
                   <View style={pg.minWagePill}>
                     <AppText style={pg.minWagePillTxt}>₹{req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}</AppText>
                   </View>
@@ -1380,7 +1397,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   style={[pg.wageInput, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border, color: theme.colors.text }]}
                   value={wageInput}
                   onChangeText={setWageInput}
-                  placeholder={`Your quote (min ₹${req.minBudgetPerWorker ?? 0}/${getSalaryType(req)})`}
+                  placeholder={t('rd_wageQuotePlaceholder', { amount: req.minBudgetPerWorker ?? 0, unit: getSalaryType(req) })}
                   placeholderTextColor={theme.colors.mutedText}
                   keyboardType="number-pad"
                   returnKeyType="done"
@@ -1392,7 +1409,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   activeOpacity={0.85}
                 >
                   <AppText style={pg.expressBtnTxt}>
-                    {expressInterestMutation.isPending ? 'Submitting…' : '🤝  Show Interest'}
+                    {expressInterestMutation.isPending ? t('rd_submitting') : `🤝  ${t('rd_showInterest')}`}
                   </AppText>
                 </TouchableOpacity>
               </View>
@@ -1406,9 +1423,9 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             <View style={[pg.section, { backgroundColor: '#F0FDF4', borderColor: GREEN_BDR }]}>
               <View style={pg.assignedMeWrap}>
                 <AppText style={{ fontSize: 36 }}>🏆</AppText>
-                <AppText style={pg.assignedMeTitle}>You're Assigned!</AppText>
+                <AppText style={pg.assignedMeTitle}>{t('rd_youreAssigned')}</AppText>
                 <AppText style={[pg.assignedMeSub, { color: SLATE }]}>
-                  Agreed wage: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}
+                  {t('rd_agreedWage')}: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}
                 </AppText>
               </View>
             </View>
@@ -1416,21 +1433,21 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {/* Propose Workers panel */}
             <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
               <View style={[pg.interestedHeader, { marginBottom: 8 }]}>
-                <SecHead title="Proposed Workers" accent={BRAND} />
+                <SecHead title={t('rd_proposedWorkers')} accent={BRAND} />
                 <TouchableOpacity style={pws.proposeBtn} onPress={() => setShowProposeModal(true)} activeOpacity={0.85}>
-                  <AppText style={pws.proposeBtnTxt}>+ Propose</AppText>
+                  <AppText style={pws.proposeBtnTxt}>{t('rd_proposeBtn')}</AppText>
                 </TouchableOpacity>
               </View>
 
               {(req.proposedWorkers ?? []).length === 0 ? (
                 <AppText style={{ fontSize: 12, color: SLATE, textAlign: 'center', paddingVertical: 16 }}>
-                  No workers proposed yet. Tap "+ Propose" to add one.
+                  {t('rd_noWorkersProposedTapAdd')}
                 </AppText>
               ) : (
                 (req.proposedWorkers ?? []).map((pw, idx) => {
                   const statusColor = pw.status === 'approved' ? GREEN : pw.status === 'rejected' ? RED : AMBER;
                   const statusBg    = pw.status === 'approved' ? GREEN_SOFT : pw.status === 'rejected' ? '#FEF2F2' : AMBER_SOFT;
-                  const statusLabel = pw.status === 'approved' ? '✓ Approved' : pw.status === 'rejected' ? '✗ Rejected' : '● Pending';
+                  const statusLabel = pw.status === 'approved' ? `✓ ${t('rd_statusApproved')}` : pw.status === 'rejected' ? `✗ ${t('rd_statusRejected')}` : `● ${t('rd_statusPending')}`;
                   const workerKey   = pw.workerId ?? pw.workerPhone ?? String(idx);
 
                   return (
@@ -1442,7 +1459,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         <AppText style={pws.name}>{pw.workerName ?? '—'}</AppText>
                         <AppText style={pws.phone}>📞 {pw.workerPhone ?? '—'}</AppText>
                         {pw.status === 'rejected' && pw.rejectionReason ? (
-                          <AppText style={pws.reason}>Reason: {pw.rejectionReason}</AppText>
+                          <AppText style={pws.reason}>{t('rd_reasonLabel')}: {pw.rejectionReason}</AppText>
                         ) : null}
                       </View>
                       <View style={[pws.statusChip, { backgroundColor: statusBg }]}>
@@ -1480,7 +1497,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 >
                   <AppText style={{ fontSize: 18 }}>{'✅'}</AppText>
                   <AppText style={pg.completeBtnTxt}>
-                    {completeMutation.isPending ? 'Saving…' : 'Mark as Completed'}
+                    {completeMutation.isPending ? t('rd_saving') : t('rd_markCompletedBtn')}
                   </AppText>
                 </TouchableOpacity>
               ) : (
@@ -1493,7 +1510,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 >
                   <AppText style={{ fontSize: 18 }}>{'🔒'}</AppText>
                   <AppText style={pg.closeBtnTxt}>
-                    {closeMutation.isPending ? 'Closing…' : 'Close Requirement'}
+                    {closeMutation.isPending ? t('rd_closing') : t('rd_closeRequirementBtn')}
                   </AppText>
                 </TouchableOpacity>
               )
@@ -1503,7 +1520,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {isClosed && (req?.proposedWorkers?.some((pw) => pw.status === 'approved') || (req?.intrestedAgents?.length ?? 0) > 0) && (
               <TouchableOpacity style={pg.rateBtn} onPress={() => setShowRateModal(true)} activeOpacity={0.88}>
                 <AppText style={{ fontSize: 18 }}>{'⭐'}</AppText>
-                <AppText style={pg.rateBtnTxt}>Rate Your Workers</AppText>
+                <AppText style={pg.rateBtnTxt}>{t('rd_rateYourWorkers')}</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -1519,22 +1536,22 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             <View style={pw.backdrop}>
               <View style={[pw.sheet, { backgroundColor: WHITE }]}>
                 <View style={pw.sheetHandle} />
-                <AppText style={pw.sheetTitle}>Mark as Joined</AppText>
-                <AppText style={pw.sheetSub}>{joinTarget.workerName} — enter agreed rate to confirm joining.</AppText>
+                <AppText style={pw.sheetTitle}>{t('rd_markAsJoined')}</AppText>
+                <AppText style={pw.sheetSub}>{t('rd_markAsJoinedSub', { name: joinTarget.workerName })}</AppText>
 
-                <AppText style={pw.fieldLabel}>Agreed Rate (₹)</AppText>
+                <AppText style={pw.fieldLabel}>{t('rd_agreedRateLabel')}</AppText>
                 <TextInput
                   style={pw.input}
                   value={joinRate}
                   onChangeText={setJoinRate}
-                  placeholder="e.g. 600"
+                  placeholder={t('rd_egRate')}
                   placeholderTextColor={SLATE}
                   keyboardType="number-pad"
                   returnKeyType="done"
                   autoFocus
                 />
 
-                <AppText style={pw.fieldLabel}>Rate Type</AppText>
+                <AppText style={pw.fieldLabel}>{t('rd_rateTypeLabel')}</AppText>
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                   {(['Daily', 'Monthly'] as const).map((rt) => (
                     <TouchableOpacity
@@ -1543,14 +1560,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       style={[pw.cancelBtn, joinRateType === rt && { backgroundColor: BRAND, borderColor: BRAND }]}
                       activeOpacity={0.8}
                     >
-                      <AppText style={{ fontSize: 13, fontWeight: '700', color: joinRateType === rt ? WHITE : SLATE }}>{rt}</AppText>
+                      <AppText style={{ fontSize: 13, fontWeight: '700', color: joinRateType === rt ? WHITE : SLATE }}>{rt === 'Daily' ? t('rd_rateDaily') : t('rd_rateMonthly')}</AppText>
                     </TouchableOpacity>
                   ))}
                 </View>
 
                 <View style={[pw.btnRow, { marginTop: 16 }]}>
                   <TouchableOpacity style={pw.cancelBtn} onPress={() => setJoinTarget(null)} activeOpacity={0.8}>
-                    <AppText style={pw.cancelTxt}>Cancel</AppText>
+                    <AppText style={pw.cancelTxt}>{t('rd_cancel')}</AppText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[pw.submitBtn, (!joinRate || advanceStatusMutation.isPending) && { opacity: 0.55 }]}
@@ -1562,7 +1579,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     })}
                     activeOpacity={0.85}
                   >
-                    <AppText style={pw.submitTxt}>{advanceStatusMutation.isPending ? 'Saving…' : '✓ Confirm Join'}</AppText>
+                    <AppText style={pw.submitTxt}>{advanceStatusMutation.isPending ? t('rd_saving') : `✓ ${t('rd_confirmJoin')}`}</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1581,25 +1598,25 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         <View style={pw.backdrop}>
           <View style={[pw.sheet, { backgroundColor: WHITE }]}>
             <View style={pw.sheetHandle} />
-            <AppText style={pw.sheetTitle}>Propose a Worker</AppText>
-            <AppText style={pw.sheetSub}>Enter the worker's details. We'll link their account automatically if they're registered.</AppText>
+            <AppText style={pw.sheetTitle}>{t('rd_proposeAWorker')}</AppText>
+            <AppText style={pw.sheetSub}>{t('rd_proposeAWorkerSub')}</AppText>
 
-            <AppText style={pw.fieldLabel}>Worker Name</AppText>
+            <AppText style={pw.fieldLabel}>{t('rd_workerNameLabel')}</AppText>
             <TextInput
               style={pw.input}
               value={proposeWorkerName}
               onChangeText={setProposeWorkerName}
-              placeholder="Full name"
+              placeholder={t('rd_fullNamePlaceholder')}
               placeholderTextColor={SLATE}
               autoCapitalize="words"
             />
 
-            <AppText style={pw.fieldLabel}>Mobile Number</AppText>
+            <AppText style={pw.fieldLabel}>{t('rd_mobileNumberLabel')}</AppText>
             <TextInput
               style={pw.input}
               value={proposeWorkerPhone}
               onChangeText={setProposeWorkerPhone}
-              placeholder="10-digit mobile number"
+              placeholder={t('rd_mobilePlaceholder')}
               placeholderTextColor={SLATE}
               keyboardType="phone-pad"
               maxLength={10}
@@ -1607,7 +1624,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
             <View style={pw.btnRow}>
               <TouchableOpacity style={pw.cancelBtn} onPress={() => setShowProposeModal(false)} activeOpacity={0.8}>
-                <AppText style={pw.cancelTxt}>Cancel</AppText>
+                <AppText style={pw.cancelTxt}>{t('rd_cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[pw.submitBtn, (proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10) && { opacity: 0.55 }]}
@@ -1615,7 +1632,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 disabled={proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10}
                 activeOpacity={0.85}
               >
-                <AppText style={pw.submitTxt}>{proposeWorkerMutation.isPending ? 'Submitting…' : 'Submit'}</AppText>
+                <AppText style={pw.submitTxt}>{proposeWorkerMutation.isPending ? t('rd_submitting') : t('rd_submit')}</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -1630,8 +1647,8 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               {/* Header */}
               <View style={rm.header}>
                 <View style={{ flex: 1 }}>
-                  <AppText style={rm.headerTitle}>⭐ Rate Your Workers</AppText>
-                  <AppText style={rm.headerSub}>How did they perform on this requirement?</AppText>
+                  <AppText style={rm.headerTitle}>⭐ {t('rd_rateYourWorkers')}</AppText>
+                  <AppText style={rm.headerSub}>{t('rd_rateHeaderSub')}</AppText>
                 </View>
                 <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.closeBtn}>
                   <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
@@ -1651,7 +1668,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           <AppText style={rm.initials}>{(pw.workerName ?? 'W')[0]?.toUpperCase() ?? 'W'}</AppText>
                         </View>
                         <View style={{ flex: 1 }}>
-                          <AppText style={rm.workerName}>{pw.workerName ?? 'Worker'}</AppText>
+                          <AppText style={rm.workerName}>{pw.workerName ?? t('rd_workerFallback')}</AppText>
                           {pw.workerPhone ? <AppText style={rm.workerPhone}>{pw.workerPhone}</AppText> : null}
                         </View>
                       </View>
@@ -1668,7 +1685,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       {stars > 0 && (
                         <TextInput
                           style={rm.commentInput}
-                          placeholder="Add a comment (optional)"
+                          placeholder={t('rd_addCommentPlaceholder')}
                           placeholderTextColor="#94A3B8"
                           value={ratingComment[key] ?? ''}
                           onChangeText={(t) => setRatingComment((p) => ({ ...p, [key]: t }))}
@@ -1689,7 +1706,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         <AppText style={rm.initials}>{(req.assignedAgentName ?? 'A')[0]?.toUpperCase() ?? 'A'}</AppText>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <AppText style={rm.workerName}>{req.assignedAgentName ?? 'Assigned Agent'}</AppText>
+                        <AppText style={rm.workerName}>{req.assignedAgentName ?? t('rd_assignedAgentFallback')}</AppText>
                       </View>
                     </View>
                     {(() => {
@@ -1708,7 +1725,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           {stars > 0 && (
                             <TextInput
                               style={rm.commentInput}
-                              placeholder="Add a comment (optional)"
+                              placeholder={t('rd_addCommentPlaceholder')}
                               placeholderTextColor="#94A3B8"
                               value={ratingComment[key] ?? ''}
                               onChangeText={(t) => setRatingComment((p) => ({ ...p, [key]: t }))}
@@ -1726,7 +1743,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
               <View style={rm.footer}>
                 <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.cancelBtn}>
-                  <AppText style={rm.cancelTxt}>Cancel</AppText>
+                  <AppText style={rm.cancelTxt}>{t('rd_cancel')}</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   disabled={ratingSaving || Object.keys(ratingStars).length === 0}
@@ -1745,10 +1762,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           })
                         )
                       );
-                      toast.success('Ratings submitted! Workers can now be found by their ratings.', 'Ratings Saved');
+                      toast.success(t('rd_ratingsSubmitted'), t('rd_ratingsSavedTitle'));
                       setShowRateModal(false);
                     } catch {
-                      toast.error('Failed to submit ratings. Please try again.');
+                      toast.error(t('rd_ratingsFail'));
                     } finally {
                       setRatingSaving(false);
                     }
@@ -1757,7 +1774,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 >
                   {ratingSaving
                     ? <ActivityIndicator color="#fff" size="small" />
-                    : <AppText style={rm.submitTxt}>Submit Ratings ({Object.values(ratingStars).filter((s) => s > 0).length})</AppText>}
+                    : <AppText style={rm.submitTxt}>{t('rd_submitRatings', { count: Object.values(ratingStars).filter((s) => s > 0).length })}</AppText>}
                 </TouchableOpacity>
               </View>
             </View>

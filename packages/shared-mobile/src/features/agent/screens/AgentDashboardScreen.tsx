@@ -36,7 +36,9 @@ import { Skeleton, SkeletonCard } from '../../../shared/components/ui/Skeleton';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/utils/labelUtils';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
-import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+// Profile-completion nudge disabled for now — mandatory completion is enforced
+// via the post-OTP WorkerProfileCompletionScreen instead.
+// import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
 import i18n from '../../../core/i18n';
@@ -219,11 +221,11 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
               {catLabel}
             </AppText>
             <View style={sliderCard.salaryRow}>
-              <AppText style={[sliderCard.salaryTxt, { color: visual.accent }]}>
+              <AppText style={[sliderCard.salaryTxt, { color: visual.accent }]} numberOfLines={1}>
                 ₹{salaryMin.toLocaleString('en-IN')}–{salaryMax.toLocaleString('en-IN')}
               </AppText>
               <View style={[sliderCard.periodBadge, { backgroundColor: visual.accent + '18', borderColor: visual.accent + '40' }]}>
-                <AppText style={[sliderCard.periodTxt, { color: visual.accent }]}>{t('salaryPer')} {salaryPeriod}</AppText>
+                <AppText style={[sliderCard.periodTxt, { color: visual.accent }]} numberOfLines={1}>{t('salaryPer')} {salaryPeriod}</AppText>
               </View>
             </View>
           </View>
@@ -877,7 +879,8 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         loading={interestMutation.isPending}
       />
 
-      {user && <ProfileCompletionModal user={user} />}
+      {/* Profile-completion popup disabled for now. */}
+      {/* {user && <ProfileCompletionModal user={user} />} */}
 
       {isAgent ? (
         <GuidedTour
@@ -1059,8 +1062,8 @@ const sliderCard = StyleSheet.create({
   catLabel: { fontSize: 11, fontWeight: '600', lineHeight: 15 },
 
   salaryRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 5 },
-  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19 },
-  periodBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
+  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19, flexShrink: 1 },
+  periodBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3, flexShrink: 0 },
   periodTxt: { fontSize: 11, fontWeight: '800' },
 
   iconCol: { gap: 7, alignItems: 'center', flexShrink: 0 },

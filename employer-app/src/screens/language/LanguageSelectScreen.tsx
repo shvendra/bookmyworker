@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
@@ -43,6 +44,7 @@ type Props = NativeStackScreenProps<EmployerStackParamList, 'LanguageSelect'>;
 
 export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('employer');
   const [selected, setSelected] = useState<AppLanguage>('hi');
   const [saving, setSaving] = useState(false);
 
@@ -85,7 +87,7 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
             <Text style={styles.brandName}>BookMyWorker</Text>
           </View>
 
-          <Text style={styles.heroTitle}>Choose Your Language</Text>
+          <Text style={styles.heroTitle}>{t('langSelectTitle')}</Text>
           <Text style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</Text>
 
           <View style={styles.stepRow}>
@@ -121,7 +123,10 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
                   isSelected && styles.cardSelected,
                   pressed && !isSelected && styles.cardPressed,
                 ]}
-                onPress={() => setSelected(item.code)}
+                onPress={() => {
+                  setSelected(item.code);
+                  void i18n.changeLanguage(item.code);
+                }}
                 android_ripple={{ color: 'rgba(16,55,164,0.1)', borderless: false }}
               >
                 {isSelected && (
@@ -148,14 +153,14 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         {selected ? (
           <Text style={styles.selectedHint}>
-            Selected:{' '}
+            {t('langSelectSelected')}{' '}
             <Text style={styles.selectedHintBold}>
               {LANGUAGES.find((l) => l.code === selected)?.native}
             </Text>
           </Text>
         ) : null}
         <AppButton
-          title={saving ? 'Please wait…' : 'Continue'}
+          title={saving ? t('langSelectWait') : t('langSelectContinue')}
           onPress={handleContinue}
           disabled={saving}
           loading={saving}

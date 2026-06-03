@@ -57,6 +57,40 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 
+// Role-type options (shown in English, matching the registration screen).
+const WORKER_SUB_TYPES = [
+  { value: 'Skilled',     label: 'Skilled',      icon: '🔧' },
+  { value: 'Unskilled',   label: 'Unskilled',    icon: '🏗️' },
+  { value: 'ITI/Diploma', label: 'ITI / Diploma', icon: '🎓' },
+  { value: 'Graduate',    label: 'Graduate',      icon: '📜' },
+];
+const AGENT_TYPES = [
+  { value: 'Group worker supplier',     label: 'Group Worker Supplier',     icon: '👥' },
+  { value: 'Skilled worker supplier',   label: 'Skilled Worker Supplier',   icon: '🔧' },
+  { value: 'Unskilled worker supplier', label: 'Unskilled Worker Supplier', icon: '🏗️' },
+  { value: 'Contract worker supplier',  label: 'Contract Worker Supplier',  icon: '📋' },
+];
+
+// Category data with multilingual labels (mirrors WorkerProfileCompletionScreen).
+interface CatRaw {
+  label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string;
+  value: string;
+  subcategories: Array<{ label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string; value: string }>;
+}
+const ALL_CATS = categoriesData as CatRaw[];
+function getCatLabel(cat: CatRaw, lang: string): string {
+  if (lang === 'hi' && cat.hindilabel) return cat.hindilabel;
+  if (lang === 'mr' && cat.marathilabel) return cat.marathilabel;
+  if (lang === 'gu' && cat.gujaratilabel) return cat.gujaratilabel;
+  return cat.label;
+}
+function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
+  if (lang === 'hi' && sub.hindilabel) return sub.hindilabel;
+  if (lang === 'mr' && sub.marathilabel) return sub.marathilabel;
+  if (lang === 'gu' && sub.gujaratilabel) return sub.gujaratilabel;
+  return sub.label;
+}
+
 const editProfileSchema = z.object({
   name:            z.string().min(3, 'Name must be at least 3 characters'),
   email:           z.string().email('Enter a valid email').optional().or(z.literal('')),
@@ -76,7 +110,8 @@ type EditProfileValues = z.infer<typeof editProfileSchema>;
 
 export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const { state, updateProfile: updateAuthProfile } = useAuth();
   const toast = useToast();
   const user = state.session?.user;
@@ -96,8 +131,29 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   // Worker-specific fields
   const [gender, setGender] = useState<string>(user?.gender ?? '');
   const [age, setAge] = useState<string>(user?.dob ? String(user.dob) : '');
+  const [experience, setExperience] = useState<string>('');
   const [areas, setAreas] = useState<string[]>(user?.areasOfWork ?? []);
   const [areaSearch, setAreaSearch] = useState('');
+
+  // Role type (agentType for agents, workerSubType for workers/selfworkers)
+  const roleLower = (user?.role ?? '').toLowerCase();
+  const isAgent = roleLower === 'agent';
+  const ROLE_TYPE_OPTIONS = isAgent ? AGENT_TYPES : WORKER_SUB_TYPES;
+  const [roleType, setRoleType] = useState<string>(
+    (isAgent ? user?.agentType : user?.workerSubType) ?? '',
+  );
+
+  // Work categories + skills (sub-categories)
+  const [selectedCats, setSelectedCats] = useState<string[]>(() => {
+    if (!user?.categories?.length) return [];
+    const parents: string[] = [];
+    for (const cat of ALL_CATS) {
+      if (cat.subcategories.some((s) => user.categories!.includes(s.value))) parents.push(cat.value);
+    }
+    return parents;
+  });
+  const [selectedSubs, setSelectedSubs] = useState<string[]>(user?.categories ?? []);
+  const [subSearch, setSubSearch] = useState('');
 
   const { control, handleSubmit, reset } = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
@@ -124,6 +180,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             block?: string; address?: string; accountNumber?: string;
             ifscCode?: string; bankName?: string;
             gender?: string; dob?: string | number; areasOfWork?: string[];
+            workExperience?: string | number; categories?: string[];
+            agentType?: string; workerSubType?: string;
           };
         }>('/api/v1/user/getuser');
         const u = res.data?.user;
@@ -143,6 +201,16 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         if (u.gender)      setGender(u.gender);
         if (u.dob)         setAge(String(u.dob));
         if (u.areasOfWork) setAreas(u.areasOfWork);
+        if (u.workExperience != null && u.workExperience !== '') setExperience(String(u.workExperience));
+        if (isAgent ? u.agentType : u.workerSubType) setRoleType((isAgent ? u.agentType : u.workerSubType) ?? '');
+        if (u.categories?.length) {
+          setSelectedSubs(u.categories);
+          const parents: string[] = [];
+          for (const cat of ALL_CATS) {
+            if (cat.subcategories.some((s) => u.categories!.includes(s.value))) parents.push(cat.value);
+          }
+          setSelectedCats(parents);
+        }
       } catch { /* keep defaults */ }
     };
     void load();
@@ -161,6 +229,37 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     setAreas((prev) =>
       prev.includes(district) ? prev.filter((a) => a !== district) : [...prev, district]
     );
+  }, []);
+
+  // All sub-categories available from the currently selected parent categories
+  const allAvailableSubs = useMemo(
+    () => ALL_CATS.filter((c) => selectedCats.includes(c.value)).flatMap((c) => c.subcategories),
+    [selectedCats],
+  );
+  const filteredSubs = useMemo(() => {
+    const q = subSearch.trim().toLowerCase();
+    if (!q) return allAvailableSubs;
+    return allAvailableSubs.filter(
+      (s) => s.label.toLowerCase().includes(q) || (s.hindilabel ?? '').toLowerCase().includes(q),
+    );
+  }, [allAvailableSubs, subSearch]);
+
+  const toggleCat = useCallback((val: string) => {
+    setSelectedCats((prev) => {
+      const next = prev.includes(val) ? prev.filter((c) => c !== val) : [...prev, val];
+      // Drop any selected sub-categories that belong to a now-deselected category
+      if (!next.includes(val)) {
+        const removed = ALL_CATS.find((c) => c.value === val);
+        if (removed) {
+          const removedSubs = removed.subcategories.map((s) => s.value);
+          setSelectedSubs((prevSubs) => prevSubs.filter((s) => !removedSubs.includes(s)));
+        }
+      }
+      return next;
+    });
+  }, []);
+  const toggleSub = useCallback((val: string) => {
+    setSelectedSubs((prev) => (prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]));
   }, []);
 
   const pickPhoto = async (): Promise<void> => {
@@ -222,7 +321,10 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         const workerUpdates: Record<string, unknown> = {};
         if (gender) workerUpdates.gender = gender;
         if (age && Number(age) >= 15 && Number(age) <= 70) workerUpdates.dob = Number(age);
+        if (experience !== '' && Number(experience) >= 0 && Number(experience) <= 60) workerUpdates.workExperience = Number(experience);
         if (areas.length > 0) workerUpdates.areasOfWork = areas;
+        if (selectedSubs.length > 0) workerUpdates.categories = selectedSubs;
+        if (roleType) workerUpdates[isAgent ? 'agentType' : 'workerSubType'] = roleType;
         if (Object.keys(workerUpdates).length > 0) {
           await updateProfileFields(workerUpdates);
         }
@@ -237,6 +339,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         ...(isWorkerRole && gender ? { gender } : {}),
         ...(isWorkerRole && age ? { dob: String(age) } : {}),
         ...(isWorkerRole && areas.length > 0 ? { areasOfWork: areas } : {}),
+        ...(isWorkerRole && selectedSubs.length > 0 ? { categories: selectedSubs } : {}),
+        ...(isWorkerRole && roleType ? (isAgent ? { agentType: roleType } : { workerSubType: roleType }) : {}),
       });
       toast.success(t('ep_profileSavedMsg'), t('ep_profileSaved'));
       navigation.goBack();
@@ -364,6 +468,131 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
               placeholder={t('wpc_agePlaceholder', 'e.g. 25')}
               placeholderTextColor={theme.colors.mutedText}
             />
+
+            {/* Work Experience */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+              {t('wpc_experienceQ')}
+            </AppText>
+            <TextInput
+              style={[
+                styles.ageInput,
+                {
+                  backgroundColor: isDark ? theme.colors.surface : '#fff',
+                  borderColor: experience ? theme.colors.primary : (isDark ? theme.colors.border : '#DDE3F0'),
+                  color: theme.colors.text,
+                },
+              ]}
+              value={experience}
+              onChangeText={(v) => { if (/^\d{0,2}$/.test(v)) setExperience(v); }}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder={t('wpc_experiencePlaceholder', 'e.g. 5')}
+              placeholderTextColor={theme.colors.mutedText}
+            />
+
+            {/* Role type — agentType (agent) / workerSubType (worker) */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+              {isAgent ? t('wpc_subTypeAgentQ') : t('wpc_subTypeQ')}
+            </AppText>
+            <View style={styles.genderRow}>
+              {ROLE_TYPE_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setRoleType(opt.value)}
+                  activeOpacity={0.75}
+                  style={[
+                    styles.genderChip,
+                    roleType === opt.value
+                      ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                      : { backgroundColor: isDark ? theme.colors.surface1 : '#F1F5F9', borderColor: isDark ? theme.colors.border : '#DDE3F0' },
+                  ]}
+                >
+                  <AppText style={[styles.genderChipText, { color: roleType === opt.value ? '#fff' : theme.colors.text }]}>
+                    {opt.icon} {opt.label}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Work categories */}
+            <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+              {t('wpc_workCatQ')}
+            </AppText>
+            <View style={styles.genderRow}>
+              {ALL_CATS.map((cat) => {
+                const sel = selectedCats.includes(cat.value);
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    onPress={() => toggleCat(cat.value)}
+                    activeOpacity={0.75}
+                    style={[
+                      styles.genderChip,
+                      sel
+                        ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                        : { backgroundColor: isDark ? theme.colors.surface1 : '#F1F5F9', borderColor: isDark ? theme.colors.border : '#DDE3F0' },
+                    ]}
+                  >
+                    <AppText style={[styles.genderChipText, { color: sel ? '#fff' : theme.colors.text }]}>
+                      {getCatLabel(cat, lang)}{sel ? ' ✓' : ''}
+                    </AppText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Skills (sub-categories) — only when at least one category is selected */}
+            {selectedCats.length > 0 && (
+              <>
+                <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
+                  {t('wpc_subCatQ')}
+                </AppText>
+                <View style={[styles.searchBox, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
+                  <AppText style={{ fontSize: 15 }}>🔍</AppText>
+                  <TextInput
+                    style={[styles.searchInput, { color: theme.colors.text }]}
+                    value={subSearch}
+                    onChangeText={setSubSearch}
+                    placeholder={t('wpc_subCatSearch', 'Search e.g. Mason, Driver, Cook…')}
+                    placeholderTextColor={theme.colors.mutedText}
+                    autoCorrect={false}
+                  />
+                  {subSearch.length > 0 && (
+                    <TouchableOpacity onPress={() => setSubSearch('')}>
+                      <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
+                  {filteredSubs.map((sub) => {
+                    const sel = selectedSubs.includes(sub.value);
+                    return (
+                      <TouchableOpacity
+                        key={sub.value}
+                        onPress={() => toggleSub(sub.value)}
+                        activeOpacity={0.75}
+                        style={[
+                          styles.genderChip,
+                          { marginRight: 8, marginBottom: 8 },
+                          sel
+                            ? { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                            : { backgroundColor: isDark ? theme.colors.surface1 : '#F1F5F9', borderColor: isDark ? theme.colors.border : '#DDE3F0' },
+                        ]}
+                      >
+                        <AppText style={[styles.genderChipText, { color: sel ? '#fff' : theme.colors.text }]}>
+                          {getSubLabel(sub, lang)}{sel ? ' ✓' : ''}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {selectedSubs.length > 0 && (
+                  <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 10 }]}>
+                    {t('wpc_subCatSelected', 'Selected skills')} ({selectedSubs.length})
+                  </AppText>
+                )}
+              </>
+            )}
 
             {/* Serviceable Areas */}
             <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>

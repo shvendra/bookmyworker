@@ -55,6 +55,7 @@ import { PipelineScreen } from '../../../packages/shared-mobile/src/features/emp
 import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
 import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
 import { CallHistoryScreen } from '../../../packages/shared-mobile/src/features/employer/screens/CallHistoryScreen';
+import { ViewedContactsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/ViewedContactsScreen';
 import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 import { RequirementInvitationsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementInvitationsScreen';
@@ -208,6 +209,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="ViewedContacts" component={ViewedContactsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="DocumentHub" component={DocumentHubScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementInvitations" component={RequirementInvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

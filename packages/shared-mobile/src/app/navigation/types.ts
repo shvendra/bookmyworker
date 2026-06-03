@@ -95,6 +95,7 @@ export type RootStackParamList = {
   EmployerAnalytics: undefined;
   RequirementCalendar: undefined;
   CallHistory: undefined;
+  ViewedContacts: undefined;
   DocumentHub: { requirementId: string; requirementTitle?: string };
   PdfViewer: { url: string; title?: string };
   Invitations: undefined;

@@ -23,6 +23,7 @@ import { ForgotPasswordScreen } from '../../features/auth/screens/ForgotPassword
 import { RoleSelectionScreen } from '../../features/onboarding/screens/RoleSelectionScreen';
 import { KycScreen } from '../../features/onboarding/screens/KycScreen';
 import { WorkerProfileCompletionScreen } from '../../features/onboarding/screens/WorkerProfileCompletionScreen';
+import { isWorkerProfileComplete } from '../../shared/utils/workerProfileUtils';
 
 // Main tabs
 import { RoleTabsNavigator } from './RoleTabsNavigator';
@@ -76,16 +77,20 @@ export const AppNavigator = (): React.JSX.Element => {
     return undefined;
   }, [state.status]);
 
-  // ── Location gate: worker/agent/selfworker must have state+district ─────────
+  // ── Profile gate: worker/agent/selfworker must complete their profile ───────
   // Resets to WorkerProfileCompletion whenever an agent/worker is authenticated
-  // but has not yet provided their state and district. The 50 ms delay mirrors
-  // the sign-out redirect pattern above so the navigator is ready before dispatch.
+  // but is missing required profile data — state+district OR core profile
+  // (gender + age). Fresh agents have no gender/age yet, so this routes them
+  // into the wizard (which collects experience, categories & areas too). Existing
+  // users who already have gender+age+location are unaffected. The 50 ms delay
+  // mirrors the sign-out redirect pattern above so the navigator is ready first.
   useEffect(() => {
     if (state.status !== 'authenticated') return undefined;
     const user = state.session?.user;
     const role = (user?.role ?? '').toLowerCase();
     const isWorkerOrAgent = role === 'worker' || role === 'selfworker' || role === 'agent';
-    if (isWorkerOrAgent && !(user?.state && user?.district)) {
+    const hasLocation = !!(user?.state && user?.district);
+    if (isWorkerOrAgent && (!hasLocation || !isWorkerProfileComplete(user))) {
       const handle = setTimeout(() => { resetToProfileCompletion(); }, 50);
       return () => clearTimeout(handle);
     }
@@ -96,6 +101,10 @@ export const AppNavigator = (): React.JSX.Element => {
     state.session?.user?.state,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     state.session?.user?.district,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.gender,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.dob,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     state.session?.user?.role,
   ]);

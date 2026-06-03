@@ -1,46 +1,14 @@
 import React from 'react';
 import { Linking, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 
-const FAQS = [
-  {
-    q: 'How do I post a worker requirement?',
-    a: 'Go to Home → Post Requirement. Fill in your job details such as worker type, location, budget, and duration, then submit your requirement.',
-  },
-  {
-    q: 'Why am I asked to subscribe before posting?',
-    a: 'BookMyWorker is a subscription-based marketplace. An active subscription is required to post worker requirements, search workers, and access premium features.',
-  },
-  {
-    q: 'How do I subscribe to BookMyWorker?',
-    a: 'Go to Dashboard or Subscription section, choose a plan that fits your hiring needs, and complete the payment to activate your account.',
-  },
-  {
-    q: 'How do I search for workers?',
-    a: 'Go to Search Workers and apply filters like category, location, skill type, and budget to find suitable workers for your requirement.',
-  },
-  {
-    q: 'How do I contact workers?',
-    a: 'With an active subscription, you can directly view worker details and connect with them through chat or contact options.',
-  },
-  {
-    q: 'How do I complete KYC verification?',
-    a: 'Go to Profile → KYC Verification and upload required documents such as Aadhaar card details. Verification usually takes 24-48 hours.',
-  },
-  {
-    q: 'Why is my account showing pending status?',
-    a: 'Your profile or KYC documents are currently under review. Please allow 24-48 hours for approval.',
-  },
-  {
-    q: 'How do I manage my subscription?',
-    a: 'Go to Profile → Subscription to view your active plan, expiry date, and renewal options.',
-  },
-];
+const FAQ_KEYS = ['faq1', 'faq2', 'faq3', 'faq4', 'faq5', 'faq6', 'faq7', 'faq8'] as const;
 
 interface ContactCardProps {
   icon: string;
@@ -70,6 +38,7 @@ const ContactCard = ({ icon, title, subtitle, onPress }: ContactCardProps): Reac
 export const SupportScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation();
+  const { t } = useTranslation('employer');
   const { config } = useAppConfig();
   const { supportEmail, primaryPhone, whatsappNumber } = config.contact;
 
@@ -79,46 +48,46 @@ export const SupportScreen = (): React.JSX.Element => {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Support & Help" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('sup_title')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <AppText variant="title" style={styles.title}>Support & Help</AppText>
+      <AppText variant="title" style={styles.title}>{t('sup_title')}</AppText>
       <AppText variant="body" color={theme.colors.mutedText} style={styles.subtitle}>
-        We're here to help. Reach out anytime.
+        {t('sup_subtitle')}
       </AppText>
 
       {/* Contact Options */}
-      <AppText variant="label" color={theme.colors.mutedText} style={styles.sectionLabel}>CONTACT US</AppText>
+      <AppText variant="label" color={theme.colors.mutedText} style={styles.sectionLabel}>{t('sup_contactUs')}</AppText>
       <ContactCard
         icon="💬"
-        title="WhatsApp Support"
-        subtitle="Chat with us on WhatsApp"
+        title={t('sup_whatsapp')}
+        subtitle={t('sup_whatsappSub')}
         onPress={() => void Linking.openURL(`https://wa.me/${waNumber}`)}
       />
       <ContactCard
         icon="📧"
-        title="Email Support"
+        title={t('sup_emailTitle')}
         subtitle={supportEmail}
         onPress={() => void Linking.openURL(`mailto:${supportEmail}`)}
       />
       <ContactCard
         icon="📞"
-        title="Call Us"
-        subtitle={`${primaryPhone} · Mon–Sat, 9am–6pm`}
+        title={t('sup_call')}
+        subtitle={t('sup_callSub', { phone: primaryPhone })}
         onPress={() => void Linking.openURL(`tel:${phoneClean}`)}
       />
 
       {/* FAQ */}
       <AppText variant="label" color={theme.colors.mutedText} style={[styles.sectionLabel, styles.faqLabel]}>
-        FREQUENTLY ASKED QUESTIONS
+        {t('sup_faqHeading')}
       </AppText>
-      {FAQS.map((item, i) => (
+      {FAQ_KEYS.map((key, i) => (
         <AppCard key={i} style={styles.faqCard}>
-          <AppText variant="label" style={styles.faqQ}>{item.q}</AppText>
-          <AppText variant="body" color={theme.colors.mutedText} style={styles.faqA}>{item.a}</AppText>
+          <AppText variant="label" style={styles.faqQ}>{t(`sup_${key}_q`)}</AppText>
+          <AppText variant="body" color={theme.colors.mutedText} style={styles.faqA}>{t(`sup_${key}_a`)}</AppText>
         </AppCard>
       ))}
 

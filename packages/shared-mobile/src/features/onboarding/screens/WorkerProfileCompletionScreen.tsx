@@ -65,8 +65,9 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 });
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
-const TOTAL_STEPS = 6;
-// Step 1: Gender  Step 2: Age  Step 3: Category (multi)  Step 4: SubCategory (multi)  Step 5: Location  Step 6: AreasOfWork
+const TOTAL_STEPS = 7;
+// Step 1: Gender  Step 2: Age  Step 3: Experience  Step 4: Category (multi)
+// Step 5: SubCategory (multi)  Step 6: Location  Step 7: AreasOfWork (mandatory)
 
 // ── Chip ─────────────────────────────────────────────────────────────────────
 const Chip = ({ label, selected, onPress, color }: {
@@ -141,6 +142,12 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
 
   // Step 2 — Age
   const [age, setAge] = useState(user?.dob ? String(user.dob) : '');
+
+  // Step 3 — Work experience (in years; 0 = fresher)
+  const [experience, setExperience] = useState(() => {
+    const exp = (user as { workExperience?: number | string } | undefined)?.workExperience;
+    return exp != null && exp !== '' ? String(exp) : '';
+  });
 
   // Step 3 — Categories (MULTI-select)
   const [selectedCats, setSelectedCats] = useState<string[]>(() => {
@@ -240,16 +247,17 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     switch (step) {
       case 1: return gender !== '';
       case 2: return age !== '' && Number(age) >= 15 && Number(age) <= 70;
-      case 3: return selectedCats.length > 0;
-      case 4: return selectedSubs.length > 0;
-      case 5: return selectedState !== '' && selectedDistrict !== '';
-      case 6: return true; // areasOfWork is optional
+      case 3: return experience !== '' && Number(experience) >= 0 && Number(experience) <= 60;
+      case 4: return selectedCats.length > 0;
+      case 5: return selectedSubs.length > 0;
+      case 6: return selectedState !== '' && selectedDistrict !== '';
+      case 7: return areas.length > 0; // areasOfWork is now mandatory
       default: return true;
     }
   };
 
   const handleNext = () => {
-    if (step === 4 && selectedSubs.length === 0) { setSubError(true); return; }
+    if (step === 5 && selectedSubs.length === 0) { setSubError(true); return; }
     if (step < TOTAL_STEPS) { setStep((s) => s + 1); return; }
     void handleSave();
   };
@@ -262,12 +270,14 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       categories: selectedSubs,
       state: selectedState,
       district: selectedDistrict,
+      areasOfWork: areas,
       ...(selectedBlock ? { block: selectedBlock } : {}),
-      ...(areas.length > 0 ? { areasOfWork: areas } : {}),
     };
     try {
       await updateProfile(updates as Parameters<typeof updateProfile>[0]);
-      updateProfileFields(updates as Parameters<typeof updateProfileFields>[0]).catch(() => {});
+      // workExperience isn't part of the local UserProfile session, but is a
+      // valid backend field — persist it alongside the rest.
+      updateProfileFields({ ...updates, workExperience: Number(experience) } as Parameters<typeof updateProfileFields>[0]).catch(() => {});
       await completeOnboarding();
       setDone(true);
     } catch {
@@ -374,8 +384,33 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
-          {/* ── Step 3: Work Categories (MULTI-select) ── */}
+          {/* ── Step 3: Work Experience ── */}
           {step === 3 && (
+            <View style={styles.section}>
+              <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
+              <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_experienceQ')}</AppText>
+              <TextInput
+                style={[
+                  styles.ageInput,
+                  {
+                    backgroundColor: isDark ? theme.colors.surface : '#fff',
+                    borderColor: experience !== '' ? theme.colors.primary : (isDark ? theme.colors.border : '#DDE3F0'),
+                    color: theme.colors.text,
+                  },
+                ]}
+                value={experience}
+                onChangeText={(v) => { if (/^\d{0,2}$/.test(v)) setExperience(v); }}
+                keyboardType="number-pad"
+                maxLength={2}
+                placeholder={t('wpc_experiencePlaceholder')}
+                placeholderTextColor={theme.colors.mutedText}
+              />
+              <AppText style={[styles.hint, { color: theme.colors.mutedText }]}>{t('wpc_experienceHint')}</AppText>
+            </View>
+          )}
+
+          {/* ── Step 4: Work Categories (MULTI-select) ── */}
+          {step === 4 && (
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_workCatQ')}</AppText>
@@ -409,8 +444,8 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
-          {/* ── Step 4: Sub-categories (MULTI-select from all selected cats) ── */}
-          {step === 4 && (
+          {/* ── Step 5: Sub-categories (MULTI-select from all selected cats) ── */}
+          {step === 5 && (
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_subCatQ')}</AppText>
@@ -484,8 +519,8 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
-          {/* ── Step 5: State / District / Block ── */}
-          {step === 5 && (
+          {/* ── Step 6: State / District / Block ── */}
+          {step === 6 && (
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_locationQ')}</AppText>
@@ -520,8 +555,8 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
-          {/* ── Step 6: Where do you want to work? (areasOfWork) ── */}
-          {step === 6 && (
+          {/* ── Step 7: Where do you want to work? (areasOfWork — mandatory) ── */}
+          {step === 7 && (
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_areasQ')}</AppText>
@@ -588,7 +623,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
               )}
 
               {areas.length === 0 && (
-                <AppText style={[styles.hint, { color: theme.colors.mutedText, marginTop: 12 }]}>{t('wpc_areasOptional')}</AppText>
+                <AppText style={[styles.hint, { color: theme.colors.mutedText, marginTop: 12 }]}>{t('wpc_areasRequired')}</AppText>
               )}
             </View>
           )}
@@ -603,7 +638,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
           <View style={styles.footerRow}>
             {step > 1 && (
               <TouchableOpacity
-                onPress={() => { setOpenDrop(null); setStep((s) => s - 1); }}
+                onPress={() => { setStep((s) => s - 1); }}
                 style={[styles.backBtn, { borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}
               >
                 <AppText style={[styles.backBtnText, { color: theme.colors.mutedText }]}>← {t('wpc_back')}</AppText>

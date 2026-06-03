@@ -51,8 +51,9 @@ function todayStr(): string {
   return toDateStr(new Date());
 }
 
-// ── Attendance state for the day (mappingId → present) ───────────────────────
-type DayAttendance = Record<string, { present: boolean; note: string }>;
+// ── Attendance state for the day (mappingId → status) ────────────────────────
+type AttStatus = 'present' | 'half_day' | 'absent';
+type DayAttendance = Record<string, { status: AttStatus; note: string }>;
 
 function seedFromRecords(
   joinedWorkers: JoinedWorker[],
@@ -61,12 +62,13 @@ function seedFromRecords(
 ): DayAttendance {
   const initial: DayAttendance = {};
   for (const w of joinedWorkers) {
-    initial[w._id] = { present: true, note: '' };
+    initial[w._id] = { status: 'present', note: '' };
   }
-  // Overlay with any already-saved records for this date
   const dayRecords = existing.filter((r) => r.date.slice(0, 10) === date);
   for (const r of dayRecords) {
-    initial[r.mappingId] = { present: r.present, note: r.note ?? '' };
+    // backward compat: use status if available, else derive from present boolean
+    const st: AttStatus = (r as any).status || (r.present ? 'present' : 'absent');
+    initial[r.mappingId] = { status: st, note: r.note ?? '' };
   }
   return initial;
 }
@@ -130,19 +132,27 @@ function WorkerRow({
   onChange,
 }: {
   worker: JoinedWorker;
-  value: { present: boolean; note: string };
-  onChange: (v: { present: boolean; note: string }) => void;
+  value: { status: AttStatus; note: string };
+  onChange: (v: { status: AttStatus; note: string }) => void;
 }): React.JSX.Element {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const initials = (worker.workerName ?? 'W')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+  const avatarBg = value.status === 'present' ? '#ECFDF5' : value.status === 'half_day' ? '#FFFBEB' : '#FEF2F2';
+  const avatarColor = value.status === 'present' ? GREEN : value.status === 'half_day' ? AMBER : RED;
+
+  const BTN_DATA: { key: AttStatus; label: string; active: string; activeTxt: string; idleBorder: string }[] = [
+    { key: 'present',  label: 'Present',  active: GREEN, activeTxt: WHITE, idleBorder: '#6EE7B7' },
+    { key: 'half_day', label: 'Half Day', active: AMBER, activeTxt: WHITE, idleBorder: '#FCD34D' },
+    { key: 'absent',   label: 'Absent',   active: RED,   activeTxt: WHITE, idleBorder: '#FCA5A5' },
+  ];
 
   return (
     <View style={[wr.wrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       <View style={wr.top}>
-        <View style={[wr.avatar, { backgroundColor: value.present ? '#ECFDF5' : '#FEF2F2' }]}>
-          <AppText style={[wr.initials, { color: value.present ? GREEN : RED }]}>{initials}</AppText>
+        <View style={[wr.avatar, { backgroundColor: avatarBg }]}>
+          <AppText style={[wr.initials, { color: avatarColor }]}>{initials}</AppText>
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={[wr.name, { color: theme.colors.text }]} numberOfLines={1}>
@@ -152,18 +162,25 @@ function WorkerRow({
             {worker.agreedRate ? `₹${worker.agreedRate}/${worker.rateType === 'Monthly' ? 'month' : 'day'}` : t('rateNotSet')}
           </AppText>
         </View>
-        <View style={wr.switchWrap}>
-          <AppText style={[wr.switchLabel, { color: value.present ? GREEN : RED }]}>
-            {value.present ? t('presentLabel') : t('absentLabel')}
-          </AppText>
-          <Switch
-            value={value.present}
-            onValueChange={(v) => onChange({ ...value, present: v })}
-            trackColor={{ false: '#FECACA', true: '#6EE7B7' }}
-            thumbColor={value.present ? GREEN : RED}
-            ios_backgroundColor="#FECACA"
-          />
-        </View>
+      </View>
+      {/* 3-way status selector */}
+      <View style={wr.btnRow}>
+        {BTN_DATA.map(({ key, label, active, activeTxt, idleBorder }) => {
+          const isActive = value.status === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => onChange({ ...value, status: key })}
+              style={[wr.btn, {
+                backgroundColor: isActive ? active : 'transparent',
+                borderColor: isActive ? active : idleBorder,
+              }]}
+              activeOpacity={0.75}
+            >
+              <AppText style={[wr.btnTxt, { color: isActive ? activeTxt : active }]}>{label}</AppText>
+            </TouchableOpacity>
+          );
+        })}
       </View>
       {/* Optional note */}
       <TextInput
@@ -171,22 +188,23 @@ function WorkerRow({
         placeholder={t('addNoteHint')}
         placeholderTextColor={theme.colors.mutedText}
         value={value.note}
-        onChangeText={(t) => onChange({ ...value, note: t })}
+        onChangeText={(txt) => onChange({ ...value, note: txt })}
         maxLength={120}
       />
     </View>
   );
 }
 const wr = StyleSheet.create({
-  wrap:       { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginBottom: 10 },
-  top:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar:     { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  initials:   { fontSize: 15, fontWeight: '800' },
-  name:       { fontSize: 14, fontWeight: '800', lineHeight: 19 },
-  sub:        { fontSize: 11.5, color: SLATE, marginTop: 2 },
-  switchWrap: { alignItems: 'center', gap: 4 },
-  switchLabel:{ fontSize: 10, fontWeight: '700' },
-  noteInput:  { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, marginTop: 2 },
+  wrap:    { borderRadius: 14, borderWidth: 1, padding: 12, gap: 8, marginBottom: 10 },
+  top:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar:  { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  initials:{ fontSize: 15, fontWeight: '800' },
+  name:    { fontSize: 14, fontWeight: '800', lineHeight: 19 },
+  sub:     { fontSize: 11.5, color: SLATE, marginTop: 2 },
+  btnRow:  { flexDirection: 'row', gap: 6 },
+  btn:     { flex: 1, borderWidth: 1.5, borderRadius: 8, paddingVertical: 6, alignItems: 'center' },
+  btnTxt:  { fontSize: 11, fontWeight: '800' },
+  noteInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, marginTop: 2 },
 });
 
 // ── Summary card ──────────────────────────────────────────────────────────────
@@ -195,7 +213,8 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
   const { t } = useTranslation('employer');
   const initials = (s.workerName ?? 'W')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
-  const pct = s.totalDaysMarked > 0 ? Math.round((s.daysPresent / s.totalDaysMarked) * 100) : 0;
+  const effectiveDays = (s.daysPresent || 0) + ((s as any).daysHalfDay || 0) * 0.5;
+  const pct = s.totalDaysMarked > 0 ? Math.round((effectiveDays / s.totalDaysMarked) * 100) : 0;
   const pctColor = pct >= 80 ? GREEN : pct >= 50 ? AMBER : RED;
 
   return (
@@ -221,6 +240,10 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
         <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: GREEN }]}>{s.daysPresent}</AppText>
           <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>{t('presentStat')}</AppText>
+        </View>
+        <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
+          <AppText style={[sc.statNum, { color: AMBER }]}>{(s as any).daysHalfDay || 0}</AppText>
+          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>Half Day</AppText>
         </View>
         <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: RED }]}>{s.daysAbsent}</AppText>
@@ -316,7 +339,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
     }, [attendanceQuery.isSuccess]),
   );
 
-  const updateWorker = (mappingId: string, val: { present: boolean; note: string }) => {
+  const updateWorker = (mappingId: string, val: { status: AttStatus; note: string }) => {
     setDayAttendance((prev) => ({ ...prev, [mappingId]: val }));
   };
 
@@ -330,7 +353,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
     try {
       const records = joinedWorkers.map((w) => ({
         mappingId: w._id,
-        present:   (dayAttendance[w._id] ?? seeded[w._id])?.present ?? true,
+        status:    (dayAttendance[w._id] ?? seeded[w._id])?.status ?? 'present',
         note:      (dayAttendance[w._id] ?? seeded[w._id])?.note ?? '',
       }));
       await attendanceApi.markDay(requirementId, selectedDate, records);
@@ -345,10 +368,10 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   };
 
   // ── Mark-all shortcuts ────────────────────────────────────────────────────
-  const markAll = (present: boolean) => {
+  const markAll = (status: AttStatus) => {
     const updated: DayAttendance = {};
     for (const w of joinedWorkers) {
-      updated[w._id] = { present, note: dayAttendance[w._id]?.note ?? '' };
+      updated[w._id] = { status, note: dayAttendance[w._id]?.note ?? '' };
     }
     setDayAttendance(updated);
   };
@@ -434,10 +457,13 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                       <AppText style={[styles.dayHeaderSub, { color: theme.colors.mutedText }]}>{t('workerCount', { count: joinedWorkers.length })}</AppText>
                     </View>
                     <View style={styles.markAllRow}>
-                      <TouchableOpacity onPress={() => markAll(true)} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
+                      <TouchableOpacity onPress={() => markAll('present')} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
                         <AppText style={[styles.markAllTxt, { color: GREEN }]}>{t('allPresent')}</AppText>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => markAll(false)} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
+                      <TouchableOpacity onPress={() => markAll('half_day')} style={[styles.markAllBtn, { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }]} activeOpacity={0.75}>
+                        <AppText style={[styles.markAllTxt, { color: AMBER }]}>All Half</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => markAll('absent')} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
                         <AppText style={[styles.markAllTxt, { color: RED }]}>{t('allAbsent')}</AppText>
                       </TouchableOpacity>
                     </View>
@@ -447,7 +473,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
               renderItem={({ item: worker }) => (
                 <WorkerRow
                   worker={worker}
-                  value={dayAttendance[worker._id] ?? seeded[worker._id] ?? { present: true, note: '' }}
+                  value={dayAttendance[worker._id] ?? seeded[worker._id] ?? { status: 'present' as AttStatus, note: '' }}
                   onChange={(v) => updateWorker(worker._id, v)}
                 />
               )}
@@ -553,7 +579,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                 contentContainerStyle={{ padding: 14, gap: 8 }}
                 renderItem={({ item: date }) => {
                   const dayRecords = allRecords.filter((r) => r.date.slice(0, 10) === date);
-                  const presentCount = dayRecords.filter((r) => r.present).length;
+                  const presentCount = dayRecords.filter((r) => ((r as any).status || (r.present ? 'present' : 'absent')) !== 'absent').length;
                   const total = dayRecords.length;
                   const badgeBg = presentCount === total ? theme.colors.successLight : presentCount === 0 ? theme.colors.dangerLight : theme.colors.warningLight;
                   const badgeColor = presentCount === total ? GREEN : presentCount === 0 ? RED : AMBER;

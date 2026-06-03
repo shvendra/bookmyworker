@@ -26,7 +26,9 @@ import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
-import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+// Profile-completion nudge disabled for now — mandatory completion is enforced
+// via the post-OTP WorkerProfileCompletionScreen instead.
+// import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -861,7 +863,8 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         loading={interestMutation.isPending}
       />
 
-      {user && <ProfileCompletionModal user={user} />}
+      {/* Profile-completion popup disabled for now. */}
+      {/* {user && <ProfileCompletionModal user={user} />} */}
 
       <GuidedTour
         tourKey="worker_tour_v1"

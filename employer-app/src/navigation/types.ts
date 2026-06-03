@@ -74,6 +74,8 @@ export type EmployerStackParamList = {
   RequirementCalendar: undefined;
   // Call & remark history
   CallHistory: undefined;
+  // Viewed worker contacts history
+  ViewedContacts: undefined;
   // Document hub (per requirement)
   DocumentHub: { requirementId: string; requirementTitle?: string };
   // Wallet / Transactions

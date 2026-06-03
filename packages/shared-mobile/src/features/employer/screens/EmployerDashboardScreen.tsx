@@ -28,7 +28,9 @@ import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
-import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
+// Profile-completion nudge disabled for now — mandatory completion is enforced
+// via the post-OTP WorkerProfileCompletionScreen instead.
+// import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -1676,7 +1678,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </View>
       </Modal>
 
-      {user && <ProfileCompletionModal user={user} />}
+      {/* Profile-completion popup disabled for now. */}
+      {/* {user && <ProfileCompletionModal user={user} />} */}
 
       <GuidedTour
         tourKey="employer_tour_v1"
