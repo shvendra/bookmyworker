@@ -28,6 +28,7 @@ import type { PickedLocation } from '../../../shared/components/ui/LocationPicke
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -271,6 +272,15 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
     staleTime: 10 * 60 * 1000,
   });
 
+  // Plan-derived posts quota (degrades gracefully when backend omits the count)
+  const plan = usePlanFeatures();
+  const postsExhausted = plan.loaded && !plan.unlimitedPosts && plan.remainingPosts != null && plan.remainingPosts <= 0;
+  const postsLabel = (() => {
+    if (plan.unlimitedPosts) return t('pl_postsUnlimited');
+    if (plan.remainingPosts == null) return null;
+    return t('pl_postsRemaining', { count: plan.remainingPosts });
+  })();
+
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const [boolFlags, setBoolFlags] = useState<Record<BooleanFlagKey, boolean>>({
@@ -392,11 +402,11 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
-      toast.success('Your requirement is live. Workers will start applying shortly.', 'Requirement Posted!');
+      toast.success(t('jp_reqPostedBody'), t('jp_reqPostedTitle'));
       setTimeout(() => navigation.goBack(), 1500);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Could not post requirement', 'Post Failed');
+      toast.error(err instanceof Error ? err.message : t('jp_reqPostFailBody'), t('jp_reqPostFailTitle'));
     },
   });
 
@@ -419,8 +429,8 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           <AppText style={{ fontSize: 22 }}>{typeInfo.icon}</AppText>
         </View>
         <View style={{ flex: 1 }}>
-          <AppText style={[ps.typeBannerLabel, { color: typeInfo.color }]}>{typeInfo.label}</AppText>
-          <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={1}>{typeInfo.description}</AppText>
+          <AppText style={[ps.typeBannerLabel, { color: typeInfo.color }]}>{t(`type_${reqType}_label` as any)}</AppText>
+          <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={1}>{t(`type_${reqType}_desc` as any)}</AppText>
         </View>
       </View>
 
@@ -459,14 +469,14 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             control={control}
             name="workerQuantitySkilled"
             label={t('post_skilledWorkers')}
-            placeholder="e.g. 5"
+            placeholder={t('jp_phEg5')}
             keyboardType="number-pad"
           />
           <FormInput
             control={control}
             name="workerQuantityUnskilled"
             label={t('post_helperWorkers')}
-            placeholder="e.g. 2"
+            placeholder={t('jp_phEg2')}
             keyboardType="number-pad"
           />
           <Controller
@@ -474,7 +484,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             name="ageGroup"
             render={({ field, fieldState }) => (
               <FormSelect
-                label="Age Group"
+                label={t('jp_ageGroup')}
                 value={field.value ?? ''}
                 options={AGE_GROUP_OPTIONS}
                 onChange={field.onChange}
@@ -504,14 +514,14 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             onBlockChange={(v) => setValue('tehsil', v)}
             stateError={errors.state?.message}
             districtError={errors.district?.message}
-            blockLabel="Block / Tehsil"
+            blockLabel={t('pf_blockTehsil')}
             required
           />
           <FormInput
             control={control}
             name="pinCode"
             label={t('pinCode')}
-            placeholder="6-digit area PIN code"
+            placeholder={t('jp_phPinCode')}
             keyboardType="number-pad"
             maxLength={6}
           />
@@ -531,7 +541,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             control={control}
             name="workLocation"
             label={t('post_exactAddress')}
-            placeholder="e.g. Near NH44, Village Rampur"
+            placeholder={t('jp_phAddress')}
           />
         </View>
       </View>
@@ -539,7 +549,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       <LocationPickerModal
         visible={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
-        title="Pick Work Location"
+        title={t('jp_pickWorkLocation')}
         onPick={(loc: PickedLocation) => {
           setValue('workLocation', loc.address, { shouldValidate: true });
           setCoords({ lat: loc.lat, lng: loc.lng });
@@ -568,10 +578,10 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           {isDailyWages && (
             <View style={styles.row}>
               <View style={styles.rowHalf}>
-                <FormInput control={control} name="inTime" label="Start Time" placeholder="08:00 AM" />
+                <FormInput control={control} name="inTime" label={t('post_startTime')} placeholder="08:00 AM" />
               </View>
               <View style={styles.rowHalf}>
-                <FormInput control={control} name="outTime" label="End Time" placeholder="06:00 PM" />
+                <FormInput control={control} name="outTime" label={t('post_endTime')} placeholder="06:00 PM" />
               </View>
             </View>
           )}
@@ -682,7 +692,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
                   color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
                   style={styles.flagChipLabel}
                 >
-                  {flag.label}
+                  {t(`rd_perk_${flag.key}` as any)}
                 </AppText>
                 {boolFlags[flag.key] && (
                   <AppText style={[styles.flagCheck, { color: theme.colors.primary }]}>✓</AppText>
@@ -707,7 +717,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             control={control}
             name="remarks"
             label={t('post_remarksLabel')}
-            placeholder="e.g. Brick laying work for construction site. Workers should bring their own tools. Site is near the highway..."
+            placeholder={t('jp_phRemarks')}
             multiline
             numberOfLines={4}
             style={styles.textarea}
@@ -715,16 +725,53 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
       </View>
 
-      {/* ── Submit ── */}
-      <AppButton
-        title={mutation.isPending ? t('post_publishing') : `🚀  ${t('post_publishBtn')}`}
-        onPress={onSubmit}
-        loading={mutation.isPending}
-        style={styles.submitBtn}
-      />
+      {/* ── Posts remaining indicator (hidden when count unavailable) ── */}
+      {postsLabel && !postsExhausted && (
+        <View style={[ppl.indicator, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+          <AppText style={ppl.indicatorIcon}>📝</AppText>
+          <AppText style={[ppl.indicatorTxt, { color: theme.colors.textSecondary }]}>{postsLabel}</AppText>
+        </View>
+      )}
+
+      {/* ── Posts exhausted upgrade prompt (mirror contacts-exhausted UX) ── */}
+      {postsExhausted ? (
+        <View style={[ppl.upgrade, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <AppText style={ppl.upgradeIcon}>🚫</AppText>
+          <AppText style={[ppl.upgradeTitle, { color: theme.colors.text }]}>{t('pl_postsExhaustedTitle')}</AppText>
+          <AppText style={[ppl.upgradeSub, { color: theme.colors.mutedText }]}>{t('pl_postsExhaustedDesc')}</AppText>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Subscription')}
+            style={ppl.upgradeBtn}
+            activeOpacity={0.85}
+          >
+            <AppText style={ppl.upgradeBtnTxt}>{t('pl_upgradeBtn')}</AppText>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* ── Submit ── */
+        <AppButton
+          title={mutation.isPending ? t('post_publishing') : `🚀  ${t('post_publishBtn')}`}
+          onPress={onSubmit}
+          loading={mutation.isPending}
+          disabled={mutation.isPending}
+          style={styles.submitBtn}
+        />
+      )}
     </ScrollView>
   );
 };
+
+const ppl = StyleSheet.create({
+  indicator:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginTop: 20 },
+  indicatorIcon:{ fontSize: 15, lineHeight: 19 },
+  indicatorTxt: { fontSize: 12.5, fontWeight: '700' },
+  upgrade:      { borderRadius: 16, borderWidth: 1, padding: 20, marginTop: 20, alignItems: 'center', gap: 8 },
+  upgradeIcon:  { fontSize: 40 },
+  upgradeTitle: { fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  upgradeSub:   { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  upgradeBtn:   { marginTop: 6, backgroundColor: '#2563eb', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 28, width: '100%', alignItems: 'center' },
+  upgradeBtnTxt:{ color: '#fff', fontSize: 15, fontWeight: '800' },
+});
 
 // ─── Section Label ────────────────────────────────────────────────────────────
 const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeof useAppTheme>['theme'] }): React.JSX.Element => (
@@ -737,7 +784,14 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 // ─── Subscription Gate ────────────────────────────────────────────────────────
 const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
+  const benefits = [
+    t('jp_gateBenefit1'),
+    t('jp_gateBenefit2'),
+    t('jp_gateBenefit3'),
+    t('jp_gateBenefit4'),
+  ];
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -746,21 +800,15 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
       <View style={{ alignItems: 'center', marginTop: 20 }}>
         <AppText style={{ fontSize: 56, marginBottom: 16 }}>🔐</AppText>
         <AppText variant="title" style={{ textAlign: 'center', color: theme.colors.text, marginBottom: 8 }}>
-          Subscription Required
+          {t('jp_gateTitle')}
         </AppText>
         <AppText variant="body" color={theme.colors.mutedText} style={{ textAlign: 'center', lineHeight: 22, marginBottom: 28 }}>
-          You need an active subscription to post job requirements and access worker profiles.
-          Subscribe to unlock the full BookMyWorker experience.
+          {t('jp_gateBody')}
         </AppText>
 
         <View style={{ width: '100%', backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, marginBottom: 24, gap: 10, borderWidth: 1, borderColor: theme.colors.border }}>
-          {[
-            '✅ Post unlimited job requirements',
-            '✅ Access worker contact details',
-            '✅ View interested applicants',
-            '✅ Priority listing & support',
-          ].map((benefit) => (
-            <AppText key={benefit} variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>{benefit}</AppText>
+          {benefits.map((benefit) => (
+            <AppText key={benefit} variant="body" color={theme.colors.text} style={{ fontWeight: '600' }}>{`✅ ${benefit}`}</AppText>
           ))}
         </View>
 
@@ -768,11 +816,11 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
           onPress={() => navigation.navigate('Subscription')}
           style={{ backgroundColor: '#2563eb', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 32, width: '100%', alignItems: 'center', marginBottom: 12 }}
         >
-          <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>View Plans & Subscribe</AppText>
+          <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('jp_viewPlansSubscribe')}</AppText>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onBack}>
-          <AppText variant="body" color={theme.colors.mutedText}>Maybe later</AppText>
+          <AppText variant="body" color={theme.colors.mutedText}>{t('jp_maybeLater')}</AppText>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -781,6 +829,7 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const PostRequirementScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteParams>();
   const { state: authState } = useAuth();
@@ -800,13 +849,13 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   const goBack = (): void => { if (navigation.canGoBack()) navigation.goBack(); };
 
-  const title = reqType ? 'Post Requirement' : 'Select Type';
+  const title = reqType ? t('postRequirement') : t('jp_selectTypeTitle');
 
   if (isEmployer && !isSubscribed) {
     return (
       <View style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-        <ScreenHeader title="Post Requirement" onBack={goBack} />
+        <ScreenHeader title={t('postRequirement')} onBack={goBack} />
         <SubscriptionGate onBack={goBack} />
       </View>
     );
@@ -816,7 +865,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
     return (
       <View style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-        <ScreenHeader title="Post Requirement" onBack={goBack} />
+        <ScreenHeader title={t('postRequirement')} onBack={goBack} />
         <TypeSelectionStep
           onSelect={(type) => setReqType(type)}
           onBack={goBack}

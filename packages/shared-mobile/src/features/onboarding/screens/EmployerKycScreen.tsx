@@ -2,8 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -21,23 +18,8 @@ import { resetToMain } from '../../../core/navigation/navigationRef';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Badge } from '../../../shared/components/ui/Badge';
 import { useAppTheme } from '../../../core/theme';
-import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
+import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { type KycFormValues, kycSchema } from '../../auth/validation/authSchemas';
-
-interface DocState { uri: string; name: string; type: string }
-
-const pickImage = async (): Promise<DocState | null> => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    quality: 0.8,
-    allowsEditing: true,
-    aspect: [4, 3],
-  });
-  if (result.canceled || !result.assets[0]) return null;
-  const asset = result.assets[0];
-  const ext = asset.uri.split('.').pop() ?? 'jpg';
-  return { uri: asset.uri, name: `id_front.${ext}`, type: asset.mimeType ?? `image/${ext}` };
-};
 
 const BRAND      = '#1037A4';
 const BRAND_SOFT = '#EBF1FF';
@@ -67,9 +49,19 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
     !employerType?.agency &&
     !employerType?.industry;
 
+  // Industry employers: GST / firm details are all OPTIONAL (no yes/no toggle, no ID card)
+  const isIndustry = Boolean(employerType?.industry);
+
+  const profile = state.session?.user as { state?: string; district?: string; block?: string } | undefined;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [idFront, setIdFront] = useState<DocState | null>(null);
+
+  // Work location — MANDATORY for all employers (state, district/city, block)
+  const [locState, setLocState]       = useState(profile?.state ?? '');
+  const [locDistrict, setLocDistrict] = useState(profile?.district ?? '');
+  const [locBlock, setLocBlock]       = useState(profile?.block ?? '');
+  const [locErrors, setLocErrors]     = useState<{ state?: string; district?: string; block?: string }>({});
 
   // GST state (only relevant for non-individual)
   const [hasGst, setHasGst]       = useState<'yes' | 'no' | null>(null);
@@ -77,9 +69,11 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const [firmName, setFirmName]   = useState('');
   const [firmAddress, setFirmAddress] = useState('');
 
+  const locationComplete = Boolean(locState && locDistrict && locBlock);
+
   const kycStatus = state.session?.user.kycStatus ?? 'pending';
 
-  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<KycFormValues>({
+  const { control, handleSubmit, formState: { errors } } = useForm<KycFormValues>({
     resolver: zodResolver(kycSchema),
     defaultValues: {
       fullName: state.session?.user.fullName ?? '',
@@ -87,29 +81,37 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
     },
   });
 
-  const selectedLang = watch('language');
+  // Determine if form is ready to submit.
+  // Location (state/district/block) is MANDATORY for every employer type.
+  // No document upload is required. Industry & individual: location only.
+  // Contractor / agency: GST yes/no choice; "yes" requires GST number + firm name.
+  const kycReady = isIndustry
+    ? true
+    : isIndividual
+      ? true
+      : hasGst === 'yes'
+        ? gstNumber.trim().length > 0 && firmName.trim().length > 0
+        : hasGst === 'no'
+          ? true
+          : false;
+  const canSubmit = locationComplete && kycReady;
 
-  const handlePickId = async (): Promise<void> => {
-    const doc = await pickImage();
-    if (doc) setIdFront(doc);
+  const validateLocation = (): boolean => {
+    const errs: { state?: string; district?: string; block?: string } = {};
+    if (!locState)    errs.state    = t('kycLocationRequired');
+    if (!locDistrict) errs.district = t('kycLocationRequired');
+    if (!locBlock)    errs.block    = t('kycLocationRequired');
+    setLocErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
-  // Determine if form is ready to submit
-  const needsIdCard = isIndividual || hasGst === 'no';
-  const canSubmit = isIndividual
-    ? Boolean(idFront)
-    : hasGst === 'yes'
-      ? gstNumber.trim().length > 0 && firmName.trim().length > 0
-      : hasGst === 'no'
-        ? Boolean(idFront)
-        : false;
-
   const onSubmit = handleSubmit(async (values) => {
-    if (!canSubmit) {
-      if (!hasGst && !isIndividual) {
+    const locOk = validateLocation();
+    if (!canSubmit || !locOk) {
+      if (!locOk) {
+        setErrorMessage(t('kycLocationError'));
+      } else if (!hasGst && !isIndividual && !isIndustry) {
         setErrorMessage(t('kycChooseGstError'));
-      } else if (needsIdCard && !idFront) {
-        setErrorMessage(t('kycUploadIdError'));
       } else if (hasGst === 'yes' && !gstNumber.trim()) {
         setErrorMessage(t('kycEnterGstError'));
       }
@@ -124,21 +126,19 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
       }
       await Promise.all(ops);
 
-      if (hasGst === 'yes') {
-        // Submit GST details
-        await apiClient.put('/api/v1/user/update', {
-          'kyc.gstNumber':   gstNumber.trim(),
-          'kyc.firmName':    firmName.trim(),
-          'kyc.firmAddress': firmAddress.trim(),
-        });
-      } else {
-        // Submit ID card (individual or non-individual with no GST)
-        const formData = new FormData();
-        formData.append('aadharFront', { uri: idFront!.uri, name: idFront!.name, type: idFront!.type } as unknown as Blob);
-        await apiClient.put('/api/v1/user/update', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+      // Location is always saved; GST/firm details added when provided.
+      const payload: Record<string, string> = {
+        state:    locState,
+        district: locDistrict,
+        block:    locBlock,
+      };
+      const wantsGst = isIndustry || hasGst === 'yes';
+      if (wantsGst) {
+        if (gstNumber.trim())   payload['kyc.gstNumber']   = gstNumber.trim();
+        if (firmName.trim())    payload['kyc.firmName']    = firmName.trim();
+        if (firmAddress.trim()) payload['kyc.firmAddress'] = firmAddress.trim();
       }
+      await apiClient.put('/api/v1/user/update', payload);
 
       await completeOnboarding();
       resetToMain();
@@ -222,45 +222,84 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
           )}
         </View>
 
-        {/* Language card */}
-        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        {/* ── Work Location (MANDATORY for all employers) ── */}
+        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: locationComplete ? BRAND : theme.colors.border }]}>
           <View style={s.sectionHead}>
             <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
-              <AppText style={s.iconEmoji}>🌐</AppText>
+              <AppText style={s.iconEmoji}>📍</AppText>
             </View>
-            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('preferredLanguage')}</AppText>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>
+              {t('kycLocationSection')} <AppText style={{ color: '#DC2626' }}>*</AppText>
+            </AppText>
           </View>
-          <AppText style={[s.langHint, { color: SLATE }]}>
-            {t('appLanguageNote')}
-          </AppText>
-          <View style={s.langGrid}>
-            {LANGUAGE_OPTIONS.map((lang) => {
-              const active = selectedLang === lang.value;
-              return (
-                <TouchableOpacity
-                  key={lang.value}
-                  onPress={() => setValue('language', lang.value as KycFormValues['language'])}
-                  activeOpacity={0.7}
-                  style={[
-                    s.langChip,
-                    { backgroundColor: active ? BRAND : theme.colors.background,
-                      borderColor:     active ? BRAND : BORDER },
-                  ]}
-                >
-                  <AppText style={[s.langNative, { color: active ? WHITE : theme.colors.text }]}>
-                    {lang.nativeLabel}
-                  </AppText>
-                  <AppText style={[s.langEnglish, { color: active ? 'rgba(255,255,255,0.75)' : SLATE }]}>
-                    {lang.englishLabel}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <AppText style={[s.fieldHint, { color: SLATE }]}>{t('kycLocationHint')}</AppText>
+          <LocationSelector
+            state={locState}
+            district={locDistrict}
+            block={locBlock}
+            onStateChange={(v) => { setLocState(v); setLocDistrict(''); setLocBlock(''); setLocErrors({}); }}
+            onDistrictChange={(v) => { setLocDistrict(v); setLocBlock(''); setLocErrors({}); }}
+            onBlockChange={(v) => { setLocBlock(v); setLocErrors({}); }}
+            stateError={locErrors.state}
+            districtError={locErrors.district}
+            blockError={locErrors.block}
+            required
+          />
         </View>
 
-        {/* ── GST Section (non-individual employers only) ── */}
-        {!isIndividual && (
+        {/* ── GST / Firm details ──
+            Industry: all OPTIONAL (no toggle, no ID card).
+            Contractor / Agency: GST yes/no toggle (existing behaviour). */}
+        {isIndustry && (
+          <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <View style={s.sectionHead}>
+              <View style={[s.iconBox, { backgroundColor: '#FEF3C7' }]}>
+                <AppText style={s.iconEmoji}>🧾</AppText>
+              </View>
+              <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('kycGstSection')}</AppText>
+            </View>
+            <AppText style={[s.fieldHint, { color: SLATE }]}>{t('kycIndustryGstHint')}</AppText>
+            <View style={{ gap: 10 }}>
+              <View>
+                <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycGstNumber').toUpperCase()} {t('kycOptionalTag')}</AppText>
+                <TextInput
+                  value={gstNumber}
+                  onChangeText={setGstNumber}
+                  placeholder={t('kycGstPlaceholder')}
+                  placeholderTextColor={SLATE}
+                  autoCapitalize="characters"
+                  style={[s.input, { color: theme.colors.text, backgroundColor: theme.colors.background, borderColor: gstNumber ? BRAND : BORDER }]}
+                />
+              </View>
+              <View>
+                <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycFirmName').toUpperCase()} {t('kycOptionalTag')}</AppText>
+                <TextInput
+                  value={firmName}
+                  onChangeText={setFirmName}
+                  placeholder={t('kycFirmNamePlaceholder')}
+                  placeholderTextColor={SLATE}
+                  autoCapitalize="words"
+                  style={[s.input, { color: theme.colors.text, backgroundColor: theme.colors.background, borderColor: firmName ? BRAND : BORDER }]}
+                />
+              </View>
+              <View>
+                <AppText style={[s.fieldLabel, { color: SLATE }]}>{t('kycFirmAddress').toUpperCase()}</AppText>
+                <TextInput
+                  value={firmAddress}
+                  onChangeText={setFirmAddress}
+                  placeholder={t('kycFirmAddressPlaceholder')}
+                  placeholderTextColor={SLATE}
+                  multiline
+                  numberOfLines={2}
+                  style={[s.input, { color: theme.colors.text, backgroundColor: theme.colors.background, borderColor: firmAddress ? BRAND : BORDER, minHeight: 60, textAlignVertical: 'top' }]}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── GST Section (contractor / agency only — industry handled above) ── */}
+        {!isIndividual && !isIndustry && (
           <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <View style={s.sectionHead}>
               <View style={[s.iconBox, { backgroundColor: '#FEF3C7' }]}>
@@ -329,47 +368,6 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
                 </View>
               </View>
             )}
-          </View>
-        )}
-
-        {/* ── ID Card upload (individual always, non-individual when hasGst = 'no') ── */}
-        {(isIndividual || hasGst === 'no') && (
-          <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: idFront ? BRAND : theme.colors.border }]}>
-            <View style={s.sectionHead}>
-              <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
-                <AppText style={s.iconEmoji}>🪪</AppText>
-              </View>
-              <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>
-                {t('uploadIdCard')} <AppText style={{ color: '#DC2626' }}>*</AppText>
-              </AppText>
-            </View>
-            <AppText style={[s.fieldHint, { color: SLATE }]}>
-              {t('kycUploadIdHint')}
-            </AppText>
-            <Pressable
-              onPress={() => void handlePickId()}
-              style={({ pressed }) => [
-                s.uploadSlot,
-                { borderColor: idFront ? BRAND : SLATE, backgroundColor: theme.colors.background, opacity: pressed ? 0.75 : 1 },
-              ]}
-            >
-              {idFront ? (
-                <>
-                  <Image source={{ uri: idFront.uri }} style={s.uploadPreview} resizeMode="cover" />
-                  <View style={s.uploadOverlay}>
-                    <AppText style={s.overlayTick}>✓  {t('idUploaded')}</AppText>
-                  </View>
-                </>
-              ) : (
-                <View style={s.uploadEmpty}>
-                  <View style={[s.camBox, { backgroundColor: BRAND_SOFT }]}>
-                    <AppText style={{ fontSize: 22 }}>📷</AppText>
-                  </View>
-                  <AppText style={[s.uploadLabel, { color: theme.colors.text }]}>{t('tapToUploadId')}</AppText>
-                  <AppText style={[s.uploadHint, { color: SLATE }]}>{t('jpgPngNote')}</AppText>
-                </View>
-              )}
-            </Pressable>
           </View>
         )}
 

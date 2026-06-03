@@ -69,7 +69,7 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
           }
           renderItem={({ item }) => {
             const otherUserId = item.participants.find((p) => p !== userId) ?? '';
-            const name = item.participantNames[otherUserId] ?? 'User';
+            const name = item.participantNames[otherUserId] ?? t('jp_user');
             const avatarUri = item.participantImages?.[otherUserId];
             return (
               <TouchableOpacity

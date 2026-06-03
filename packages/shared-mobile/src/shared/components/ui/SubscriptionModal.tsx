@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../state/alert/AppAlertContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import {
   usePricingConfig,
@@ -142,6 +143,7 @@ export const SubscriptionModal = ({
   employerPhone,
 }: SubscriptionModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const isDark = theme.mode === 'dark';
   const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('1m');
@@ -158,7 +160,7 @@ export const SubscriptionModal = ({
 
   // ── Resolve employer-type plan config ─────────────────────────────────────────
   const typePlan       = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
-  const featureBenefits = buildFeatureBenefits(typePlan.features);
+  const featureBenefits = buildFeatureBenefits(typePlan.features, t);
   const sharedBenefits  = [...STATIC_BENEFITS, ...featureBenefits];
   const contacts1m      = typePlan.limits['1m'].contacts;
 

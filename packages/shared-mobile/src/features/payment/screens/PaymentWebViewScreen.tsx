@@ -12,6 +12,7 @@ import { WebView, type WebViewNavigation, type ShouldStartLoadRequest, type WebV
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { queryClient } from '../../../core/query/queryClient';
@@ -40,6 +41,7 @@ function parseCallbackParams(url: string): { status: string; amount: string; mer
 }
 
 export const PaymentWebViewScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
   const { url, merchantOrderId } = route.params;
@@ -70,24 +72,24 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
       })();
 
       showAlert(
-        'Payment Successful! 🎉',
-        `Your subscription has been activated.${amount ? `\nAmount paid: ₹${amount}` : ''}`,
-        [{ text: 'Great!', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
+        t('jp_paySuccessTitle'),
+        `${t('jp_paySubActivated')}${amount ? `\n${t('jp_payAmountPaid', { amount })}` : ''}`,
+        [{ text: t('jp_great'), onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     } else if (status === 'failed') {
       showAlert(
-        'Payment Failed',
-        'Your payment could not be processed. Please try again.',
-        [{ text: 'OK', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
+        t('jp_paymentFailed'),
+        t('jp_payCouldNotProcess'),
+        [{ text: t('jp_ok'), onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     } else {
       // pending or unknown — just go back
       showAlert(
-        'Payment Pending',
-        'Your payment is being processed. You will be notified once confirmed.',
-        [{ text: 'OK', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
+        t('jp_payPendingTitle'),
+        t('jp_payBeingProcessed'),
+        [{ text: t('jp_ok'), onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     }
@@ -108,11 +110,11 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         <TouchableOpacity
           onPress={() => {
             showAlert(
-              'Cancel Payment?',
-              'Are you sure you want to cancel this payment?',
+              t('jp_cancelPaymentTitle'),
+              t('jp_cancelPaymentBody'),
               [
-                { text: 'No, Continue', style: 'cancel' },
-                { text: 'Yes, Cancel', style: 'destructive', onPress: () => navigation.goBack() },
+                { text: t('jp_noContinue'), style: 'cancel' },
+                { text: t('jp_yesCancel'), style: 'destructive', onPress: () => navigation.goBack() },
               ],
             );
           }}
@@ -121,7 +123,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         >
           <AppText style={s.closeIcon}>✕</AppText>
         </TouchableOpacity>
-        <AppText style={s.headerTitle}>Secure Payment</AppText>
+        <AppText style={s.headerTitle}>{t('jp_securePayment')}</AppText>
         <View style={s.lockBadge}>
           <AppText style={s.lockText}>🔒 PhonePe</AppText>
         </View>
@@ -163,7 +165,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
           // Non-http scheme (UPI deep links like phonepe://, gpay://, etc.)
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
             void Linking.openURL(reqUrl).catch(() => {
-              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });
             return false;
           }
@@ -173,7 +175,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         onError={({ nativeEvent }: WebViewErrorEvent) => {
           if (nativeEvent.code === -10 && nativeEvent.url) {
             void Linking.openURL(nativeEvent.url).catch(() => {
-              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });
             webViewRef.current?.goBack();
           }
@@ -181,7 +183,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
         renderLoading={() => (
           <View style={s.loaderOverlay}>
             <ActivityIndicator size="large" color="#2563eb" />
-            <AppText style={s.loaderText}>Loading Payment Gateway…</AppText>
+            <AppText style={s.loaderText}>{t('jp_loadingGateway')}</AppText>
           </View>
         )}
         startInLoadingState
@@ -196,6 +198,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
 type TopupRoute = RouteProp<MainStackParamList, 'TopupWebView'>;
 
 export const TopupWebViewScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
   const route = useRoute<TopupRoute>();
   const { url } = route.params;
@@ -222,15 +225,15 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         void queryClient.invalidateQueries({ queryKey: ['subscription-screen-profile'] });
       })();
       showAlert(
-        'Top-up Successful! 🎉',
-        `Contacts added to your account.${amount ? `\nAmount paid: ₹${amount}` : ''}`,
-        [{ text: 'Great!', onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
+        t('jp_topupSuccessTitle'),
+        `${t('jp_topupContactsAdded')}${amount ? `\n${t('jp_payAmountPaid', { amount })}` : ''}`,
+        [{ text: t('jp_great'), onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
         { cancelable: false },
       );
     } else if (status === 'failed') {
-      showAlert('Payment Failed', 'Please try again.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
+      showAlert(t('jp_paymentFailed'), t('jp_tryAgain'), [{ text: t('jp_ok'), onPress: () => navigation.goBack() }], { cancelable: false });
     } else {
-      showAlert('Payment Pending', 'You will be notified once confirmed.', [{ text: 'OK', onPress: () => navigation.goBack() }], { cancelable: false });
+      showAlert(t('jp_payPendingTitle'), t('jp_notifiedWhenConfirmed'), [{ text: t('jp_ok'), onPress: () => navigation.goBack() }], { cancelable: false });
     }
   };
 
@@ -246,16 +249,16 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
     <View style={[s.root, { backgroundColor: '#0f172a' }]}>
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
-          onPress={() => showAlert('Cancel Payment?', 'Are you sure?', [
-            { text: 'No, Continue', style: 'cancel' },
-            { text: 'Yes, Cancel', style: 'destructive', onPress: () => navigation.goBack() },
+          onPress={() => showAlert(t('jp_cancelPaymentTitle'), t('jp_areYouSure'), [
+            { text: t('jp_noContinue'), style: 'cancel' },
+            { text: t('jp_yesCancel'), style: 'destructive', onPress: () => navigation.goBack() },
           ])}
           style={s.closeBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <AppText style={s.closeIcon}>✕</AppText>
         </TouchableOpacity>
-        <AppText style={s.headerTitle}>Contact Top-up</AppText>
+        <AppText style={s.headerTitle}>{t('jp_contactTopup')}</AppText>
         <View style={s.lockBadge}>
           <AppText style={s.lockText}>🔒 PhonePe</AppText>
         </View>
@@ -294,7 +297,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
           }
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
             void Linking.openURL(reqUrl).catch(() => {
-              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });
             return false;
           }
@@ -303,7 +306,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         onError={({ nativeEvent }: WebViewErrorEvent) => {
           if (nativeEvent.code === -10 && nativeEvent.url) {
             void Linking.openURL(nativeEvent.url).catch(() => {
-              showAlert('App Not Installed', 'The UPI app is not installed on this device. Please use another payment method.');
+              showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });
             webViewRef.current?.goBack();
           }
@@ -311,7 +314,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
         renderLoading={() => (
           <View style={s.loaderOverlay}>
             <ActivityIndicator size="large" color="#2563eb" />
-            <AppText style={s.loaderText}>Loading Payment Gateway…</AppText>
+            <AppText style={s.loaderText}>{t('jp_loadingGateway')}</AppText>
           </View>
         )}
         startInLoadingState

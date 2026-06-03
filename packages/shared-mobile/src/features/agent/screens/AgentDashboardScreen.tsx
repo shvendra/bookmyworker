@@ -575,6 +575,10 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
     if (isAgent) void statsQuery.refetch();
   };
 
+  // Surface a retry affordance when the primary data sources fail, instead of
+  // silently rendering zeros / an empty job list on the agent's home screen.
+  const hasLoadError = reqsQuery.isError || liveReqsQuery.isError || (isAgent && statsQuery.isError);
+
   const totalCount = reqsQuery.data?.pagination?.totalCount ?? 0;
   const myInterestsCount = reqsQuery.data?.myInterestsCount ?? 0;
   const liveReqs = liveReqsQuery.data?.requirements ?? [];
@@ -677,7 +681,23 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         <View style={styles.body}>
 
           {/* Promotional Banner Slider */}
-          <PromoBannerSlider onPress={() => navigation.navigate('JobMarketplace')} />
+          <PromoBannerSlider onCategoryPress={(cat) => navigation.navigate('JobMarketplace', { workType: cat.value })} />
+
+          {/* ── Data load error banner (retry) ── */}
+          {hasLoadError && (
+            <TouchableOpacity
+              onPress={handleRefresh}
+              activeOpacity={0.85}
+              disabled={isRefreshing}
+              style={errBanner.wrap}
+            >
+              <AppText style={errBanner.icon}>⚠️</AppText>
+              <AppText style={errBanner.msg} numberOfLines={2}>{t('dashboardLoadError')}</AppText>
+              <View style={errBanner.cta}>
+                <AppText style={errBanner.ctaTxt}>{isRefreshing ? '…' : t('retry')}</AppText>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* ── Job Invitations banner (shown when employer sent invites) ── */}
           {unseenCount > 0 && (
@@ -1119,6 +1139,14 @@ const invBanner = StyleSheet.create({
   sub:     { fontSize: 11, color: 'rgba(255,255,255,0.78)', marginTop: 2, fontWeight: '500' },
   cta:     { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   ctaTxt:  { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+});
+
+const errBanner = StyleSheet.create({
+  wrap:   { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
+  icon:   { fontSize: 18 },
+  msg:    { flex: 1, fontSize: 13, fontWeight: '700', color: '#991B1B' },
+  cta:    { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  ctaTxt: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
 });
 
 // ── Activity section styles ───────────────────────────────────────────────────

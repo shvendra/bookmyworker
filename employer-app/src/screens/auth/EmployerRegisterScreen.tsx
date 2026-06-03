@@ -85,7 +85,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         employerType: JSON.stringify(selectedTypes),
       });
     } catch (error) {
-      showAlert('Error', error instanceof Error ? error.message : 'Failed to send OTP');
+      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
     } finally {
       setIsLoading(false);
     }

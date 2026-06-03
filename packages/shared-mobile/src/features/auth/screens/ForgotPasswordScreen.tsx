@@ -136,7 +136,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
       startCountdown();
       animateStep(2);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to send OTP');
+      setError(e instanceof Error ? e.message : t('au_failedSendOtp'));
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
       startCountdown();
       step2Form.reset({ otp: '' });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to resend OTP');
+      setError(e instanceof Error ? e.message : t('failedResendOtp'));
     } finally {
       setResendLoading(false);
     }
@@ -164,7 +164,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
       await verifyPasswordResetOtp({ phone: phoneRef.current, otp: values.otp });
       animateStep(3);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid OTP. Please try again.');
+      setError(e instanceof Error ? e.message : t('invalidOtpMsg'));
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
       await resetPassword({ phone: phoneRef.current, password: values.password, role: roleRef.current });
       navigation.navigate('Login');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to reset password');
+      setError(e instanceof Error ? e.message : t('au_failedResetPassword'));
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,7 @@ import { apiClient } from '../../../core/api/client';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface ActivityItem {
   _id: string;
@@ -36,18 +37,17 @@ const fmtDesc = (s?: string): string => {
   return s.replace(/_/g, ' ');
 };
 
-const timeAgo = (date: string): string => {
+const timeAgo = (date: string, t: TFunction): string => {
   const diff = Date.now() - new Date(date).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('pf_justNowLc');
+  if (mins < 60) return t('pf_minAgo', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('pf_hrAgo', { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days === 1) return 'yesterday';
-  return `${days}d ago`;
+  if (days === 1) return t('pf_yesterdayLc');
+  return t('pf_dayAgo', { n: days });
 };
-// Note: timeAgo is a pure function used outside React scope; t() values are used in rendered components below
 
 const ACTION_COLOR: Record<string, { bg: string; color: string; border: string; symbol: string }> = {
   CREATE: { bg: '#dcfce7', color: '#16a34a', border: '#86efac', symbol: '+' },
@@ -60,6 +60,7 @@ const ACTION_COLOR: Record<string, { bg: string; color: string; border: string; 
 
 const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const cfg = ACTION_COLOR[item.action] ?? ACTION_COLOR.UPDATE;
   return (
     <View style={s.row}>
@@ -74,7 +75,7 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
           <AppText style={[s.entity, { color: theme.colors.text }]}>{item.entity}</AppText>
         </View>
         <AppText style={s.desc} numberOfLines={2}>{fmtDesc(item.description) || item.action}</AppText>
-        <AppText style={s.time}>{timeAgo(item.createdAt)}</AppText>
+        <AppText style={s.time}>{timeAgo(item.createdAt, t)}</AppText>
       </View>
     </View>
   );

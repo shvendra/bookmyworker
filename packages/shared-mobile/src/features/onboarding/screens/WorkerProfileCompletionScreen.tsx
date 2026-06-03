@@ -196,11 +196,15 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     return () => handler.remove();
   }, [step, user?.state, user?.district]);
 
-  // All subcategories from all selected categories combined
+  // All subcategories from all selected categories combined.
+  // Deduped by `value` — the same sub (e.g. "welder") can appear under more than
+  // one category, which would otherwise render duplicate keys / chips.
   const allAvailableSubs = useMemo(() => {
+    const seen = new Set<string>();
     return ALL_CATS
       .filter((c) => selectedCats.includes(c.value))
-      .flatMap((c) => c.subcategories);
+      .flatMap((c) => c.subcategories)
+      .filter((s) => (seen.has(s.value) ? false : (seen.add(s.value), true)));
   }, [selectedCats]);
 
   const filteredSubs = useMemo(() => {

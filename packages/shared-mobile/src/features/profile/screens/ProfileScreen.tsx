@@ -148,9 +148,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
     try {
       await setLanguage(lang);
       const label = LANGUAGE_OPTIONS.find((l) => l.value === lang)?.englishLabel ?? lang;
-      toast.success(`Language changed to ${label}`);
+      toast.success(t('employer:pf_langChanged', { lang: label }));
     } catch {
-      toast.error('Failed to update language. Please try again.');
+      toast.error(t('employer:pf_langChangeFailed'));
     } finally {
       setSavingLang(false);
       setLangModalVisible(false);
@@ -171,10 +171,10 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
     try {
       await apiClient.delete('/api/v1/user/account');
       setDeleteAccountModalVisible(false);
-      toast.success('Your account has been permanently deleted.');
+      toast.success(t('employer:pf_accountDeleted'));
       setTimeout(() => { signOut(); }, 800);
     } catch {
-      toast.error('Could not delete account. Please try again.');
+      toast.error(t('employer:pf_accountDeleteFailed'));
     } finally {
       setIsDeletingAccount(false);
     }
@@ -225,10 +225,10 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         />
         {user?.kycStatus === 'verified' && (
           <View style={styles.verifiedBadge}>
-            <AppText style={styles.verifiedBadgeTxt}>✓ VERIFIED</AppText>
+            <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
           </View>
         )}
-        <AppText style={styles.profileName}>{user?.fullName ?? 'User'}</AppText>
+        <AppText style={styles.profileName}>{user?.fullName ?? t('employer:pf_userFallback')}</AppText>
         {(user?.district ?? user?.state) ? (
           <AppText style={styles.profileLocation}>
             📍 {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
@@ -257,7 +257,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               <AppText variant="labelSm" color="#FFFFFF">{t('profile_switchAccount')}</AppText>
               <AppText variant="micro" color="rgba(255,255,255,0.75)">
                 {availableRoles.length > 1
-                  ? `${availableRoles.length} accounts · Active: ${currentBackendRole}`
+                  ? t('employer:pf_accountsActive', { n: availableRoles.length, role: currentBackendRole })
                   : t('profile_manageAccounts')}
               </AppText>
             </View>

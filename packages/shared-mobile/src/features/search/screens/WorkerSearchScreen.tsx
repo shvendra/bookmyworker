@@ -24,6 +24,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
@@ -32,6 +33,7 @@ import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { apiClient } from '../../../core/api/client';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import WORKER_CATEGORIES from '../../../shared/data/categories.json';
@@ -91,6 +93,42 @@ interface CatEntry {
 }
 const CATEGORIES = WORKER_CATEGORIES as CatEntry[];
 
+// Top-level category names have full 11-language translations under the `cat_*`
+// keys (default `translation` namespace, shared with the agent app). categories.json
+// only ships EN/HI/MR/GU labels, so we translate the 13 category NAMES via these
+// keys while keeping the English label as the stored filter value (the API + the
+// subcategory lookup both still match on the English label). Subcategories remain
+// English for now (their 11-language source does not exist yet).
+const CAT_KEY_BY_VALUE: Record<string, string> = {
+  construction_project_workers: 'cat_construction',
+  manufacturing_industrial_workers: 'cat_manufacturing',
+  agriculture_farming_workers: 'cat_agriculture',
+  event_decoration_workers: 'cat_event',
+  household_domestic_workers: 'cat_household',
+  hospitality_service_workers: 'cat_hospitality',
+  transport_logistics_workers: 'cat_transport',
+  retail_shop_workers: 'cat_retail',
+  skilled_technical_workers: 'cat_technical',
+  specialized_creative_workers: 'cat_creative',
+  'Automobile & Workshop Workers': 'cat_automobile',
+  'Healthcare Support Workers': 'cat_healthcare',
+  'Security & Facility Workers': 'cat_security',
+};
+const CAT_KEY_BY_LABEL: Record<string, string> = Object.fromEntries(
+  CATEGORIES
+    .map((c) => [c.label, CAT_KEY_BY_VALUE[c.value]] as const)
+    .filter((pair): pair is readonly [string, string] => Boolean(pair[1])),
+);
+
+/** Translate a top-level category's English label to the active language via the
+ *  shared `cat_*` keys (default `translation` namespace). Falls back to the
+ *  English label when unmapped. Reactive: components that subscribe via
+ *  useTranslation re-render on language change and re-evaluate this. */
+const catDisplay = (label: string): string => {
+  const key = CAT_KEY_BY_LABEL[label];
+  return key ? i18n.t(key) : label;
+};
+
 interface WorkerFilters {
   workerType: string;
   subCategory: string;
@@ -117,27 +155,29 @@ const EMPTY_FILTERS: WorkerFilters = {
 };
 
 const CALL_OUTCOMES = [
-  { value: 'not_picked',            label: 'Not Picked' },
-  { value: 'switched_off',          label: 'Switched Off' },
-  { value: 'busy',                  label: 'Busy' },
-  { value: 'wrong_number',          label: 'Wrong Number' },
-  { value: 'invalid_number',        label: 'Invalid Number' },
-  { value: 'call_later',            label: 'Call Later' },
-  { value: 'follow_up_required',    label: 'Follow Up Required' },
-  { value: 'follow_up_done',        label: 'Follow Up Done' },
-  { value: 'available_immediately', label: 'Available Immediately' },
-  { value: 'available_next_week',   label: 'Available Next Week' },
-  { value: 'available_next_month',  label: 'Available Next Month' },
-  { value: 'currently_working',     label: 'Currently Working' },
-  { value: 'interested',            label: 'Interested' },
-  { value: 'highly_interested',     label: 'Highly Interested' },
-  { value: 'not_interested',        label: 'Not Interested' },
-  { value: 'maybe_interested',      label: 'Maybe Interested' },
-  { value: 'relevant',              label: 'Relevant' },
-  { value: 'not_relevant',          label: 'Not Relevant' },
-  { value: 'job_confirmed',         label: 'Job Confirmed' },
-  { value: 'joined_work',           label: 'Joined Work' },
+  { value: 'not_picked',            labelKey: 'ws_outcome_not_picked' },
+  { value: 'switched_off',          labelKey: 'ws_outcome_switched_off' },
+  { value: 'busy',                  labelKey: 'ws_outcome_busy' },
+  { value: 'wrong_number',          labelKey: 'ws_outcome_wrong_number' },
+  { value: 'invalid_number',        labelKey: 'ws_outcome_invalid_number' },
+  { value: 'call_later',            labelKey: 'ws_outcome_call_later' },
+  { value: 'follow_up_required',    labelKey: 'ws_outcome_follow_up_required' },
+  { value: 'follow_up_done',        labelKey: 'ws_outcome_follow_up_done' },
+  { value: 'available_immediately', labelKey: 'ws_outcome_available_immediately' },
+  { value: 'available_next_week',   labelKey: 'ws_outcome_available_next_week' },
+  { value: 'available_next_month',  labelKey: 'ws_outcome_available_next_month' },
+  { value: 'currently_working',     labelKey: 'ws_outcome_currently_working' },
+  { value: 'interested',            labelKey: 'ws_outcome_interested' },
+  { value: 'highly_interested',     labelKey: 'ws_outcome_highly_interested' },
+  { value: 'not_interested',        labelKey: 'ws_outcome_not_interested' },
+  { value: 'maybe_interested',      labelKey: 'ws_outcome_maybe_interested' },
+  { value: 'relevant',              labelKey: 'ws_outcome_relevant' },
+  { value: 'not_relevant',          labelKey: 'ws_outcome_not_relevant' },
+  { value: 'job_confirmed',         labelKey: 'ws_outcome_job_confirmed' },
+  { value: 'joined_work',           labelKey: 'ws_outcome_joined_work' },
 ];
+
+type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const normalizeText = (text = ''): string =>
@@ -147,15 +187,15 @@ const normalizeText = (text = ''): string =>
     .replace(/[_-]/g, ' ')
     .replace(/\s+/g, ' ');
 
-const timeAgoDate = (date: Date): string => {
+const timeAgoDate = (date: Date, t: TFunc): string => {
   const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('ws_time_just_now');
+  if (mins < 60) return t('ws_time_minutes_ago', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  if (Math.floor(hrs / 24) === 1) return 'Yesterday';
-  return `${Math.floor(hrs / 24)} days ago`;
+  if (hrs < 24) return t('ws_time_hours_ago', { count: hrs });
+  if (Math.floor(hrs / 24) === 1) return t('ws_time_yesterday');
+  return t('ws_time_days_ago', { count: Math.floor(hrs / 24) });
 };
 
 const formatName = (name = ''): string =>
@@ -236,6 +276,7 @@ const PickerModal = ({
   onSelect,
   onClose,
   allLabel = 'All',
+  labelFor,
 }: {
   visible: boolean;
   title: string;
@@ -244,11 +285,16 @@ const PickerModal = ({
   onSelect: (v: string) => void;
   onClose: () => void;
   allLabel?: string;
+  /** Optional display translator — maps an option's stored value → shown text.
+   *  Selection still operates on the original `options` value. */
+  labelFor?: (value: string) => string;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
-  const shown = options.filter((o) => o.toLowerCase().includes(q.toLowerCase()));
+  const display = (o: string): string => (labelFor ? labelFor(o) : o);
+  const shown = options.filter((o) => display(o).toLowerCase().includes(q.toLowerCase()));
   return (
     <Modal
       visible={visible}
@@ -261,7 +307,7 @@ const PickerModal = ({
           <View>
             <AppText style={[pm.title, { color: theme.colors.text }]}>{title}</AppText>
             <AppText style={[pm.sub, { color: theme.colors.mutedText }]}>
-              {options.length} options available
+              {t('ws_options_available', { count: options.length })}
             </AppText>
           </View>
           <TouchableOpacity
@@ -283,7 +329,7 @@ const PickerModal = ({
             <TextInput
               value={q}
               onChangeText={setQ}
-              placeholder="Search…"
+              placeholder={t('ws_search_placeholder')}
               placeholderTextColor={C.slate}
               style={[pm.searchInput, { color: theme.colors.text }]}
             />
@@ -326,7 +372,7 @@ const PickerModal = ({
                     },
                   ]}
                 >
-                  {item}
+                  {item === allLabel ? item : display(item)}
                 </AppText>
                 {active && (
                   <View style={pm.checkCircle}>
@@ -421,14 +467,23 @@ const FilterSheet = ({
   onApply,
   onClose,
   userState,
+  userDistrict,
+  lockState = false,
+  lockDistrict = false,
 }: {
   visible: boolean;
   initial: WorkerFilters;
   userState: string;
+  userDistrict?: string;
+  /** Plan locks the state to the user's own (district/state scope). */
+  lockState?: boolean;
+  /** Plan locks the district to the user's own (district scope only). */
+  lockDistrict?: boolean;
   onApply: (f: WorkerFilters) => void;
   onClose: () => void;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const [f, setF] = useState<WorkerFilters>(initial);
   const [picker, setPicker] = useState<
@@ -469,7 +524,15 @@ const FilterSheet = ({
     [f.workerType],
   );
 
-  const activeCount = countActive(f);
+  // Locked location is a plan constraint, not a user-chosen filter — exclude it
+  // from the "active filters" count so Reset visibly clears to zero.
+  const activeCount =
+    countActive(f)
+    - (lockState && f.state ? 1 : 0)
+    - (lockDistrict && f.district ? 1 : 0);
+
+  const handleReset = (): void =>
+    setF({ ...EMPTY_FILTERS, state: lockState ? userState : '', district: lockDistrict ? (userDistrict ?? '') : '' });
 
   return (
     <Modal
@@ -483,20 +546,20 @@ const FilterSheet = ({
         {/* ── Header ────────────────────────────────────────────────────── */}
         <View style={[fsh.header, { paddingTop: insets.top + 16, backgroundColor: theme.colors.background, borderBottomColor: BORDER }]}>
           <View style={fsh.headerLeft}>
-            <AppText style={[fsh.headerTitle, { color: theme.colors.text }]}>Filter Professionals</AppText>
+            <AppText style={[fsh.headerTitle, { color: theme.colors.text }]}>{t('ws_filter_title')}</AppText>
             <AppText style={[fsh.headerSub, { color: theme.colors.mutedText }]}>
               {activeCount > 0
-                ? `${activeCount} filter${activeCount > 1 ? 's' : ''} active`
-                : 'Narrow down your search'}
+                ? t('ws_filters_active', { count: activeCount })
+                : t('ws_filter_subtitle')}
             </AppText>
           </View>
           <View style={fsh.headerActions}>
             {activeCount > 0 && (
               <TouchableOpacity
-                onPress={() => setF({ ...EMPTY_FILTERS, state: userState })}
+                onPress={handleReset}
                 style={fsh.resetBtn}
               >
-                <AppText style={fsh.resetTxt}>Reset</AppText>
+                <AppText style={fsh.resetTxt}>{t('ws_reset')}</AppText>
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={onClose} style={fsh.closeBtn}>
@@ -518,26 +581,32 @@ const FilterSheet = ({
               <View style={[fsh.cardIcon, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText style={{ fontSize: 14 }}>📍</AppText>
               </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Location</AppText>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_location')}</AppText>
             </View>
+            {(lockState || lockDistrict) && (
+              <AppText style={[fsh.lockHint, { color: theme.colors.mutedText }]}>
+                🔒 {t('ws_scope_locked')}
+              </AppText>
+            )}
             <DropField
-              label="State"
+              label={t('ws_state')}
               value={f.state}
-              placeholder="All States"
+              placeholder={t('ws_all_states')}
               onPress={() => setPicker('state')}
+              disabled={lockState}
             />
             <DropField
-              label="District"
+              label={t('ws_district')}
               value={f.district}
-              placeholder={f.state ? 'Select district' : 'Select state first'}
+              placeholder={f.state ? t('ws_select_district') : t('ws_select_state_first')}
               onPress={() => f.state && setPicker('district')}
-              disabled={!f.state}
+              disabled={!f.state || lockDistrict}
             />
             {(districtList.length > 0 || f.tehsil) && (
               <DropField
-                label="Tehsil / Block"
+                label={t('ws_tehsil_block')}
                 value={f.tehsil}
-                placeholder={f.district ? 'Select tehsil' : 'Select district first'}
+                placeholder={f.district ? t('ws_select_tehsil') : t('ws_select_district_first')}
                 onPress={() => f.district && setPicker('tehsil')}
                 disabled={!f.district}
               />
@@ -550,19 +619,19 @@ const FilterSheet = ({
               <View style={[fsh.cardIcon, { backgroundColor: theme.colors.secondaryLight }]}>
                 <AppText style={{ fontSize: 14 }}>💼</AppText>
               </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Work Type</AppText>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_work_type')}</AppText>
             </View>
             <DropField
-              label="Category"
-              value={f.workerType}
-              placeholder="All categories"
+              label={t('ws_category')}
+              value={f.workerType ? catDisplay(f.workerType) : ''}
+              placeholder={t('ws_all_categories')}
               onPress={() => setPicker('cat')}
             />
             {f.workerType && subCatLabels.length > 0 && (
               <DropField
-                label="Sub-category"
+                label={t('ws_sub_category')}
                 value={f.subCategory}
-                placeholder="All sub-categories"
+                placeholder={t('ws_all_sub_categories')}
                 onPress={() => setPicker('subcat')}
               />
             )}
@@ -574,12 +643,12 @@ const FilterSheet = ({
               <View style={[fsh.cardIcon, { backgroundColor: GREEN_SOFT }]}>
                 <AppText style={{ fontSize: 14 }}>🧑‍💼</AppText>
               </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Professional Type</AppText>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_professional_type')}</AppText>
             </View>
             <View style={fsh.typeGrid}>
               {[
-                { label: 'Individual Worker', sub: 'Single professional', val: 'individual', icon: '👤' },
-                { label: 'Agent / Group',     sub: 'Team or agency',      val: 'group',      icon: '👥' },
+                { label: t('ws_individual_worker'), sub: t('ws_single_professional'), val: 'individual', icon: '👤' },
+                { label: t('ws_agent_group'),       sub: t('ws_team_or_agency'),      val: 'group',      icon: '👥' },
               ].map((opt) => {
                 const active = f.workerGroup === opt.val;
                 return (
@@ -612,22 +681,22 @@ const FilterSheet = ({
               <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
                 <AppText style={{ fontSize: 14 }}>🎯</AppText>
               </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Demographics</AppText>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_demographics')}</AppText>
             </View>
 
             {/* Gender */}
-            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>Gender</AppText>
+            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>{t('ws_gender')}</AppText>
             <View style={[fsh.chipRow, { marginBottom: 18 }]}>
               {[
-                { label: 'Male',   icon: '♂' },
-                { label: 'Female', icon: '♀' },
-                { label: 'Other',  icon: '⚧' },
+                { value: 'Male',   label: t('ws_male'),   icon: '♂' },
+                { value: 'Female', label: t('ws_female'), icon: '♀' },
+                { value: 'Other',  label: t('ws_other'),  icon: '⚧' },
               ].map((g) => {
-                const active = f.gender === g.label;
+                const active = f.gender === g.value;
                 return (
                   <TouchableOpacity
-                    key={g.label}
-                    onPress={() => set('gender', active ? '' : g.label)}
+                    key={g.value}
+                    onPress={() => set('gender', active ? '' : g.value)}
                     activeOpacity={0.8}
                     style={[fsh.genderChip, {
                       backgroundColor: active ? BRAND : theme.colors.background,
@@ -642,10 +711,10 @@ const FilterSheet = ({
             </View>
 
             {/* Age Range */}
-            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>Age Range</AppText>
+            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>{t('ws_age_range')}</AppText>
             <View style={fsh.ageGrid}>
               <View style={{ flex: 1 }}>
-                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>FROM</AppText>
+                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>{t('ws_from')}</AppText>
                 <View style={[fsh.ageBox, {
                   borderColor: f.ageMin ? BRAND : theme.colors.border,
                   backgroundColor: f.ageMin ? theme.colors.primaryLight : theme.colors.surface1,
@@ -660,7 +729,7 @@ const FilterSheet = ({
                     style={[fsh.ageBoxInput, { color: theme.colors.text }]}
                   />
                   <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMin ? BRAND + '30' : theme.colors.border }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : theme.colors.mutedText }]}>yrs</AppText>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : theme.colors.mutedText }]}>{t('ws_yrs')}</AppText>
                   </View>
                 </View>
               </View>
@@ -668,7 +737,7 @@ const FilterSheet = ({
                 <AppText style={{ color: theme.colors.mutedText, fontWeight: '700', fontSize: 18 }}>–</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>TO</AppText>
+                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>{t('ws_to')}</AppText>
                 <View style={[fsh.ageBox, {
                   borderColor: f.ageMax ? BRAND : theme.colors.border,
                   backgroundColor: f.ageMax ? theme.colors.primaryLight : theme.colors.surface1,
@@ -683,7 +752,7 @@ const FilterSheet = ({
                     style={[fsh.ageBoxInput, { color: theme.colors.text }]}
                   />
                   <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMax ? BRAND + '30' : theme.colors.border }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : theme.colors.mutedText }]}>yrs</AppText>
+                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : theme.colors.mutedText }]}>{t('ws_yrs')}</AppText>
                   </View>
                 </View>
               </View>
@@ -696,12 +765,12 @@ const FilterSheet = ({
               <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
                 <AppText style={{ fontSize: 14 }}>🎓</AppText>
               </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>Qualification</AppText>
+              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_qualification')}</AppText>
             </View>
             <View style={fsh.typeGrid}>
               {[
-                { label: 'ITI / Diploma', sub: 'Certificate holders', val: 'ITI/Diploma', icon: '🎓' },
-                { label: 'Graduate',      sub: "Bachelor's & above",  val: 'Graduate',    icon: '📜' },
+                { label: t('ws_iti_diploma'), sub: t('ws_certificate_holders'), val: 'ITI/Diploma', icon: '🎓' },
+                { label: t('ws_graduate'),    sub: t('ws_bachelors_above'),     val: 'Graduate',    icon: '📜' },
               ].map((opt) => {
                 const active = f.qualification === opt.val;
                 return (
@@ -733,59 +802,60 @@ const FilterSheet = ({
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <View style={[fsh.footer, { borderTopColor: BORDER, backgroundColor: theme.colors.background }]}>
           <TouchableOpacity onPress={onClose} style={[fsh.cancelBtn, { borderColor: theme.colors.border }]} activeOpacity={0.8}>
-            <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>Cancel</AppText>
+            <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>{t('ws_cancel')}</AppText>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
             <AppText style={fsh.applyTxt}>
-              {activeCount > 0 ? `Apply  ·  ${activeCount}` : 'Apply Filters'}
+              {activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters')}
             </AppText>
           </TouchableOpacity>
         </View>
 
         <PickerModal
           visible={picker === 'cat'}
-          title="Work Category"
+          title={t('ws_work_category')}
           options={catLabels}
           selected={f.workerType}
           onSelect={(v) => set('workerType', v)}
           onClose={() => setPicker(null)}
-          allLabel="All Categories"
+          allLabel={t('ws_all_categories_opt')}
+          labelFor={catDisplay}
         />
         <PickerModal
           visible={picker === 'subcat'}
-          title="Sub-category"
+          title={t('ws_sub_category')}
           options={subCatLabels}
           selected={f.subCategory}
           onSelect={(v) => set('subCategory', v)}
           onClose={() => setPicker(null)}
-          allLabel="All Sub-categories"
+          allLabel={t('ws_all_sub_categories_opt')}
         />
         <PickerModal
           visible={picker === 'state'}
-          title="State"
+          title={t('ws_state')}
           options={stateList}
           selected={f.state}
           onSelect={(v) => set('state', v)}
           onClose={() => setPicker(null)}
-          allLabel="All States"
+          allLabel={t('ws_all_states_opt')}
         />
         <PickerModal
           visible={picker === 'district'}
-          title="District / City"
+          title={t('ws_district_city')}
           options={districtList}
           selected={f.district}
           onSelect={(v) => set('district', v)}
           onClose={() => setPicker(null)}
-          allLabel="All Districts"
+          allLabel={t('ws_all_districts_opt')}
         />
         <PickerModal
           visible={picker === 'tehsil'}
-          title="Tehsil / Block"
+          title={t('ws_tehsil_block')}
           options={tehsilList}
           selected={f.tehsil}
           onSelect={(v) => set('tehsil', v)}
           onClose={() => setPicker(null)}
-          allLabel="All Blocks"
+          allLabel={t('ws_all_blocks_opt')}
         />
       </View>
     </Modal>
@@ -811,6 +881,7 @@ const fsh = StyleSheet.create({
   cardHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   cardIcon:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardTitle:     { fontSize: 14, fontWeight: '800', letterSpacing: 0.1 },
+  lockHint:      { fontSize: 11, fontWeight: '600', lineHeight: 15, marginTop: -8, marginBottom: 12 },
 
   // Professional Type grid
   typeGrid:      { flexDirection: 'row', gap: 8 },
@@ -859,9 +930,11 @@ const CallOutcomePicker = ({
   remarkTime?: Date;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const [show, setShow] = useState(false);
-  const label = CALL_OUTCOMES.find((o) => o.value === current)?.label;
+  const outcome = CALL_OUTCOMES.find((o) => o.value === current);
+  const label = outcome ? t(outcome.labelKey) : undefined;
   const hasOutcome = !!current;
 
   return (
@@ -874,10 +947,10 @@ const CallOutcomePicker = ({
       >
         <View style={[co.dot, { backgroundColor: hasOutcome ? BRAND : theme.colors.mutedText }]} />
         <AppText style={[co.btnText, { color: hasOutcome ? theme.colors.text : theme.colors.mutedText }]} numberOfLines={1}>
-          {saving ? 'Saving…' : (label ?? 'Log Call Outcome')}
+          {saving ? t('ws_saving') : (label ?? t('ws_log_call_outcome'))}
         </AppText>
         {remarkTime && (
-          <AppText style={[co.remarkTime, { color: theme.colors.mutedText }]}>{timeAgoDate(remarkTime)}</AppText>
+          <AppText style={[co.remarkTime, { color: theme.colors.mutedText }]}>{timeAgoDate(remarkTime, t)}</AppText>
         )}
         <AppText style={[co.chevron, { color: theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
@@ -891,9 +964,9 @@ const CallOutcomePicker = ({
         <View style={[co.sheet, { backgroundColor: theme.colors.background }]}>
           <View style={[co.sheetHeader, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
             <View>
-              <AppText style={[co.sheetTitle, { color: theme.colors.text }]}>Call Outcome</AppText>
+              <AppText style={[co.sheetTitle, { color: theme.colors.text }]}>{t('ws_call_outcome')}</AppText>
               <AppText style={[co.sheetSub, { color: theme.colors.mutedText }]}>
-                Select the result of your last call
+                {t('ws_call_outcome_sub')}
               </AppText>
             </View>
             <TouchableOpacity onPress={() => setShow(false)} style={[co.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
@@ -929,7 +1002,7 @@ const CallOutcomePicker = ({
                       },
                     ]}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </AppText>
                   {active && (
                     <View style={co.checkCircle}>
@@ -1001,6 +1074,7 @@ const AgentCard = ({
   onPress,
 }: AgentCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const photoUrl  = buildPhotoUrl(agent.profilePhoto);
   const initials  = formatName(agent.name ?? '?')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
@@ -1018,7 +1092,9 @@ const AgentCard = ({
   );
   const wage    = agent.fixedSalary ?? agent.salaryFrom;
   const wageText = wage
-    ? `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}/day`
+    ? t('ws_wage_per_day', {
+        amount: `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}`,
+      })
     : null;
 
   return (
@@ -1048,7 +1124,7 @@ const AgentCard = ({
         <View style={{ flex: 1 }}>
           <View style={wc.nameRow}>
             <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
-              {formatName(agent.name ?? 'Unknown')}
+              {agent.name ? formatName(agent.name) : t('ws_unknown')}
             </AppText>
           </View>
 
@@ -1057,8 +1133,8 @@ const AgentCard = ({
           )}
 
           <View style={wc.metaRow}>
-            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{age} yrs</AppText></View>}
-            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{exp}y exp</AppText></View>}
+            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
+            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
             {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{agent.gender}</AppText></View>}
             {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
           </View>
@@ -1076,7 +1152,7 @@ const AgentCard = ({
         <View style={[wc.availRow, { borderTopColor: theme.colors.border }]}>
           <View style={wc.availDot} />
           <AppText style={[wc.lastContactTxt, { color: theme.colors.mutedText }]}>
-            last contact {remarkTime ? timeAgoDate(remarkTime) : 'recently'}
+            {t('ws_last_contact', { time: remarkTime ? timeAgoDate(remarkTime, t) : t('ws_recently') })}
           </AppText>
         </View>
       )}
@@ -1105,13 +1181,13 @@ const AgentCard = ({
           {!!agent.resumeUrl && (
             <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
               <AppText style={wc.resumeIcon}>📄</AppText>
-              <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>Resume</AppText>
+              <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>{t('ws_resume')}</AppText>
             </TouchableOpacity>
           )}
           {!!agent.labourLicenceUrl && (
             <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
               <AppText style={wc.resumeIcon}>📋</AppText>
-              <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>Licence</AppText>
+              <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>{t('ws_licence')}</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -1142,8 +1218,8 @@ const AgentCard = ({
               <AppText style={{ fontSize: 16 }}>⚠️</AppText>
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={[wc.topupTitle, { color: theme.colors.warningDark }]}>Contact Limit Reached</AppText>
-              <AppText style={[wc.topupSub, { color: theme.colors.mutedText }]}>Upgrade your plan to unlock more contacts</AppText>
+              <AppText style={[wc.topupTitle, { color: theme.colors.warningDark }]}>{t('ws_contact_limit_reached')}</AppText>
+              <AppText style={[wc.topupSub, { color: theme.colors.mutedText }]}>{t('ws_upgrade_to_unlock')}</AppText>
             </View>
             <AppText style={wc.lockChevron}>›</AppText>
           </TouchableOpacity>
@@ -1159,7 +1235,7 @@ const AgentCard = ({
             ) : (
               <>
                 <AppText style={wc.callAgentIcon}>📞</AppText>
-                <AppText style={wc.callAgentTxt}>Call Agent</AppText>
+                <AppText style={wc.callAgentTxt}>{t('ws_call_agent')}</AppText>
               </>
             )}
           </TouchableOpacity>
@@ -1181,7 +1257,7 @@ const AgentCard = ({
       {isAgent && (
         <View style={[wc.agentBanner, { borderTopColor: theme.colors.secondary + '50', backgroundColor: theme.colors.secondaryLight }]}>
           <AppText style={{ fontSize: 13 }}>👥</AppText>
-          <AppText style={[wc.agentBannerTxt, { color: theme.colors.secondary }]}>Agent-managed groups · Ideal for bulk hiring</AppText>
+          <AppText style={[wc.agentBannerTxt, { color: theme.colors.secondary }]}>{t('ws_agent_banner')}</AppText>
         </View>
       )}
     </View>
@@ -1189,25 +1265,25 @@ const AgentCard = ({
 };
 
 const wc = StyleSheet.create({
-  card:           { borderRadius: 16, marginBottom: 12, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, borderWidth: StyleSheet.hairlineWidth },
+  card:           { borderRadius: 16, marginBottom: 9, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, borderWidth: StyleSheet.hairlineWidth },
 
-  infoRow:        { flexDirection: 'row', padding: 14, gap: 12 },
+  infoRow:        { flexDirection: 'row', padding: 11, gap: 10 },
 
   avatarWrap:     { position: 'relative', alignSelf: 'flex-start' },
-  avatar:         { width: 54, height: 54, borderRadius: 27, borderWidth: 2 },
-  avatarFallback: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  initials:       { fontSize: 19, fontWeight: '800' },
+  avatar:         { width: 46, height: 46, borderRadius: 23, borderWidth: 2 },
+  avatarFallback: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  initials:       { fontSize: 17, fontWeight: '800' },
   statusDot:      { position: 'absolute', bottom: 0, left: 0, width: 13, height: 13, borderRadius: 6.5, backgroundColor: GREEN, borderWidth: 2, borderColor: WHITE },
   verifiedBadge:  { position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: WHITE },
   verifiedTxt:    { color: WHITE, fontSize: 7, fontWeight: '900' },
 
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
+  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
   name:           { fontSize: 15, fontWeight: '800', flex: 1 },
   rolePill:       { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   roleTxt:        { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
-  location:       { fontSize: 11, marginBottom: 6 },
+  location:       { fontSize: 11, marginBottom: 5 },
   metaRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
   metaChipTxt:    { fontSize: 11, fontWeight: '600' },
   wageChip:       { backgroundColor: GREEN_SOFT },
   wageTxt:        { color: GREEN, fontWeight: '800' },
@@ -1224,12 +1300,12 @@ const wc = StyleSheet.create({
 
   // Skills
   skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },
-  skillsContent:  { paddingHorizontal: 14, paddingVertical: 9, gap: 6, flexDirection: 'row' },
+  skillsContent:  { paddingHorizontal: 12, paddingVertical: 7, gap: 6, flexDirection: 'row' },
   skillChip:      { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, borderWidth: 1 },
   skillChipTxt:   { fontSize: 11, fontWeight: '600' },
 
   // Documents row (resume + licence chips)
-  docsRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  docsRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
   docChip:        { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EBF1FF', borderRadius: 8, borderWidth: 1, borderColor: '#BFDBFE', paddingHorizontal: 10, paddingVertical: 5 },
   docChipTxt:     { fontSize: 11, fontWeight: '700', color: BRAND },
   resumeIcon:     { fontSize: 13 },
@@ -1238,16 +1314,16 @@ const wc = StyleSheet.create({
   resumeTxt:      { flex: 1, fontSize: 11.5, fontWeight: '700', color: BRAND },
 
   // CTA
-  ctaSection:     { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  ctaSection:     { paddingHorizontal: 11, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   unlockedRow:    { flexDirection: 'row', gap: 8 },
-  callBtn:        { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  callBtn:        { flex: 1, borderRadius: 11, paddingVertical: 11, alignItems: 'center' },
   callBtnTxt:     { color: WHITE, fontSize: 14, fontWeight: '800' },
-  waBtn:          { flex: 1, backgroundColor: '#25D366', borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 13 },
+  waBtn:          { flex: 1, backgroundColor: '#25D366', borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingVertical: 11 },
   waBtnTxt:       { color: WHITE, fontSize: 14, fontWeight: '800' },
-  callAgentBtn:   { flexDirection: 'row', backgroundColor: BRAND, borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  callAgentIcon:  { fontSize: 16 },
+  callAgentBtn:   { flexDirection: 'row', backgroundColor: BRAND, borderRadius: 11, paddingVertical: 11, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  callAgentIcon:  { fontSize: 15 },
   callAgentTxt:   { color: WHITE, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
-  viewContactBtn: { backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  viewContactBtn: { backgroundColor: BRAND, borderRadius: 11, paddingVertical: 11, alignItems: 'center' },
   viewContactTxt: { color: WHITE, fontSize: 14, fontWeight: '800' },
   lockCta:        { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   lockIconBox:    { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
@@ -1258,7 +1334,7 @@ const wc = StyleSheet.create({
   topupTitle:     { fontSize: 12, fontWeight: '700' },
   topupSub:       { fontSize: 10.5, fontWeight: '500', marginTop: 1 },
 
-  agentBanner:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1 },
+  agentBanner:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: 1 },
   agentBannerTxt: { fontSize: 11, fontWeight: '600', flex: 1 },
 });
 
@@ -1319,8 +1395,16 @@ interface FullUserProfile {
   employerType?: string;
 }
 
+const scopeBanner = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  icon: { fontSize: 14, lineHeight: 18 },
+  txt:  { flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  cta:  { fontSize: 12, fontWeight: '800' },
+});
+
 export const WorkerSearchScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const { state: authState } = useAuth();
   const user = authState.session?.user;
   const navigation = useNavigation<Nav>();
@@ -1331,13 +1415,42 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const canGoBack = navigation.canGoBack();
 
   const initialCat = route.params?.workType ?? '';
-  const userState  = user?.state ?? '';
+  const userState    = user?.state ?? '';
+  const userDistrict = user?.district ?? '';
+
+  // ── Plan worker-search scope gate ──────────────────────────────────────────
+  const plan = usePlanFeatures();
+  // Match CRM (VerifiedAgentsPage): a non-subscriber is locked to their own
+  // district; subscribers get their plan's scope. 'india' = unrestricted.
+  const scope = plan.isSubscribed ? plan.workerSearchScope : 'district'; // 'district' | 'state' | 'india'
+  // Only constrain when we actually know the user's location (graceful fallback).
+  const districtScoped = scope === 'district' && !!userState && !!userDistrict;
+  const stateScoped    = scope === 'state'    && !!userState;
+  const isScoped       = districtScoped || stateScoped;
+  // Reset should keep the plan-locked location, but clear it when unrestricted.
+  const resetState    = isScoped ? userState : '';
+  const resetDistrict = districtScoped ? userDistrict : '';
 
   const [appliedFilters, setAppliedFilters] = useState<WorkerFilters>({
     ...EMPTY_FILTERS,
     workerType: initialCat,
     state: userState,
+    district: '',
   });
+
+  // Auto-fill / lock the search location to the plan's allowed scope. Re-runs
+  // when the scope resolves (it is permissive 'india' until the profile loads).
+  useEffect(() => {
+    if (!isScoped) return;
+    setAppliedFilters((prev) => {
+      const nextState = userState;
+      const nextDistrict = districtScoped ? userDistrict : prev.district;
+      if (prev.state === nextState && (!districtScoped || prev.district === nextDistrict)) {
+        return prev;
+      }
+      return { ...prev, state: nextState, district: districtScoped ? nextDistrict : prev.district, tehsil: '' };
+    });
+  }, [isScoped, districtScoped, userState, userDistrict]);
   const [showFilters,      setShowFilters]      = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
 
@@ -1477,11 +1590,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       .filter(([, count]) => count > 0)
       .map(([label, count]) => ({ key: normalizeText(label), label, count }));
     return [
-      { key: 'all', label: 'All', count: total },
-      ...(available < total ? [{ key: 'available', label: 'Available', count: available }] : []),
+      { key: 'all', label: t('ws_chip_all'), count: total },
+      ...(available < total ? [{ key: 'available', label: t('ws_chip_available'), count: available }] : []),
       ...topCats,
     ];
-  }, [filteredAgents]);
+  }, [filteredAgents, t]);
 
   // Chip-filtered list shown in the FlatList
   const displayedAgents = useMemo(() => {
@@ -1527,7 +1640,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         setIsLimitExhausted(true);
         navigation.navigate('Subscription');
       } else {
-        toast.error(msg ?? 'Failed to unlock contact. Please try again.', 'Unlock Failed');
+        toast.error(msg ?? t('ws_unlock_failed_msg'), t('ws_unlock_failed_title'));
       }
     } finally {
       setLoadingUnlock((p) => ({ ...p, [agentId]: false }));
@@ -1543,9 +1656,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       void qc.invalidateQueries({ queryKey: ['worker-remarks'] });
       // Notify the worker about the call outcome update
       void apiClient.post('/api/v1/notifications/call-outcome', { workerId: agentId, outcome: status }).catch(() => {});
-      toast.success('Call outcome saved.', 'Saved');
+      toast.success(t('ws_outcome_saved_msg'), t('ws_saved_title'));
     } catch {
-      toast.error('Failed to save call outcome. Please try again.', 'Save Failed');
+      toast.error(t('ws_outcome_save_failed_msg'), t('ws_save_failed_title'));
     } finally {
       setSavingRemark((p) => ({ ...p, [agentId]: false }));
     }
@@ -1555,7 +1668,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const activePills: Array<{ key: string; label: string; onRemove: () => void }> = [
     appliedFilters.workerType && {
       key: 'wt',
-      label: appliedFilters.workerType,
+      label: catDisplay(appliedFilters.workerType),
       onRemove: () =>
         setAppliedFilters((p) => ({ ...p, workerType: '', subCategory: '' })),
     },
@@ -1587,13 +1700,17 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     },
     appliedFilters.gender && {
       key: 'ge',
-      label: appliedFilters.gender,
+      label:
+        appliedFilters.gender === 'Male'   ? t('ws_male')
+        : appliedFilters.gender === 'Female' ? t('ws_female')
+        : appliedFilters.gender === 'Other'  ? t('ws_other')
+        : appliedFilters.gender,
       onRemove: () => setAppliedFilters((p) => ({ ...p, gender: '' })),
     },
     appliedFilters.workerGroup && {
       key: 'wg',
       label:
-        appliedFilters.workerGroup === 'group' ? 'Group / Agent' : 'Individual',
+        appliedFilters.workerGroup === 'group' ? t('ws_pill_group') : t('ws_pill_individual'),
       onRemove: () => setAppliedFilters((p) => ({ ...p, workerGroup: '' })),
     },
     appliedFilters.qualification && {
@@ -1603,7 +1720,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     },
     (appliedFilters.ageMin || appliedFilters.ageMax) && {
       key: 'age',
-      label: `Age ${appliedFilters.ageMin || '0'}–${appliedFilters.ageMax || '∞'}`,
+      label: t('ws_pill_age', { min: appliedFilters.ageMin || '0', max: appliedFilters.ageMax || '∞' }),
       onRemove: () => setAppliedFilters((p) => ({ ...p, ageMin: '', ageMax: '' })),
     },
   ].filter(Boolean) as Array<{ key: string; label: string; onRemove: () => void }>;
@@ -1629,11 +1746,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             </TouchableOpacity>
           )}
           <View style={sc.headerTitleBlock}>
-            <AppText style={[sc.headerTitle, { color: theme.colors.text }]}>Workers & Agents</AppText>
+            <AppText style={[sc.headerTitle, { color: theme.colors.text }]}>{t('ws_header_title')}</AppText>
             <AppText style={[sc.headerSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
               📍 {appliedFilters.state
-                ? `Results in ${appliedFilters.state}`
-                : 'All India'}
+                ? t('ws_results_in', { state: appliedFilters.state })
+                : t('ws_all_india')}
             </AppText>
           </View>
           <TouchableOpacity
@@ -1646,6 +1763,23 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         </View>
       </View>
 
+      {/* ── Plan scope banner ── */}
+      {isScoped && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Subscription')}
+          activeOpacity={0.85}
+          style={[scopeBanner.wrap, { backgroundColor: theme.colors.primaryLight, borderBottomColor: theme.colors.border }]}
+        >
+          <AppText style={scopeBanner.icon}>📍</AppText>
+          <AppText style={[scopeBanner.txt, { color: theme.colors.text }]} numberOfLines={2}>
+            {districtScoped
+              ? t('pl_scopeDistrict', { district: userDistrict })
+              : t('pl_scopeState', { state: userState })}
+          </AppText>
+          <AppText style={[scopeBanner.cta, { color: BRAND }]}>{t('pl_upgrade')}</AppText>
+        </TouchableOpacity>
+      )}
+
       {/* ── Search + chips bar (white) ── */}
       <View style={[sc.searchSection, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         {/* Search bar */}
@@ -1654,7 +1788,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search name, skill or city..."
+            placeholder={t('ws_main_search_placeholder')}
             placeholderTextColor={theme.colors.mutedText}
             style={[sc.searchInput, { color: theme.colors.text }]}
             returnKeyType="search"
@@ -1718,10 +1852,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               </TouchableOpacity>
             ))}
             <TouchableOpacity
-              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: userState })}
+              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: resetState, district: resetDistrict })}
               style={sc.pillClear}
             >
-              <AppText style={sc.pillClearTxt}>Clear all</AppText>
+              <AppText style={sc.pillClearTxt}>{t('ws_clear_all')}</AppText>
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -1731,11 +1865,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       {!isLoading && !isError && displayedAgents.length > 0 && (
         <View style={[sc.resultBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
           <AppText style={[sc.resultCount, { color: theme.colors.text }]}>
-            {displayedAgents.length} workers found
+            {t('ws_workers_found', { count: displayedAgents.length })}
           </AppText>
           <TouchableOpacity onPress={() => setShowFilters(true)} style={sc.sortBtn} activeOpacity={0.8}>
             <AppText style={sc.sortIcon}>⇅</AppText>
-            <AppText style={sc.sortTxt}>Relevance</AppText>
+            <AppText style={sc.sortTxt}>{t('ws_relevance')}</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -1748,33 +1882,33 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       ) : isError ? (
         <View style={sc.stateBox}>
           <View style={sc.errorIconWrap}><AppText style={{ fontSize: 28 }}>⚠</AppText></View>
-          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>Connection Error</AppText>
-          <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>Unable to load professionals. Check your internet connection and try again.</AppText>
+          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>{t('ws_connection_error')}</AppText>
+          <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>{t('ws_connection_error_body')}</AppText>
           <TouchableOpacity onPress={() => void refetch()} style={[sc.primaryBtn, { backgroundColor: theme.colors.primary }]}>
-            <AppText style={sc.primaryBtnTxt}>Retry</AppText>
+            <AppText style={sc.primaryBtnTxt}>{t('ws_retry')}</AppText>
           </TouchableOpacity>
         </View>
       ) : displayedAgents.length === 0 ? (
         <View style={sc.stateBox}>
           <View style={[sc.emptyIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]}><AppText style={{ fontSize: 32 }}>👷</AppText></View>
-          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>No Workers Found</AppText>
+          <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>{t('ws_no_workers_found')}</AppText>
           <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>
             {searchQuery.trim()
-              ? `No results for "${searchQuery.trim()}". Try a different name or skill.`
+              ? t('ws_no_results_query', { query: searchQuery.trim() })
               : activeFilterCount > 0
-                ? 'No workers match the selected filters. Try broadening your search.'
-                : 'No workers are available in this area right now.'}
+                ? t('ws_no_match_filters')
+                : t('ws_no_workers_area')}
           </AppText>
           {searchQuery.trim() ? (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}>
-              <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>Clear Search</AppText>
+              <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>{t('ws_clear_search')}</AppText>
             </TouchableOpacity>
           ) : activeFilterCount > 0 ? (
             <TouchableOpacity
-              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: userState })}
+              onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: resetState, district: resetDistrict })}
               style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}
             >
-              <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>Clear Filters</AppText>
+              <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>{t('ws_clear_filters')}</AppText>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -1814,7 +1948,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             isFetchingNextPage ? (
               <View style={sc.loadMore}>
                 <ActivityIndicator size="small" color={BRAND} />
-                <AppText style={[sc.loadMoreTxt, { color: theme.colors.mutedText }]}>Loading more…</AppText>
+                <AppText style={[sc.loadMoreTxt, { color: theme.colors.mutedText }]}>{t('ws_loading_more')}</AppText>
               </View>
             ) : null
           }
@@ -1827,6 +1961,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         onApply={handleApply}
         onClose={() => setShowFilters(false)}
         userState={userState}
+        userDistrict={userDistrict}
+        lockState={isScoped}
+        lockDistrict={districtScoped}
       />
     </View>
   );

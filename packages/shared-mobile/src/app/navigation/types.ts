@@ -93,6 +93,7 @@ export type RootStackParamList = {
   EmployerPipeline: undefined;
   EmployerAttendance: { requirementId: string; requirementTitle?: string };
   EmployerAnalytics: undefined;
+  EmployerAgreement: undefined;
   RequirementCalendar: undefined;
   CallHistory: undefined;
   ViewedContacts: undefined;

@@ -17,6 +17,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { apiClient } from '../../../core/api/client';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -219,15 +220,56 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
 
+  // ── Plan gate (mirror PipelineScreen lock/upgrade UX) ──────────────────────
+  const plan = usePlanFeatures();
+  const analyticsLocked = plan.loaded && !plan.analyticsEnabled;
+  // Respect the plan's analytics window (Individual = 3 months, others = 12).
+  const months = plan.analyticsMonths;
+
   const { data, isLoading, isError, refetch } = useQuery<AnalyticsData>({
-    queryKey: ['employer-analytics'],
+    queryKey: ['employer-analytics', months],
     queryFn: async () => {
-      const res = await apiClient.get<AnalyticsData & { success: boolean }>('/api/v1/mobile/employer/analytics');
+      const res = await apiClient.get<AnalyticsData & { success: boolean }>(
+        `/api/v1/mobile/employer/analytics?months=${months}`,
+      );
       return res.data;
     },
+    enabled: !analyticsLocked,
     staleTime: 10 * 60 * 1000,
     gcTime:    30 * 60 * 1000,
   });
+
+  if (analyticsLocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+        <ScreenHeader title={t('analyticsTitle')} onBack={() => navigation.goBack()} />
+        <ScrollView
+          contentContainerStyle={[al.scroll, { paddingBottom: insets.bottom + 32 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={al.box}>
+            <View style={[al.icon, { backgroundColor: '#eff6ff', borderColor: '#93c5fd' }]}>
+              <AppText style={{ fontSize: 36 }}>📊</AppText>
+            </View>
+            <AppText style={[al.title, { color: theme.colors.text }]}>{t('pl_analyticsPlanTitle')}</AppText>
+            <AppText style={[al.sub, { color: theme.colors.mutedText }]}>{t('pl_analyticsPlanDesc')}</AppText>
+            <View style={[al.benefits, { backgroundColor: theme.colors.surface1 }]}>
+              {[t('pl_analyticsBenefit1'), t('pl_analyticsBenefit2'), t('pl_analyticsBenefit3'), t('pl_analyticsBenefit4')].map((b, i) => (
+                <View key={i} style={al.row}>
+                  <View style={al.dot} />
+                  <AppText style={[al.benefitTxt, { color: theme.colors.textSecondary }]}>{b}</AppText>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={al.btn} activeOpacity={0.85}>
+              <AppText style={al.btnTxt}>{t('pl_upgradeBtn')}</AppText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   const summary    = data?.summary;
   const monthly    = data?.monthly    ?? [];
@@ -284,7 +326,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
 
         {/* ── Monthly bar chart ── */}
         {monthly.length > 0 && (
-          <Card title={t('requirementsLast6Months')}>
+          <Card title={t('requirementsLastNMonths', { months })}>
             <BarChart data={monthly} />
           </Card>
         )}
@@ -319,3 +361,18 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
     </View>
   );
 };
+
+// ─── Plan-lock styles (mirror PipelineScreen) ──────────────────────────────────
+const al = StyleSheet.create({
+  scroll:     { flexGrow: 1, justifyContent: 'center' },
+  box:        { alignItems: 'center', gap: 14, paddingHorizontal: 24, paddingVertical: 40 },
+  icon:       { width: 80, height: 80, borderRadius: 40, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  title:      { fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  sub:        { fontSize: 13.5, textAlign: 'center', lineHeight: 22, paddingHorizontal: 8 },
+  benefits:   { width: '100%', borderRadius: 14, padding: 16, gap: 10 },
+  row:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dot:        { width: 7, height: 7, borderRadius: 3.5, backgroundColor: BRAND, flexShrink: 0 },
+  benefitTxt: { fontSize: 13, fontWeight: '500', flex: 1 },
+  btn:        { width: '100%', borderRadius: 14, paddingVertical: 16, alignItems: 'center', backgroundColor: BRAND },
+  btnTxt:     { color: '#fff', fontSize: 15, fontWeight: '800' },
+});

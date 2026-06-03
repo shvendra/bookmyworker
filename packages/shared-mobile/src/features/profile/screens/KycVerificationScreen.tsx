@@ -73,12 +73,15 @@ const kycBadgeVariant = (status: KycStatus) => {
 };
 
 // ─── Section title ────────────────────────────────────────────────────────────
-const SectionTitle = ({ icon, text }: { icon: string; text: string }): React.JSX.Element => (
-  <View style={st.row}>
-    <View style={st.iconBox}><AppText style={st.icon}>{icon}</AppText></View>
-    <AppText style={st.label}>{text}</AppText>
-  </View>
-);
+const SectionTitle = ({ icon, text }: { icon: string; text: string }): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  return (
+    <View style={st.row}>
+      <View style={st.iconBox}><AppText style={st.icon}>{icon}</AppText></View>
+      <AppText style={[st.label, { color: theme.colors.text }]}>{text}</AppText>
+    </View>
+  );
+};
 const st = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   iconBox: { width: 34, height: 34, borderRadius: 9, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center' },
@@ -115,8 +118,8 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
       ) : (
         <View style={ds.empty}>
           <View style={ds.camBox}><AppText style={{ fontSize: 22 }}>📷</AppText></View>
-          <AppText style={ds.emptyLabel}>{label}</AppText>
-          <AppText style={ds.emptyHint}>{t('kyc_tapToUpload')}</AppText>
+          <AppText style={[ds.emptyLabel, { color: theme.colors.text }]}>{label}</AppText>
+          <AppText style={[ds.emptyHint, { color: theme.colors.mutedText }]}>{t('kyc_tapToUpload')}</AppText>
           <AppText style={ds.cropHint}>{t('kyc_cropRotate')}</AppText>
         </View>
       )}
@@ -242,7 +245,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           {/* ── Government ID upload ──────────────────────────────────── */}
           <AppCard style={scr.card}>
             <SectionTitle icon="🪪" text={t('kyc_uploadIdTitle')} />
-            <AppText style={[scr.fieldHint, { color: C.slate }]}>{t('kyc_uploadIdHint')}</AppText>
+            <AppText style={[scr.fieldHint, { color: theme.colors.mutedText }]}>{t('kyc_uploadIdHint')}</AppText>
             <View style={scr.docsRow}>
               <DocUploadSlot
                 label={t('kyc_idFront')}
@@ -310,7 +313,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
         ] as string[]).map((note, i) => (
           <View key={i} style={scr.noteRow}>
             <AppText style={[scr.noteBullet, { color: C.blue }]}>›</AppText>
-            <AppText style={[scr.noteText, { color: C.slate }]}>{note}</AppText>
+            <AppText style={[scr.noteText, { color: theme.colors.mutedText }]}>{note}</AppText>
           </View>
         ))}
       </AppCard>

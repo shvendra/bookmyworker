@@ -144,12 +144,13 @@ export const AppNavigator = (): React.JSX.Element => {
     };
   }, []);
 
-  // Show profile completion screen ONCE after fresh registration for SelfWorker/Worker.
-  // After the user has seen it (skip or complete), never show again — only the dashboard banner.
+  // Show profile completion screen ONCE after fresh registration for
+  // SelfWorker/Worker/Agent. After the user has seen it (complete), never show
+  // again — onboardingCompleted + the per-user "seen" flag guard re-triggers.
   useEffect(() => {
     if (
       state.status !== 'authenticated' ||
-      (agentAppRole !== 'selfworker' && agentAppRole !== 'worker')
+      (agentAppRole !== 'selfworker' && agentAppRole !== 'worker' && agentAppRole !== 'agent')
     ) return;
 
     const userId = state.session?.user?.id ?? '';

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
+  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -10,41 +11,33 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
+import { WORK_CATEGORIES, type WorkCategory } from './WorkerCategoryGrid';
+import type { TranslationKeys } from '../../../core/i18n/translations';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SLIDE_W = SCREEN_W - 32; // card width within 16px horizontal padding on each side
 const SLIDE_H = 160;
 const AUTO_SCROLL_INTERVAL = 3500;
 
-interface SlideConfig {
-  id: string;
-  emoji: string;
-  titleKey: string;
-  subtitleKey: string;
-  tagKey: string;
-  gradient: [string, string];
-  accentColor: string;
-}
-
-const SLIDE_CONFIGS: SlideConfig[] = [
-  { id: '1', emoji: '🏗️', titleKey: 'promo_title_1', subtitleKey: 'promo_sub_1', tagKey: 'promo_tag_1', gradient: ['#1E3A8A', '#2563EB'], accentColor: '#93C5FD' },
-  { id: '2', emoji: '🧹', titleKey: 'promo_title_2', subtitleKey: 'promo_sub_2', tagKey: 'promo_tag_2', gradient: ['#164E63', '#0E7490'], accentColor: '#67E8F9' },
-  { id: '3', emoji: '🏭', titleKey: 'promo_title_3', subtitleKey: 'promo_sub_3', tagKey: 'promo_tag_3', gradient: ['#4C1D95', '#7C3AED'], accentColor: '#C4B5FD' },
-  { id: '4', emoji: '🌾', titleKey: 'promo_title_4', subtitleKey: 'promo_sub_4', tagKey: 'promo_tag_4', gradient: ['#14532D', '#16A34A'], accentColor: '#86EFAC' },
-  { id: '5', emoji: '🚛', titleKey: 'promo_title_5', subtitleKey: 'promo_sub_5', tagKey: 'promo_tag_5', gradient: ['#78350F', '#D97706'], accentColor: '#FDE68A' },
-];
-
 interface PromoBannerSliderProps {
+  /** Fired when a slide / its Apply button is tapped — receives the work category */
+  onCategoryPress?: (category: WorkCategory) => void;
+  /** Fallback handler used when onCategoryPress is not provided */
   onPress?: () => void;
 }
 
-export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JSX.Element => {
+export const PromoBannerSlider = ({ onCategoryPress, onPress }: PromoBannerSliderProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
-  const dotAnim = useRef(SLIDE_CONFIGS.map(() => new Animated.Value(0))).current;
+  const dotAnim = useRef(WORK_CATEGORIES.map(() => new Animated.Value(0))).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentIndex = useRef(0);
+
+  const handlePress = (cat: WorkCategory): void => {
+    if (onCategoryPress) onCategoryPress(cat);
+    else onPress?.();
+  };
 
   const animateDot = (idx: number): void => {
     dotAnim.forEach((a, i) => {
@@ -57,7 +50,7 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
   };
 
   const scrollToIndex = (idx: number): void => {
-    const safeIdx = idx % SLIDE_CONFIGS.length;
+    const safeIdx = idx % WORK_CATEGORIES.length;
     scrollRef.current?.scrollTo({ x: safeIdx * SLIDE_W, animated: true });
     currentIndex.current = safeIdx;
     animateDot(safeIdx);
@@ -101,35 +94,50 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
         decelerationRate="fast"
         snapToAlignment="start"
       >
-        {SLIDE_CONFIGS.map((slide) => (
+        {WORK_CATEGORIES.map((cat) => (
           <TouchableOpacity
-            key={slide.id}
+            key={cat.value}
             activeOpacity={0.92}
-            onPress={onPress}
-            style={[styles.slide, { width: SLIDE_W }]}
+            onPress={() => handlePress(cat)}
+            style={[styles.slide, { width: SLIDE_W, backgroundColor: cat.gradient[0] }]}
           >
-            {/* Background gradient layers */}
-            <View style={[styles.slideBg, { backgroundColor: slide.gradient[0] }]} />
-            <View style={[styles.slideGradientOverlay, { backgroundColor: slide.gradient[1] }]} />
+            {/* Background photo — workers on the job */}
+            <Image
+              source={{ uri: cat.image }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+            />
+            {/* Brand-colour tint keeps the slide on-theme while the photo shows through */}
+            <View style={[styles.slideBg, { backgroundColor: cat.gradient[0], opacity: 0.52 }]} />
+            {/* Left-side dark scrim so the title / rate stay readable */}
+            <View style={styles.textScrim} />
             {/* Decorative circles */}
-            <View style={[styles.circle1, { backgroundColor: slide.accentColor + '22' }]} />
-            <View style={[styles.circle2, { backgroundColor: slide.accentColor + '15' }]} />
+            <View style={[styles.circle1, { backgroundColor: cat.accent + '22' }]} />
+            <View style={[styles.circle2, { backgroundColor: cat.accent + '15' }]} />
 
             {/* Content */}
             <View style={styles.slideInner}>
               <View style={styles.slideLeft}>
-                <View style={[styles.tagPill, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-                  <AppText style={styles.tagText}>{t(slide.tagKey)}</AppText>
-                </View>
-                <AppText style={styles.slideTitle} numberOfLines={2}>{t(slide.titleKey)}</AppText>
-                <AppText style={styles.slideSub} numberOfLines={2}>{t(slide.subtitleKey)}</AppText>
-                <View style={[styles.ctaBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
-                  <AppText style={styles.ctaText}>{t('promo_apply_now')}</AppText>
+                <AppText style={styles.slideTitle} numberOfLines={1}>
+                  {t(cat.translationKey as TranslationKeys).replace(/\n/g, ' ')}
+                </AppText>
+                <AppText style={styles.slideSub} numberOfLines={2}>
+                  {t(cat.subtitleKey as TranslationKeys)}
+                </AppText>
+                <View style={styles.actionRow}>
+                  <View style={[styles.ratePill, { backgroundColor: cat.accent + 'E6' }]}>
+                    <AppText style={styles.rateText}>
+                      {t('promo_rate_per_day', { min: cat.rateMin, max: cat.rateMax })}
+                    </AppText>
+                  </View>
+                  <View style={[styles.ctaBtn, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
+                    <AppText style={styles.ctaText}>{t('promo_apply_now')}</AppText>
+                  </View>
                 </View>
               </View>
               <View style={styles.slideRight}>
-                <View style={[styles.emojiBubble, { backgroundColor: slide.accentColor + '28', borderColor: slide.accentColor + '44' }]}>
-                  <AppText style={styles.slideEmoji}>{slide.emoji}</AppText>
+                <View style={[styles.emojiBubble, { backgroundColor: cat.accent + '28', borderColor: cat.accent + '44' }]}>
+                  <AppText style={styles.slideEmoji}>{cat.emoji}</AppText>
                 </View>
               </View>
             </View>
@@ -139,11 +147,11 @@ export const PromoBannerSlider = ({ onPress }: PromoBannerSliderProps): React.JS
 
       {/* Dot indicators */}
       <View style={styles.dots}>
-        {SLIDE_CONFIGS.map((_, i) => {
+        {WORK_CATEGORIES.map((_, i) => {
           const width = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
           const opacity = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
           return (
-            <TouchableOpacity key={i} onPress={() => { scrollToIndex(i); resetTimer(); }}>
+            <TouchableOpacity key={i} onPress={() => { scrollToIndex(i); resetTimer(); }} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }}>
               <Animated.View style={[styles.dot, { width, opacity, backgroundColor: theme.colors.primary }]} />
             </TouchableOpacity>
           );
@@ -166,10 +174,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   slideBg: { ...StyleSheet.absoluteFillObject },
-  slideGradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.45,
-    left: '40%',
+  textScrim: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: '74%',
+    backgroundColor: 'rgba(0,0,0,0.32)',
   },
   circle1: {
     position: 'absolute', width: 160, height: 160, borderRadius: 80,
@@ -182,34 +193,44 @@ const styles = StyleSheet.create({
 
   slideInner: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 18, paddingVertical: 16, gap: 12,
+    paddingHorizontal: 18, paddingVertical: 14, gap: 12,
   },
-  slideLeft: { flex: 1, gap: 6 },
-  tagPill: {
-    alignSelf: 'flex-start',
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3,
+  slideLeft: { flex: 1, gap: 5 },
+  slideTitle: {
+    color: '#FFFFFF', fontSize: 17, fontWeight: '900', lineHeight: 22,
+    textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4,
   },
-  tagText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
-  slideTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 20 },
-  slideSub: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '500', lineHeight: 15 },
+  slideSub: {
+    color: 'rgba(255,255,255,0.88)', fontSize: 11.5, fontWeight: '600', lineHeight: 15,
+    textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
+  },
+  actionRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginTop: 2, flexWrap: 'wrap',
+  },
+  ratePill: {
+    borderRadius: 20, paddingHorizontal: 11, paddingVertical: 4,
+  },
+  rateText: {
+    color: '#FFFFFF', fontSize: 13, fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
+  },
   ctaBtn: {
-    alignSelf: 'flex-start',
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-    marginTop: 2,
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
   },
   ctaText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 
   slideRight: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   emojiBubble: {
-    width: 76, height: 76, borderRadius: 22,
+    width: 72, height: 72, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5,
   },
-  slideEmoji: { fontSize: 40, lineHeight: 48 },
+  slideEmoji: { fontSize: 38, lineHeight: 46 },
 
   dots: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    gap: 5, marginTop: 7, paddingHorizontal: 16,
+    gap: 4, marginTop: 7, paddingHorizontal: 16,
   },
   dot: { height: 6, borderRadius: 3 },
 });

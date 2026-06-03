@@ -23,6 +23,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
@@ -1116,6 +1117,16 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
   const remainingContacts = profile?.remainingContacts ?? 0;
 
+  // Plan-derived feature flags + posts-remaining (degrades gracefully when absent)
+  const plan = usePlanFeatures();
+  const remainingPostsLabel = useMemo(() => {
+    // Hide entirely when not subscribed, unlimited plan, or backend omits the count.
+    if (!isSubscribed) return null;
+    if (plan.unlimitedPosts) return t('pl_postsUnlimited');
+    if (plan.remainingPosts == null) return null;
+    return t('pl_postsRemaining', { count: plan.remainingPosts });
+  }, [isSubscribed, plan.unlimitedPosts, plan.remainingPosts, t]);
+
   // Resolve employerType string to one of the four known EmployerTypeKey values
   const resolvedEmployerType: EmployerTypeKey = (
     (['industry', 'agency', 'contractor', 'individual'] as const)
@@ -1236,6 +1247,15 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     if (isSubscribed) void pipelineQuery.refetch();
   }, [reqQuery, profileQuery, nearbyQuery, dashQuery, pipelineQuery, isSubscribed]);
 
+  // Surface a retry affordance when primary data sources fail, instead of
+  // silently rendering empty lists / zero counts on the employer home screen.
+  const hasLoadError =
+    reqQuery.isError ||
+    dashQuery.isError ||
+    nearbyQuery.isError ||
+    profileQuery.isError ||
+    (isSubscribed && pipelineQuery.isError);
+
   const handlePost = useCallback(() => {
     if (profileQuery.isLoading) return;
     // No subscription or expired → go to pricing
@@ -1248,6 +1268,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const handleWorkerSearchNavigate  = useCallback(() => navigation.navigate('WorkerSearch'), [navigation]);
   const handlePipelineNavigate      = useCallback(() => navigation.navigate('EmployerPipeline'), [navigation]);
   const handleCalendarNavigate      = useCallback(() => navigation.navigate('RequirementCalendar'), [navigation]);
+  const handleAnalyticsNavigate     = useCallback(() => navigation.navigate('EmployerAnalytics'), [navigation]);
+  const handleAgreementNavigate     = useCallback(() => navigation.navigate('EmployerAgreement'), [navigation]);
   const handleSubscriptionNavigate = useCallback(() => navigation.navigate('Subscription'), [navigation]);
   const handleOpenSubModal = useCallback(() => setSubModalVisible(true), []);
   const handleAgentTilePress = useCallback((id: string) => navigation.navigate('WorkerProfile', { workerId: id }), [navigation]);
@@ -1268,6 +1290,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         onRenew={handleSubscriptionNavigate}
         onTopUp={handleSubscriptionNavigate}
       />
+
+      {/* ── Posts remaining indicator (hidden when count unavailable) ── */}
+      {remainingPostsLabel && (
+        <View style={[postsInd.wrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+          <AppText style={postsInd.icon}>📝</AppText>
+          <AppText style={[postsInd.txt, { color: theme.colors.textSecondary }]}>{remainingPostsLabel}</AppText>
+        </View>
+      )}
 
       {/* ── Quick Action Cards ── */}
       <View style={styles.qaRow}>
@@ -1496,44 +1526,84 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={calStrip.icon}>📅</AppText>
           </View>
           <View style={calStrip.text}>
-            <AppText style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
-            <AppText style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('calendarSubtitle')}</AppText>
+            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
+            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('calendarSubtitle')}</AppText>
+          </View>
+        </View>
+        <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
+      </TouchableOpacity>
+
+      {/* ── Hiring Analytics strip ── */}
+      <TouchableOpacity
+        onPress={handleAnalyticsNavigate}
+        activeOpacity={0.85}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 12 }]}
+      >
+        <View style={calStrip.left}>
+          <View style={[calStrip.iconWrap, { backgroundColor: '#F5F3FF' }]}>
+            <AppText style={calStrip.icon}>📊</AppText>
+          </View>
+          <View style={calStrip.text}>
+            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('pl_analyticsStripTitle')}</AppText>
+            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('pl_analyticsStripSub')}</AppText>
+          </View>
+        </View>
+        <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
+      </TouchableOpacity>
+
+      {/* ── Sign Agreement strip ── */}
+      <TouchableOpacity
+        onPress={handleAgreementNavigate}
+        activeOpacity={0.85}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 12 }]}
+      >
+        <View style={calStrip.left}>
+          <View style={[calStrip.iconWrap, { backgroundColor: '#FEF3C7' }]}>
+            <AppText style={calStrip.icon}>📝</AppText>
+          </View>
+          <View style={calStrip.text}>
+            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('ag_stripTitle')}</AppText>
+            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('ag_stripSub')}</AppText>
           </View>
         </View>
         <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
 
     </View>
-  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId]);
+  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel]);
 
   const renderFooter = useMemo(() => (
     <View>
       {/* ── Upgrade Banner (non-subscribers only) ── */}
       {profileQuery.isSuccess && !isSubscribed && (
         <View style={[ub.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <View style={[ub.iconWrap, { backgroundColor: theme.colors.primaryLight }]}>
-            <AppText style={ub.icon}>🚀</AppText>
-          </View>
-          <View style={ub.body}>
-            <AppText style={[ub.title, { color: theme.colors.text }]}>{t('upgradeToPremium')}</AppText>
-            <AppText style={[ub.desc, { color: theme.colors.mutedText }]}>{t('upgradeBannerDesc')}</AppText>
-            <View style={[ub.features, { backgroundColor: theme.colors.surface1 }]}>
-              {([
-                t('featureTopPriority'),
-                t('featureFeaturedBadge'),
-                t('featureUnlimitedPosts'),
-                t('featurePrioritySupport'),
-              ] as string[]).map((f) => (
-                <View key={f} style={ub.featureRow}>
-                  <AppText style={ub.featureTick}>✅</AppText>
-                  <AppText style={[ub.featureTxt, { color: theme.colors.textSecondary }]}>{f}</AppText>
-                </View>
-              ))}
+          {/* Header — icon tile + title */}
+          <View style={ub.header}>
+            <View style={[ub.iconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+              <AppText style={ub.icon}>🚀</AppText>
             </View>
-            <TouchableOpacity onPress={handleSubscriptionNavigate} style={ub.btn} activeOpacity={0.85}>
-              <AppText style={ub.btnTxt}>{t('upgradeNow')}</AppText>
-            </TouchableOpacity>
+            <AppText style={[ub.title, { color: theme.colors.text }]}>{t('upgradeToPremium')}</AppText>
           </View>
+
+          <AppText style={[ub.desc, { color: theme.colors.mutedText }]}>{t('upgradeBannerDesc')}</AppText>
+
+          <View style={[ub.features, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+            {([
+              t('featureTopPriority'),
+              t('featureFeaturedBadge'),
+              t('featureUnlimitedPosts'),
+              t('featurePrioritySupport'),
+            ] as string[]).map((f) => (
+              <View key={f} style={ub.featureRow}>
+                <AppText style={ub.featureTick}>✅</AppText>
+                <AppText style={[ub.featureTxt, { color: theme.colors.textSecondary }]}>{f}</AppText>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity onPress={handleSubscriptionNavigate} style={[ub.btn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.85}>
+            <AppText style={ub.btnTxt}>{t('upgradeNow')}</AppText>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -1621,6 +1691,22 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
       {/* ── Scrollable Body — lifts over header with rounded top ───────── */}
       <View style={[fh.body, { backgroundColor: theme.colors.background }]}>
+        {hasLoadError && (
+          <TouchableOpacity
+            onPress={handleRefresh}
+            activeOpacity={0.85}
+            disabled={isRefreshing}
+            style={errBanner.wrap}
+          >
+            <AppText style={errBanner.icon}>⚠️</AppText>
+            <AppText style={errBanner.msg} numberOfLines={2}>{t('dashboardLoadError', { ns: 'translation' })}</AppText>
+            <View style={errBanner.cta}>
+              {isRefreshing
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : <AppText style={errBanner.ctaTxt}>{t('retry', { ns: 'translation' })}</AppText>}
+            </View>
+          </TouchableOpacity>
+        )}
         <FlatList
           data={[]}
           style={styles.scroll}
@@ -1763,18 +1849,18 @@ const nws = StyleSheet.create({
 
 // ─── Upgrade Banner Styles ─────────────────────────────────────────────────────
 const ub = StyleSheet.create({
-  card:        { borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', padding: 18, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-  iconWrap:    { width: 60, height: 60, borderRadius: 30, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  icon:        { fontSize: 28 },
-  body:        { flex: 1, gap: 6 },
-  title:       { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  desc:        { fontSize: 12, color: '#64748b', lineHeight: 17 },
-  features:    { gap: 6, marginTop: 4 },
-  featureRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  card:        { borderRadius: 18, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', padding: 18, marginBottom: 16 },
+  header:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  iconWrap:    { width: 48, height: 48, borderRadius: 14, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  icon:        { fontSize: 24 },
+  title:       { flex: 1, fontSize: 16, fontWeight: '800', color: '#0f172a', lineHeight: 21 },
+  desc:        { fontSize: 12.5, color: '#64748b', lineHeight: 18, marginBottom: 14 },
+  features:    { gap: 10, padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
+  featureRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   featureTick: { fontSize: 13 },
-  featureTxt:  { fontSize: 12, color: '#374151' },
-  btn:         { marginTop: 10, backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
-  btnTxt:      { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  featureTxt:  { flex: 1, fontSize: 12.5, color: '#374151', lineHeight: 17 },
+  btn:         { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  btnTxt:      { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 });
 
 // ─── Support Footer Styles ─────────────────────────────────────────────────────
@@ -1806,6 +1892,14 @@ const confirm = StyleSheet.create({
   btnTxt:      { fontSize: 14, fontWeight: '700' },
 });
 
+const errBanner = StyleSheet.create({
+  wrap:   { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 16, marginTop: 12 },
+  icon:   { fontSize: 18 },
+  msg:    { flex: 1, fontSize: 13, fontWeight: '700', color: '#991B1B' },
+  cta:    { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  ctaTxt: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+});
+
 // ─── Subscription Upsell Banner ───────────────────────────────────────────────
 const subBanner = StyleSheet.create({
   wrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1037A4', borderRadius: 14, padding: 12, marginBottom: 14 },
@@ -1832,13 +1926,19 @@ const expBanner = StyleSheet.create({
 // ─── Pipeline Strip Styles ─────────────────────────────────────────────────────
 const calStrip = StyleSheet.create({
   card:     { borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  left:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  left:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:     { fontSize: 20, lineHeight: 24 },
-  text:     { gap: 2 },
+  text:     { flex: 1, gap: 2 },
   title:    { fontSize: 14, fontWeight: '800' },
   sub:      { fontSize: 11, fontWeight: '500' },
   arrow:    { fontSize: 22, fontWeight: '700', opacity: 0.5 },
+});
+
+const postsInd = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginTop: 12 },
+  icon: { fontSize: 15, lineHeight: 19 },
+  txt:  { fontSize: 12.5, fontWeight: '700' },
 });
 
 const pip = StyleSheet.create({

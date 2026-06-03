@@ -634,7 +634,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         <View style={styles.body}>
 
           {/* Promotional Banner Slider */}
-          <PromoBannerSlider onPress={() => navigation.navigate('JobMarketplace')} />
+          <PromoBannerSlider onCategoryPress={(cat) => navigation.navigate('JobMarketplace', { workType: cat.value })} />
 
           {/* KYC Alert */}
           {/* {kycPending && (

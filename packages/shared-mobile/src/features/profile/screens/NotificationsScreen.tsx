@@ -18,6 +18,7 @@ import { AppButton } from '../../../shared/components/ui/AppButton';
 import { notificationApi, type NotificationItem } from '../../../core/api/endpoints/notificationApi';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { buildPhotoUrl } from '../../../core/config/env';
 
 // Replace underscores with spaces so work-type names display cleanly
@@ -36,25 +37,32 @@ const TYPE_META: Record<string, { icon: string; bg: string; iconColor: string }>
   newWorker:   { icon: '👷', bg: '#FFF7ED', iconColor: '#EA580C' },
 };
 
-const formatTime = (iso: string): string => {
+const formatTime = (iso: string, t: TFunction): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('pf_justNow');
+  if (mins < 60) return t('pf_minAgo', { n: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('pf_hrAgo', { n: hours });
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Yesterday';
-  return `${days}d ago`;
+  if (days === 1) return t('pf_yesterday');
+  return t('pf_dayAgo', { n: days });
 };
 
-const getDateGroup = (iso: string): string => {
+// Stable date-group keys (used for ordering); labels resolved via t() at render.
+const DATE_GROUP_ORDER = ['today', 'yesterday', 'thisWeek', 'earlier'] as const;
+type DateGroupKey = typeof DATE_GROUP_ORDER[number];
+const DATE_GROUP_LABEL_KEY: Record<DateGroupKey, string> = {
+  today: 'pf_today', yesterday: 'pf_yesterday', thisWeek: 'pf_thisWeek', earlier: 'pf_earlier',
+};
+
+const getDateGroup = (iso: string): DateGroupKey => {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return 'This Week';
-  return 'Earlier';
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return 'thisWeek';
+  return 'earlier';
 };
 
 // ── Worker mini-profile for newWorker notifications ────────────────────────────
@@ -75,6 +83,7 @@ const genderAvatar = (gender?: string): { bg: string; textColor: string; initial
 };
 
 const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const photoUri = data.workerPhoto ? buildPhotoUrl(data.workerPhoto) : null;
   const avatar = genderAvatar(data.workerGender);
   const initials = data.workerName ? data.workerName.charAt(0).toUpperCase() : avatar.initials;
@@ -98,7 +107,7 @@ const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element =>
         <View style={wp.chips}>
           {data.workerAge ? (
             <View style={[wp.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-              <AppText style={[wp.chipTxt, { color: '#1D4ED8' }]}>{data.workerAge} yrs</AppText>
+              <AppText style={[wp.chipTxt, { color: '#1D4ED8' }]}>{t('pf_yrs', { n: data.workerAge })}</AppText>
             </View>
           ) : null}
           {data.workerProfession ? (
@@ -138,6 +147,7 @@ interface NotifCardProps {
 
 const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const meta = TYPE_META[item.type] ?? TYPE_META.system!;
   const isUnread = !item.read;
   const isNewWorker = item.type === 'newWorker';
@@ -185,7 +195,7 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
                 {cleanText(item.title)}
               </AppText>
               <AppText variant="micro" color={theme.colors.mutedText} style={styles.time}>
-                {formatTime(item.createdAt)}
+                {formatTime(item.createdAt, t)}
               </AppText>
             </View>
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={2}>
@@ -204,19 +214,18 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
 };
 
 interface Section {
-  title: string;
+  groupKey: DateGroupKey;
   data: NotificationItem[];
 }
 
 const groupByDate = (items: NotificationItem[]): Section[] => {
-  const groups: Record<string, NotificationItem[]> = {};
-  const ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier'];
+  const groups: Partial<Record<DateGroupKey, NotificationItem[]>> = {};
   items.forEach((item) => {
     const group = getDateGroup(item.createdAt);
     if (!groups[group]) groups[group] = [];
     groups[group]!.push(item);
   });
-  return ORDER.filter((k) => groups[k]).map((k) => ({ title: k, data: groups[k]! }));
+  return DATE_GROUP_ORDER.filter((k) => groups[k]).map((k) => ({ groupKey: k, data: groups[k]! }));
 };
 
 export const NotificationsScreen = (): React.JSX.Element => {
@@ -235,16 +244,16 @@ export const NotificationsScreen = (): React.JSX.Element => {
   const markRead = useMutation({
     mutationFn: (id: string) => notificationApi.markRead(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['notifications'] }),
-    onError: () => toast.error('Could not mark notification as read.'),
+    onError: () => toast.error(t('pf_markReadError')),
   });
 
   const markAllRead = useMutation({
     mutationFn: () => notificationApi.markAllRead(),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('All notifications marked as read.', 'Done');
+      toast.success(t('pf_allMarkedRead'), t('pf_actDone'));
     },
-    onError: () => toast.error('Could not mark all as read. Please try again.'),
+    onError: () => toast.error(t('pf_markAllError')),
   });
 
   if (isLoading) {
@@ -287,11 +296,11 @@ export const NotificationsScreen = (): React.JSX.Element => {
           contentContainerStyle={styles.list}
         >
           {sections.map((section) => (
-            <View key={section.title} style={styles.sectionWrap}>
+            <View key={section.groupKey} style={styles.sectionWrap}>
               {/* Section date label */}
               <View style={styles.sectionHeaderWrap}>
                 <AppText variant="micro" color={theme.colors.mutedText} style={styles.sectionLabel}>
-                  {section.title.toUpperCase()}
+                  {t(DATE_GROUP_LABEL_KEY[section.groupKey]).toUpperCase()}
                 </AppText>
                 <View style={[styles.sectionLine, { backgroundColor: theme.colors.border }]} />
               </View>

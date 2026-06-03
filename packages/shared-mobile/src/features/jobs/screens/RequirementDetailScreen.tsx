@@ -93,7 +93,7 @@ const statusMeta = (status?: string, isAssigned?: boolean): { labelKey: string; 
   return { labelKey: 'rd_statusOpen', color: GREEN, bg: GREEN_SOFT, border: GREEN_BDR };
 };
 
-// Emoji for each perk; the label text is translated via `rd_perk_<field>` keys.
+// Emoji for each perk; the label text is translated separately per field.
 const perkEmoji: Record<string, string> = {
   accommodationAvailable: '🏠',
   foodAvailable:          '🍽️',
@@ -918,11 +918,25 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
           <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <SecHead title={t('rd_perksTitle')} accent={GREEN} />
             <View style={pg.perksWrap}>
-              {activePerks.map(([field, emoji]) => (
-                <View key={field} style={pg.perkChip}>
-                  <AppText style={pg.perkTxt} numberOfLines={1}>{emoji} {t(`rd_perk_${field}`)}</AppText>
-                </View>
-              ))}
+              {activePerks.map(([field, emoji]) => {
+                const perkLabel: Record<string, string> = {
+                  accommodationAvailable: t('rd_perk_accommodationAvailable'),
+                  foodAvailable:          t('rd_perk_foodAvailable'),
+                  transportProvided:      t('rd_perk_transportProvided'),
+                  weeklyOff:              t('rd_perk_weeklyOff'),
+                  overtimeAvailable:      t('rd_perk_overtimeAvailable'),
+                  bonus:                  t('rd_perk_bonus'),
+                  incentive:              t('rd_perk_incentive'),
+                  insuranceAvailable:     t('rd_perk_insuranceAvailable'),
+                  pfAvailable:            t('rd_perk_pfAvailable'),
+                  esicAvailable:          t('rd_perk_esicAvailable'),
+                };
+                return (
+                  <View key={field} style={pg.perkChip}>
+                    <AppText style={pg.perkTxt} numberOfLines={1}>{emoji} {perkLabel[field] ?? field}</AppText>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -1136,6 +1150,11 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 Joined:      { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
               };
               const sc = statusColors[m.status] ?? statusColors.Shortlisted;
+              const statusLabelMap: Record<string, string> = {
+                Shortlisted: t('rd_status_Shortlisted'),
+                Selected:    t('rd_status_Selected'),
+                Joined:      t('rd_status_Joined'),
+              };
               const initials = (m.workerName || 'W').slice(0, 2).toUpperCase();
               const palBg = ['#EBF1FF','#F5F3FF','#ECFDF5','#FFF7ED'][idx % 4]!;
               const palText = [BRAND_MID,'#7C3AED',GREEN,'#EA580C'][idx % 4]!;
@@ -1153,7 +1172,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
                         <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
-                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{t(`rd_status_${m.status}`)}</AppText>
+                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{statusLabelMap[m.status] ?? m.status}</AppText>
                       </View>
                       {m.agreedRate != null && (
                         <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>

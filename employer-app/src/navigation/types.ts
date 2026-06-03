@@ -70,6 +70,10 @@ export type EmployerStackParamList = {
   EmployerPipeline: undefined;
   // Attendance screen
   EmployerAttendance: { requirementId: string; requirementTitle?: string };
+  // Hiring analytics
+  EmployerAnalytics: undefined;
+  // Sign platform agreement
+  EmployerAgreement: undefined;
   // Requirement calendar
   RequirementCalendar: undefined;
   // Call & remark history
@@ -82,6 +86,7 @@ export type EmployerStackParamList = {
   Transactions: undefined;
   // Subscription + payment flow
   Subscription: { agentId?: string } | undefined;
+  PlanPricing: undefined;
   PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };
   TopupWebView: { url: string; merchantOrderId: string };
   PdfViewer: { url: string; title?: string };

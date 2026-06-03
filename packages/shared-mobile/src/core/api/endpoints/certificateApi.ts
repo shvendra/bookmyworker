@@ -36,6 +36,17 @@ export interface CertificatesResponse {
   labourLicenceUrl: string | null;
 }
 
+// FileSystem.uploadAsync / native fetch bypass the axios interceptor, so the
+// response body may be a non-JSON gateway/error page (HTML 502, empty body).
+// Parse defensively — never let a raw SyntaxError escape to the UI.
+function safeParse<T>(rawBody: string): T | null {
+  try {
+    return JSON.parse(rawBody) as T;
+  } catch {
+    return null;
+  }
+}
+
 export const certificateApi = {
   /** Fetch current user's certificates and labour licence URL */
   getAll: (): Promise<CertificatesResponse> =>
@@ -74,11 +85,11 @@ export const certificateApi = {
       status = r.status; rawBody = r.body;
     }
     if (status >= 400) {
-      const parsed = JSON.parse(rawBody) as { message?: string };
-      throw new Error(parsed.message ?? `Upload failed (${status})`);
+      const parsed = safeParse<{ message?: string }>(rawBody);
+      throw new Error(parsed?.message ?? `Upload failed (${status})`);
     }
-    const json = JSON.parse(rawBody) as { success: boolean; certificate: Certificate; message?: string };
-    if (!json.success) throw new Error(json.message ?? 'Upload failed');
+    const json = safeParse<{ success: boolean; certificate: Certificate; message?: string }>(rawBody);
+    if (!json?.success) throw new Error(json?.message ?? 'Upload failed');
     return json.certificate;
   },
 
@@ -114,11 +125,11 @@ export const certificateApi = {
       status = r.status; rawBody = r.body;
     }
     if (status >= 400) {
-      const parsed = JSON.parse(rawBody) as { message?: string };
-      throw new Error(parsed.message ?? `Upload failed (${status})`);
+      const parsed = safeParse<{ message?: string }>(rawBody);
+      throw new Error(parsed?.message ?? `Upload failed (${status})`);
     }
-    const json = JSON.parse(rawBody) as { success: boolean; labourLicenceUrl: string; message?: string };
-    if (!json.success) throw new Error(json.message ?? 'Upload failed');
+    const json = safeParse<{ success: boolean; labourLicenceUrl: string; message?: string }>(rawBody);
+    if (!json?.success) throw new Error(json?.message ?? 'Upload failed');
     return json.labourLicenceUrl;
   },
 

@@ -213,6 +213,11 @@ function UploadModal({
   const handleUpload = async () => {
     if (!file) { toast.error('Please select a file first.'); return; }
     if (!docName.trim()) { toast.error('Please enter a document name.'); return; }
+    const MAX_FILE_MB = 5;
+    if (file.size && file.size > MAX_FILE_MB * 1024 * 1024) {
+      toast.error(`File is too large. Maximum size is ${MAX_FILE_MB} MB.`, 'File Too Large');
+      return;
+    }
 
     setUploading(true);
     try {

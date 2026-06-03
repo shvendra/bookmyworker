@@ -26,7 +26,14 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   useEffect(() => {
     const bootstrap = async (): Promise<void> => {
-      const session = await loadAuthSession();
+      let session: AuthSession | null = null;
+      try {
+        session = await loadAuthSession();
+      } catch {
+        // Never let a storage failure leave the app stuck on the loading
+        // splash — fall through to the unauthenticated flow.
+        session = null;
+      }
       if (session) {
         setState({ status: 'authenticated', session });
         // Only apply DB language if one is saved — never reset to 'en' for users

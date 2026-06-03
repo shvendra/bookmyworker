@@ -49,10 +49,13 @@ import { WorkerProfileScreen } from '../../../packages/shared-mobile/src/feature
 import { WorkerSearchScreen } from '../../../packages/shared-mobile/src/features/search/screens/WorkerSearchScreen';
 import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
+import { EmployerBenefitsScreen } from '../../../packages/shared-mobile/src/features/payment/screens/EmployerBenefitsScreen';
 import { TransactionScreen } from '../../../packages/shared-mobile/src/features/wallet/screens/TransactionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
 import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
 import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
+import { EmployerAnalyticsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAnalyticsScreen';
+import { EmployerAgreementScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAgreementScreen';
 import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
 import { CallHistoryScreen } from '../../../packages/shared-mobile/src/features/employer/screens/CallHistoryScreen';
 import { ViewedContactsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/ViewedContactsScreen';
@@ -202,11 +205,17 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Transactions" component={TransactionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            {/* All upgrade/subscribe buttons navigate to 'Subscription' — now the CRM-style
+                Plan Benefits / tier-upgrade page. The old pricing screen is kept on 'PlanPricing'
+                (still reachable for contact top-ups). */}
+            <Stack.Screen name="Subscription" component={EmployerBenefitsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="PlanPricing" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TopupWebView" component={TopupWebViewScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerPipeline" component={PipelineScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerAnalytics" component={EmployerAnalyticsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerAgreement" component={EmployerAgreementScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="ViewedContacts" component={ViewedContactsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

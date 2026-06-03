@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { chatApi } from '../../../core/api/endpoints/chatApi';
-import { socketService } from '../../../core/realtime/socketService';
+import { socketService, type SocketStatus } from '../../../core/realtime/socketService';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -48,7 +48,9 @@ const MessageBubble = React.memo(({
 }: {
   item: ChatMessage; isMe: boolean;
   textColor: string; bubbleBg: string; bubbleBorder: string; mutedColor: string;
-}): React.JSX.Element => (
+}): React.JSX.Element => {
+  const { t } = useTranslation('employer');
+  return (
   <View style={[styles.bubble, isMe ? styles.bubbleRight : styles.bubbleLeft]}>
     {!isMe && item.senderName ? (
       <AppText style={styles.senderName} numberOfLines={1}>{item.senderName}</AppText>
@@ -60,7 +62,7 @@ const MessageBubble = React.memo(({
         <View style={styles.fileAttachment}>
           <AppText style={{ fontSize: 20 }}>📎</AppText>
           <AppText variant="caption" color={textColor} style={styles.fileName} numberOfLines={1}>
-            {item.fileName ?? 'File'}
+            {item.fileName ?? t('jp_file')}
           </AppText>
         </View>
       ) : null}
@@ -74,7 +76,8 @@ const MessageBubble = React.memo(({
       </AppText>
     </View>
   </View>
-));
+  );
+});
 MessageBubble.displayName = 'MessageBubble';
 
 export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomScreenProps): React.JSX.Element => {
@@ -91,6 +94,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [socketStatus, setSocketStatus] = useState<SocketStatus>('connected');
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -119,6 +123,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     if (!token || !roomId) return;
 
     socketService.connect(token);
+    socketService.setStatusHandler(setSocketStatus);
     socketService.joinRoom(roomId);
     socketService.markMessagesRead(roomId, userId);
 
@@ -148,6 +153,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
 
     return () => {
       socketService.offMessage(handler as Parameters<typeof socketService.offMessage>[0]);
+      socketService.setStatusHandler(null);
       socketService.leaveRoom(roomId);
     };
   }, [roomId, token, userId]);
@@ -190,14 +196,14 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         fileName: uploaded.fileName,
       });
     } catch {
-      showAlert('Upload failed', 'Could not upload file. Please try again.');
+      showAlert(t('jp_uploadFailed'), t('jp_couldNotUploadFile'));
     } finally { setUploadingMedia(false); }
-  }, [roomId, userId]);
+  }, [roomId, userId, t]);
 
   const handleAttach = useCallback((): void => {
-    showAlert('Attach', 'Choose attachment type', [
+    showAlert(t('jp_attach'), t('jp_chooseAttachType'), [
       {
-        text: '📷  Photo / Image',
+        text: t('jp_photoImage'),
         onPress: async () => {
           try {
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
@@ -207,12 +213,12 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
             await uploadAndSend({ uri: asset.uri, name: `chat_image_${Date.now()}.${ext}`, type: asset.mimeType ?? `image/${ext}` });
           } catch {
             setUploadingMedia(false);
-            showAlert('Upload failed', 'Could not send image. Please try again.');
+            showAlert(t('jp_uploadFailed'), t('jp_couldNotSendImage'));
           }
         },
       },
       {
-        text: '📄  File / Document',
+        text: t('jp_fileDocument'),
         onPress: async () => {
           try {
             const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
@@ -221,13 +227,13 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
             await uploadAndSend({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? 'application/octet-stream' });
           } catch {
             setUploadingMedia(false);
-            showAlert('Upload failed', 'Could not send file. Please try again.');
+            showAlert(t('jp_uploadFailed'), t('jp_couldNotSendFile'));
           }
         },
       },
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('jp_cancel'), style: 'cancel' },
     ]);
-  }, [uploadAndSend]);
+  }, [uploadAndSend, t]);
 
   const handleSend = useCallback(async (): Promise<void> => {
     const text = draft.trim();
@@ -287,6 +293,12 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         title={roomName}
         onBack={hideBack && !onBack ? undefined : (onBack ?? (() => navigation.goBack()))}
       />
+
+      {socketStatus !== 'connected' && (
+        <View style={styles.reconnectBar}>
+          <AppText style={styles.reconnectTxt}>{t('socketReconnecting', { ns: 'translation' })}</AppText>
+        </View>
+      )}
 
       <FlatList
         ref={flatRef}
@@ -370,6 +382,9 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
 const styles = StyleSheet.create({
   container:   { flex: 1 },
   messageList: { padding: 16, paddingBottom: 8 },
+
+  reconnectBar: { backgroundColor: '#FEF3C7', paddingVertical: 6, alignItems: 'center', justifyContent: 'center' },
+  reconnectTxt: { fontSize: 12, fontWeight: '700', color: '#92400E' },
 
   senderName: { fontSize: 11, fontWeight: '700', color: '#2563eb', marginBottom: 2, marginLeft: 14 },
 

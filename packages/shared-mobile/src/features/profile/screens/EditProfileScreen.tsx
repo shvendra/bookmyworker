@@ -274,7 +274,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         setImageError(false);
       }
     } catch {
-      toast.error('Could not open photo library. Please try again.');
+      toast.error(t('employer:pf_photoLibraryError'));
     } finally {
       setPhotoLoading(false);
     }
@@ -345,7 +345,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       toast.success(t('ep_profileSavedMsg'), t('ep_profileSaved'));
       navigation.goBack();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to update profile';
+      const msg = e instanceof Error ? e.message : t('employer:pf_updateProfileFailed');
       setError(msg);
       toast.error(msg, t('ep_updateFailed'));
     } finally {
@@ -416,7 +416,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           onStateChange={(v) => { setStateVal(v); setDistrictVal(''); setBlockVal(''); }}
           onDistrictChange={(v) => { setDistrictVal(v); setBlockVal(''); }}
           onBlockChange={setBlockVal}
-          required={false} blockLabel="Block / Tehsil"
+          required={false} blockLabel={t('employer:pf_blockTehsil')}
         />
 
         {/* ── WORK PREFERENCES (SelfWorker / Worker only) ── */}

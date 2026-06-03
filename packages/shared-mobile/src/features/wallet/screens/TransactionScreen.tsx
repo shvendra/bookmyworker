@@ -61,6 +61,7 @@ interface InvoiceProps {
 }
 
 const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, supportEmail, gstNumber, gstLabel, onClose }: InvoiceProps): React.JSX.Element | null => {
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   if (!txn) return null;
 
@@ -70,11 +71,11 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
   const base     = total - gst;
 
   const lineItems: Array<{ label: string; value: string; isTotal?: boolean; isHeader?: boolean }> = [
-    { label: 'Description', value: 'Amount (₹)', isHeader: true },
-    { label: 'Payment', value: base.toFixed(2) },
-    ...(platform > 0 ? [{ label: 'Platform Charges', value: platform.toFixed(2) }] : []),
+    { label: t('jp_invDescription'), value: t('jp_invAmountRupees'), isHeader: true },
+    { label: t('jp_invPayment'), value: base.toFixed(2) },
+    ...(platform > 0 ? [{ label: t('jp_invPlatformCharges'), value: platform.toFixed(2) }] : []),
     ...(gst > 0 ? [{ label: gstLabel, value: gst.toFixed(2) }] : []),
-    { label: 'Total', value: `₹${total.toFixed(2)}`, isTotal: true },
+    { label: t('jp_invTotal'), value: `₹${total.toFixed(2)}`, isTotal: true },
   ];
 
   return (
@@ -86,7 +87,7 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={inv.closeBtn}>
             <AppText style={inv.closeTxt}>✕</AppText>
           </TouchableOpacity>
-          <AppText style={inv.topTitle}>Invoice</AppText>
+          <AppText style={inv.topTitle}>{t('jp_invoice')}</AppText>
           <View style={{ width: 36 }} />
         </View>
 
@@ -111,12 +112,12 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
           <View style={inv.metaRow}>
             {/* Bill to */}
             <View style={[inv.metaCard, { flex: 1.4 }]}>
-              <AppText style={inv.metaHead}>BILL TO</AppText>
+              <AppText style={inv.metaHead}>{t('jp_invBillTo')}</AppText>
               {([
-                ['Name', userName],
-                ['Firm', userKyc?.firmName || 'N/A'],
-                ['GST', userKyc?.gstNumber || 'N/A'],
-                ['Address', userAddress || 'N/A'],
+                [t('jp_invName'), userName],
+                [t('jp_invFirm'), userKyc?.firmName || t('jp_invNA')],
+                [t('jp_invGst'), userKyc?.gstNumber || t('jp_invNA')],
+                [t('jp_invAddress'), userAddress || t('jp_invNA')],
               ] as [string, string][]).map(([k, v]) => (
                 <View key={k} style={inv.metaLine}>
                   <AppText style={inv.metaKey}>{k}</AppText>
@@ -127,12 +128,12 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
 
             {/* Invoice details */}
             <View style={[inv.metaCard, { flex: 1, alignItems: 'flex-end' }]}>
-              <AppText style={inv.metaHead}>INVOICE DETAILS</AppText>
-              <AppText style={inv.metaKey}>DATE</AppText>
+              <AppText style={inv.metaHead}>{t('jp_invDetails')}</AppText>
+              <AppText style={inv.metaKey}>{t('jp_invDate')}</AppText>
               <AppText style={[inv.metaVal, { textAlign: 'right' }]}>{fmtDate(txn.createdAt)}</AppText>
-              <AppText style={[inv.metaKey, { marginTop: 10 }]}>TXN ID</AppText>
+              <AppText style={[inv.metaKey, { marginTop: 10 }]}>{t('jp_invTxnId')}</AppText>
               <AppText style={[inv.metaVal, { textAlign: 'right', fontSize: 10 }]} numberOfLines={3}>
-                {txn.creditTransactionId || 'N/A'}
+                {txn.creditTransactionId || t('jp_invNA')}
               </AppText>
             </View>
           </View>
@@ -172,12 +173,12 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
 
           {/* Disclaimer */}
           <AppText style={inv.disclaimer}>
-            This is a digitally generated invoice and does not require a physical signature.
+            {t('jp_invDisclaimer')}
           </AppText>
 
           {/* Close button */}
           <TouchableOpacity onPress={onClose} style={inv.closeAction} activeOpacity={0.85}>
-            <AppText style={inv.closeActionTxt}>Close</AppText>
+            <AppText style={inv.closeActionTxt}>{t('jp_close')}</AppText>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -235,7 +236,7 @@ const PaymentsTab = (): React.JSX.Element => {
   const { state } = useAuth();
   const { config } = useAppConfig();
   const { pricing } = usePricingConfig();
-  const gstLabel = `GST (${pricing.gstPercentage}%)`;
+  const gstLabel = t('jp_invGstPercent', { pct: pricing.gstPercentage });
   const user   = state.session?.user;
   const userId = user?.id ?? '';
   const [selectedTxn, setSelectedTxn] = useState<RawPaymentTransaction | null>(null);
@@ -273,7 +274,7 @@ const PaymentsTab = (): React.JSX.Element => {
         <AppText variant="caption" color="rgba(255,255,255,0.7)">{t('transactionAmount')}</AppText>
         <AppText style={pay.bannerAmt}>{fmtAmt(totalPaid)}</AppText>
         <AppText variant="caption" color="rgba(255,255,255,0.6)">
-          {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+          {t('jp_txnCount', { count: transactions.length })}
         </AppText>
       </View>
 
@@ -288,8 +289,8 @@ const PaymentsTab = (): React.JSX.Element => {
           <View style={[pay.row, { backgroundColor: '#f8fafc' }]}>
             <AppText style={[pay.th, { flex: 1.2 }]}>{t('transactionDate')}</AppText>
             <AppText style={[pay.th, { flex: 1 }]}>{t('transactionStatus')}</AppText>
-            <AppText style={[pay.th, { flex: 0.9 }]}>Mode</AppText>
-            <AppText style={[pay.th, { flex: 1, textAlign: 'right' }]}>Amount</AppText>
+            <AppText style={[pay.th, { flex: 0.9 }]}>{t('jp_txnMode')}</AppText>
+            <AppText style={[pay.th, { flex: 1, textAlign: 'right' }]}>{t('transactionAmount')}</AppText>
           </View>
           {transactions.map((txn, i) => (
             <TouchableOpacity

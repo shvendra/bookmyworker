@@ -79,11 +79,13 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
           <View style={styles.logoRow}>
-            <Image
-              source={require('../../../assets/logo.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <View style={styles.logoBox}>
+              <Image
+                source={require('../../../../packages/shared-mobile/assets/logo.png')}
+                style={styles.logoImg}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.brandName}>BookMyWorker</Text>
           </View>
 
@@ -211,12 +213,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 18,
+    gap: 12,
   },
-  logoImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    marginRight: 10,
+  // White rounded logo box — matches the agent app landing page
+  logoBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoImg: {
+    width: 52,
+    height: 52,
   },
   brandName: {
     color: '#fff',

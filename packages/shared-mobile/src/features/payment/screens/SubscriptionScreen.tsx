@@ -24,7 +24,7 @@ import {
   buildFeatureBenefits,
   EMPLOYER_PLANS_DEFAULTS,
 } from '../../../core/api/endpoints/pricingApi';
-import type { EmployerPlansConfig } from '../../../core/api/endpoints/pricingApi';
+import type { EmployerPlansConfig, PlanFeatures } from '../../../core/api/endpoints/pricingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
 
@@ -67,40 +67,79 @@ function resolveEmployerType(
   return 'individual';
 }
 
-// Two static benefits always shown for every employer plan (regardless of config)
-const STATIC_EMPLOYER_BENEFITS = [
-  'Access verified worker & agent profiles',
-  'Unlock worker contacts & connect directly',
-];
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+// Linear upgrade path; industry is the top tier (no next).
+const NEXT_TYPE: Record<EmployerTypeKey, EmployerTypeKey | null> = {
+  individual: 'contractor',
+  contractor: 'agency',
+  agency:     'industry',
+  industry:   null,
+};
+
+const SCOPE_RANK: Record<string, number> = { district: 0, state: 1, india: 2 };
+
+/**
+ * Derive the feature lines that the NEXT tier unlocks but the current tier
+ * lacks — fully configurable from `employerPlans[*].features`, mirroring the
+ * same flags `buildFeatureBenefits` uses (incl. workerSearchScope upgrades).
+ * Returns translated strings; empty when nothing new is unlocked.
+ */
+function buildUpgradeBenefits(
+  current: PlanFeatures,
+  next: PlanFeatures,
+  t: TFn,
+): string[] {
+  const items: string[] = [];
+  // workerSearchScope: only the higher scope that current doesn't already have
+  const curRank  = SCOPE_RANK[current.workerSearchScope] ?? 0;
+  const nextRank = SCOPE_RANK[next.workerSearchScope] ?? 0;
+  if (nextRank > curRank) {
+    if (next.workerSearchScope === 'state') items.push(t('pr_feat_searchState'));
+    if (next.workerSearchScope === 'india') items.push(t('pr_feat_searchIndia'));
+  }
+  if (next.pipelineEnabled  && !current.pipelineEnabled)  items.push(t('pr_feat_pipeline'));
+  if (next.inviteEnabled    && !current.inviteEnabled)    items.push(t('pr_feat_invite'));
+  if (next.analyticsEnabled && (!current.analyticsEnabled || next.analyticsMonths > current.analyticsMonths)) {
+    items.push(t('pr_feat_analytics', { months: next.analyticsMonths }));
+  }
+  if (next.priorityListing  && !current.priorityListing)  items.push(t('pr_feat_priority'));
+  if (next.unlimitedPosts   && !current.unlimitedPosts)   items.push(t('pr_feat_unlimitedPosts'));
+  if (next.bulkPostEnabled  && !current.bulkPostEnabled)  items.push(t('pr_feat_bulkPost'));
+  if (next.dedicatedSupport && !current.dedicatedSupport) items.push(t('pr_feat_dedicatedSupport'));
+  return items;
+}
+
+const TYPE_NAME_KEY: Record<EmployerTypeKey, string> = {
+  individual: 'pr_type_individual',
+  contractor: 'pr_type_contractor',
+  agency:     'pr_type_agency',
+  industry:   'pr_type_industry',
+};
 
 // Duration-specific lines computed from dynamic contacts/posts — unique per card
-function buildDurationBenefits(planId: PlanId, contacts: number, posts: number, contacts1m: number): string[] {
-  const postsLabel = posts >= 999 ? 'unlimited' : String(posts);
+function buildDurationBenefits(planId: PlanId, contacts: number, posts: number, contacts1m: number, t: TFn): string[] {
+  const postsLabel = posts >= 999 ? t('jp_unlimited') : String(posts);
   if (planId === '1m') return [
-    `${contacts} contact unlocks — try risk-free, no commitment`,
-    `Post up to ${postsLabel} job requirements this month`,
+    t('jp_benefitTrialContacts', { contacts }),
+    t('jp_benefitPostsThisMonth', { posts: postsLabel }),
   ];
-  const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : 'more';
+  const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : t('jp_more');
   if (planId === '6m') return [
-    `${contacts} contacts — ${mul}× more reach than monthly`,
-    'Better cost-per-contact vs paying month by month',
+    t('jp_benefitMoreReach', { contacts, mul }),
+    t('jp_benefitBetterCpc'),
   ];
   return [
-    `${contacts} contacts — ${mul}× more reach than monthly`,
-    'Lowest cost-per-contact — best long-term value',
+    t('jp_benefitMoreReach', { contacts, mul }),
+    t('jp_benefitLowestCpc'),
   ];
 }
 
 type PlanId = '1m' | '6m' | '12m';
 
-// Two static benefits always shown for every agent plan
-const STATIC_AGENT_BENEFITS = [
-  'Verified badge on your profile — stand out to employers',
-  'Priority placement in employer search results',
-];
-
 function buildPlans(
   employerType: EmployerTypeKey,
+  t: TFn,
   subscriptionPricing?: Record<string, Record<string, number>>,
   subscriptionMrp?: Record<string, Record<string, number>>,
   employerPlans: EmployerPlansConfig = EMPLOYER_PLANS_DEFAULTS,
@@ -108,8 +147,8 @@ function buildPlans(
   const p       = (subscriptionPricing?.[employerType] ?? FALLBACK_PRICING[employerType]) as Record<string, number>;
   const m       = (subscriptionMrp?.[employerType] ?? {}) as Record<string, number>;
   const typePlan = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
-  const featureBenefits = buildFeatureBenefits(typePlan.features);
-  const sharedBenefits  = [...STATIC_EMPLOYER_BENEFITS, ...featureBenefits];
+  const featureBenefits = buildFeatureBenefits(typePlan.features, t);
+  const sharedBenefits  = [t('jp_benefitVerifiedProfiles'), t('jp_benefitUnlockContacts'), ...featureBenefits];
   const contacts1m      = typePlan.limits['1m'].contacts;
 
   const makePlan = (id: PlanId, tier: Plan['tier']) => {
@@ -125,7 +164,7 @@ function buildPlans(
       posts:    lim.posts,
       // Duration-specific lines first so each card looks distinct
       benefits: [
-        ...buildDurationBenefits(id, lim.contacts, lim.posts, contacts1m),
+        ...buildDurationBenefits(id, lim.contacts, lim.posts, contacts1m, t),
         ...sharedBenefits,
       ],
     };
@@ -135,16 +174,18 @@ function buildPlans(
 }
 
 function buildAgentPlans(
+  t: TFn,
   agentPricing?: Record<string, number>,
   agentMrp?: Record<string, number>,
 ): Plan[] {
   const p = { ...AGENT_FALLBACK, ...(agentPricing ?? {}) };
   const m = agentMrp ?? {};
   const benefits = [
-    ...STATIC_AGENT_BENEFITS,
-    'Appear in employer worker-search results',
-    'Manage group workers under your agent profile',
-    'Receive direct job invitations from employers',
+    t('jp_agentBenefitVerifiedBadge'),
+    t('jp_agentBenefitPriority'),
+    t('jp_agentBenefitSearchResults'),
+    t('jp_agentBenefitManageWorkers'),
+    t('jp_agentBenefitJobInvites'),
   ];
   return [
     {
@@ -165,28 +206,24 @@ function buildAgentPlans(
   ];
 }
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Design tokens — restrained, professional palette (single brand accent) ─────
 const C = {
-  navy:        '#0f172a',
-  navyLight:   '#1e293b',
-  blue:        '#2563eb',
-  blueDark:    '#1d4ed8',
-  blueLight:   '#eff6ff',
-  gold:        '#f59e0b',
-  goldLight:   '#fffbeb',
-  green:       '#16a34a',
-  greenLight:  '#f0fdf4',
-  greenBorder: '#86efac',
-  red:         '#dc2626',
-  redLight:    '#fef2f2',
+  primary:     '#1037A4',   // brand blue — the one accent
+  primaryMid:  '#1A56DB',
+  primaryTint: '#EEF3FF',   // very light blue surface
+  primaryBorder: '#C7D6F5',
+  ink:         '#0F1626',   // near-black headings
+  body:        '#475569',   // body text
+  muted:       '#94A3B8',   // captions, struck MRP
   white:       '#ffffff',
-  slate50:     '#f8fafc',
-  slate100:    '#f1f5f9',
-  slate200:    '#e2e8f0',
-  slate400:    '#94a3b8',
-  slate600:    '#475569',
-  slate700:    '#334155',
-  slate900:    '#0f172a',
+  surface:     '#ffffff',
+  bg:          '#F5F7FC',
+  line:        '#E5EAF3',   // hairline borders / dividers
+  chipBg:      '#F2F5FB',   // neutral stat chip
+  green:       '#059669',
+  greenLight:  '#ECFDF5',
+  greenBorder: '#A7F3D0',
+  red:         '#DC2626',
 };
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
@@ -206,49 +243,46 @@ const PlanCard = React.memo(({
   const total = parseFloat((plan.price + gst).toFixed(2));
   const isLoading = loadingPlanId === plan.id;
 
-  const isPopular  = plan.tier === 'popular';
-  const isPremium  = plan.tier === 'premium';
-
-  const cardBg     = isPremium ? C.navy : isPopular ? C.blue : C.white;
-  const textPrimary = isPremium || isPopular ? C.white : C.navy;
-  const textMuted   = isPremium ? '#94a3b8' : isPopular ? '#bfdbfe' : C.slate600;
-  const borderColor = isPremium ? C.gold : isPopular ? C.blueDark : C.slate200;
-
-  const badgeBg   = isPremium ? C.gold : C.white;
-  const badgeTxt  = isPremium ? C.navy : C.blue;
-  const badgeText = isPremium ? t('pricingBestValue') : t('pricingMostPopular');
-
-  const btnBg     = isPremium ? C.gold : isPopular ? C.white : C.navy;
-  const btnTxt    = isPremium ? C.navy : isPopular ? C.blue : C.white;
-
-  const checkColor = isPremium ? C.gold : isPopular ? '#bfdbfe' : C.blue;
-  const mrpColor   = isPremium ? '#64748b' : isPopular ? '#93c5fd' : C.slate400;
+  // Recommend the "popular" plan: subtle highlighted border + small badge + filled CTA.
+  const isRecommended = plan.tier === 'popular';
+  const badgeText = plan.tier === 'premium' ? t('pricingBestValue') : t('pricingMostPopular');
+  const showBadge = plan.tier === 'popular' || plan.tier === 'premium';
 
   return (
-    <View style={[pc.wrap, { backgroundColor: cardBg, borderColor }]}>
-      {/* Tier badge */}
-      {(isPopular || isPremium) && (
-        <View style={[pc.badge, { backgroundColor: badgeBg }]}>
-          <AppText style={[pc.badgeTxt, { color: badgeTxt }]}>
-            {isPremium ? '★ ' : '🔥 '}{badgeText}
-          </AppText>
+    <View
+      style={[
+        pc.wrap,
+        { backgroundColor: C.surface, borderColor: isRecommended ? C.primary : C.line, overflow: 'hidden' },
+        isRecommended && pc.wrapRecommended,
+      ]}
+    >
+      {/* Top accent bar — premium CRM-style */}
+      <View style={[pc.accentBar, { backgroundColor: C.primary }]} />
+
+      {/* Tier badge — subtle, no full fill */}
+      {showBadge && (
+        <View style={[pc.badge, { backgroundColor: C.primaryTint, borderColor: C.primaryBorder }]}>
+          <AppText style={[pc.badgeTxt, { color: C.primary }]}>{badgeText}</AppText>
         </View>
       )}
 
-      {/* Header row */}
+      {/* Header row — premium icon tile + plan name + price */}
       <View style={pc.headerRow}>
+        <View style={[pc.iconTile, { backgroundColor: C.primaryTint, borderColor: C.primaryBorder }]}>
+          <AppText style={pc.iconTxt}>👑</AppText>
+        </View>
         <View style={{ flex: 1 }}>
-          <AppText style={[pc.planName, { color: textPrimary }]}>{t(plan.labelKey)}</AppText>
-          <AppText style={[pc.planDuration, { color: textMuted }]}>{t(plan.accessKey)}</AppText>
+          <AppText style={[pc.planName, { color: C.ink }]}>{t(plan.labelKey)}</AppText>
+          <AppText style={[pc.planDuration, { color: C.body }]}>{t(plan.accessKey)}</AppText>
         </View>
         <View style={pc.priceBlock}>
           {plan.mrp > plan.price && (
-            <AppText style={[pc.mrpTxt, { color: mrpColor }]}>₹{plan.mrp}</AppText>
+            <AppText style={[pc.mrpTxt, { color: C.muted }]}>₹{plan.mrp}</AppText>
           )}
-          <AppText style={[pc.priceTxt, { color: textPrimary }]}>₹{plan.price}</AppText>
+          <AppText style={[pc.priceTxt, { color: C.ink }]}>₹{plan.price}</AppText>
           {plan.discount && (
-            <View style={[pc.discountPill, { backgroundColor: isPremium ? C.gold : C.red }]}>
-              <AppText style={[pc.discountTxt, { color: isPremium ? C.navy : C.white }]}>
+            <View style={[pc.discountPill, { backgroundColor: C.greenLight, borderColor: C.greenBorder }]}>
+              <AppText style={[pc.discountTxt, { color: C.green }]}>
                 {t('pricingOffLabel', { pct: plan.discount })}
               </AppText>
             </View>
@@ -258,8 +292,8 @@ const PlanCard = React.memo(({
 
       {/* GST / Total */}
       <View style={pc.gstRow}>
-        <AppText style={[pc.gstTxt, { color: textMuted }]}>{t('pricingGst', { amount: gst })}</AppText>
-        <AppText style={[pc.totalTxt, { color: isPremium ? C.gold : isPopular ? C.white : C.blue }]}>
+        <AppText style={[pc.gstTxt, { color: C.muted }]}>{t('pricingGst', { amount: gst })}</AppText>
+        <AppText style={[pc.totalTxt, { color: C.primary }]}>
           {t('pricingTotal', { amount: total })}
         </AppText>
       </View>
@@ -267,45 +301,47 @@ const PlanCard = React.memo(({
       {/* Stats — employer only */}
       {!isAgent && (
         <View style={pc.statsRow}>
-          <View style={[pc.statChip, { backgroundColor: isPremium ? C.navyLight : isPopular ? C.blueDark : C.slate100 }]}>
-            <AppText style={[pc.statVal, { color: isPremium ? C.gold : isPopular ? C.white : C.navy }]}>
-              {plan.contacts}
-            </AppText>
-            <AppText style={[pc.statKey, { color: textMuted }]}>Contacts</AppText>
+          <View style={[pc.statChip, { backgroundColor: C.chipBg }]}>
+            <AppText style={[pc.statVal, { color: C.ink }]}>{plan.contacts}</AppText>
+            <AppText style={[pc.statKey, { color: C.body }]}>{t('jp_contactsLabel')}</AppText>
           </View>
-          <View style={[pc.statChip, { backgroundColor: isPremium ? C.navyLight : isPopular ? C.blueDark : C.slate100 }]}>
-            <AppText style={[pc.statVal, { color: isPremium ? C.gold : isPopular ? C.white : C.navy }]}>
-              {plan.posts >= 999 ? '∞' : plan.posts}
-            </AppText>
-            <AppText style={[pc.statKey, { color: textMuted }]}>Posts</AppText>
+          <View style={[pc.statChip, { backgroundColor: C.chipBg }]}>
+            <AppText style={[pc.statVal, { color: C.ink }]}>{plan.posts >= 999 ? '∞' : plan.posts}</AppText>
+            <AppText style={[pc.statKey, { color: C.body }]}>{t('jp_postsLabel')}</AppText>
           </View>
         </View>
       )}
 
       {/* Divider */}
-      <View style={[pc.divider, { backgroundColor: isPremium ? '#1e293b' : isPopular ? '#1d4ed8' : C.slate200 }]} />
+      <View style={[pc.divider, { backgroundColor: C.line }]} />
 
       {/* Benefits — rendered from dynamic benefits array */}
       <View style={pc.benefits}>
         {plan.benefits.map((b) => (
           <View key={b} style={pc.benefitRow}>
-            <AppText style={[pc.checkMark, { color: checkColor }]}>✓</AppText>
-            <AppText style={[pc.benefitTxt, { color: textPrimary }]}>{b}</AppText>
+            <AppText style={[pc.checkMark, { color: C.primary }]}>✓</AppText>
+            <AppText style={[pc.benefitTxt, { color: C.body }]}>{b}</AppText>
           </View>
         ))}
       </View>
 
-      {/* CTA */}
+      {/* CTA — filled for recommended, outline for the rest */}
       <TouchableOpacity
-        style={[pc.btn, { backgroundColor: btnBg }, isLoading && { opacity: 0.7 }]}
+        style={[
+          pc.btn,
+          isRecommended
+            ? { backgroundColor: C.primary, borderColor: C.primary }
+            : { backgroundColor: C.surface, borderColor: C.primary },
+          isLoading && { opacity: 0.7 },
+        ]}
         onPress={() => onBuy(plan)}
         disabled={isLoading}
         activeOpacity={0.85}
       >
         {isLoading ? (
-          <ActivityIndicator color={btnTxt} size="small" />
+          <ActivityIndicator color={isRecommended ? C.white : C.primary} size="small" />
         ) : (
-          <AppText style={[pc.btnTxt, { color: btnTxt }]}>
+          <AppText style={[pc.btnTxt, { color: isRecommended ? C.white : C.primary }]}>
             {isSubscribed ? t('pricingRenewUpgrade') : t('pricingGetStarted')}
           </AppText>
         )}
@@ -316,19 +352,25 @@ const PlanCard = React.memo(({
 PlanCard.displayName = 'PlanCard';
 
 const pc = StyleSheet.create({
-  wrap:        { borderRadius: 20, borderWidth: 1.5, padding: 18, marginBottom: 16, marginHorizontal: 16,
-                 shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-                 shadowOpacity: 0.12, shadowRadius: 12, elevation: 5 },
-  badge:       { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12,
-                 paddingVertical: 5, marginBottom: 14 },
-  badgeTxt:    { fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
-  headerRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
+  wrap:        { borderRadius: 18, borderWidth: 1, padding: 18, marginBottom: 14, marginHorizontal: 16,
+                 shadowColor: '#0F1626', shadowOffset: { width: 0, height: 2 },
+                 shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  wrapRecommended: { borderWidth: 1.5,
+                 shadowOpacity: 0.1, shadowRadius: 14, elevation: 4 },
+  accentBar:   { height: 4, marginTop: -18, marginHorizontal: -18, marginBottom: 16 },
+  iconTile:    { width: 42, height: 42, borderRadius: 12, borderWidth: 1,
+                 alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  iconTxt:     { fontSize: 20 },
+  badge:       { alignSelf: 'flex-start', borderRadius: 999, borderWidth: 1, paddingHorizontal: 11,
+                 paddingVertical: 4, marginBottom: 14 },
+  badgeTxt:    { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+  headerRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   planName:    { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
   planDuration:{ fontSize: 12, fontWeight: '500', marginTop: 3 },
   priceBlock:  { alignItems: 'flex-end', gap: 2 },
   mrpTxt:      { fontSize: 13, textDecorationLine: 'line-through', fontWeight: '500' },
   priceTxt:    { fontSize: 26, fontWeight: '900', letterSpacing: -0.8 },
-  discountPill:{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 2 },
+  discountPill:{ borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, marginTop: 2 },
   discountTxt: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
   gstRow:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
   gstTxt:      { fontSize: 11, fontWeight: '500' },
@@ -342,8 +384,43 @@ const pc = StyleSheet.create({
   benefitRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   checkMark:   { fontSize: 13, fontWeight: '900', lineHeight: 18, marginTop: 1 },
   benefitTxt:  { flex: 1, fontSize: 13, fontWeight: '500', lineHeight: 18 },
-  btn:         { borderRadius: 14, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  btn:         { borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   btnTxt:      { fontSize: 15, fontWeight: '800' },
+});
+
+// ── Upgrade banner — informational, derives unlocked features from plan config ──
+const UpgradeBanner = React.memo(({
+  nextTypeName, benefits, t,
+}: {
+  nextTypeName: string;
+  benefits: string[];
+  t: TFn;
+}) => (
+  <View style={ub.wrap}>
+    <AppText style={ub.title}>{t('pr_upgradeTitle')}</AppText>
+    <AppText style={ub.subtitle}>{t('pr_upgradeSubtitle', { tier: nextTypeName })}</AppText>
+    <View style={ub.list}>
+      {benefits.map((b) => (
+        <View key={b} style={ub.row}>
+          <AppText style={ub.check}>✓</AppText>
+          <AppText style={ub.rowTxt}>{b}</AppText>
+        </View>
+      ))}
+    </View>
+  </View>
+));
+UpgradeBanner.displayName = 'UpgradeBanner';
+
+const ub = StyleSheet.create({
+  wrap:     { marginHorizontal: 16, marginTop: 4, marginBottom: 4,
+              backgroundColor: C.primaryTint, borderRadius: 16, borderWidth: 1,
+              borderColor: C.primaryBorder, padding: 16 },
+  title:    { fontSize: 15, fontWeight: '800', color: C.ink, marginBottom: 4 },
+  subtitle: { fontSize: 12.5, fontWeight: '500', color: C.body, lineHeight: 18, marginBottom: 12 },
+  list:     { gap: 8 },
+  row:      { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  check:    { fontSize: 13, fontWeight: '900', color: C.primary, lineHeight: 18, marginTop: 1 },
+  rowTxt:   { flex: 1, fontSize: 13, fontWeight: '500', color: C.body, lineHeight: 18 },
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -387,8 +464,19 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const mrp = pricing.subscriptionMrp as unknown as Record<string, Record<string, number>>;
 
   const plans = isAgent
-    ? buildAgentPlans(sub?.['agent'], mrp?.['agent'])
-    : buildPlans(employerType, sub, mrp, employerPlans);
+    ? buildAgentPlans(t as TFn, sub?.['agent'], mrp?.['agent'])
+    : buildPlans(employerType, t as TFn, sub, mrp, employerPlans);
+
+  // ── Upgrade banner (employer-only) — features derived from the next tier's config ──
+  const nextType = !isAgent ? NEXT_TYPE[employerType] : null;
+  const upgradeBenefits = nextType
+    ? buildUpgradeBenefits(
+        (employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType]).features,
+        (employerPlans[nextType] ?? EMPLOYER_PLANS_DEFAULTS[nextType]).features,
+        t as TFn,
+      )
+    : [];
+  const showUpgrade = !!nextType && upgradeBenefits.length > 0;
 
   const handleBuyPlan = async (plan: Plan): Promise<void> => {
     if (!user) return;
@@ -412,10 +500,10 @@ export const SubscriptionScreen = (): React.JSX.Element => {
       if (resp.url) {
         navigation.navigate('PaymentWebView', { url: resp.url, merchantOrderId: resp.merchantOrderId });
       } else {
-        toast.error('Payment URL not received. Please try again.', 'Payment Error');
+        toast.error(t('jp_payUrlMissing'), t('jp_paymentError'));
       }
     } catch {
-      toast.error('Could not initiate payment. Please try again.', 'Payment Failed');
+      toast.error(t('jp_payInitFail'), t('jp_paymentFailed'));
     } finally {
       setLoadingPlanId(null);
     }
@@ -437,10 +525,10 @@ export const SubscriptionScreen = (): React.JSX.Element => {
       if (resp.url) {
         navigation.navigate('TopupWebView', { url: resp.url, merchantOrderId: resp.merchantOrderId });
       } else {
-        toast.error('Payment URL not received. Please try again.', 'Payment Error');
+        toast.error(t('jp_payUrlMissing'), t('jp_paymentError'));
       }
     } catch {
-      toast.error('Could not initiate payment. Please try again.', 'Payment Failed');
+      toast.error(t('jp_payInitFail'), t('jp_paymentFailed'));
     } finally {
       setLoadingPlanId(null);
     }
@@ -453,17 +541,14 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   };
 
   return (
-    <View style={[s.root, { backgroundColor: C.slate100 }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+    <View style={[s.root, { backgroundColor: C.bg }]}>
+      <StatusBar barStyle="light-content" backgroundColor={C.primary} />
       <ScreenHeader title={t('pricingPageTitle')} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Hero ── */}
+        {/* ── Hero — clean, premium, CRM-style ── */}
         <View style={s.hero}>
-          <View style={s.heroDecorLeft} />
-          <View style={s.heroDecorRight} />
-          <AppText style={s.heroCrown}>👑</AppText>
           <AppText style={s.heroTitle}>{t('pricingHeroTitle')}</AppText>
           <AppText style={s.heroSub}>
             {isAgent ? t('pricingHeroSubAgent') : t('pricingHeroSubEmp')}
@@ -484,7 +569,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
             </View>
             <View style={s.contactsPill}>
               {profileQuery.isFetching && !profileQuery.data ? (
-                <ActivityIndicator size="small" color={C.blue} />
+                <ActivityIndicator size="small" color={C.primary} />
               ) : (
                 <>
                   <AppText style={s.contactsNum}>{remainingContacts}</AppText>
@@ -494,6 +579,15 @@ export const SubscriptionScreen = (): React.JSX.Element => {
             </View>
           </View>
         )}
+
+        {/* ── Upgrade/advanced-features upsell box removed for a cleaner, CRM-style page ──
+        {showUpgrade && nextType && (
+          <UpgradeBanner
+            nextTypeName={t(TYPE_NAME_KEY[nextType])}
+            benefits={upgradeBenefits}
+            t={t as TFn}
+          />
+        )} */}
 
         {/* ── Plans heading ── */}
         <AppText style={s.sectionTitle}>{t('pricingPlansHeading')}</AppText>
@@ -555,7 +649,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         {/* ── Footer ── */}
         <View style={s.footer}>
           <View style={s.trustRow}>
-            <AppText style={s.trustTxt}>🏆 {t('pricingTrustBadge')}</AppText>
+            <AppText style={s.trustTxt}>🏆 {t('pricingTrustBadge', { count: config.stats.employerCount.toLocaleString('en-IN') })}</AppText>
           </View>
           <AppText style={s.supportTxt}>
             {t('pricingSupportNote', { email: config.contact.supportEmail })}
@@ -571,58 +665,52 @@ const s = StyleSheet.create({
   root:         { flex: 1 },
   scroll:       { paddingBottom: 40 },
 
-  // Hero
-  hero:         { backgroundColor: C.navy, paddingTop: 28, paddingBottom: 32,
-                  paddingHorizontal: 20, alignItems: 'center', overflow: 'hidden' },
-  heroDecorLeft: { position: 'absolute', top: -40, left: -40, width: 140, height: 140,
-                   borderRadius: 70, backgroundColor: '#1e40af', opacity: 0.35 },
-  heroDecorRight:{ position: 'absolute', bottom: -30, right: -30, width: 110, height: 110,
-                   borderRadius: 55, backgroundColor: '#1e40af', opacity: 0.25 },
-  heroCrown:    { fontSize: 32, marginBottom: 8 },
-  heroTitle:    { fontSize: 22, fontWeight: '900', color: C.white, textAlign: 'center',
-                  letterSpacing: -0.5, marginBottom: 8 },
-  heroSub:      { fontSize: 13, color: '#93c5fd', textAlign: 'center', lineHeight: 20 },
+  // Hero — clean light header on the page background (CRM-style)
+  hero:         { paddingTop: 24, paddingBottom: 12, paddingHorizontal: 24, alignItems: 'center' },
+  heroTitle:    { fontSize: 26, fontWeight: '900', color: C.ink, textAlign: 'center',
+                  letterSpacing: -0.6, lineHeight: 32, marginBottom: 8 },
+  heroSub:      { fontSize: 13, color: C.body, textAlign: 'center', lineHeight: 20 },
 
   // Active subscription banner
   activeBanner: { marginHorizontal: 16, marginTop: 14, backgroundColor: C.greenLight,
-                  borderRadius: 16, borderWidth: 1.5, borderColor: C.greenBorder,
+                  borderRadius: 14, borderWidth: 1, borderColor: C.greenBorder,
                   flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   activeDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: C.green, flexShrink: 0 },
   activeTxt:    { fontSize: 14, fontWeight: '800', color: C.green },
-  activeExpiry: { fontSize: 11, color: '#166534', fontWeight: '500', marginTop: 2 },
-  contactsPill: { backgroundColor: C.blueLight, borderRadius: 12, paddingHorizontal: 12,
+  activeExpiry: { fontSize: 11, color: '#047857', fontWeight: '500', marginTop: 2 },
+  contactsPill: { backgroundColor: C.primaryTint, borderRadius: 12, paddingHorizontal: 12,
                   paddingVertical: 8, alignItems: 'center', flexShrink: 0 },
-  contactsNum:  { fontSize: 20, fontWeight: '900', color: C.blue, lineHeight: 24 },
-  contactsLabel:{ fontSize: 9, fontWeight: '700', color: C.blueDark, textAlign: 'center',
+  contactsNum:  { fontSize: 20, fontWeight: '900', color: C.primary, lineHeight: 24 },
+  contactsLabel:{ fontSize: 9, fontWeight: '700', color: C.primary, textAlign: 'center',
                   lineHeight: 12, marginTop: 1 },
 
   // Section title
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: C.slate600,
+  sectionTitle: { fontSize: 13, fontWeight: '800', color: C.body,
                   letterSpacing: 0.8, textTransform: 'uppercase',
-                  marginTop: 20, marginBottom: 12, marginHorizontal: 16 },
+                  marginTop: 18, marginBottom: 12, marginHorizontal: 16 },
 
   // Top-up section
   topupSection: { marginHorizontal: 16, marginTop: 4, marginBottom: 8 },
   topupHeader:  { marginBottom: 12 },
-  topupTitle:   { fontSize: 15, fontWeight: '800', color: C.navy, marginBottom: 4 },
-  topupDesc:    { fontSize: 12, color: C.slate600, lineHeight: 17 },
-  topupCard:    { backgroundColor: C.white, borderRadius: 16, padding: 16,
+  topupTitle:   { fontSize: 15, fontWeight: '800', color: C.ink, marginBottom: 4 },
+  topupDesc:    { fontSize: 12, color: C.body, lineHeight: 17 },
+  topupCard:    { backgroundColor: C.surface, borderRadius: 14, padding: 16,
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                  marginBottom: 10, borderWidth: 1, borderColor: C.slate200,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+                  marginBottom: 10, borderWidth: 1, borderColor: C.line,
+                  shadowColor: '#0F1626', shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   topupLeft:    { flex: 1 },
-  topupCount:   { fontSize: 15, fontWeight: '800', color: C.navy, marginBottom: 3 },
-  topupPrice:   { fontSize: 12, color: C.slate600 },
-  topupGst:     { color: C.slate400 },
-  topupTotal:   { fontWeight: '800', color: C.navy },
-  topupBtn:     { backgroundColor: C.blue, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11 },
+  topupCount:   { fontSize: 15, fontWeight: '800', color: C.ink, marginBottom: 3 },
+  topupPrice:   { fontSize: 12, color: C.body },
+  topupGst:     { color: C.muted },
+  topupTotal:   { fontWeight: '800', color: C.ink },
+  topupBtn:     { backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11 },
   topupBtnTxt:  { fontSize: 13, fontWeight: '800', color: C.white },
 
   // Footer
   footer:       { marginHorizontal: 16, marginTop: 16, marginBottom: 8, alignItems: 'center', gap: 8 },
-  trustRow:     { backgroundColor: C.goldLight, borderRadius: 12, paddingHorizontal: 16,
-                  paddingVertical: 10, borderWidth: 1, borderColor: '#fde68a' },
-  trustTxt:     { fontSize: 12, fontWeight: '700', color: '#92400e', textAlign: 'center' },
-  supportTxt:   { fontSize: 11, color: C.slate400, textAlign: 'center' },
+  trustRow:     { backgroundColor: C.primaryTint, borderRadius: 12, paddingHorizontal: 16,
+                  paddingVertical: 10, borderWidth: 1, borderColor: C.primaryBorder },
+  trustTxt:     { fontSize: 12, fontWeight: '700', color: C.primary, textAlign: 'center' },
+  supportTxt:   { fontSize: 11, color: C.muted, textAlign: 'center' },
 });

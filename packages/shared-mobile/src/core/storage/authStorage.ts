@@ -21,17 +21,17 @@ export const saveAuthSession = async (session: AuthSession): Promise<void> => {
 };
 
 export const loadAuthSession = async (): Promise<AuthSession | null> => {
-  const [sessionString, accessToken, refreshToken] = await Promise.all([
-    AsyncStorage.getItem(STORAGE_KEYS.AUTH_SESSION),
-    SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
-    SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN),
-  ]);
-
-  if (!sessionString || !accessToken || !refreshToken) {
-    return null;
-  }
-
   try {
+    const [sessionString, accessToken, refreshToken] = await Promise.all([
+      AsyncStorage.getItem(STORAGE_KEYS.AUTH_SESSION),
+      SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
+      SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN),
+    ]);
+
+    if (!sessionString || !accessToken || !refreshToken) {
+      return null;
+    }
+
     const persistedSession = JSON.parse(sessionString) as PersistedSession;
     return {
       ...persistedSession,
@@ -43,6 +43,9 @@ export const loadAuthSession = async (): Promise<AuthSession | null> => {
       },
     };
   } catch {
+    // A native read (corrupt keystore / OS denial) or a malformed persisted
+    // session must never reject — treat it as "no session" so the app falls
+    // back to the unauthenticated flow instead of wedging on the splash.
     return null;
   }
 };

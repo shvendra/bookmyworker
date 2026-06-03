@@ -17,8 +17,13 @@ import { AuthProvider } from '../../packages/shared-mobile/src/state/auth/AuthCo
 import { ErrorState } from '../../packages/shared-mobile/src/shared/components/feedback/ErrorState';
 import { ToastProvider } from '../../packages/shared-mobile/src/shared/state/toast/ToastContext';
 import { AppAlertProvider } from '../../packages/shared-mobile/src/shared/state/alert/AppAlertContext';
+import { installGlobalErrorHandlers } from '../../packages/shared-mobile/src/core/errors/globalErrorHandler';
 
 import { AppNavigator } from './navigation/AppNavigator';
+
+// Catch async errors that escape React's render phase (the ErrorBoundary only
+// catches render-phase errors). Idempotent — safe to call at module load.
+installGlobalErrorHandlers();
 
 const asyncStoragePersister = createAsyncStoragePersister({ storage: AsyncStorage });
 

@@ -24,12 +24,17 @@ export interface WorkCategory {
   label: string;
   value: string;
   translationKey: TranslationKeys;
+  /** Professional one-line description shown on the promo slider */
+  subtitleKey: TranslationKeys;
   image: string;
   /** Gradient [top color, bottom color] used when image fails or as overlay base */
   gradient: [string, string];
   emoji: string;
   accent: string;
   jobTypes?: number;
+  /** Standard daily wage range (INR) shown on the promo slider */
+  rateMin: number;
+  rateMax: number;
 }
 
 export const WORK_CATEGORIES: WorkCategory[] = [
@@ -37,131 +42,170 @@ export const WORK_CATEGORIES: WorkCategory[] = [
     label: 'Manufacturing & Industrial',
     value: 'manufacturing_industrial_workers',
     translationKey: 'cat_manufacturing',
+    subtitleKey: 'cat_sub_manufacturing',
     image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80&fit=crop',
     gradient: ['#1E3A8A', '#1D4ED8'],
     emoji: '⚙️',
     accent: '#3B82F6',
     jobTypes: 14,
+    rateMin: 650,
+    rateMax: 900,
   },
   {
     label: 'Construction & Project',
     value: 'construction_project_workers',
     translationKey: 'cat_construction',
-    image: 'https://images.unsplash.com/photo-1504307651486-9d96e7b11ae0?w=800&q=80&fit=crop',
+    subtitleKey: 'cat_sub_construction',
+    image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80&fit=crop',
     gradient: ['#78350F', '#D97706'],
     emoji: '🏗️',
     accent: '#F59E0B',
     jobTypes: 17,
+    rateMin: 700,
+    rateMax: 1100,
   },
   {
     label: 'Transport & Logistics',
     value: 'transport_logistics_workers',
     translationKey: 'cat_transport',
+    subtitleKey: 'cat_sub_transport',
     image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&q=80&fit=crop',
     gradient: ['#312E81', '#4338CA'],
     emoji: '🚛',
     accent: '#6366F1',
     jobTypes: 18,
+    rateMin: 650,
+    rateMax: 950,
   },
   {
     label: 'Agriculture & Farming',
     value: 'agriculture_farming_workers',
     translationKey: 'cat_agriculture',
+    subtitleKey: 'cat_sub_agriculture',
     image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80&fit=crop',
     gradient: ['#14532D', '#16A34A'],
     emoji: '🌾',
     accent: '#22C55E',
     jobTypes: 13,
+    rateMin: 550,
+    rateMax: 750,
   },
   {
     label: 'Household & Domestic',
     value: 'household_domestic_workers',
     translationKey: 'cat_household',
+    subtitleKey: 'cat_sub_household',
     image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80&fit=crop',
     gradient: ['#164E63', '#0891B2'],
     emoji: '🧹',
     accent: '#06B6D4',
     jobTypes: 12,
+    rateMin: 500,
+    rateMax: 800,
   },
   {
     label: 'Automobile & Workshop',
     value: 'Automobile & Workshop Workers',
     translationKey: 'cat_automobile',
+    subtitleKey: 'cat_sub_automobile',
     image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80&fit=crop',
     gradient: ['#1E293B', '#334155'],
     emoji: '🔧',
     accent: '#64748B',
     jobTypes: 9,
+    rateMin: 650,
+    rateMax: 1000,
   },
   {
     label: 'Retail & Shop',
     value: 'retail_shop_workers',
     translationKey: 'cat_retail',
+    subtitleKey: 'cat_sub_retail',
     image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&q=80&fit=crop',
     gradient: ['#92400E', '#D97706'],
     emoji: '🏪',
     accent: '#D97706',
     jobTypes: 14,
+    rateMin: 600,
+    rateMax: 850,
   },
   {
     label: 'Hospitality & Service',
     value: 'hospitality_service_workers',
     translationKey: 'cat_hospitality',
+    subtitleKey: 'cat_sub_hospitality',
     image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80&fit=crop',
     gradient: ['#831843', '#BE185D'],
     emoji: '🛎️',
     accent: '#EC4899',
     jobTypes: 14,
+    rateMin: 600,
+    rateMax: 900,
   },
   {
     label: 'Healthcare Support',
     value: 'Healthcare Support Workers',
     translationKey: 'cat_healthcare',
+    subtitleKey: 'cat_sub_healthcare',
     image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80&fit=crop',
     gradient: ['#7F1D1D', '#DC2626'],
     emoji: '🏥',
     accent: '#EF4444',
     jobTypes: 7,
+    rateMin: 700,
+    rateMax: 1050,
   },
   {
     label: 'Security & Facility',
     value: 'Security & Facility Workers',
     translationKey: 'cat_security',
+    subtitleKey: 'cat_sub_security',
     image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&q=80&fit=crop',
     gradient: ['#0F172A', '#1E293B'],
     emoji: '👮',
     accent: '#475569',
     jobTypes: 9,
+    rateMin: 650,
+    rateMax: 900,
   },
   {
     label: 'Skilled Technical',
     value: 'skilled_technical_workers',
     translationKey: 'cat_technical',
+    subtitleKey: 'cat_sub_technical',
     image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80&fit=crop',
     gradient: ['#064E3B', '#059669'],
     emoji: '🛠️',
     accent: '#10B981',
     jobTypes: 13,
+    rateMin: 800,
+    rateMax: 1300,
   },
   {
     label: 'Event & Decoration',
     value: 'event_decoration_workers',
     translationKey: 'cat_event',
+    subtitleKey: 'cat_sub_event',
     image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80&fit=crop',
     gradient: ['#4C1D95', '#7C3AED'],
     emoji: '🎊',
     accent: '#8B5CF6',
     jobTypes: 11,
+    rateMin: 600,
+    rateMax: 1000,
   },
   {
     label: 'Specialized & Creative',
     value: 'specialized_creative_workers',
     translationKey: 'cat_creative',
+    subtitleKey: 'cat_sub_creative',
     image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80&fit=crop',
     gradient: ['#581C87', '#9333EA'],
     emoji: '🎨',
     accent: '#A855F7',
     jobTypes: 14,
+    rateMin: 800,
+    rateMax: 1400,
   },
 ];
 
@@ -254,18 +298,19 @@ const HCatSlider = ({
                 isActive && { borderColor: cat.accent, borderWidth: 3 },
               ]}
             >
-              {/* Gradient: darker top layer */}
-              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: cat.gradient[0] }]} />
-              {/* Gradient: lighter accent bottom-right blob */}
-              <View style={[hStyles.gradientBlob, { backgroundColor: cat.gradient[1] }]} />
-              {/* Decorative circle top-right */}
-              <View style={[hStyles.circleL, { backgroundColor: cat.accent + '20' }]} />
-              <View style={[hStyles.circleS, { backgroundColor: cat.accent + '15' }]} />
-
-              {/* Large decorative emoji — right side visual */}
-              <View style={hStyles.bigEmojiWrap}>
-                <AppText style={hStyles.bigEmoji}>{cat.emoji}</AppText>
-              </View>
+              {/* Photo background — real workers on the job */}
+              <Image
+                source={{ uri: cat.image }}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="cover"
+              />
+              {/* Brand-colour tint keeps each category recognisable while the photo shows through */}
+              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: cat.gradient[0], opacity: 0.40 }]} />
+              {/* Top + bottom dark scrims so the white text stays readable over any photo */}
+              <View style={hStyles.scrimTop} />
+              <View style={hStyles.scrimBottom} />
+              {/* Lighter accent bottom-right blob (subtle) */}
+              <View style={[hStyles.gradientBlob, { backgroundColor: cat.gradient[1], opacity: 0.28 }]} />
 
               {/* Accent bar at very bottom */}
               <View style={[hStyles.accentBar, { backgroundColor: cat.accent }]} />
@@ -408,6 +453,24 @@ const hStyles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 16,
     elevation: 10,
+  },
+
+  // Dark scrims over the photo so the white text/counter stay readable
+  scrimTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 88,
+    backgroundColor: 'rgba(0,0,0,0.30)',
+  },
+  scrimBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+    backgroundColor: 'rgba(0,0,0,0.46)',
   },
 
   // Gradient blob — bottom-right lighter colour splash

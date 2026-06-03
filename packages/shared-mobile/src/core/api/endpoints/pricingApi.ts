@@ -38,8 +38,11 @@ export interface PlanFeatures {
   workerSearchScope: WorkerSearchScope;
   pipelineEnabled:   boolean;
   inviteEnabled:     boolean;
+  attendanceEnabled: boolean;
   analyticsEnabled:  boolean;
   analyticsMonths:   number;
+  exportEnabled:     boolean;
+  rosterEnabled:     boolean;
   priorityListing:   boolean;
   unlimitedPosts:    boolean;
   bulkPostEnabled:   boolean;
@@ -88,7 +91,9 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
     },
     features: {
       workerSearchScope: 'district', pipelineEnabled: false, inviteEnabled: false,
+      attendanceEnabled: false,
       analyticsEnabled: true,  analyticsMonths: 3,
+      exportEnabled: false,    rosterEnabled: false,
       priorityListing: false,  unlimitedPosts: false,
       bulkPostEnabled: false,  dedicatedSupport: false,
     },
@@ -101,7 +106,9 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
     },
     features: {
       workerSearchScope: 'state', pipelineEnabled: true, inviteEnabled: true,
+      attendanceEnabled: true,
       analyticsEnabled: true,  analyticsMonths: 12,
+      exportEnabled: false,    rosterEnabled: false,
       priorityListing: false,  unlimitedPosts: false,
       bulkPostEnabled: true,   dedicatedSupport: false,
     },
@@ -114,7 +121,9 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
     },
     features: {
       workerSearchScope: 'state', pipelineEnabled: true, inviteEnabled: true,
+      attendanceEnabled: false,
       analyticsEnabled: true,  analyticsMonths: 12,
+      exportEnabled: true,     rosterEnabled: true,
       priorityListing: false,  unlimitedPosts: false,
       bulkPostEnabled: false,  dedicatedSupport: false,
     },
@@ -127,7 +136,9 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
     },
     features: {
       workerSearchScope: 'india', pipelineEnabled: true, inviteEnabled: true,
+      attendanceEnabled: true,
       analyticsEnabled: true,  analyticsMonths: 12,
+      exportEnabled: true,     rosterEnabled: true,
       priorityListing: true,   unlimitedPosts: true,
       bulkPostEnabled: true,   dedicatedSupport: true,
     },
@@ -175,23 +186,27 @@ function mergeEmployerPlans(remote?: Partial<EmployerPlansConfig>): EmployerPlan
 }
 
 // ─── Public helpers ────────────────────────────────────────────────────────────
+/** Minimal translator shape — `t('pr_feat_x', { months: 3 })`. */
+export type FeatureTFn = (key: string, opts?: Record<string, unknown>) => string;
+
 /**
- * Convert a PlanFeatures object into human-readable benefit strings.
+ * Convert a PlanFeatures object into translated benefit strings.
  * Each line appears ONLY when the corresponding toggle is ON in the SuperAdmin
  * Employer Plans panel — matches the CRM PricingPage logic exactly.
  * workerSearchScope only adds a line for state/india (district = minimum default).
+ * Keys live in the `employer` i18n namespace under the `pr_feat_*` prefix.
  */
-export function buildFeatureBenefits(features: PlanFeatures): string[] {
+export function buildFeatureBenefits(features: PlanFeatures, t: FeatureTFn): string[] {
   const items: string[] = [];
-  if (features.workerSearchScope === 'state') items.push('Search workers state-wide — not limited to your district');
-  if (features.workerSearchScope === 'india') items.push('Search workers across all of India — no location cap');
-  if (features.pipelineEnabled)  items.push('Full hiring pipeline — Shortlist → Interview → Join');
-  if (features.inviteEnabled)    items.push('Directly invite workers to apply for your jobs');
-  if (features.analyticsEnabled) items.push(`Hiring analytics dashboard (${features.analyticsMonths}-month history)`);
-  if (features.priorityListing)  items.push('Priority listing — your requirements shown first to workers');
-  if (features.unlimitedPosts)   items.push('Unlimited job requirement posts — no daily cap');
-  if (features.bulkPostEnabled)  items.push('Bulk post multiple requirements at once');
-  if (features.dedicatedSupport) items.push('Dedicated BookMyWorker account manager assigned');
+  if (features.workerSearchScope === 'state') items.push(t('pr_feat_searchState'));
+  if (features.workerSearchScope === 'india') items.push(t('pr_feat_searchIndia'));
+  if (features.pipelineEnabled)  items.push(t('pr_feat_pipeline'));
+  if (features.inviteEnabled)    items.push(t('pr_feat_invite'));
+  if (features.analyticsEnabled) items.push(t('pr_feat_analytics', { months: features.analyticsMonths }));
+  if (features.priorityListing)  items.push(t('pr_feat_priority'));
+  if (features.unlimitedPosts)   items.push(t('pr_feat_unlimitedPosts'));
+  if (features.bulkPostEnabled)  items.push(t('pr_feat_bulkPost'));
+  if (features.dedicatedSupport) items.push(t('pr_feat_dedicatedSupport'));
   return items;
 }
 

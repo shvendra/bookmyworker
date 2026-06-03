@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
@@ -18,8 +19,11 @@ import {
   EMPLOYER_PLANS_DEFAULTS,
 } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey, PlanFeatures } from '../../../core/api/endpoints/pricingApi';
+import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
+
+type TFunc = ReturnType<typeof useTranslation>['t'];
 
 interface EmployerSubscriptionModalProps {
   visible: boolean;
@@ -43,72 +47,64 @@ interface BenefitGroup {
   items:     string[];   // resolved at render time
 }
 
-const SCOPE_TEXT = { district: 'your district', state: 'your state (state-wide)', india: 'all of India' };
-
-function buildBenefitGroups(features: PlanFeatures, contacts1m: number): BenefitGroup[] {
+function buildBenefitGroups(t: TFunc, features: PlanFeatures, contacts1m: number): BenefitGroup[] {
   // ── ⚡ Priority & Speed — 2 static always + conditional ───────────────────
   const speed: string[] = [
-    'Verified workers get job alerts for subscribed employers',
-    'Your employer account is whitelisted for faster responses',
+    t('esm_speed1'),
+    t('esm_speed2'),
   ];
-  if (features.priorityListing) speed.push('Priority listing — your requirements shown first to workers');
+  if (features.priorityListing) speed.push(t('esm_speed3'));
 
   // ── 🔓 Full Access — 2 static always + conditional ────────────────────────
   const access: string[] = [
-    'View verified worker profiles & work history',
-    `Unlock up to ${contacts1m} worker contacts in the first month`,
+    t('esm_access1'),
+    t('esm_accessContacts', { count: contacts1m }),
   ];
   // Scope line only when state/india — district is the default minimum
-  if (features.workerSearchScope === 'state') access.push('Search workers state-wide — not limited to your district');
-  if (features.workerSearchScope === 'india') access.push('Search workers across all of India — no location cap');
+  if (features.workerSearchScope === 'state') access.push(t('esm_accessState'));
+  if (features.workerSearchScope === 'india') access.push(t('esm_accessIndia'));
 
   // ── 🎯 Smart Matching — 2 static always + conditional ─────────────────────
   const match: string[] = [
-    'Advanced filters: location, skill, age, gender',
-    'Real-time job-worker matching notifications',
+    t('esm_match1'),
+    t('esm_match2'),
   ];
-  if (features.pipelineEnabled)  match.push('Full hiring pipeline — Shortlist → Interview → Join');
-  if (features.inviteEnabled)    match.push('Directly invite workers to apply for your jobs');
-  if (features.bulkPostEnabled)  match.push('Bulk post multiple requirements at once');
-  if (features.unlimitedPosts)   match.push('Unlimited job requirement posts — no daily cap');
+  if (features.pipelineEnabled)  match.push(t('esm_matchPipeline'));
+  if (features.inviteEnabled)    match.push(t('esm_matchInvite'));
+  if (features.bulkPostEnabled)  match.push(t('esm_matchBulk'));
+  if (features.unlimitedPosts)   match.push(t('esm_matchUnlimited'));
 
   // ── 🛡️ Trust & Support — 2 static always + conditional ───────────────────
   const trust: string[] = [
-    'All workers verified with skills & background checks',
-    'Secure payment with BookMyWorker guarantee',
+    t('esm_trust1'),
+    t('esm_trust2'),
   ];
-  if (features.analyticsEnabled) trust.push(`Hiring analytics dashboard (${features.analyticsMonths}-month history)`);
-  if (features.dedicatedSupport) trust.push('Dedicated BookMyWorker account manager assigned');
+  if (features.analyticsEnabled) trust.push(t('esm_trustAnalytics', { months: features.analyticsMonths }));
+  if (features.dedicatedSupport) trust.push(t('esm_trustSupport'));
 
   return [
     {
-      icon: '⚡', label: 'Priority & Speed',
+      icon: '⚡', label: t('esm_groupSpeed'),
       color: '#F59E0B', colorDark: '#FBBF24', bg: '#FFFBEB', bgDark: '#451A03',
       items: speed,
     },
     {
-      icon: '🔓', label: 'Full Access',
+      icon: '🔓', label: t('esm_groupAccess'),
       color: '#1A56DB', colorDark: '#4F7CF8', bg: '#EBF1FF', bgDark: '#1C2E58',
       items: access,
     },
     {
-      icon: '🎯', label: 'Smart Matching',
+      icon: '🎯', label: t('esm_groupMatch'),
       color: '#059669', colorDark: '#10B981', bg: '#ECFDF5', bgDark: '#064E3B',
       items: match,
     },
     {
-      icon: '🛡️', label: 'Trust & Support',
+      icon: '🛡️', label: t('esm_groupTrust'),
       color: '#7C3AED', colorDark: '#A78BFA', bg: '#F3EFFE', bgDark: '#2E1B5E',
       items: trust,
     },
   ];
 }
-
-const STATS = [
-  { value: '50K+', label: 'Verified\nWorkers' },
-  { value: '3×',   label: 'Faster\nResponses' },
-  { value: '98%',  label: 'Hire\nSuccess' },
-];
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 export const EmployerSubscriptionModal = ({
@@ -118,9 +114,17 @@ export const EmployerSubscriptionModal = ({
   employerType = 'individual',
 }: EmployerSubscriptionModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const isDark = theme.mode === 'dark';
   const { pricing, employerPlans } = usePricingConfig();
+  const { config } = useAppConfig();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+
+  const STATS = [
+    { value: formatStat(config.stats.workerCount), label: t('esm_statWorkers') },
+    { value: '3×',  label: t('esm_statResponses') },
+    { value: '98%', label: t('esm_statSuccess') },
+  ];
 
   // Resolve this employer type's plan config
   const typePlan   = employerPlans[employerType] ?? EMPLOYER_PLANS_DEFAULTS[employerType];
@@ -132,7 +136,7 @@ export const EmployerSubscriptionModal = ({
   const monthlyMrp   = pricing.subscriptionMrp[employerType]?.['1m'] ?? pricing.subscriptionMrp.individual['1m'];
   const monthlyDisc  = calcDiscount(monthlyMrp, monthlyPrice);
 
-  const benefitGroups = buildBenefitGroups(features, contacts1m);
+  const benefitGroups = buildBenefitGroups(t, features, contacts1m);
 
   // Slide-up animation
   const slideAnim   = useRef(new Animated.Value(60)).current;
@@ -183,18 +187,18 @@ export const EmployerSubscriptionModal = ({
             </View>
 
             <AppText style={[styles.heroTitle, { color: heroText }]}>
-              Hire Smarter with Premium
+              {t('esm_heroTitle')}
             </AppText>
             <AppText style={[styles.heroSub, { color: heroMuted }]}>
-              Employers who subscribe get{' '}
-              <AppText style={styles.heroBold}>3× more responses</AppText>
-              {'\n'}and fill roles faster.
+              {t('esm_heroSubPre')}{' '}
+              <AppText style={styles.heroBold}>{t('esm_heroSubBold')}</AppText>
+              {'\n'}{t('esm_heroSubPost')}
             </AppText>
 
             {/* Stats strip */}
             <View style={styles.statsRow}>
               {STATS.map((s, i) => (
-                <React.Fragment key={s.value}>
+                <React.Fragment key={i}>
                   <View style={styles.statItem}>
                     <AppText style={[styles.statValue, { color: heroText }]}>{s.value}</AppText>
                     <AppText style={[styles.statLabel, { color: heroMuted }]}>{s.label}</AppText>
@@ -243,24 +247,24 @@ export const EmployerSubscriptionModal = ({
               <View style={styles.priceCardInner}>
                 <View style={styles.priceTitleRow}>
                   <AppText style={[styles.pricePlanLabel, { color: theme.colors.primary }]}>
-                    Flexible Plans — {employerType.charAt(0).toUpperCase() + employerType.slice(1)} Pricing
+                    {t('esm_flexiblePlans', { type: t(`esm_type_${employerType}`) })}
                   </AppText>
                   {monthlyDisc && (
                     <View style={[styles.savingsBadge, { backgroundColor: theme.colors.success }]}>
-                      <AppText style={styles.savingsBadgeText}>Save {monthlyDisc}%</AppText>
+                      <AppText style={styles.savingsBadgeText}>{t('esm_save', { disc: monthlyDisc })}</AppText>
                     </View>
                   )}
                 </View>
                 <View style={styles.priceRow}>
-                  <AppText style={[styles.priceFrom, { color: theme.colors.mutedText }]}>Starting from</AppText>
+                  <AppText style={[styles.priceFrom, { color: theme.colors.mutedText }]}>{t('esm_startingFrom')}</AppText>
                   {monthlyMrp > monthlyPrice && (
                     <AppText style={styles.priceMrp}>₹{monthlyMrp}</AppText>
                   )}
                   <AppText style={[styles.priceAmount, { color: theme.colors.primary }]}>₹{monthlyPrice}</AppText>
-                  <AppText style={[styles.priceUnit, { color: theme.colors.mutedText }]}>/mo</AppText>
+                  <AppText style={[styles.priceUnit, { color: theme.colors.mutedText }]}>{t('esm_perMo')}</AppText>
                 </View>
                 <AppText style={[styles.priceNote, { color: theme.colors.mutedText }]}>
-                  Plans for Individual · Contractor · Agency · Industry
+                  {t('esm_plansFor')}
                 </AppText>
               </View>
             </View>
@@ -268,9 +272,11 @@ export const EmployerSubscriptionModal = ({
             {/* ── Social proof ── */}
             <View style={[styles.proofRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <AppText style={[styles.proofText, { color: theme.colors.mutedText }]}>
-                🏢 Trusted by{' '}
-                <AppText style={[styles.proofBold, { color: theme.colors.text }]}>2,000+ employers</AppText>
-                {' '}across India — from solo contractors to large industries.
+                {t('esm_proofPre')}{' '}
+                <AppText style={[styles.proofBold, { color: theme.colors.text }]}>
+                  {config.stats.employerCount.toLocaleString('en-IN')}+ {t('esm_proofEmployers')}
+                </AppText>
+                {' '}{t('esm_proofPost')}
               </AppText>
             </View>
           </ScrollView>
@@ -278,14 +284,14 @@ export const EmployerSubscriptionModal = ({
           {/* ── Footer ── */}
           <View style={[styles.footer, { borderTopColor: theme.colors.divider, backgroundColor: theme.colors.card }]}>
             <TouchableOpacity onPress={onDismiss} style={[styles.laterBtn, { borderColor: theme.colors.border }]} activeOpacity={0.7}>
-              <AppText style={[styles.laterText, { color: theme.colors.mutedText }]}>Later</AppText>
+              <AppText style={[styles.laterText, { color: theme.colors.mutedText }]}>{t('esm_later')}</AppText>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleViewPlans} style={[styles.plansBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.88}>
-              <AppText style={styles.plansBtnText}>View Plans  →</AppText>
+              <AppText style={styles.plansBtnText}>{t('esm_viewPlans')}</AppText>
             </TouchableOpacity>
           </View>
           <AppText style={[styles.noCommit, { color: theme.colors.mutedText }]}>
-            No commitment · Cancel anytime
+            {t('esm_noCommit')}
           </AppText>
 
           {/* Close pill (pressable) */}

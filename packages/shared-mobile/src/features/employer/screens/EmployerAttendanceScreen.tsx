@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { attendanceApi } from '../../../core/api/endpoints/attendanceApi';
 import type { AttendanceRecord, JoinedWorker, WorkerSummary } from '../../../core/api/endpoints/attendanceApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'EmployerAttendance'>;
 
@@ -299,17 +300,22 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   const [submitting, setSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
+  // ── Plan gate (mirror Analytics/Pipeline lock UX) ──────────────────────────
+  const plan = usePlanFeatures();
+  const attendanceLocked = plan.loaded && !plan.attendanceEnabled;
+
   // ── Data ─────────────────────────────────────────────────────────────────
   const attendanceQuery = useQuery({
     queryKey: ['employer-attendance', requirementId],
     queryFn: () => attendanceApi.getByRequirement(requirementId),
+    enabled: !attendanceLocked,
     staleTime: 60 * 1000,
   });
 
   const summaryQuery = useQuery({
     queryKey: ['employer-attendance-summary', requirementId],
     queryFn: () => attendanceApi.getSummary(requirementId),
-    enabled: activeTab === 'summary',
+    enabled: activeTab === 'summary' && !attendanceLocked,
     staleTime: 60 * 1000,
   });
 
@@ -393,6 +399,38 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
 
   // ── Loading ───────────────────────────────────────────────────────────────
   const isLoading = attendanceQuery.isLoading;
+
+  if (attendanceLocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+        <ScreenHeader title={t('attendanceStat')} onBack={() => navigation.goBack()} />
+        <ScrollView
+          contentContainerStyle={[lock.scroll, { paddingBottom: insets.bottom + 32 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={lock.box}>
+            <View style={lock.icon}>
+              <AppText style={{ fontSize: 36 }}>🗓️</AppText>
+            </View>
+            <AppText style={[lock.title, { color: theme.colors.text }]}>{t('att_lockTitle')}</AppText>
+            <AppText style={[lock.sub, { color: theme.colors.mutedText }]}>{t('att_lockDesc')}</AppText>
+            <View style={[lock.benefits, { backgroundColor: theme.colors.surface1 }]}>
+              {[t('att_lockBenefit1'), t('att_lockBenefit2'), t('att_lockBenefit3')].map((b, i) => (
+                <View key={i} style={lock.row}>
+                  <View style={lock.dot} />
+                  <AppText style={[lock.benefitTxt, { color: theme.colors.textSecondary }]}>{b}</AppText>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={lock.btn} activeOpacity={0.85}>
+              <AppText style={lock.btnTxt}>{t('pl_upgradeBtn')}</AppText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -658,4 +696,19 @@ const hm = StyleSheet.create({
   daySub:  { fontSize: 11.5, marginTop: 2 },
   badge:   { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   badgeTxt:{ fontSize: 13, fontWeight: '900' },
+});
+
+// ── Plan-lock upgrade wall (mirrors Analytics/Pipeline) ─────────────────────────
+const lock = StyleSheet.create({
+  scroll:    { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  box:       { alignItems: 'center' },
+  icon:      { width: 88, height: 88, borderRadius: 24, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#93c5fd', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  title:     { fontSize: 20, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
+  sub:       { fontSize: 14, lineHeight: 20, textAlign: 'center', marginBottom: 20 },
+  benefits:  { alignSelf: 'stretch', borderRadius: 16, padding: 16, gap: 12, marginBottom: 24 },
+  row:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dot:       { width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND },
+  benefitTxt:{ flex: 1, fontSize: 13.5, fontWeight: '600' },
+  btn:       { alignSelf: 'stretch', backgroundColor: BRAND, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+  btnTxt:    { color: WHITE, fontSize: 15, fontWeight: '800' },
 });
