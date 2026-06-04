@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'स्थान निवडा',
+  lp_useGps: 'सध्याचे स्थान वापरा (GPS)',
+  lp_detecting: 'शोधत आहे…',
+  lp_searchPlaceholder: 'शहर, गाव, पत्ता शोधा…',
+  lp_selectedLabel: 'निवडलेले स्थान',
+  lp_movePin: 'पिन ठेवण्यासाठी नकाशावर टॅप करा किंवा शोधा',
+  lp_locating: 'स्थान शोधत आहे…',
+  lp_confirm: 'स्थानाची पुष्टी करा',
+  lp_noResults: 'कोणतेही परिणाम नाहीत',
+  lp_gpsUnavailable: 'उपलब्ध नाही',
+  lp_gpsUnavailableMsg: 'या डिव्हाइसवर स्थान सेवा उपलब्ध नाहीत.',
+  lp_gpsServicesOff: "स्थान सेवा बंद आहे. कृपया तुमच्या डिव्हाइस सेटिंग्जमध्ये GPS/स्थान चालू करा आणि पुन्हा प्रयत्न करा.",
+  lp_locErrorTitle: 'स्थान त्रुटी',
+  lp_permDenied: 'स्थान परवानगी नाकारली. कृपया सेटिंग्जमध्ये स्थान प्रवेश सक्षम करा.',
+  lp_locFailed: 'तुमचे स्थान मिळू शकले नाही. कृपया स्वतः शोधा.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'कामाचे ठिकाण',
   kycLocationHint: 'तुमचा व्यवसाय किंवा काम कुठे आहे ते निवडा.',
@@ -880,4 +896,10 @@ export const translation = {
   notifPrefPromoDesc:          'ऑफर, टिप्स आणि प्लॅटफॉर्म घोषणा',
   notifPrefNewReqLabel:        'नवीन आवश्यकता',
   notifPrefNewReqDesc:         'जेव्हा नियोक्ता नवीन जॉब आवश्यकता पोस्ट करतो',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "उप-श्रेणी",
+  cs_selectCategory: "श्रेणी निवडा",
+  cs_selectSubCategory: "उप-श्रेणी निवडा",
+  cs_selectCategoryFirst: "आधी श्रेणी निवडा",
+  cs_subTypes: "{{n}} उप-प्रकार",
 } as const;

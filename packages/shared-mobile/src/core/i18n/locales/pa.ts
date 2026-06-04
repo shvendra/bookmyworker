@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'ਸਥਾਨ ਚੁਣੋ',
+  lp_useGps: 'ਮੌਜੂਦਾ ਸਥਾਨ ਵਰਤੋ (GPS)',
+  lp_detecting: 'ਪਤਾ ਲਗਾਇਆ ਜਾ ਰਿਹਾ ਹੈ…',
+  lp_searchPlaceholder: 'ਸ਼ਹਿਰ, ਪਿੰਡ, ਪਤਾ ਖੋਜੋ…',
+  lp_selectedLabel: 'ਚੁਣਿਆ ਸਥਾਨ',
+  lp_movePin: 'ਪਿੰਨ ਲਗਾਉਣ ਲਈ ਨਕਸ਼ੇ ਤੇ ਟੈਪ ਕਰੋ ਜਾਂ ਖੋਜੋ',
+  lp_locating: 'ਸਥਾਨ ਖੋਜਿਆ ਜਾ ਰਿਹਾ ਹੈ…',
+  lp_confirm: 'ਸਥਾਨ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ',
+  lp_noResults: 'ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ ਮਿਲਿਆ',
+  lp_gpsUnavailable: 'ਉਪਲਬਧ ਨਹੀਂ',
+  lp_gpsUnavailableMsg: 'ਇਸ ਡਿਵਾਈਸ ਤੇ ਸਥਾਨ ਸੇਵਾਵਾਂ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।',
+  lp_gpsServicesOff: "ਟਿਕਾਣਾ ਸੇਵਾਵਾਂ ਬੰਦ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀ ਡਿਵਾਈਸ ਸੈਟਿੰਗਜ਼ ਵਿੱਚ GPS/ਟਿਕਾਣਾ ਚਾਲੂ ਕਰੋ ਅਤੇ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+  lp_locErrorTitle: 'ਸਥਾਨ ਗਲਤੀ',
+  lp_permDenied: 'ਸਥਾਨ ਇਜਾਜ਼ਤ ਇਨਕਾਰ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਸਥਾਨ ਪਹੁੰਚ ਚਾਲੂ ਕਰੋ।',
+  lp_locFailed: 'ਤੁਹਾਡਾ ਸਥਾਨ ਪ੍ਰਾਪਤ ਨਹੀਂ ਹੋ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਖੁਦ ਖੋਜੋ।',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'ਕੰਮ ਦਾ ਸਥਾਨ',
   kycLocationHint: 'ਚੁਣੋ ਕਿ ਤੁਹਾਡਾ ਕਾਰੋਬਾਰ ਜਾਂ ਕੰਮ ਕਿੱਥੇ ਸਥਿਤ ਹੈ।',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'ਪੇਸ਼ਕਸ਼ਾਂ, ਸੁਝਾਅ ਅਤੇ ਪਲੇਟਫਾਰਮ ਐਲਾਨ',
   notifPrefNewReqLabel:        'ਨਵੀਂ ਲੋੜਾਂ',
   notifPrefNewReqDesc:         'ਜਦੋਂ ਕੋਈ ਮਾਲਕ ਨਵੀਂ ਨੌਕਰੀ ਦੀ ਲੋੜ ਪੋਸਟ ਕਰਦਾ ਹੈ',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ਉਪ-ਸ਼੍ਰੇਣੀ",
+  cs_selectCategory: "ਸ਼੍ਰੇਣੀ ਚੁਣੋ",
+  cs_selectSubCategory: "ਉਪ-ਸ਼੍ਰੇਣੀ ਚੁਣੋ",
+  cs_selectCategoryFirst: "ਪਹਿਲਾਂ ਸ਼੍ਰੇਣੀ ਚੁਣੋ",
+  cs_subTypes: "{{n}} ਉਪ-ਕਿਸਮਾਂ",
 } as const;

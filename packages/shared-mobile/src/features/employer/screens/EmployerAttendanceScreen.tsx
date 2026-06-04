@@ -20,6 +20,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { subcatDisplay } from '../../../shared/data/categoryLabels';
+import i18n from '../../../core/i18n';
 import { useAppTheme } from '../../../core/theme';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useTranslation } from 'react-i18next';
@@ -44,9 +46,13 @@ const BORDER = '#E2E8F0';
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10); // 'YYYY-MM-DD'
 }
+const EN_MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function formatDisplayDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00Z');
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  // Localize the month to the active language (reuses the shared calMonthNames).
+  const months = i18n.t('calMonthNames', { ns: 'employer', returnObjects: true });
+  const mArr = Array.isArray(months) && months.length === 12 ? (months as string[]) : EN_MONTHS_SHORT;
+  return `${d.getUTCDate()} ${mArr[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 function todayStr(): string {
   return toDateStr(new Date());
@@ -83,6 +89,11 @@ function DatePickerBar({
   onSelect: (d: string) => void;
 }): React.JSX.Element {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
+  const wkShort = t('calWeekdaysShort', { returnObjects: true });
+  const weekdays = Array.isArray(wkShort) && wkShort.length === 7
+    ? (wkShort as string[])
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
   // Show last 14 days
   const days = Array.from({ length: 14 }, (_, i) => {
@@ -100,7 +111,7 @@ function DatePickerBar({
       {days.map((d) => {
         const isSelected = d === selected;
         const dt = new Date(d + 'T00:00:00Z');
-        const dayLabel = dt.toLocaleDateString('en-IN', { weekday: 'short', timeZone: 'UTC' });
+        const dayLabel = weekdays[dt.getUTCDay()];
         const dateLabel = dt.getUTCDate();
         return (
           <TouchableOpacity
@@ -143,10 +154,10 @@ function WorkerRow({
   const avatarBg = value.status === 'present' ? '#ECFDF5' : value.status === 'half_day' ? '#FFFBEB' : '#FEF2F2';
   const avatarColor = value.status === 'present' ? GREEN : value.status === 'half_day' ? AMBER : RED;
 
-  const BTN_DATA: { key: AttStatus; label: string; active: string; activeTxt: string; idleBorder: string }[] = [
-    { key: 'present',  label: 'Present',  active: GREEN, activeTxt: WHITE, idleBorder: '#6EE7B7' },
-    { key: 'half_day', label: 'Half Day', active: AMBER, activeTxt: WHITE, idleBorder: '#FCD34D' },
-    { key: 'absent',   label: 'Absent',   active: RED,   activeTxt: WHITE, idleBorder: '#FCA5A5' },
+  const BTN_DATA: { key: AttStatus; labelKey: string; active: string; activeTxt: string; idleBorder: string }[] = [
+    { key: 'present',  labelKey: 'presentStat',  active: GREEN, activeTxt: WHITE, idleBorder: '#6EE7B7' },
+    { key: 'half_day', labelKey: 'halfDayStat',   active: AMBER, activeTxt: WHITE, idleBorder: '#FCD34D' },
+    { key: 'absent',   labelKey: 'absentStat',   active: RED,   activeTxt: WHITE, idleBorder: '#FCA5A5' },
   ];
 
   return (
@@ -160,13 +171,13 @@ function WorkerRow({
             {worker.workerName}
           </AppText>
           <AppText style={[wr.sub, { color: theme.colors.mutedText }]}>
-            {worker.agreedRate ? `₹${worker.agreedRate}/${worker.rateType === 'Monthly' ? 'month' : 'day'}` : t('rateNotSet')}
+            {worker.agreedRate ? `₹${worker.agreedRate}${worker.rateType === 'Monthly' ? t('perMonth') : t('perDay')}` : t('rateNotSet')}
           </AppText>
         </View>
       </View>
       {/* 3-way status selector */}
       <View style={wr.btnRow}>
-        {BTN_DATA.map(({ key, label, active, activeTxt, idleBorder }) => {
+        {BTN_DATA.map(({ key, labelKey, active, activeTxt, idleBorder }) => {
           const isActive = value.status === key;
           return (
             <TouchableOpacity
@@ -178,7 +189,14 @@ function WorkerRow({
               }]}
               activeOpacity={0.75}
             >
-              <AppText style={[wr.btnTxt, { color: isActive ? activeTxt : active }]}>{label}</AppText>
+              <AppText
+                style={[wr.btnTxt, { color: isActive ? activeTxt : active }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                maxFontSizeMultiplier={1.3}
+              >
+                {t(labelKey)}
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -227,7 +245,7 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
         <View style={{ flex: 1 }}>
           <AppText style={[sc.name, { color: theme.colors.text }]} numberOfLines={1}>{s.workerName}</AppText>
           <AppText style={[sc.sub, { color: theme.colors.mutedText }]}>
-            {s.agreedRate ? `₹${s.agreedRate}/${s.rateType === 'Monthly' ? 'month' : 'day'}` : t('rateNotSet')}
+            {s.agreedRate ? `₹${s.agreedRate}${s.rateType === 'Monthly' ? t('perMonth') : t('perDay')}` : t('rateNotSet')}
           </AppText>
         </View>
         <View style={sc.salaryBox}>
@@ -244,7 +262,7 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
         </View>
         <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: AMBER }]}>{(s as any).daysHalfDay || 0}</AppText>
-          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>Half Day</AppText>
+          <AppText style={[sc.statLabel, { color: theme.colors.mutedText }]}>{t('halfDayStat')}</AppText>
         </View>
         <View style={[sc.statCell, { backgroundColor: theme.colors.surface1 }]}>
           <AppText style={[sc.statNum, { color: RED }]}>{s.daysAbsent}</AppText>
@@ -290,6 +308,11 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   const { requirementId, requirementTitle } = route.params;
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
+  // Localize the requirement name (work-type · sub-category) to the active
+  // language — all 11. subcatDisplay falls back to readable English per part.
+  const localizedTitle = requirementTitle
+    ? requirementTitle.split(' · ').map((p) => subcatDisplay(p.trim())).join(' · ')
+    : '';
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const qc = useQueryClient();
@@ -352,7 +375,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   // ── Submit for the day ────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (joinedWorkers.length === 0) {
-      toast.error('No joined workers to mark attendance for.', 'Nothing to mark');
+      toast.error(t('att_noWorkersMsg'), t('att_noWorkersTitle'));
       return;
     }
     setSubmitting(true);
@@ -365,9 +388,9 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
       await attendanceApi.markDay(requirementId, selectedDate, records);
       await qc.invalidateQueries({ queryKey: ['employer-attendance', requirementId] });
       await qc.invalidateQueries({ queryKey: ['employer-attendance-summary', requirementId] });
-      toast.success(`Attendance saved for ${formatDisplayDate(selectedDate)}.`, 'Saved');
+      toast.success(t('att_savedMsg', { date: formatDisplayDate(selectedDate) }), t('att_savedTitle'));
     } catch {
-      toast.error('Failed to save attendance. Please try again.', 'Error');
+      toast.error(t('att_saveFailMsg'), t('att_saveFailTitle'));
     } finally {
       setSubmitting(false);
     }
@@ -436,7 +459,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
-        title={requirementTitle ? `${t('attendanceStat')} · ${requirementTitle}` : t('markAttendanceTab')}
+        title={localizedTitle || t('markAttendanceTab')}
         onBack={() => navigation.goBack()}
       />
 
@@ -496,13 +519,13 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                     </View>
                     <View style={styles.markAllRow}>
                       <TouchableOpacity onPress={() => markAll('present')} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
-                        <AppText style={[styles.markAllTxt, { color: GREEN }]}>{t('allPresent')}</AppText>
+                        <AppText style={[styles.markAllTxt, { color: GREEN }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allPresent')}</AppText>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => markAll('half_day')} style={[styles.markAllBtn, { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }]} activeOpacity={0.75}>
-                        <AppText style={[styles.markAllTxt, { color: AMBER }]}>All Half</AppText>
+                        <AppText style={[styles.markAllTxt, { color: AMBER }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allHalf')}</AppText>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => markAll('absent')} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
-                        <AppText style={[styles.markAllTxt, { color: RED }]}>{t('allAbsent')}</AppText>
+                        <AppText style={[styles.markAllTxt, { color: RED }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allAbsent')}</AppText>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -661,11 +684,13 @@ const styles = StyleSheet.create({
 
   listContent:   { padding: 14 },
 
-  dayHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  // Date block stacked above a full-width mark-all row so the three buttons
+  // each get equal space and never clip their (localized) labels.
+  dayHeader:     { marginBottom: 12 },
   dayHeaderDate: { fontSize: 15, fontWeight: '900' },
   dayHeaderSub:  { fontSize: 11.5, marginTop: 2 },
-  markAllRow:    { flexDirection: 'row', gap: 6 },
-  markAllBtn:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
+  markAllRow:    { flexDirection: 'row', gap: 6, marginTop: 10 },
+  markAllBtn:    { flex: 1, alignItems: 'center', borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6 },
   markAllTxt:    { fontSize: 11, fontWeight: '800' },
 
   footer:        { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14, borderTopWidth: 1, gap: 8 },

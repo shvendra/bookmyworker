@@ -18,6 +18,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { apiClient } from '../../../core/api/client';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { getCategoryLabel } from '../../../shared/utils/labelUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -33,189 +34,262 @@ interface AnalyticsData {
   summary:     { totalPosted: number; totalFilled: number; totalOpen: number; fillRate: number };
 }
 
-// ─── Colour palette ───────────────────────────────────────────────────────────
+// ─── Colour palette (monochromatic blue family — professional, mirrors CRM) ─────
 const BRAND = '#1037A4';
-const PALETTE = ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444','#EC4899','#14B8A6','#F97316'];
-const C = {
-  navy:     '#0f172a',
-  slate:    '#64748b',
-  border:   '#e2e8f0',
-  surface:  '#f8fafc',
-  white:    '#ffffff',
-  green:    '#16a34a',
-  greenSoft:'#f0fdf4',
-  amber:    '#d97706',
-  amberSoft:'#fffbeb',
-};
+const BLUE  = '#2563EB';
+const GREEN = '#10B981';
+const PALETTE = ['#2563EB', '#3B82F6', '#60A5FA', '#1E3A8A', '#93C5FD', '#475569', '#64748B', '#1D4ED8'];
 
-// ─── Summary tile ─────────────────────────────────────────────────────────────
-const SummaryTile = ({ value, label, color, bg }: { value: string | number; label: string; color: string; bg: string }) => {
+// ─── KPI card (gradient-feel via solid colour + decorative circles) ─────────────
+interface Kpi { value: string | number; label: string; icon: string; bg: string }
+
+const KpiCard = ({ value, label, icon, bg }: Kpi): React.JSX.Element => (
+  <View style={[kp.card, { backgroundColor: bg }]}>
+    <View style={kp.circle1} />
+    <View style={kp.circle2} />
+    <View style={kp.iconBox}>
+      <AppText style={kp.icon}>{icon}</AppText>
+    </View>
+    <AppText style={kp.value} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{value}</AppText>
+    <AppText style={kp.label} numberOfLines={2} maxFontSizeMultiplier={1.2}>{label}</AppText>
+  </View>
+);
+const kp = StyleSheet.create({
+  card:    { width: '48%', borderRadius: 20, padding: 16, minHeight: 116, overflow: 'hidden', justifyContent: 'space-between',
+             shadowColor: '#0F172A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 4 },
+  circle1: { position: 'absolute', top: -22, right: -22, width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.10)' },
+  circle2: { position: 'absolute', bottom: -28, right: 18, width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,255,255,0.07)' },
+  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  icon:    { fontSize: 20 },
+  value:   { fontSize: 30, fontWeight: '900', color: '#fff', letterSpacing: -0.6, lineHeight: 34 },
+  label:   { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)', marginTop: 2 },
+});
+
+// ─── Section card ─────────────────────────────────────────────────────────────
+const Card = ({ title, subtitle, icon, accent = BRAND, children }: {
+  title: string; subtitle?: string; icon: string; accent?: string; children: React.ReactNode;
+}): React.JSX.Element => {
   const { theme } = useAppTheme();
   return (
-    <View style={[st.tile, { backgroundColor: bg }]}>
-      <AppText style={[st.val, { color }]}>{value}</AppText>
-      <AppText style={[st.lbl, { color: theme.colors.mutedText }]}>{label}</AppText>
+    <View style={[sc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={[sc.header, { borderBottomColor: theme.colors.divider, backgroundColor: accent + '0D' }]}>
+        <View style={[sc.iconBox, { backgroundColor: accent + '1A', borderColor: accent + '33' }]}>
+          <AppText style={sc.icon}>{icon}</AppText>
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText style={[sc.title, { color: theme.colors.text }]} maxFontSizeMultiplier={1.3}>{title}</AppText>
+          {subtitle ? <AppText style={[sc.subtitle, { color: theme.colors.mutedText }]} maxFontSizeMultiplier={1.3}>{subtitle}</AppText> : null}
+        </View>
+      </View>
+      <View style={sc.body}>{children}</View>
     </View>
   );
 };
-const st = StyleSheet.create({
-  tile: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 2 },
-  val:  { fontSize: 22, fontWeight: '900' },
-  lbl:  { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+const sc = StyleSheet.create({
+  card:     { borderRadius: 20, borderWidth: 1, overflow: 'hidden',
+              shadowColor: '#0F172A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+  header:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth },
+  iconBox:  { width: 34, height: 34, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  icon:     { fontSize: 16 },
+  title:    { fontSize: 14.5, fontWeight: '800', letterSpacing: -0.2 },
+  subtitle: { fontSize: 11.5, fontWeight: '500', marginTop: 1 },
+  body:     { padding: 16, gap: 14 },
 });
 
-// ─── Bar chart (pure RN) ──────────────────────────────────────────────────────
-const BAR_HEIGHT = 140;
-const BAR_W_PAIR = 20; // width of one bar
+// ─── Grouped bar chart (pure RN, responsive) ───────────────────────────────────
+const CHART_H = 150;
+const LABEL_ROOM = 20;   // headroom above bars for the value label
+const BAR_W = 14;
 
-const BarChart = ({ data }: { data: MonthPoint[] }) => {
+const BarChart = ({ data }: { data: MonthPoint[] }): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
-  const maxVal = useMemo(() => Math.max(1, ...data.map((d) => Math.max(d.posted, d.filled))), [data]);
+  const maxVal = useMemo(
+    () => Math.max(1, ...data.flatMap((d) => [d.posted, d.filled])),
+    [data],
+  );
+  const usable = CHART_H - LABEL_ROOM;
+
   return (
-    <View style={bc.wrap}>
+    <View style={{ gap: 12 }}>
       {/* Legend */}
       <View style={bc.legend}>
-        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: BRAND }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendPosted')}</AppText></View>
-        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: '#10B981' }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendFilled')}</AppText></View>
+        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: BLUE }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendPosted')}</AppText></View>
+        <View style={bc.legendRow}><View style={[bc.legendDot, { backgroundColor: GREEN }]} /><AppText style={[bc.legendTxt, { color: theme.colors.mutedText }]}>{t('legendFilled')}</AppText></View>
       </View>
 
-      {/* Bars */}
-      <View style={bc.chart}>
-        {data.map((d, i) => {
-          const postedH = Math.max(2, (d.posted / maxVal) * BAR_HEIGHT);
-          const filledH = Math.max(2, (d.filled / maxVal) * BAR_HEIGHT);
-          return (
+      {/* Plot area with gridlines */}
+      <View style={{ height: CHART_H }}>
+        {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+          <View
+            key={f}
+            pointerEvents="none"
+            style={[bc.gridline, { bottom: f * usable, backgroundColor: theme.colors.border }]}
+          />
+        ))}
+        <View style={[bc.row, { height: CHART_H }]}>
+          {data.map((d, i) => (
             <View key={i} style={bc.group}>
-              {/* Posted bar */}
-              <View style={bc.barWrap}>
-                {d.posted > 0 && (
-                  <AppText style={[bc.barVal, { color: BRAND }]}>{d.posted}</AppText>
-                )}
-                <View style={[bc.bar, { height: postedH, backgroundColor: BRAND, opacity: 0.85 }]} />
-              </View>
-              {/* Filled bar */}
-              <View style={bc.barWrap}>
-                {d.filled > 0 && (
-                  <AppText style={[bc.barVal, { color: '#10B981' }]}>{d.filled}</AppText>
-                )}
-                <View style={[bc.bar, { height: filledH, backgroundColor: '#10B981', opacity: 0.85 }]} />
-              </View>
-              <AppText style={[bc.monthLabel, { color: theme.colors.mutedText }]}>{d.label}</AppText>
+              <BarCol value={d.posted} h={(d.posted / maxVal) * usable} color={BLUE} />
+              <BarCol value={d.filled} h={(d.filled / maxVal) * usable} color={GREEN} />
             </View>
-          );
-        })}
+          ))}
+        </View>
+      </View>
+
+      {/* Month labels (aligned via matching flex:1 columns) */}
+      <View style={{ flexDirection: 'row' }}>
+        {data.map((d, i) => (
+          <AppText key={i} style={[bc.monthLabel, { color: theme.colors.mutedText }]} numberOfLines={1}>{d.label}</AppText>
+        ))}
       </View>
     </View>
   );
 };
 
+const BarCol = ({ value, h, color }: { value: number; h: number; color: string }): React.JSX.Element => (
+  <View style={bc.barCol}>
+    {value > 0 ? <AppText style={[bc.barVal, { color }]} maxFontSizeMultiplier={1.1}>{value}</AppText> : null}
+    <View style={[bc.bar, { height: Math.max(3, h), backgroundColor: color }]} />
+  </View>
+);
+
 const bc = StyleSheet.create({
-  wrap:        { gap: 12 },
-  legend:      { flexDirection: 'row', gap: 16, paddingLeft: 4 },
-  legendRow:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot:   { width: 10, height: 10, borderRadius: 5 },
-  legendTxt:   { fontSize: 11, fontWeight: '600' },
-  chart:       { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: BAR_HEIGHT + 30, paddingHorizontal: 2 },
-  group:       { alignItems: 'center', gap: 2, flex: 1 },
-  barWrap:     { alignItems: 'center', justifyContent: 'flex-end', height: BAR_HEIGHT, width: BAR_W_PAIR },
-  bar:         { width: BAR_W_PAIR, borderTopLeftRadius: 5, borderTopRightRadius: 5, minHeight: 2 },
-  barVal:      { fontSize: 9, fontWeight: '800', marginBottom: 2 },
-  monthLabel:  { fontSize: 9, fontWeight: '700', marginTop: 4 },
+  legend:     { flexDirection: 'row', gap: 18 },
+  legendRow:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot:  { width: 10, height: 10, borderRadius: 5 },
+  legendTxt:  { fontSize: 12, fontWeight: '600' },
+  gridline:   { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth, opacity: 0.7 },
+  row:        { flexDirection: 'row', alignItems: 'flex-end' },
+  group:      { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 5 },
+  barCol:     { alignItems: 'center', justifyContent: 'flex-end' },
+  bar:        { width: BAR_W, borderTopLeftRadius: 5, borderTopRightRadius: 5 },
+  barVal:     { fontSize: 10, fontWeight: '800', marginBottom: 3 },
+  monthLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', marginTop: 6 },
 });
 
-// ─── Category pill chart ──────────────────────────────────────────────────────
-const CategoryPillChart = ({ data }: { data: CategoryPoint[] }) => {
+// ─── Work-type distribution ─────────────────────────────────────────────────────
+const CategoryChart = ({ data }: { data: CategoryPoint[] }): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
-    <View style={cp.wrap}>
+    <View style={{ gap: 12 }}>
       {/* Proportional strip */}
-      <View style={[cp.strip, { backgroundColor: theme.colors.surface2 }]}>
+      <View style={[cs.strip, { backgroundColor: theme.colors.surface2 }]}>
         {data.map((d, i) => (
-          <View key={i} style={{ flex: d.count, height: '100%', backgroundColor: PALETTE[i % PALETTE.length], borderRadius: i === 0 ? 8 : i === data.length - 1 ? 8 : 0 }} />
+          <View key={i} style={{ flex: Math.max(d.count, 0.001), height: '100%', backgroundColor: PALETTE[i % PALETTE.length] }} />
         ))}
       </View>
 
       {/* Rows */}
       {data.map((d, i) => (
-        <View key={i} style={cp.row}>
-          <View style={[cp.dot, { backgroundColor: PALETTE[i % PALETTE.length] }]} />
-          <AppText style={[cp.name, { color: theme.colors.text }]} numberOfLines={1}>{d.name}</AppText>
-          <AppText style={[cp.count, { color: theme.colors.text }]}>{d.count}</AppText>
-          <View style={[cp.barWrap, { backgroundColor: theme.colors.surface2 }]}>
-            <View style={[cp.bar, { width: `${d.percent}%`, backgroundColor: PALETTE[i % PALETTE.length] }]} />
+        <View key={i} style={cs.row}>
+          <View style={[cs.dot, { backgroundColor: PALETTE[i % PALETTE.length] }]} />
+          <AppText style={[cs.name, { color: theme.colors.text }]} numberOfLines={2} maxFontSizeMultiplier={1.3}>{d.name}</AppText>
+          <View style={[cs.chip, { backgroundColor: PALETTE[i % PALETTE.length] + '22' }]}>
+            <AppText style={[cs.chipTxt, { color: PALETTE[i % PALETTE.length] }]}>{d.count}</AppText>
           </View>
-          <AppText style={[cp.pct, { color: PALETTE[i % PALETTE.length] }]}>{d.percent}%</AppText>
+          <AppText style={[cs.pct, { color: theme.colors.mutedText }]}>{d.percent}%</AppText>
         </View>
       ))}
 
-      <AppText style={[cp.total, { color: theme.colors.mutedText }]}>{t('totalRequirements', { count: total })}</AppText>
+      <AppText style={[cs.total, { color: theme.colors.mutedText }]}>{t('totalRequirements', { count: total })}</AppText>
     </View>
   );
 };
-const cp = StyleSheet.create({
-  wrap:    { gap: 10 },
-  strip:   { height: 12, borderRadius: 8, flexDirection: 'row', overflow: 'hidden', marginBottom: 4 },
-  row:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot:     { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  name:    { flex: 1, fontSize: 12, fontWeight: '600' },
-  count:   { width: 22, fontSize: 12, fontWeight: '800', textAlign: 'right' },
-  barWrap: { width: 80, height: 6, borderRadius: 3, overflow: 'hidden' },
-  bar:     { height: '100%', borderRadius: 3 },
-  pct:     { width: 34, fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  total:   { fontSize: 11, textAlign: 'right', marginTop: 2 },
+const cs = StyleSheet.create({
+  strip:   { height: 12, borderRadius: 8, flexDirection: 'row', overflow: 'hidden' },
+  row:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dot:     { width: 11, height: 11, borderRadius: 5.5, flexShrink: 0, marginTop: 2, alignSelf: 'flex-start' },
+  name:    { flex: 1, fontSize: 12.5, fontWeight: '600', lineHeight: 17 },
+  chip:    { minWidth: 26, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, alignItems: 'center' },
+  chipTxt: { fontSize: 11, fontWeight: '800' },
+  pct:     { width: 42, fontSize: 12, fontWeight: '700', textAlign: 'right' },
+  total:   { fontSize: 11.5, textAlign: 'right', marginTop: 2 },
 });
 
-// ─── Time-to-hire bars ────────────────────────────────────────────────────────
-const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }) => {
+// ─── Avg-days-to-hire bars ──────────────────────────────────────────────────────
+const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const maxDays = useMemo(() => Math.max(1, ...data.map((d) => d.avgDays)), [data]);
   return (
-    <View style={th.wrap}>
-      {data.map((d, i) => (
-        <View key={i} style={th.row}>
-          <AppText style={[th.cat, { color: theme.colors.text }]} numberOfLines={1}>{d.category}</AppText>
-          <View style={[th.barWrap, { backgroundColor: theme.colors.surface2 }]}>
-            <View style={[th.bar, { width: `${Math.max(4, (d.avgDays / maxDays) * 100)}%`, backgroundColor: PALETTE[i % PALETTE.length] }]} />
+    <View style={{ gap: 14 }}>
+      {data.map((d, i) => {
+        const color = PALETTE[i % PALETTE.length];
+        return (
+          <View key={i} style={{ gap: 6 }}>
+            <View style={tt.head}>
+              <AppText style={[tt.cat, { color: theme.colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>{d.category}</AppText>
+              <AppText style={[tt.days, { color }]} maxFontSizeMultiplier={1.2}>{d.avgDays}d</AppText>
+            </View>
+            <View style={[tt.track, { backgroundColor: theme.colors.surface2 }]}>
+              <View style={[tt.fill, { width: `${Math.max(5, (d.avgDays / maxDays) * 100)}%`, backgroundColor: color }]} />
+            </View>
           </View>
-          <AppText style={[th.days, { color: theme.colors.mutedText }]}>{d.avgDays}d</AppText>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 };
-const th = StyleSheet.create({
-  wrap:    { gap: 10 },
-  row:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cat:     { width: 80, fontSize: 11, fontWeight: '600' },
-  barWrap: { flex: 1, height: 12, borderRadius: 6, overflow: 'hidden' },
-  bar:     { height: '100%', borderRadius: 6 },
-  days:    { width: 32, fontSize: 11, fontWeight: '800', textAlign: 'right' },
+const tt = StyleSheet.create({
+  head:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  cat:   { flex: 1, fontSize: 12.5, fontWeight: '700' },
+  days:  { fontSize: 13, fontWeight: '800' },
+  track: { height: 10, borderRadius: 99, overflow: 'hidden' },
+  fill:  { height: '100%', borderRadius: 99 },
 });
 
-// ─── Section card ─────────────────────────────────────────────────────────────
-const Card = ({ title, children }: { title: string; children: React.ReactNode }) => {
+// ─── Hiring funnel ──────────────────────────────────────────────────────────────
+const HiringFunnel = ({ summary }: { summary: AnalyticsData['summary'] }): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
+  const stages = [
+    { label: t('legendPosted'), value: summary.totalPosted, color: BLUE,      icon: '📋' },
+    { label: t('filled'),       value: summary.totalFilled, color: GREEN,     icon: '✅' },
+    { label: t('open'),         value: summary.totalOpen,   color: '#475569', icon: '⏳' },
+  ];
+  const max = Math.max(1, summary.totalPosted);
   return (
-    <View style={[sc.card, { backgroundColor: theme.colors.card }]}>
-      <View style={sc.titleRow}>
-        <AppText style={[sc.title, { color: theme.colors.text }]}>{title}</AppText>
-      </View>
-      {children}
+    <View style={{ gap: 16 }}>
+      {stages.map((s, i) => {
+        const pct = Math.max(6, Math.round((s.value / max) * 100));
+        return (
+          <View key={i} style={{ gap: 8 }}>
+            <View style={fn.head}>
+              <View style={fn.left}>
+                <View style={[fn.iconBox, { backgroundColor: s.color + '1A', borderColor: s.color + '33' }]}>
+                  <AppText style={fn.icon}>{s.icon}</AppText>
+                </View>
+                <AppText style={[fn.label, { color: theme.colors.text }]} maxFontSizeMultiplier={1.2}>{s.label}</AppText>
+              </View>
+              <AppText style={[fn.value, { color: s.color }]} maxFontSizeMultiplier={1.2}>{s.value}</AppText>
+            </View>
+            <View style={[fn.track, { backgroundColor: theme.colors.surface2 }]}>
+              <View style={[fn.fill, { width: `${pct}%`, backgroundColor: s.color }]} />
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 };
-const sc = StyleSheet.create({
-  card:     { borderRadius: 18, padding: 16, gap: 14, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-  titleRow: { borderLeftWidth: 3, borderLeftColor: BRAND, paddingLeft: 10 },
-  title:    { fontSize: 14, fontWeight: '800' },
+const fn = StyleSheet.create({
+  head:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  left:    { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  iconBox: { width: 34, height: 34, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  icon:    { fontSize: 15 },
+  label:   { fontSize: 13.5, fontWeight: '700' },
+  value:   { fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
+  track:   { height: 14, borderRadius: 99, overflow: 'hidden' },
+  fill:    { height: '100%', borderRadius: 99 },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export const EmployerAnalyticsScreen = (): React.JSX.Element => {
   const { t } = useTranslation('employer');
+  // Default namespace `t` — work-type category labels (cat_* keys) live there.
+  const { t: tCommon } = useTranslation();
   const { theme } = useAppTheme();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
@@ -273,14 +347,21 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
 
   const summary    = data?.summary;
   const monthly    = data?.monthly    ?? [];
-  const categories = data?.categories ?? [];
-  const timeToHire = data?.timeToHire ?? [];
+  // Translate dynamic work-type names (all 11 languages) before rendering.
+  const categories = useMemo(
+    () => (data?.categories ?? []).map((c: CategoryPoint) => ({ ...c, name: getCategoryLabel(c.name, tCommon) })),
+    [data?.categories, tCommon],
+  );
+  const timeToHire = useMemo(
+    () => (data?.timeToHire ?? []).map((d: TimeToHirePoint) => ({ ...d, category: getCategoryLabel(d.category, tCommon) })),
+    [data?.timeToHire, tCommon],
+  );
 
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-        <ScreenHeader title={t('analyticsTitle')} onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('analyticsHeaderTitle')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={BRAND} />
           <AppText style={{ color: theme.colors.mutedText, marginTop: 12, fontSize: 13 }}>{t('buildingReport')}</AppText>
@@ -293,7 +374,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-        <ScreenHeader title={t('analyticsTitle')} onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('analyticsHeaderTitle')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
           <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>{t('couldntLoadAnalytics')}</AppText>
           <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20 }}>{t('checkConnectionRetry')}</AppText>
@@ -304,6 +385,8 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
       </View>
     );
   }
+
+  const hasData = monthly.length > 0 || categories.length > 0 || (summary?.totalPosted ?? 0) > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -316,43 +399,48 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} tintColor={BRAND} />}
       >
-        {/* ── Summary tiles ── */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <SummaryTile value={summary?.totalPosted ?? 0} label={t('totalPosted')} color={theme.colors.primary} bg={theme.colors.primaryLight} />
-          <SummaryTile value={summary?.totalFilled ?? 0} label={t('filled')} color={theme.colors.success} bg={theme.colors.successLight} />
-          <SummaryTile value={summary?.totalOpen ?? 0} label={t('open')} color={theme.colors.warning} bg={theme.colors.warningLight} />
-          <SummaryTile value={`${summary?.fillRate ?? 0}%`} label={t('fillRate')} color={theme.colors.secondary} bg={theme.colors.secondaryLight} />
+        {/* ── KPI cards (2×2, responsive) ── */}
+        <View style={a.kpiGrid}>
+          <KpiCard value={summary?.totalPosted ?? 0}      label={t('totalPosted')} icon="📋" bg="#1E40AF" />
+          <KpiCard value={summary?.totalFilled ?? 0}      label={t('filled')}      icon="✅" bg="#15803D" />
+          <KpiCard value={summary?.totalOpen ?? 0}        label={t('open')}        icon="⏳" bg="#2563EB" />
+          <KpiCard value={`${summary?.fillRate ?? 0}%`}   label={t('fillRate')}    icon="⚡" bg="#334155" />
         </View>
 
-        {/* ── Monthly bar chart ── */}
+        {/* ── Requirements trend ── */}
         {monthly.length > 0 && (
-          <Card title={t('requirementsLastNMonths', { months })}>
+          <Card title={t('requirementsLastNMonths', { months })} icon="📈" accent={BLUE}>
             <BarChart data={monthly} />
           </Card>
         )}
 
-        {/* ── Category breakdown ── */}
+        {/* ── Work-type distribution ── */}
         {categories.length > 0 && (
-          <Card title={t('workTypeDistribution')}>
-            <CategoryPillChart data={categories} />
+          <Card title={t('workTypeDistribution')} icon="🍩" accent="#8B5CF6">
+            <CategoryChart data={categories} />
           </Card>
         )}
 
-        {/* ── Time to hire ── */}
+        {/* ── Avg days to hire ── */}
         {timeToHire.length > 0 && (
-          <Card title={t('avgDaysToHire')}>
-            <AppText style={{ fontSize: 11, color: theme.colors.mutedText, marginBottom: 4 }}>
-              {t('reqPostedToAssigned')}
-            </AppText>
+          <Card title={t('avgDaysToHire')} subtitle={t('reqPostedToAssigned')} icon="⏱️" accent="#0EA5E9">
             <TimeToHireChart data={timeToHire} />
           </Card>
         )}
 
-        {monthly.length === 0 && categories.length === 0 && (
-          <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-            <AppText style={{ fontSize: 48, marginBottom: 12 }}>📊</AppText>
+        {/* ── Hiring funnel ── */}
+        {summary && summary.totalPosted > 0 && (
+          <Card title={t('hiringFunnel')} subtitle={t('reqPostedToAssigned')} icon="🎯" accent="#16A34A">
+            <HiringFunnel summary={summary} />
+          </Card>
+        )}
+
+        {/* ── Empty state ── */}
+        {!hasData && (
+          <View style={{ alignItems: 'center', paddingVertical: 56 }}>
+            <AppText style={{ fontSize: 52, marginBottom: 12 }}>📊</AppText>
             <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text, textAlign: 'center', marginBottom: 8 }}>{t('noDataYet')}</AppText>
-            <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20 }}>
+            <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 }}>
               {t('noDataDesc')}
             </AppText>
           </View>
@@ -361,6 +449,10 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
     </View>
   );
 };
+
+const a = StyleSheet.create({
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+});
 
 // ─── Plan-lock styles (mirror PipelineScreen) ──────────────────────────────────
 const al = StyleSheet.create({

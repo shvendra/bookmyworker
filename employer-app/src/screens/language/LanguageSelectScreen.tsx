@@ -24,7 +24,11 @@ export const EMPLOYER_LANG_KEY = 'bmw_employer_lang';
 const BRAND = '#1037A4';
 const { width: W } = Dimensions.get('window');
 const CARD_GAP = 12;
+const GRID_PAD = 18;
 const CARD_SIZE = (W - 48 - CARD_GAP) / 2;
+// Full row width (matches the grid's left/right padding) — used for the
+// final card when it would otherwise sit alone in a half-width column.
+const CARD_FULL = W - GRID_PAD * 2;
 
 const LANGUAGES: { code: AppLanguage; native: string; english: string }[] = [
   { code: 'hi', native: 'हिंदी', english: 'Hindi' },
@@ -116,12 +120,16 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const isSelected = selected === item.code;
+            // Last item with no row-mate (odd count) → stretch to full width.
+            const isLoneLast =
+              index === LANGUAGES.length - 1 && LANGUAGES.length % 2 === 1;
             return (
               <Pressable
                 style={({ pressed }) => [
                   styles.card,
+                  isLoneLast && styles.cardFull,
                   isSelected && styles.cardSelected,
                   pressed && !isSelected && styles.cardPressed,
                 ]}
@@ -301,6 +309,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     minHeight: 78,
     justifyContent: 'center',
+  },
+  cardFull: {
+    width: CARD_FULL,
   },
   cardSelected: {
     backgroundColor: BRAND,

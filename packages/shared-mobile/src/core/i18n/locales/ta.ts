@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'இடத்தைத் தேர்ந்தெடுக்கவும்',
+  lp_useGps: 'தற்போதைய இடத்தைப் பயன்படுத்து (GPS)',
+  lp_detecting: 'கண்டறியப்படுகிறது…',
+  lp_searchPlaceholder: 'நகரம், கிராமம், முகவரியைத் தேடு…',
+  lp_selectedLabel: 'தேர்ந்தெடுக்கப்பட்ட இடம்',
+  lp_movePin: 'பின் வைக்க வரைபடத்தில் தட்டவும் அல்லது தேடவும்',
+  lp_locating: 'இடம் கண்டறியப்படுகிறது…',
+  lp_confirm: 'இடத்தை உறுதிப்படுத்து',
+  lp_noResults: 'முடிவுகள் இல்லை',
+  lp_gpsUnavailable: 'கிடைக்கவில்லை',
+  lp_gpsUnavailableMsg: 'இந்த சாதனத்தில் இருப்பிட சேவைகள் கிடைக்கவில்லை.',
+  lp_gpsServicesOff: "இருப்பிடச் சேவைகள் முடக்கப்பட்டுள்ளன. உங்கள் சாதன அமைப்புகளில் GPS/இருப்பிடத்தை இயக்கி மீண்டும் முயற்சிக்கவும்.",
+  lp_locErrorTitle: 'இருப்பிடப் பிழை',
+  lp_permDenied: 'இருப்பிட அனுமதி மறுக்கப்பட்டது. அமைப்புகளில் இருப்பிட அணுகலை இயக்கவும்.',
+  lp_locFailed: 'உங்கள் இருப்பிடத்தைப் பெற முடியவில்லை. கைமுறையாகத் தேடவும்.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'பணி இடம்',
   kycLocationHint: 'உங்கள் வணிகம் அல்லது பணி எங்கே உள்ளது என்பதைத் தேர்ந்தெடுக்கவும்.',
@@ -880,4 +896,10 @@ export const translation = {
   notifPrefPromoDesc:          'சலுகைகள், குறிப்புகள் மற்றும் தளம் அறிவிப்புகள்',
   notifPrefNewReqLabel:        'புதிய தேவைகள்',
   notifPrefNewReqDesc:         'ஒரு முதலாளி புதிய வேலை தேவையை இடும்போது',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "துணை வகை",
+  cs_selectCategory: "வகையைத் தேர்ந்தெடுக்கவும்",
+  cs_selectSubCategory: "துணை வகையைத் தேர்ந்தெடுக்கவும்",
+  cs_selectCategoryFirst: "முதலில் வகையைத் தேர்ந்தெடுக்கவும்",
+  cs_subTypes: "{{n}} துணை வகைகள்",
 } as const;

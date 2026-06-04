@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import categoriesRaw from '../../data/categories.json';
-import { getSubCatLabel } from '../../utils/labelUtils';
+import { getSubCatLabel, getWorkTypeLabel } from '../../utils/labelUtils';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
 
@@ -47,22 +47,27 @@ export const CategorySelector = ({
   required = false,
 }: CategorySelectorProps): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<PickerMode>(null);
   const [query, setQuery] = useState('');
 
   const selectedCat = CATEGORIES.find((c) => c.value === category);
   const subList = selectedCat?.subcategories ?? [];
 
-  const categoryLabel = selectedCat ? (getSubCatLabel(selectedCat.value, i18n.language) || selectedCat.label) : '';
+  // Top-level categories are translated via the cat_* i18n keys (all 11 languages).
+  // Their labels are formatted with a newline for the grid, so flatten it for the list.
+  const catLabelFor = (value: string): string => getWorkTypeLabel(value, t).replace(/\n/g, ' ');
+
+  const categoryLabel = selectedCat ? catLabelFor(selectedCat.value) : '';
   const subLabel = subCategory ? getSubCatLabel(subCategory, i18n.language) : '';
 
   const filteredCats = useMemo(
     () => CATEGORIES.filter((c) => {
-      const translated = getSubCatLabel(c.value, i18n.language) || c.label;
+      const translated = catLabelFor(c.value);
       return translated.toLowerCase().includes(query.toLowerCase()) ||
         c.label.toLowerCase().includes(query.toLowerCase());
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [query, i18n.language]
   );
   const filteredSubs = useMemo(
@@ -94,9 +99,9 @@ export const CategorySelector = ({
     <View style={styles.container}>
       {/* Category */}
       <PickerField
-        label={`Work Category${required ? ' *' : ''}`}
+        label={`${t('workCategory')}${required ? ' *' : ''}`}
         value={categoryLabel}
-        placeholder="Select category"
+        placeholder={t('cs_selectCategory')}
         error={categoryError}
         onPress={() => openPicker('category')}
         theme={theme}
@@ -104,9 +109,9 @@ export const CategorySelector = ({
 
       {/* Sub-Category */}
       <PickerField
-        label="Sub-Category"
+        label={t('cs_subCategory')}
         value={subLabel}
-        placeholder={category ? 'Select sub-category' : 'Select category first'}
+        placeholder={category ? t('cs_selectSubCategory') : t('cs_selectCategoryFirst')}
         error={subCategoryError}
         disabled={!category || subList.length === 0}
         onPress={() => category && subList.length > 0 && openPicker('subCategory')}
@@ -124,17 +129,17 @@ export const CategorySelector = ({
           <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
             <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.border }]}>
               <AppText variant="label">
-                {mode === 'category' ? 'Select Category' : 'Select Sub-Category'}
+                {mode === 'category' ? t('cs_selectCategory') : t('cs_selectSubCategory')}
               </AppText>
               <TouchableOpacity onPress={() => setMode(null)}>
-                <AppText variant="body" color={theme.colors.primary}>Done</AppText>
+                <AppText variant="body" color={theme.colors.primary}>{t('done')}</AppText>
               </TouchableOpacity>
             </View>
 
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search…"
+              placeholder={t('searchEllipsis')}
               placeholderTextColor={theme.colors.mutedText}
               style={[
                 styles.search,
@@ -168,10 +173,10 @@ export const CategorySelector = ({
                           variant="body"
                           color={selected ? theme.colors.primary : theme.colors.text}
                         >
-                          {getSubCatLabel(item.value, i18n.language) || item.label}
+                          {catLabelFor(item.value)}
                         </AppText>
                         <AppText variant="caption" color={theme.colors.mutedText}>
-                          {item.subcategories.length} sub-types
+                          {t('cs_subTypes', { n: item.subcategories.length })}
                         </AppText>
                       </View>
                       {selected && (

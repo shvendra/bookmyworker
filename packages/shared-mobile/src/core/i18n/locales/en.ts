@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'Pick Location',
+  lp_useGps: 'Use Current Location (GPS)',
+  lp_detecting: 'Detecting…',
+  lp_searchPlaceholder: 'Search city, village, address…',
+  lp_selectedLabel: 'SELECTED LOCATION',
+  lp_movePin: 'Tap the map or search to drop a pin',
+  lp_locating: 'Locating…',
+  lp_confirm: 'Confirm Location',
+  lp_noResults: 'No results found',
+  lp_gpsUnavailable: 'Not available',
+  lp_gpsUnavailableMsg: 'Location services are not available on this device.',
+  lp_gpsServicesOff: "Location services are off. Please turn on GPS/location in your device settings, then try again.",
+  lp_locErrorTitle: 'Location Error',
+  lp_permDenied: 'Location permission denied. Please enable location access in Settings.',
+  lp_locFailed: 'Could not get your location. Please search manually.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'Work Location',
   kycLocationHint: 'Select where your business or work is located.',
@@ -890,4 +906,10 @@ export const translation = {
   notifPrefPromoDesc:          'Offers, tips, and platform announcements',
   notifPrefNewReqLabel:        'New Requirements',
   notifPrefNewReqDesc:         'When an employer posts a new job requirement',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "Sub-Category",
+  cs_selectCategory: "Select Category",
+  cs_selectSubCategory: "Select Sub-Category",
+  cs_selectCategoryFirst: "Select category first",
+  cs_subTypes: "{{n}} sub-types",
 } as const;

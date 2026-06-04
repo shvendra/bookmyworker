@@ -172,7 +172,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       onPress={() => handleButton(cancelBtn)}
                       activeOpacity={0.7}
                     >
-                      <AppText style={[styles.btnCancelText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                      <AppText style={[styles.btnCancelText, { color: isDark ? '#94A3B8' : '#64748B' }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>
                         {cancelBtn.text}
                       </AppText>
                     </TouchableOpacity>
@@ -189,7 +189,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       onPress={() => handleButton(btn)}
                       activeOpacity={0.82}
                     >
-                      <AppText style={styles.btnActionText}>{btn.text}</AppText>
+                      <AppText style={styles.btnActionText} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>{btn.text}</AppText>
                     </TouchableOpacity>
                   ))}
                 </>
@@ -216,6 +216,9 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                           isCancel && { color: isDark ? '#94A3B8' : '#64748B' },
                           !isCancel && { color: '#FFFFFF' },
                         ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        maxFontSizeMultiplier={1.3}
                       >
                         {btn.text}
                       </AppText>

@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+  lp_useGps: 'ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ (GPS)',
+  lp_detecting: 'ಪತ್ತೆ ಮಾಡಲಾಗುತ್ತಿದೆ…',
+  lp_searchPlaceholder: 'ನಗರ, ಗ್ರಾಮ, ವಿಳಾಸ ಹುಡುಕಿ…',
+  lp_selectedLabel: 'ಆಯ್ಕೆಮಾಡಿದ ಸ್ಥಳ',
+  lp_movePin: 'ಪಿನ್ ಇರಿಸಲು ನಕ್ಷೆಯನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ ಅಥವಾ ಹುಡುಕಿ',
+  lp_locating: 'ಸ್ಥಳ ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
+  lp_confirm: 'ಸ್ಥಳವನ್ನು ಖಚಿತಪಡಿಸಿ',
+  lp_noResults: 'ಯಾವುದೇ ಫಲಿತಾಂಶಗಳಿಲ್ಲ',
+  lp_gpsUnavailable: 'ಲಭ್ಯವಿಲ್ಲ',
+  lp_gpsUnavailableMsg: 'ಈ ಸಾಧನದಲ್ಲಿ ಸ್ಥಳ ಸೇವೆಗಳು ಲಭ್ಯವಿಲ್ಲ.',
+  lp_gpsServicesOff: "ಸ್ಥಳ ಸೇವೆಗಳು ಆಫ್ ಆಗಿವೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಾಧನ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ GPS/ಸ್ಥಳವನ್ನು ಆನ್ ಮಾಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  lp_locErrorTitle: 'ಸ್ಥಳ ದೋಷ',
+  lp_permDenied: 'ಸ್ಥಳ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಸ್ಥಳ ಪ್ರವೇಶವನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ.',
+  lp_locFailed: 'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪಡೆಯಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಹಸ್ತಚಾಲಿತವಾಗಿ ಹುಡುಕಿ.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'ಕೆಲಸದ ಸ್ಥಳ',
   kycLocationHint: 'ನಿಮ್ಮ ವ್ಯವಹಾರ ಅಥವಾ ಕೆಲಸ ಎಲ್ಲಿದೆ ಎಂದು ಆಯ್ಕೆಮಾಡಿ.',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'ಆಫರ್‌ಗಳು, ಸಲಹೆಗಳು ಮತ್ತು ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಘೋಷಣೆಗಳು',
   notifPrefNewReqLabel:        'ಹೊಸ ಅಗತ್ಯಗಳು',
   notifPrefNewReqDesc:         'ಉದ್ಯೋಗದಾತರು ಹೊಸ ಉದ್ಯೋಗ ಅಗತ್ಯ ಪೋಸ್ಟ್ ಮಾಡಿದಾಗ',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ಉಪ-ವರ್ಗ",
+  cs_selectCategory: "ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  cs_selectSubCategory: "ಉಪ-ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  cs_selectCategoryFirst: "ಮೊದಲು ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  cs_subTypes: "{{n}} ಉಪ-ಪ್ರಕಾರಗಳು",
 } as const;

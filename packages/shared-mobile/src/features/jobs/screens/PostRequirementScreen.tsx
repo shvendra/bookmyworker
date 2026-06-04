@@ -18,6 +18,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RequirementType } from '../../../core/api/endpoints/requirementsApi';
 import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
+import { FormDatePicker, FormTimePicker } from '../../../shared/components/forms/FormDateTimePicker';
 import { CategorySelector } from '../../../shared/components/forms/CategorySelector';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -26,6 +27,7 @@ import { AppCard } from '../../../shared/components/ui/AppCard';
 import { LocationPickerModal } from '../../../shared/components/ui/LocationPickerModal';
 import type { PickedLocation } from '../../../shared/components/ui/LocationPickerModal';
 import { useAppTheme } from '../../../core/theme';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
@@ -125,6 +127,7 @@ interface TypeSelectionProps {
 const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
+  const { config } = useAppConfig();
 
   return (
     <ScrollView
@@ -141,8 +144,16 @@ const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element 
           <View style={styles.heroIconWrap}>
             <AppText style={styles.heroEmoji}>📣</AppText>
           </View>
-          <AppText style={styles.heroTitle}>{t('typeSelectTitle')}</AppText>
-          <AppText style={styles.heroSub}>{t('typeSelectSubtitle')}</AppText>
+          <AppText
+            style={styles.heroTitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            maxFontSizeMultiplier={1.2}
+          >
+            {t('typeSelectTitle')}
+          </AppText>
+          <AppText style={styles.heroSub} maxFontSizeMultiplier={1.3}>{t('typeSelectSubtitle')}</AppText>
         </View>
       </View>
 
@@ -181,22 +192,22 @@ const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element 
             {/* Body */}
             <View style={styles.typeCardBody}>
               <View style={styles.cardTitleRow}>
-                <AppText style={[styles.typeCardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                <AppText style={[styles.typeCardTitle, { color: theme.colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
                   {t(`type_${rt.value}_label` as any)}
                 </AppText>
                 {idx === 0 && (
                   <View style={[styles.popularBadge, { backgroundColor: rt.color + '18' }]}>
-                    <AppText style={[styles.popularTxt, { color: rt.color }]}>
+                    <AppText style={[styles.popularTxt, { color: rt.color }]} maxFontSizeMultiplier={1.1}>
                       {t('typePopularBadge')}
                     </AppText>
                   </View>
                 )}
               </View>
-              <AppText style={[styles.typeCardDesc, { color: theme.colors.mutedText }]}>
+              <AppText style={[styles.typeCardDesc, { color: theme.colors.mutedText }]} maxFontSizeMultiplier={1.3}>
                 {t(`type_${rt.value}_desc` as any)}
               </AppText>
               <View style={[styles.tagPill, { backgroundColor: rt.color + '10', borderColor: rt.color + '30' }]}>
-                <AppText style={[styles.tagTxt, { color: rt.color }]}>
+                <AppText style={[styles.tagTxt, { color: rt.color }]} numberOfLines={1} maxFontSizeMultiplier={1.1}>
                   {t(`type_${rt.value}_tag` as any)}
                 </AppText>
               </View>
@@ -212,7 +223,7 @@ const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element 
       <View style={[styles.trustStrip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         <AppText style={styles.trustIcon}>🇮🇳</AppText>
         <AppText style={[styles.trustTxt, { color: theme.colors.mutedText }]}>
-          {t('typeSelectTrustBadge')}
+          {t('pricingTrustBadge', { count: config.stats.employerCount.toLocaleString('en-IN') })}
         </AppText>
       </View>
     </ScrollView>
@@ -568,20 +579,50 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secSchedule')}</AppText>
         </View>
         <View style={ps.sectionBody}>
-          <FormInput
+          <Controller
             control={control}
             name="workerNeedDate"
-            label={t('post_workerNeedDate')}
-            placeholder="DD/MM/YYYY"
-            keyboardType="numbers-and-punctuation"
+            render={({ field: { value, onChange }, fieldState: { error } }) => (
+              <FormDatePicker
+                label={t('post_workerNeedDate')}
+                value={value ?? ''}
+                onChange={onChange}
+                placeholder="DD/MM/YYYY"
+                errorText={error?.message}
+              />
+            )}
           />
           {isDailyWages && (
             <View style={styles.row}>
               <View style={styles.rowHalf}>
-                <FormInput control={control} name="inTime" label={t('post_startTime')} placeholder="08:00 AM" />
+                <Controller
+                  control={control}
+                  name="inTime"
+                  render={({ field: { value, onChange }, fieldState: { error } }) => (
+                    <FormTimePicker
+                      label={t('post_startTime')}
+                      value={value ?? ''}
+                      onChange={onChange}
+                      placeholder="08:00 AM"
+                      errorText={error?.message}
+                    />
+                  )}
+                />
               </View>
               <View style={styles.rowHalf}>
-                <FormInput control={control} name="outTime" label={t('post_endTime')} placeholder="06:00 PM" />
+                <Controller
+                  control={control}
+                  name="outTime"
+                  render={({ field: { value, onChange }, fieldState: { error } }) => (
+                    <FormTimePicker
+                      label={t('post_endTime')}
+                      value={value ?? ''}
+                      onChange={onChange}
+                      placeholder="06:00 PM"
+                      errorText={error?.message}
+                    />
+                  )}
+                />
               </View>
             </View>
           )}
@@ -691,6 +732,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
                   variant="caption"
                   color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
                   style={styles.flagChipLabel}
+                  numberOfLines={1}
                 >
                   {t(`rd_perk_${flag.key}` as any)}
                 </AppText>
@@ -988,7 +1030,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   heroEmoji:  { fontSize: 38 },
-  heroTitle:  { fontSize: 26, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
+  heroTitle:  { fontSize: 22, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
   heroSub:    { fontSize: 14, color: 'rgba(255,255,255,0.72)', textAlign: 'center', lineHeight: 20, maxWidth: 280 },
 
   // Tagline row
@@ -1040,8 +1082,8 @@ const styles = StyleSheet.create({
   popularBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   popularTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
   typeCardDesc: { fontSize: 12.5, lineHeight: 17 },
-  tagPill: { alignSelf: 'flex-start', borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 3 },
-  tagTxt:  { fontSize: 11, fontWeight: '700' },
+  tagPill: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 4 },
+  tagTxt:  { fontSize: 11, fontWeight: '700', lineHeight: 16, paddingRight: 2 },
   typeArrow: { fontSize: 30, lineHeight: 34, paddingLeft: 4 },
 
   // Trust strip

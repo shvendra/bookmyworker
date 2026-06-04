@@ -20,6 +20,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../../core/api/client';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { formatSkillList } from '../../../shared/data/categoryLabels';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'CallHistory'>;
 
@@ -70,12 +71,7 @@ function formatRelative(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function formatSkills(skills: string[]): string {
-  return skills
-    .slice(0, 3)
-    .map((s) => s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
-    .join(', ');
-}
+// formatSkillList: clean (drop null/JSON-wrapped first element) + translate + comma-join
 
 // FILTER_OPTIONS labels are built dynamically with t() inside the screen component
 const FILTER_KEYS = ['all', 'relevant', 'call_later', 'not_picked', 'not_interested'] as const;
@@ -137,20 +133,23 @@ function WorkerCard({
               <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
                 {entry.workerName.replace(/\b\w/g, (c) => c.toUpperCase())}
               </AppText>
-              {entry.dailyRate != null && (
+              {Number(entry.dailyRate) > 0 && (
                 <View style={wc.ratePill}>
-                  <AppText style={wc.rateTxt}>₹{entry.dailyRate}/day</AppText>
+                  <AppText style={wc.rateTxt}>₹{Number(entry.dailyRate)}/day</AppText>
                 </View>
               )}
             </View>
             {!!location && (
               <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {location}</AppText>
             )}
-            {entry.workerSkills.length > 0 && (
-              <AppText style={[wc.skills, { color: theme.colors.mutedText }]} numberOfLines={1}>
-                🔧 {formatSkills(entry.workerSkills)}
-              </AppText>
-            )}
+            {(() => {
+              const skills = formatSkillList(entry.workerSkills, 99);
+              return skills ? (
+                <AppText style={[wc.skills, { color: theme.colors.mutedText }]} numberOfLines={1}>
+                  🔧 {skills}
+                </AppText>
+              ) : null;
+            })()}
           </View>
         </View>
 

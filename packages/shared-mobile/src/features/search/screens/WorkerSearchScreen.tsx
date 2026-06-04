@@ -40,7 +40,8 @@ import WORKER_CATEGORIES from '../../../shared/data/categories.json';
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { buildPhotoUrl } from '../../../core/config/env';
 import i18n from '../../../core/i18n';
-import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
+import { getLocationDisplayName } from '../../../shared/data/locationTranslations';
 
 const PAGE_LIMIT = 25;
 
@@ -132,33 +133,34 @@ const catDisplay = (label: string): string => {
   return key ? i18n.t(key) : label;
 };
 
-/** Map active i18n language → the categories.json subcategory label field. */
-const SUBCAT_LANG_FIELD: Record<string, string> = {
-  hi: 'hindilabel', mr: 'marathilabel', gu: 'gujaratilabel', ta: 'tamillabel',
-  te: 'telugulabel', kn: 'kannadalabel', ml: 'malayalamlabel', bn: 'banglalabel',
-  or: 'odialabel', pa: 'punjabilabel',
-};
-/** English subcategory label (case-insensitive) → its categories.json entry. */
-const SUBCAT_BY_LABEL: Map<string, SubEntry> = (() => {
-  const m = new Map<string, SubEntry>();
-  CATEGORIES.forEach((c) =>
-    (c.subcategories ?? []).forEach((s) => {
-      if (s?.label) m.set(String(s.label).trim().toLowerCase(), s);
-    }),
-  );
+/** Normalized (lowercase, separators→space) form of a top-level CATEGORY value or
+ *  label → its `cat_*` key. Lets us translate a worker's areasOfWork / a chip when
+ *  it holds a whole category name (e.g. "construction project workers" or the
+ *  underscored "construction_project_workers" / "Construction & Project Workers"). */
+const CAT_KEY_BY_NORM: Record<string, string> = (() => {
+  // Inline normalizer (normalizeText is declared later → avoid TDZ at module load).
+  const norm = (s: string): string => String(s || '').trim().toLowerCase().replace(/[_&/-]+/g, ' ').replace(/\s+/g, ' ');
+  const m: Record<string, string> = {};
+  for (const [val, key] of Object.entries(CAT_KEY_BY_VALUE)) m[norm(val)] = key;
+  CATEGORIES.forEach((c) => {
+    const key = CAT_KEY_BY_VALUE[c.value];
+    if (key) m[norm(c.label)] = key;
+  });
   return m;
 })();
-/** Translate a subcategory's English label to the active language using the
- *  per-language fields in categories.json. Display-only — the stored filter value
- *  and worker areasOfWork keep the English label. Falls back to English when a
- *  translation (or the subcategory) is missing. Reactive via useTranslation. */
+
+/** Translate an occupational label (subcategory OR top-level category) to the
+ *  active language. Display-only — the stored filter value and worker areasOfWork
+ *  keep the English label. Order: (1) top-level category → shared `cat_*` key
+ *  (all 11 langs), else (2) shared `getSubCatLabel` which indexes by value AND
+ *  label with fuzzy matching and returns the per-language categories.json field.
+ *  Falls back to readable English. Reactive via useTranslation. */
 const subcatDisplay = (label: string): string => {
   if (!label) return label;
-  const s = SUBCAT_BY_LABEL.get(String(label).trim().toLowerCase());
-  if (!s) return label;
-  const lang = (i18n.language || 'en').split('-')[0];
-  const field = SUBCAT_LANG_FIELD[lang];
-  return (field && s[field]) ? s[field] : (s.label || label);
+  const norm = String(label).trim().toLowerCase().replace(/[_&/-]+/g, ' ').replace(/\s+/g, ' ');
+  const catKey = CAT_KEY_BY_NORM[norm];
+  if (catKey) return i18n.t(catKey);
+  return getSubCatLabel(label, (i18n.language || 'en').split('-')[0]);
 };
 
 /** Worker-card meta values (gender, qualification/sub-type, agent-type) are stored
@@ -168,6 +170,7 @@ const subcatDisplay = (label: string): string => {
 const META_KEY_BY_VALUE: Record<string, string> = {
   Male: 'ws_male', Female: 'ws_female', Other: 'ws_other',
   'ITI/Diploma': 'ws_iti_diploma', Graduate: 'ws_graduate',
+  Skilled: 'ws_skilled', 'Semi-Skilled': 'ws_semiSkilled', 'Semi Skilled': 'ws_semiSkilled', Unskilled: 'ws_unskilled',
   'Group worker supplier':     'ws_agentType_group',
   'Skilled worker supplier':   'ws_agentType_skilled',
   'Unskilled worker supplier': 'ws_agentType_unskilled',
@@ -300,6 +303,41 @@ const getMatchedAreasOfWork = (areas: string[] = [], selected = ''): string[] =>
   if (!selected) return normalized;
   const allowed = getCategorySubcategories(selected);
   return normalized.filter((a) => allowed.includes(a));
+};
+
+// All Indian place names (state / district / block) for filtering location values
+// that were mis-entered into a worker's areasOfWork (so they don't show as skills).
+const PLACE_NAMES: Set<string> = (() => {
+  const set = new Set<string>();
+  for (const [state, districts] of Object.entries(indianStates)) {
+    set.add(state.toLowerCase());
+    for (const [district, blocks] of Object.entries(districts as Record<string, string[]>)) {
+      set.add(district.toLowerCase());
+      (blocks ?? []).forEach((b) => set.add(String(b).toLowerCase()));
+    }
+  }
+  return set;
+})();
+
+const isPlaceName = (v: string): boolean => {
+  const lc = v.trim().toLowerCase();
+  return PLACE_NAMES.has(lc) || PLACE_NAMES.has(lc.replace(/\s+(city|district|tehsil|block)$/, ''));
+};
+
+/** De-duplicate skill chips (case-insensitive) and drop location names that were
+ *  mistakenly saved as skills — keeps the worker card showing real work types. */
+const cleanSkills = (areas: string[]): string[] => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const a of areas) {
+    const v = String(a).trim();
+    if (!v) continue;
+    const lc = v.toLowerCase();
+    if (seen.has(lc) || isPlaceName(v)) continue;
+    seen.add(lc);
+    out.push(v);
+  }
+  return out;
 };
 
 function countActive(f: WorkerFilters): number {
@@ -640,14 +678,14 @@ const FilterSheet = ({
             )}
             <DropField
               label={t('ws_state')}
-              value={f.state}
+              value={f.state ? getLocationDisplayName(f.state, 'state', i18n.language) : ''}
               placeholder={t('ws_all_states')}
               onPress={() => setPicker('state')}
               disabled={lockState}
             />
             <DropField
               label={t('ws_district')}
-              value={f.district}
+              value={f.district ? getLocationDisplayName(f.district, 'district', i18n.language) : ''}
               placeholder={f.state ? t('ws_select_district') : t('ws_select_state_first')}
               onPress={() => f.state && setPicker('district')}
               disabled={!f.state || lockDistrict}
@@ -655,7 +693,7 @@ const FilterSheet = ({
             {(districtList.length > 0 || f.tehsil) && (
               <DropField
                 label={t('ws_tehsil_block')}
-                value={f.tehsil}
+                value={f.tehsil ? getLocationDisplayName(f.tehsil, 'block', i18n.language) : ''}
                 placeholder={f.district ? t('ws_select_tehsil') : t('ws_select_district_first')}
                 onPress={() => f.district && setPicker('tehsil')}
                 disabled={!f.district}
@@ -889,6 +927,7 @@ const FilterSheet = ({
           onSelect={(v) => set('state', v)}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_states_opt')}
+          labelFor={(name) => getLocationDisplayName(name, 'state', i18n.language)}
         />
         <PickerModal
           visible={picker === 'district'}
@@ -898,6 +937,7 @@ const FilterSheet = ({
           onSelect={(v) => set('district', v)}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_districts_opt')}
+          labelFor={(name) => getLocationDisplayName(name, 'district', i18n.language)}
         />
         <PickerModal
           visible={picker === 'tehsil'}
@@ -907,6 +947,7 @@ const FilterSheet = ({
           onSelect={(v) => set('tehsil', v)}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_blocks_opt')}
+          labelFor={(name) => getLocationDisplayName(name, 'block', i18n.language)}
         />
       </View>
     </Modal>
@@ -1130,7 +1171,7 @@ const AgentCard = ({
   const initials  = formatName(agent.name ?? '?')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const isAgent      = String(agent.role ?? '').toLowerCase() === 'agent';
-  const matchedAreas = getMatchedAreasOfWork(agent.areasOfWork ?? [], workerTypeApplied);
+  const matchedAreas = cleanSkills(getMatchedAreasOfWork(agent.areasOfWork ?? [], workerTypeApplied));
   const age          = getAge(agent.dob);
   const exp          = agent.workExperience !== undefined
     ? Number(agent.workExperience) > 0 ? Number(agent.workExperience) : 3
@@ -1215,8 +1256,9 @@ const AgentCard = ({
           contentContainerStyle={wc.skillsContent}
         >
           {matchedAreas.map((area, idx) => (
-            <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
-              <AppText style={[wc.skillChipTxt, { color: theme.colors.text }]}>
+            <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: theme.colors.primary + '14', borderColor: theme.colors.primary + '2E' }]}>
+              <AppText style={wc.skillChipIcon}>🔧</AppText>
+              <AppText style={[wc.skillChipTxt, { color: theme.colors.primary }]} numberOfLines={1}>
                 {subcatDisplay(area)}
               </AppText>
             </View>
@@ -1348,9 +1390,10 @@ const wc = StyleSheet.create({
 
   // Skills
   skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },
-  skillsContent:  { paddingHorizontal: 12, paddingVertical: 7, gap: 6, flexDirection: 'row' },
-  skillChip:      { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, borderWidth: 1 },
-  skillChipTxt:   { fontSize: 11, fontWeight: '600' },
+  skillsContent:  { paddingHorizontal: 12, paddingVertical: 9, gap: 7, flexDirection: 'row' },
+  skillChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
+  skillChipIcon:  { fontSize: 10.5 },
+  skillChipTxt:   { fontSize: 12, fontWeight: '700' },
 
   // Documents row (resume + licence chips)
   docsRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
@@ -1508,7 +1551,6 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const [savingRemark,    setSavingRemark]    = useState<Record<string, boolean>>({});
   const [remarkTimes,     setRemarkTimes]     = useState<Record<string, Date>>({});
   const [isLimitExhausted, setIsLimitExhausted] = useState(false);
-  const [activeChip,      setActiveChip]      = useState<string>('all');
 
   // Profile + subscription
   const profileQuery = useQuery({
@@ -1605,7 +1647,6 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     () => data?.pages.flatMap((p) => p.rawAgents) ?? [],
     [data],
   );
-  const totalCount        = data?.pages[0]?.total ?? 0;
   const activeFilterCount = countActive(appliedFilters);
 
   // Client-side search filter
@@ -1620,40 +1661,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     });
   }, [allAgents, searchQuery]);
 
-  // Category chips dynamically built from loaded workers
-  const categoryChips = useMemo(() => {
-    const total     = filteredAgents.length;
-    const available = filteredAgents.filter(a => a.status !== 'Block' && a.status !== 'Blocked').length;
-    const catCounts: Record<string, number> = {};
-    filteredAgents.forEach(a => {
-      getMatchedAreasOfWork(a.areasOfWork ?? [], '').slice(0, 2).forEach(area => {
-        if (!area) return;
-        const key = area.charAt(0).toUpperCase() + area.slice(1);
-        catCounts[key] = (catCounts[key] ?? 0) + 1;
-      });
-    });
-    const topCats = Object.entries(catCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 4)
-      .filter(([, count]) => count > 0)
-      .map(([label, count]) => ({ key: normalizeText(label), label, count }));
-    return [
-      { key: 'all', label: t('ws_chip_all'), count: total },
-      ...(available < total ? [{ key: 'available', label: t('ws_chip_available'), count: available }] : []),
-      ...topCats,
-    ];
-  }, [filteredAgents, t]);
-
-  // Chip-filtered list shown in the FlatList
-  const displayedAgents = useMemo(() => {
-    if (activeChip === 'all') return filteredAgents;
-    if (activeChip === 'available') return filteredAgents.filter(a => a.status !== 'Block' && a.status !== 'Blocked');
-    return filteredAgents.filter(a =>
-      getMatchedAreasOfWork(a.areasOfWork ?? [], '').some(area =>
-        normalizeText(area).includes(activeChip) || activeChip.includes(normalizeText(area)),
-      ),
-    );
-  }, [filteredAgents, activeChip]);
+  // Header quick-filter chips removed entirely (per request) — trade filtering is
+  // done through the Filters sheet. The list shows all loaded results directly.
+  const displayedAgents = filteredAgents;
 
   const handleApply = useCallback(
     (f: WorkerFilters): void => {
@@ -1797,7 +1807,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             <AppText style={[sc.headerTitle, { color: theme.colors.text }]}>{t('ws_header_title')}</AppText>
             <AppText style={[sc.headerSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
               📍 {appliedFilters.state
-                ? t('ws_results_in', { state: appliedFilters.state })
+                ? t('ws_results_in', { state: getLocationDisplayName(appliedFilters.state, 'state', i18n.language) })
                 : t('ws_all_india')}
             </AppText>
           </View>
@@ -1821,8 +1831,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <AppText style={scopeBanner.icon}>📍</AppText>
           <AppText style={[scopeBanner.txt, { color: theme.colors.text }]} numberOfLines={2}>
             {districtScoped
-              ? t('pl_scopeDistrict', { district: userDistrict })
-              : t('pl_scopeState', { state: userState })}
+              ? t('pl_scopeDistrict', { district: getLocationDisplayName(userDistrict, 'district', i18n.language) })
+              : t('pl_scopeState', { state: getLocationDisplayName(userState, 'state', i18n.language) })}
           </AppText>
           <AppText style={[scopeBanner.cta, { color: BRAND }]}>{t('pl_upgrade')}</AppText>
         </TouchableOpacity>
@@ -1860,30 +1870,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
 
-        {/* Category chips */}
-        {!isLoading && categoryChips.length > 1 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={sc.chipsContent}
-          >
-            {categoryChips.map(chip => {
-              const active = activeChip === chip.key;
-              return (
-                <TouchableOpacity
-                  key={chip.key}
-                  onPress={() => setActiveChip(chip.key)}
-                  style={[sc.chip, { backgroundColor: active ? BRAND : theme.colors.surface, borderColor: active ? BRAND : theme.colors.border }, active && sc.chipActive]}
-                  activeOpacity={0.75}
-                >
-                  <AppText style={[sc.chipTxt, { color: active ? WHITE : theme.colors.mutedText }, active && sc.chipTxtActive]}>
-                    {subcatDisplay(chip.label)}{'  '}{chip.count}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
+        {/* Category quick-filter chips removed (per request) — full category
+            filtering still available via the filter button. */}
 
         {/* Active filter pills */}
         {activePills.length > 0 && (
@@ -1908,20 +1896,6 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           </ScrollView>
         )}
       </View>
-
-      {/* ── Result count + sort bar ── */}
-      {!isLoading && !isError && displayedAgents.length > 0 && (
-        <View style={[sc.resultBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border, justifyContent: 'flex-end' }]}>
-          {/* Worker count hidden for now */}
-          {/* <AppText style={[sc.resultCount, { color: theme.colors.text }]}>
-            {t('ws_workers_found', { count: displayedAgents.length })}
-          </AppText> */}
-          <TouchableOpacity onPress={() => setShowFilters(true)} style={sc.sortBtn} activeOpacity={0.8}>
-            <AppText style={sc.sortIcon}>⇅</AppText>
-            <AppText style={sc.sortTxt}>{t('ws_relevance')}</AppText>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* ── Content ── */}
       {isLoading ? (
@@ -2036,7 +2010,7 @@ const sc = StyleSheet.create({
 
   // Search section
   searchSection:   { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  searchBarWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 10, gap: 8 },
+  searchBarWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 0, height: 46, marginBottom: 0, gap: 8 },
   searchIcon:      { fontSize: 16 },
   searchInput:     { flex: 1, fontSize: 14, paddingVertical: 0 },
   searchClear:     { padding: 4 },
@@ -2064,11 +2038,6 @@ const sc = StyleSheet.create({
   pillClearTxt:    { fontSize: 12, fontWeight: '700', color: '#dc2626' },
 
   // Result count bar
-  resultBar:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
-  resultCount:     { fontSize: 13, fontWeight: '700' },
-  sortBtn:         { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sortIcon:        { fontSize: 14, color: BRAND, fontWeight: '700' },
-  sortTxt:         { fontSize: 12, fontWeight: '600', color: BRAND },
 
   // List
   list:            { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 32 },

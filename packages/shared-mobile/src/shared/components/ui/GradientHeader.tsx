@@ -118,7 +118,9 @@ export const GradientHeader = ({
           <AppText
             variant={compact ? 'subtitle' : 'heading'}
             color="#FFFFFF"
-            numberOfLines={1}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+            maxFontSizeMultiplier={1.3}
             style={[styles.titleText, compact && styles.titleCompact]}
           >
             {title.replace(/\b\w/g, (c) => c.toUpperCase())}

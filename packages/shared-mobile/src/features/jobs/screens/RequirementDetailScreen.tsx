@@ -2,6 +2,7 @@ import { type NativeStackScreenProps, type NativeStackNavigationProp } from '@re
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -29,7 +30,7 @@ import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import i18n from '../../../core/i18n';
-import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { getLocationStr, getCategoryLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 import { ratingApi } from '../../../core/api/endpoints/ratingApi';
@@ -62,6 +63,15 @@ const fmtLabel = (s?: string | null): string => {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+// Translates the requirement type (e.g. "Daily_Wages") via the employer
+// `type_<value>_label` keys (all 11 languages). Falls back to readable English.
+const translateReqType = (value: string | null | undefined, t: TFunction): string => {
+  if (!value) return '—';
+  const key = `type_${value}_label`;
+  if (i18n.exists(key, { ns: 'employer' })) return t(key);
+  return fmtLabel(value);
+};
+
 const getSalaryType = (req: RawRequirement): string => {
   const raw = (req as Record<string, unknown>).salaryType;
   if (typeof raw === 'string' && raw.length > 0) return raw.toLowerCase();
@@ -69,6 +79,15 @@ const getSalaryType = (req: RawRequirement): string => {
   if (budget >= 10000) return 'month';
   if (budget >= 500) return 'day';
   return 'day';
+};
+
+// i18n key for the salary-period suffix (Daily/Weekly/Monthly) so the rate unit
+// is shown in all supported languages instead of the raw English string.
+const getSalaryTypeKey = (req: RawRequirement): 'salaryDaily' | 'salaryWeekly' | 'salaryMonthly' => {
+  const norm = getSalaryType(req);
+  if (norm.startsWith('week')) return 'salaryWeekly';
+  if (norm.startsWith('month')) return 'salaryMonthly';
+  return 'salaryDaily';
 };
 
 const formatDate = (d?: string): string => {
@@ -135,13 +154,13 @@ const tile = StyleSheet.create({
 const SecHead = ({ title, accent = BRAND }: { title: string; accent?: string }): React.JSX.Element => (
   <View style={sh.row}>
     <View style={[sh.bar, { backgroundColor: accent }]} />
-    <AppText style={[sh.text, { color: NAVY }]}>{title}</AppText>
+    <AppText style={[sh.text, { color: NAVY }]} maxFontSizeMultiplier={1.3}>{title}</AppText>
   </View>
 );
 const sh = StyleSheet.create({
   row:  { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   bar:  { width: 5, height: 22, borderRadius: 3 },
-  text: { fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
+  text: { flex: 1, fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
 });
 
 // ─── Agent card (subscribed view) ─────────────────────────────────────────────
@@ -418,6 +437,8 @@ function StatusPipeline({ req, grouped }: {
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { t } = useTranslation('employer');
+  // Default namespace `t` — work-type category labels (cat_* keys) live there.
+  const { t: tCommon } = useTranslation();
   const { theme } = useAppTheme();
   const queryClient = useQueryClient();
   const { state: authState } = useAuth();
@@ -477,7 +498,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     const wage = parseInt(wageInput, 10);
     if (!wage || isNaN(wage)) { toast.warning(t('rd_enterWageQuote')); return; }
     const min = req.minBudgetPerWorker ?? 0;
-    if (wage < min) { toast.warning(t('rd_wageMinWarn', { amount: min, unit: getSalaryType(req) })); return; }
+    if (wage < min) { toast.warning(t('rd_wageMinWarn', { amount: min, unit: t(getSalaryTypeKey(req)) })); return; }
     expressInterestMutation.mutate({ id: req._id, wage });
   };
 
@@ -824,13 +845,13 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         <View style={hero.titleRow}>
           <View style={{ flex: 1 }}>
             <AppText style={hero.jobTitle}>
-              {fmtLabel(req.workType)}
+              {getCategoryLabel(req.workType, tCommon)}
             </AppText>
             {req.subCategory ? (
-              <AppText style={hero.jobSubTitle}>{fmtLabel(req.subCategory)}</AppText>
+              <AppText style={hero.jobSubTitle}>{getSubCatLabel(req.subCategory, i18n.language)}</AppText>
             ) : null}
             {req.req_type ? (
-              <AppText style={hero.jobType}>{fmtLabel(req.req_type)}</AppText>
+              <AppText style={hero.jobType}>{translateReqType(req.req_type, t)}</AppText>
             ) : null}
           </View>
           <View style={[hero.statusBadge, { backgroundColor: sMeta.bg, borderColor: sMeta.border }]}>
@@ -851,7 +872,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             <View style={[hero.pill, hero.pillGreen]}>
               <AppText style={hero.pillIcon}>₹</AppText>
               <AppText style={[hero.pillTxt, { color: GREEN_SOFT }]}>
-                {req.minBudgetPerWorker}{req.maxBudgetPerWorker ? `–${req.maxBudgetPerWorker}` : ''}/{getSalaryType(req)}
+                {req.minBudgetPerWorker}{req.maxBudgetPerWorker ? `–${req.maxBudgetPerWorker}` : ''}/{t(getSalaryTypeKey(req))}
               </AppText>
             </View>
           ) : null}
@@ -880,9 +901,16 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {req.workerNeedDate ? (
               <InfoTile emoji="📅" label={t('rd_startDate')} value={formatDate(req.workerNeedDate)} />
             ) : null}
-            {req.estimated_days ? (
-              <InfoTile emoji="⏱️" label={t('rd_duration')} value={t('rd_daysValue', { count: Number(req.estimated_days) })} />
-            ) : null}
+            {req.estimated_days ? (() => {
+              // estimated_days is usually a human-readable label ("1 week", "2-3 months")
+              // but may be a plain number. Only use the "{count} दिन" template when it's
+              // actually numeric — otherwise show the label as-is (avoids "NaN दिन").
+              const days = Number(req.estimated_days);
+              const durationValue = Number.isFinite(days) && String(req.estimated_days).trim() !== ''
+                ? t('rd_daysValue', { count: days })
+                : String(req.estimated_days);
+              return <InfoTile emoji="⏱️" label={t('rd_duration')} value={durationValue} />;
+            })() : null}
             {(req.workerQuantitySkilled != null) ? (
               <InfoTile emoji="🧑‍🔧" label={t('rd_skilledWorkers')} value={String(req.workerQuantitySkilled)} accent={BRAND_MID} />
             ) : null}
@@ -893,12 +921,12 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               <InfoTile
                 emoji="💰"
                 label={t('rd_budgetPerWorker')}
-                value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${getSalaryType(req)}`}
+                value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${t(getSalaryTypeKey(req))}`}
                 accent={GREEN}
               />
             ) : null}
             {req.workLocation ? (
-              <InfoTile emoji="🗺️" label={t('rd_workSite')} value={req.workLocation} />
+              <InfoTile emoji="🗺️" label={t('rd_workSite')} value={translateLocationString(req.workLocation, i18n.language)} />
             ) : null}
             {(req.inTime || req.outTime) ? (
               <InfoTile
@@ -1159,32 +1187,51 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               const palBg = ['#EBF1FF','#F5F3FF','#ECFDF5','#FFF7ED'][idx % 4]!;
               const palText = [BRAND_MID,'#7C3AED',GREEN,'#EA580C'][idx % 4]!;
 
+              const canOpenProfile = !!m.workerId;
+              const openProfile = () => {
+                if (m.workerId) navigation.navigate('WorkerProfile', { workerId: m.workerId });
+              };
+
               return (
                 <View key={m._id} style={[pl.workerRow, { borderBottomColor: theme.colors.divider }]}>
-                  {/* Avatar */}
-                  <View style={[pl.avatar, { backgroundColor: palBg }]}>
-                    <AppText style={[pl.initials, { color: palText }]}>{initials}</AppText>
-                  </View>
-
-                  {/* Info */}
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
-                        <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
-                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{statusLabelMap[m.status] ?? m.status}</AppText>
-                      </View>
-                      {m.agreedRate != null && (
-                        <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>
-                      )}
+                  {/* Avatar + Info — tap to open the worker's profile */}
+                  <TouchableOpacity
+                    style={pl.rowMain}
+                    onPress={openProfile}
+                    disabled={!canOpenProfile}
+                    activeOpacity={canOpenProfile ? 0.7 : 1}
+                  >
+                    {/* Avatar */}
+                    <View style={[pl.avatar, { backgroundColor: palBg }]}>
+                      <AppText style={[pl.initials, { color: palText }]}>{initials}</AppText>
                     </View>
-                    {m.workerPhone
-                      ? isSubscribed
-                        ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
-                        : <AppText style={pl.phoneLocked}>{'🔒'} {t('rd_contactHidden')}</AppText>
-                      : null
-                    }
-                  </View>
+
+                    {/* Info */}
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
+                      {m.workerSkill ? (
+                        <AppText style={pl.skillTxt} numberOfLines={1}>{getSubCatLabel(m.workerSkill, i18n.language)}</AppText>
+                      ) : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
+                          <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
+                          <AppText style={[pl.statusTxt, { color: sc.text }]}>{statusLabelMap[m.status] ?? m.status}</AppText>
+                        </View>
+                        {m.agreedRate != null && (
+                          <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>
+                        )}
+                      </View>
+                      {m.workerPhone
+                        ? isSubscribed
+                          ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
+                          : <AppText style={pl.phoneLocked}>{'🔒'} {t('rd_contactHidden')}</AppText>
+                        : null
+                      }
+                      {canOpenProfile ? (
+                        <AppText style={pl.viewProfileTxt}>{t('rd_viewProfile')} {'›'}</AppText>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
 
                   {/* Actions */}
                   <View style={{ gap: 6, alignItems: 'flex-end' }}>
@@ -1204,7 +1251,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           style={pl.removeBtn}
                           activeOpacity={0.7}
                         >
-                          <AppText style={pl.removeTxt}>{i18n.t('yesRemove', { ns: 'employer' }).replace('Yes, ', '')}</AppText>
+                          <AppText style={pl.removeTxt} numberOfLines={1}>{t('rd_removeBtn')}</AppText>
                         </TouchableOpacity>
                       </>
                     )}
@@ -1409,14 +1456,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <View style={pg.minWageRow}>
                   <AppText style={pg.minWageLabel}>{t('rd_minWageByEmployer')}</AppText>
                   <View style={pg.minWagePill}>
-                    <AppText style={pg.minWagePillTxt}>₹{req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}</AppText>
+                    <AppText style={pg.minWagePillTxt}>₹{req.minBudgetPerWorker ?? 0}/{t(getSalaryTypeKey(req))}</AppText>
                   </View>
                 </View>
                 <TextInput
                   style={[pg.wageInput, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border, color: theme.colors.text }]}
                   value={wageInput}
                   onChangeText={setWageInput}
-                  placeholder={t('rd_wageQuotePlaceholder', { amount: req.minBudgetPerWorker ?? 0, unit: getSalaryType(req) })}
+                  placeholder={t('rd_wageQuotePlaceholder', { amount: req.minBudgetPerWorker ?? 0, unit: t(getSalaryTypeKey(req)) })}
                   placeholderTextColor={theme.colors.mutedText}
                   keyboardType="number-pad"
                   returnKeyType="done"
@@ -1444,7 +1491,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={{ fontSize: 36 }}>🏆</AppText>
                 <AppText style={pg.assignedMeTitle}>{t('rd_youreAssigned')}</AppText>
                 <AppText style={[pg.assignedMeSub, { color: SLATE }]}>
-                  {t('rd_agreedWage')}: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{getSalaryType(req)}
+                  {t('rd_agreedWage')}: ₹{req.finalAgentRequiredWage ?? req.minBudgetPerWorker ?? 0}/{t(getSalaryTypeKey(req))}
                 </AppText>
               </View>
             </View>
@@ -2028,9 +2075,12 @@ const pl = StyleSheet.create({
 
   // Worker row
   workerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowMain:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar:       { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   initials:     { fontSize: 15, fontWeight: '900' },
   workerName:   { fontSize: 14, fontWeight: '800', letterSpacing: -0.1 },
+  skillTxt:     { fontSize: 11, fontWeight: '600', color: SLATE },
+  viewProfileTxt: { fontSize: 11, fontWeight: '700', color: BRAND_MID, marginTop: 1 },
   statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
   statusDot:    { width: 6, height: 6, borderRadius: 3 },
   statusTxt:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.2 },

@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'സ്ഥലം തിരഞ്ഞെടുക്കുക',
+  lp_useGps: 'നിലവിലെ സ്ഥലം ഉപയോഗിക്കുക (GPS)',
+  lp_detecting: 'കണ്ടെത്തുന്നു…',
+  lp_searchPlaceholder: 'നഗരം, ഗ്രാമം, വിലാസം തിരയുക…',
+  lp_selectedLabel: 'തിരഞ്ഞെടുത്ത സ്ഥലം',
+  lp_movePin: 'പിൻ ഇടാൻ മാപ്പിൽ ടാപ്പ് ചെയ്യുക അല്ലെങ്കിൽ തിരയുക',
+  lp_locating: 'സ്ഥലം കണ്ടെത്തുന്നു…',
+  lp_confirm: 'സ്ഥലം സ്ഥിരീകരിക്കുക',
+  lp_noResults: 'ഫലങ്ങളൊന്നുമില്ല',
+  lp_gpsUnavailable: 'ലഭ്യമല്ല',
+  lp_gpsUnavailableMsg: 'ഈ ഉപകരണത്തിൽ ലൊക്കേഷൻ സേവനങ്ങൾ ലഭ്യമല്ല.',
+  lp_gpsServicesOff: "ലൊക്കേഷൻ സേവനങ്ങൾ ഓഫാണ്. നിങ്ങളുടെ ഉപകരണ ക്രമീകരണങ്ങളിൽ GPS/ലൊക്കേഷൻ ഓണാക്കി വീണ്ടും ശ്രമിക്കുക.",
+  lp_locErrorTitle: 'ലൊക്കേഷൻ പിശക്',
+  lp_permDenied: 'ലൊക്കേഷൻ അനുമതി നിഷേധിച്ചു. ദയവായി ക്രമീകരണങ്ങളിൽ ലൊക്കേഷൻ ആക്സസ് പ്രവർത്തനക്ഷമമാക്കുക.',
+  lp_locFailed: 'നിങ്ങളുടെ സ്ഥലം ലഭിക്കാനായില്ല. ദയവായി നേരിട്ട് തിരയുക.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'ജോലി സ്ഥലം',
   kycLocationHint: 'നിങ്ങളുടെ ബിസിനസ്സ് അല്ലെങ്കിൽ ജോലി എവിടെയാണെന്ന് തിരഞ്ഞെടുക്കുക.',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'ഓഫറുകൾ, ടിപ്സ്, പ്ലാറ്റ്ഫോം അറിയിപ്പുകൾ',
   notifPrefNewReqLabel:        'പുതിയ ആവശ്യകതകൾ',
   notifPrefNewReqDesc:         'ഒരു തൊഴിലുടമ പുതിയ ജോലി ആവശ്യകത പോസ്റ്റ് ചെയ്യുമ്പോൾ',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ഉപ-വിഭാഗം",
+  cs_selectCategory: "വിഭാഗം തിരഞ്ഞെടുക്കുക",
+  cs_selectSubCategory: "ഉപ-വിഭാഗം തിരഞ്ഞെടുക്കുക",
+  cs_selectCategoryFirst: "ആദ്യം വിഭാഗം തിരഞ്ഞെടുക്കുക",
+  cs_subTypes: "{{n}} ഉപ-തരങ്ങൾ",
 } as const;

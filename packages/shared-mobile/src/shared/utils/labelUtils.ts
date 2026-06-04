@@ -23,15 +23,31 @@ interface SubEntry {
   hindilabel?: string;
   marathilabel?: string;
   gujaratilabel?: string;
+  tamillabel?: string;
+  telugulabel?: string;
+  kannadalabel?: string;
+  malayalamlabel?: string;
+  banglalabel?: string;
+  odialabel?: string;
+  punjabilabel?: string;
 }
 
 const ALL_CATS = categoriesData as CatEntry[];
 
-// Maps i18n language code → field name in categories.json
+// Maps i18n language code → field name in categories.json. categories.json ships
+// a per-language label for every subcategory across all 11 languages (see also the
+// shared [[categoryLabels]] subcatDisplay helper which reads the same fields).
 const LANG_FIELD: Record<string, keyof SubEntry> = {
   hi: 'hindilabel',
   mr: 'marathilabel',
   gu: 'gujaratilabel',
+  ta: 'tamillabel',
+  te: 'telugulabel',
+  kn: 'kannadalabel',
+  ml: 'malayalamlabel',
+  bn: 'banglalabel',
+  or: 'odialabel',
+  pa: 'punjabilabel',
 };
 
 // ── Work-type translation ─────────────────────────────────────────────────────
@@ -179,6 +195,32 @@ export function getSubCatLabel(
     return bestMatch.label;
   }
   return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Unified occupational-label translator for a worker's `areasOfWork` / skill
+ * chips, where a stored value may be EITHER a top-level category (e.g.
+ * "construction project workers" / "agriculture farming workers") OR a
+ * sub-category (e.g. "lmv driver" / "other retail"). Top-level categories are
+ * translated via the `cat_*` i18n keys (all 11 langs, through getWorkTypeLabel);
+ * everything else goes through getSubCatLabel (value+label+fuzzy, all 11 langs).
+ * Display-only — stored English value is never changed.
+ */
+export function getOccupationLabel(
+  value: string | null | undefined,
+  t: TFunction,
+  language: string,
+): string {
+  if (!value) return '';
+  const norm = String(value).toLowerCase().replace(/[\s_&/-]+/g, ' ').trim();
+  const isCategory =
+    !!LEGACY_WORK_TYPE_MAP[norm] ||
+    WORK_CATEGORIES.some((c) => {
+      const cv = String(c.value).toLowerCase().replace(/[\s_&/-]+/g, ' ').trim();
+      const cl = String(c.label).toLowerCase().replace(/[\s_&/-]+/g, ' ').trim();
+      return cv === norm || cl === norm;
+    });
+  return isCategory ? getWorkTypeLabel(value, t) : getSubCatLabel(value, language);
 }
 
 /**
@@ -376,6 +418,54 @@ const DISTRICT_TRANSLATIONS: Record<string, Record<string, string>> = {
   'Jabalpur':          { hi: 'जबलपुर', mr: 'जबलपूर', gu: 'જબલપુર', ta: 'ஜப்பல்பூர்', te: 'జబల్‌పూర్', kn: 'ಜಬಲ್ಪುರ', ml: 'ജബൽപൂർ', bn: 'জবলপুর', or: 'ଜବଲ୍ପୁର', pa: 'ਜਬਲਪੁਰ' },
   'Gwalior':           { hi: 'ग्वालियर', mr: 'ग्वाल्हेर', gu: 'ગ્વાલિયર', ta: 'கோவாலியர்', te: 'గ్వాలియర్', kn: 'ಗ್ವಾಲಿಯರ್', ml: 'ഗ്വാളിയർ', bn: 'গোয়ালিয়র', or: 'ଗ୍ୱାଲିଅର', pa: 'ਗਵਾਲੀਅਰ' },
   'Pithampur':         { hi: 'पीथमपुर', mr: 'पीठमपूर', gu: 'પીઠમ્પુર', ta: 'பித்தாம்பூர்', te: 'పీథంపూర్', kn: 'ಪೀಠಮ್ಪುರ', ml: 'പീഥംപൂർ', bn: 'পীথামপুর', or: 'ପୀଠମ୍ ପୁର', pa: 'ਪੀਠਾਮਪੁਰ' },
+  'Rewa':              { hi: 'रीवा', mr: 'रीवा', gu: 'રીવા', ta: 'ரேவா', te: 'రేవా', kn: 'ರೇವಾ', ml: 'രേവ', bn: 'রেওয়া', or: 'ରେୱା', pa: 'ਰੀਵਾ' },
+  'Satna':             { hi: 'सतना', mr: 'सतना', gu: 'સતના', ta: 'சத்னா', te: 'సత్నా', kn: 'ಸತ್ನಾ', ml: 'സത്ന', bn: 'সতনা', or: 'ସତନା', pa: 'ਸਤਨਾ' },
+  'Sagar':             { hi: 'सागर', mr: 'सागर', gu: 'સાગર', ta: 'சாகர்', te: 'సాగర్', kn: 'ಸಾಗರ್', ml: 'സാഗർ', bn: 'সাগর', or: 'ସାଗର', pa: 'ਸਾਗਰ' },
+  'Ujjain':            { hi: 'उज्जैन', mr: 'उज्जैन', gu: 'ઉજ્જૈન', ta: 'உஜ்ஜைன்', te: 'ఉజ్జయిని', kn: 'ಉಜ್ಜಯಿನಿ', ml: 'ഉജ്ജയിൻ', bn: 'উজ্জয়িনী', or: 'ଉଜ୍ଜୈନ', pa: 'ਉਜੈਨ' },
+  'Dewas':             { hi: 'देवास', mr: 'देवास', gu: 'દેવાસ', ta: 'தேவாஸ்', te: 'దేవాస్', kn: 'ದೇವಾಸ್', ml: 'ദേവാസ്', bn: 'দেবাস', or: 'ଦେୱାସ', pa: 'ਦੇਵਾਸ' },
+  'Ratlam':            { hi: 'रतलाम', mr: 'रतलाम', gu: 'રતલામ', ta: 'ரத்லாம்', te: 'రత్లాం', kn: 'ರತ್ಲಾಂ', ml: 'രത്‌ലാം', bn: 'রতলাম', or: 'ରତଲାମ', pa: 'ਰਤਲਾਮ' },
+  'Singrauli':         { hi: 'सिंगरौली', mr: 'सिंगरौली', gu: 'સિંગરૌલી', ta: 'சிங்ரௌலி', te: 'సింగ్రౌలి', kn: 'ಸಿಂಗ್ರೌಲಿ', ml: 'സിംഗ്രൗലി', bn: 'সিংরৌলি', or: 'ସିଂରାଉଲି', pa: 'ਸਿੰਗਰੌਲੀ' },
+  'Katni':             { hi: 'कटनी', mr: 'कटनी', gu: 'કટની', ta: 'கட்னி', te: 'కట్నీ', kn: 'ಕಟ್ನಿ', ml: 'കട്നി', bn: 'কটনি', or: 'କଟନୀ', pa: 'ਕਟਨੀ' },
+  'Chhindwara':        { hi: 'छिंदवाड़ा', mr: 'छिंदवाडा', gu: 'છિંદવાડા', ta: 'சிந்த்வாரா', te: 'ఛింద్వారా', kn: 'ಛಿಂದ್ವಾಡಾ', ml: 'ഛിന്ദ്വാഡ', bn: 'ছিন্দওয়াড়া', or: 'ଛିନ୍ଦୱାଡ଼ା', pa: 'ਛਿੰਦਵਾੜਾ' },
+  'Sehore':            { hi: 'सीहोर', mr: 'सीहोर', gu: 'સીહોર', ta: 'சீகோர்', te: 'సీహోర్', kn: 'ಸೀಹೋರ್', ml: 'സീഹോർ', bn: 'সিহোর', or: 'ସୀହୋର', pa: 'ਸੀਹੋਰ' },
+  'Vidisha':           { hi: 'विदिशा', mr: 'विदिशा', gu: 'વિદિશા', ta: 'விதிஷா', te: 'విదిశ', kn: 'ವಿದಿಶಾ', ml: 'വിദിശ', bn: 'বিদিশা', or: 'ବିଦିଶା', pa: 'ਵਿਦਿਸ਼ਾ' },
+  'Shivpuri':          { hi: 'शिवपुरी', mr: 'शिवपुरी', gu: 'શિવપુરી', ta: 'சிவ்புரி', te: 'శివపురి', kn: 'ಶಿವಪುರಿ', ml: 'ശിവപുരി', bn: 'শিবপুরী', or: 'ଶିବପୁରୀ', pa: 'ਸ਼ਿਵਪੁਰੀ' },
+  'Morena':            { hi: 'मुरैना', mr: 'मुरैना', gu: 'મુરૈના', ta: 'மொரேனா', te: 'మొరేనా', kn: 'ಮೊರೇನಾ', ml: 'മൊരേന', bn: 'মোরেনা', or: 'ମୋରେନା', pa: 'ਮੁਰੈਨਾ' },
+  'Khargone':          { hi: 'खरगोन', mr: 'खरगोन', gu: 'ખરગોન', ta: 'கர்கோன்', te: 'ఖర్‌గోన్', kn: 'ಖರ್ಗೋನ್', ml: 'ഖർഗോൻ', bn: 'খরগোন', or: 'ଖରଗୋନ', pa: 'ਖਰਗੋਨ' },
+  'Khandwa':           { hi: 'खंडवा', mr: 'खंडवा', gu: 'ખંડવા', ta: 'கண்ட்வா', te: 'ఖండ్వా', kn: 'ಖಂಡ್ವಾ', ml: 'ഖണ്ഡ്വ', bn: 'খান্ডোয়া', or: 'ଖଣ୍ଡୱା', pa: 'ਖੰਡਵਾ' },
+  'Mandsaur':          { hi: 'मंदसौर', mr: 'मंदसौर', gu: 'મંદસૌર', ta: 'மந்த்சௌர்', te: 'మంద్‌సౌర్', kn: 'ಮಂದ್‌ಸೌರ್', ml: 'മന്ദ്‌സൗർ', bn: 'মন্দসৌর', or: 'ମନ୍ଦସୌର', pa: 'ਮੰਦਸੌਰ' },
+  'Neemuch':           { hi: 'नीमच', mr: 'नीमच', gu: 'નીમચ', ta: 'நீமச்', te: 'నీముచ్', kn: 'ನೀಮಚ್', ml: 'നീമച്', bn: 'নিমচ', or: 'ନୀମଚ', pa: 'ਨੀਮਚ' },
+  'Chhatarpur':        { hi: 'छतरपुर', mr: 'छतरपूर', gu: 'છતરપુર', ta: 'சத்தர்பூர்', te: 'ఛతర్‌పూర్', kn: 'ಛತರ್ಪುರ', ml: 'ഛതർപൂർ', bn: 'ছতরপুর', or: 'ଛତରପୁର', pa: 'ਛਤਰਪੁਰ' },
+  'Damoh':             { hi: 'दमोह', mr: 'दमोह', gu: 'દમોહ', ta: 'தமோ', te: 'దమోహ్', kn: 'ದಮೋಹ್', ml: 'ദമോഹ്', bn: 'দমোহ', or: 'ଦମୋହ', pa: 'ਦਮੋਹ' },
+  'Narmadapuram':      { hi: 'नर्मदापुरम', mr: 'नर्मदापुरम', gu: 'નર્મદાપુરમ', ta: 'நர்மதாபுரம்', te: 'నర్మదాపురం', kn: 'ನರ್ಮದಾಪುರಂ', ml: 'നർമ്മദാപുരം', bn: 'নর্মদাপুরম', or: 'ନର୍ମଦାପୁରମ', pa: 'ਨਰਮਦਾਪੁਰਮ' },
+  'Hoshangabad':       { hi: 'होशंगाबाद', mr: 'होशंगाबाद', gu: 'હોશંગાબાદ', ta: 'ஹோஷங்காபாத்', te: 'హోషంగాబాద్', kn: 'ಹೋಶಂಗಾಬಾದ್', ml: 'ഹോശംഗാബാദ്', bn: 'হোশঙ্গাবাদ', or: 'ହୋଶଙ୍ଗାବାଦ', pa: 'ਹੋਸ਼ੰਗਾਬਾਦ' },
+  'Betul':             { hi: 'बैतूल', mr: 'बैतूल', gu: 'બૈતૂલ', ta: 'பைதூல்', te: 'బైతూల్', kn: 'ಬೈತೂಲ್', ml: 'ബൈതൂൽ', bn: 'বৈতুল', or: 'ବୈତୂଲ', pa: 'ਬੈਤੂਲ' },
+  'Balaghat':          { hi: 'बालाघाट', mr: 'बालाघाट', gu: 'બાલાઘાટ', ta: 'பாலாகாட்', te: 'బాలాఘాట్', kn: 'ಬಾಲಾಘಾಟ್', ml: 'ബാലാഘാട്', bn: 'বালাঘাট', or: 'ବାଲାଘାଟ', pa: 'ਬਾਲਾਘਾਟ' },
+  'Seoni':             { hi: 'सिवनी', mr: 'सिवनी', gu: 'સિવની', ta: 'சியோனி', te: 'సియోని', kn: 'ಸಿವನಿ', ml: 'സിയോനി', bn: 'সিওনি', or: 'ସିଓନୀ', pa: 'ਸਿਵਨੀ' },
+  'Shahdol':           { hi: 'शहडोल', mr: 'शहडोल', gu: 'શહડોલ', ta: 'ஷாஹ்தோல்', te: 'షహ్‌దోల్', kn: 'ಶಹ್‌ಡೋಲ್', ml: 'ഷഹ്‌ഡോൾ', bn: 'শাহডোল', or: 'ଶହଡୋଲ', pa: 'ਸ਼ਹਡੋਲ' },
+  'Sidhi':             { hi: 'सीधी', mr: 'सीधी', gu: 'સીધી', ta: 'சீதி', te: 'సీధీ', kn: 'ಸೀಧಿ', ml: 'സീധി', bn: 'সিধি', or: 'ସୀଧୀ', pa: 'ਸੀਧੀ' },
+  'Tikamgarh':         { hi: 'टीकमगढ़', mr: 'टीकमगड', gu: 'ટીકમગઢ', ta: 'டிகம்கர்', te: 'టీకంగఢ్', kn: 'ಟೀಕಮ್‌ಗಢ್', ml: 'ടീകംഗഢ്', bn: 'টিকমগড়', or: 'ଟୀକମଗଡ଼', pa: 'ਟੀਕਮਗੜ੍ਹ' },
+  'Datia':             { hi: 'दतिया', mr: 'दतिया', gu: 'દતિયા', ta: 'தத்தியா', te: 'దతియా', kn: 'ದತಿಯಾ', ml: 'ദതിയ', bn: 'দতিয়া', or: 'ଦତିଆ', pa: 'ਦਤੀਆ' },
+  'Guna':              { hi: 'गुना', mr: 'गुना', gu: 'ગુના', ta: 'குனா', te: 'గునా', kn: 'ಗುನಾ', ml: 'ഗുന', bn: 'গুনা', or: 'ଗୁନା', pa: 'ਗੁਨਾ' },
+  'Ashoknagar':        { hi: 'अशोकनगर', mr: 'अशोकनगर', gu: 'અશોકનગર', ta: 'அசோக்நகர்', te: 'అశోక్‌నగర్', kn: 'ಅಶೋಕ್‌ನಗರ', ml: 'അശോക്‌നഗർ', bn: 'অশোকনগর', or: 'ଅଶୋକନଗର', pa: 'ਅਸ਼ੋਕਨਗਰ' },
+  'Rajgarh':           { hi: 'राजगढ़', mr: 'राजगड', gu: 'રાજગઢ', ta: 'ராஜ்கர்', te: 'రాజ్‌గఢ్', kn: 'ರಾಜ್‌ಗಢ್', ml: 'രാജ്‌ഗഢ്', bn: 'রাজগড়', or: 'ରାଜଗଡ଼', pa: 'ਰਾਜਗੜ੍ਹ' },
+  'Burhanpur':         { hi: 'बुरहानपुर', mr: 'बुऱ्हाणपूर', gu: 'બુરહાનપુર', ta: 'புர்ஹான்பூர்', te: 'బుర్‌హాన్‌పూర్', kn: 'ಬುರ್‌ಹಾನ್‌ಪುರ', ml: 'ബുർഹാൻപൂർ', bn: 'বুরহানপুর', or: 'ବୁରହାନପୁର', pa: 'ਬੁਰਹਾਨਪੁਰ' },
+  'Barwani':           { hi: 'बड़वानी', mr: 'बडवानी', gu: 'બડવાની', ta: 'பர்வானி', te: 'బర్వానీ', kn: 'ಬರ್ವಾನಿ', ml: 'ബർവാനി', bn: 'বরওয়ানি', or: 'ବରୱାନୀ', pa: 'ਬੜਵਾਨੀ' },
+  'Dhar':              { hi: 'धार', mr: 'धार', gu: 'ધાર', ta: 'தார்', te: 'ధార్', kn: 'ಧಾರ್', ml: 'ധാർ', bn: 'ধার', or: 'ଧାର', pa: 'ਧਾਰ' },
+  'Jhabua':            { hi: 'झाबुआ', mr: 'झाबुआ', gu: 'ઝાબુઆ', ta: 'ஜாபுவா', te: 'ఝాబువా', kn: 'ಝಾಬುವಾ', ml: 'ഝാബുവ', bn: 'ঝাবুয়া', or: 'ଝାବୁଆ', pa: 'ਝਾਬੁਆ' },
+  'Alirajpur':         { hi: 'अलीराजपुर', mr: 'अलीराजपूर', gu: 'અલીરાજપુર', ta: 'அலிராஜ்பூர்', te: 'అలీరాజ్‌పూర్', kn: 'ಅಲೀರಾಜ್‌ಪುರ', ml: 'അലിരാജ്‌പൂർ', bn: 'আলিরাজপুর', or: 'ଅଲୀରାଜପୁର', pa: 'ਅਲੀਰਾਜਪੁਰ' },
+  'Harda':             { hi: 'हरदा', mr: 'हरदा', gu: 'હરદા', ta: 'ஹர்தா', te: 'హర్దా', kn: 'ಹರ್ದಾ', ml: 'ഹർദ', bn: 'হরদা', or: 'ହରଦା', pa: 'ਹਰਦਾ' },
+  'Raisen':            { hi: 'रायसेन', mr: 'रायसेन', gu: 'રાયસેન', ta: 'ராய்சேன்', te: 'రాయసేన్', kn: 'ರಾಯ್‌ಸೇನ್', ml: 'റായ്‌സേൻ', bn: 'রায়সেন', or: 'ରାଇସେନ', pa: 'ਰਾਇਸੇਨ' },
+  'Narsinghpur':       { hi: 'नरसिंहपुर', mr: 'नरसिंहपूर', gu: 'નરસિંહપુર', ta: 'நரசிங்பூர்', te: 'నరసింహపూర్', kn: 'ನರಸಿಂಹಪುರ', ml: 'നരസിംഹപൂർ', bn: 'নরসিংহপুর', or: 'ନରସିଂହପୁର', pa: 'ਨਰਸਿੰਘਪੁਰ' },
+  'Mandla':            { hi: 'मंडला', mr: 'मंडला', gu: 'મંડલા', ta: 'மண்ட்லா', te: 'మండ్లా', kn: 'ಮಂಡ್ಲಾ', ml: 'മണ്ഡ്ല', bn: 'মান্ডলা', or: 'ମଣ୍ଡଲା', pa: 'ਮੰਡਲਾ' },
+  'Dindori':           { hi: 'डिंडोरी', mr: 'डिंडोरी', gu: 'ડિંડોરી', ta: 'டிண்டோரி', te: 'డిండోరి', kn: 'ಡಿಂಡೋರಿ', ml: 'ഡിണ്ടോരി', bn: 'ডিন্ডোরি', or: 'ଡିଣ୍ଡୋରୀ', pa: 'ਡਿੰਡੋਰੀ' },
+  'Umaria':            { hi: 'उमरिया', mr: 'उमरिया', gu: 'ઉમરિયા', ta: 'உமரியா', te: 'ఉమరియా', kn: 'ಉಮರಿಯಾ', ml: 'ഉമരിയ', bn: 'উমারিয়া', or: 'ଉମରିଆ', pa: 'ਉਮਰੀਆ' },
+  'Anuppur':           { hi: 'अनूपपुर', mr: 'अनूपपूर', gu: 'અનૂપપુર', ta: 'அனுப்பூர்', te: 'అనూప్‌పూర్', kn: 'ಅನೂಪ್‌ಪುರ', ml: 'അനൂപ്‌പൂർ', bn: 'অনুপপুর', or: 'ଅନୂପପୁର', pa: 'ਅਨੂਪਪੁਰ' },
+  'Panna':             { hi: 'पन्ना', mr: 'पन्ना', gu: 'પન્ના', ta: 'பன்னா', te: 'పన్నా', kn: 'ಪನ್ನಾ', ml: 'പന്ന', bn: 'পান্না', or: 'ପନ୍ନା', pa: 'ਪੰਨਾ' },
+  'Niwari':            { hi: 'निवाड़ी', mr: 'निवाडी', gu: 'નિવાડી', ta: 'நிவாரி', te: 'నివారి', kn: 'ನಿವಾರಿ', ml: 'നിവാരി', bn: 'নিওয়াড়ি', or: 'ନିୱାଡ଼ି', pa: 'ਨਿਵਾੜੀ' },
+  'Sheopur':           { hi: 'श्योपुर', mr: 'श्योपूर', gu: 'શ્યોપુર', ta: 'ஷியோபூர்', te: 'శ్యోపూర్', kn: 'ಶ್ಯೋಪುರ', ml: 'ശ്യോപൂർ', bn: 'শ্যোপুর', or: 'ଶ୍ୟୋପୁର', pa: 'ਸ਼ਿਓਪੁਰ' },
+  'Bhind':             { hi: 'भिंड', mr: 'भिंड', gu: 'ભિંડ', ta: 'பிண்ட்', te: 'భింద్', kn: 'ಭಿಂಡ್', ml: 'ഭിണ്ഡ്', bn: 'ভিন্ড', or: 'ଭିଣ୍ଡ', pa: 'ਭਿੰਡ' },
+  'Agar Malwa':        { hi: 'आगर मालवा', mr: 'आगर मालवा', gu: 'આગર માલવા', ta: 'ஆகர் மால்வா', te: 'ఆగర్ మాల్వా', kn: 'ಆಗರ್ ಮಾಲ್ವಾ', ml: 'ആഗർ മാൾവ', bn: 'আগর মালওয়া', or: 'ଆଗର ମାଲୱା', pa: 'ਆਗਰ ਮਾਲਵਾ' },
   // ── Odisha ────────────────────────────────────────────────────────────────────
   'Bhubaneswar':       { hi: 'भुवनेश्वर', mr: 'भुवनेश्वर', gu: 'ભુવનેશ્વર', ta: 'புவனேஸ்வர்', te: 'భువనేశ్వర్', kn: 'ಭುವನೇಶ್ವರ', ml: 'ഭുവനേശ്വർ', bn: 'ভুবনেশ্বর', or: 'ଭୁବନେଶ୍ୱର', pa: 'ਭੁਬਨੇਸ਼ਵਰ' },
   'Cuttack':           { hi: 'कटक', mr: 'कटक', gu: 'કટક', ta: 'கட்டக்', te: 'కటక్', kn: 'ಕಟಕ್', ml: 'കട്ടക്', bn: 'কটক', or: 'କଟକ', pa: 'ਕਟਕ' },
@@ -550,9 +640,18 @@ const DISTRICT_TRANSLATIONS: Record<string, Record<string, string>> = {
  * Translates an Indian district or block (tehsil) name to the given language.
  * Returns the original string if no translation is found.
  */
+// Case-insensitive index so stored values like "rewa" / "REWA" still match.
+const DISTRICT_INDEX: Record<string, Record<string, string>> = (() => {
+  const idx: Record<string, Record<string, string>> = {};
+  for (const key in DISTRICT_TRANSLATIONS) {
+    idx[key.trim().toLowerCase()] = DISTRICT_TRANSLATIONS[key];
+  }
+  return idx;
+})();
+
 export function translateLocationName(name: string, language: string): string {
   if (!name || language === 'en') return name;
-  const translation = DISTRICT_TRANSLATIONS[name];
+  const translation = DISTRICT_TRANSLATIONS[name] ?? DISTRICT_INDEX[name.trim().toLowerCase()];
   if (translation?.[language]) return translation[language];
   return name;
 }
@@ -572,6 +671,27 @@ export function getLocationStr(
   const translatedTehsil   = tehsil   ? translateLocationName(tehsil,   language) : undefined;
   const parts = [translatedTehsil, translatedDistrict, translatedState].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : panIndiaLabel;
+}
+
+/**
+ * Translates the place-name tokens inside a free-form, comma-separated location
+ * string (e.g. a stored work-site address like "Rewa, Rewa, Madhya Pradesh").
+ * Each comma-separated part is run through the state and district/block
+ * dictionaries; tokens with no known translation (custom address lines, unknown
+ * places) are left untouched. Safe to call on any address string.
+ */
+export function translateLocationString(value: string, language: string): string {
+  if (!value || language === 'en') return value;
+  return value
+    .split(',')
+    .map((part) => {
+      const p = part.trim();
+      if (!p) return part;
+      const asState = translateStateName(p, language);
+      if (asState !== p) return asState;
+      return translateLocationName(p, language);
+    })
+    .join(', ');
 }
 
 // ── Worker/Agent profile completeness ────────────────────────────────────────

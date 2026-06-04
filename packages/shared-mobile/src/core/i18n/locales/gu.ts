@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'સ્થાન પસંદ કરો',
+  lp_useGps: 'વર્તમાન સ્થાન વાપરો (GPS)',
+  lp_detecting: 'શોધી રહ્યું છે…',
+  lp_searchPlaceholder: 'શહેર, ગામ, સરનામું શોધો…',
+  lp_selectedLabel: 'પસંદ કરેલ સ્થાન',
+  lp_movePin: 'પિન મૂકવા માટે નકશા પર ટૅપ કરો અથવા શોધો',
+  lp_locating: 'સ્થાન શોધી રહ્યું છે…',
+  lp_confirm: 'સ્થાનની પુષ્ટિ કરો',
+  lp_noResults: 'કોઈ પરિણામ મળ્યું નથી',
+  lp_gpsUnavailable: 'ઉપલબ્ધ નથી',
+  lp_gpsUnavailableMsg: 'આ ઉપકરણ પર સ્થાન સેવાઓ ઉપલબ્ધ નથી.',
+  lp_gpsServicesOff: "સ્થાન સેવાઓ બંધ છે. કૃપા કરીને તમારા ડિવાઇસ સેટિંગ્સમાં GPS/સ્થાન ચાલુ કરો અને ફરી પ્રયાસ કરો.",
+  lp_locErrorTitle: 'સ્થાન ભૂલ',
+  lp_permDenied: 'સ્થાન પરવાનગી નકારી. કૃપા કરી સેટિંગ્સમાં સ્થાન ઍક્સેસ સક્ષમ કરો.',
+  lp_locFailed: 'તમારું સ્થાન મેળવી શકાયું નથી. કૃપા કરી જાતે શોધો.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'કામનું સ્થળ',
   kycLocationHint: 'તમારો વ્યવસાય અથવા કામ ક્યાં સ્થિત છે તે પસંદ કરો.',
@@ -880,4 +896,10 @@ export const translation = {
   notifPrefPromoDesc:          'ઑફર, ટિપ્સ અને પ્લૅટફૉર્મ જાહેરાતો',
   notifPrefNewReqLabel:        'નવી જરૂરિયાત',
   notifPrefNewReqDesc:         'જ્યારે નોકરીદાતા નવી નોકરી જરૂરિયાત પોસ્ટ કરે',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ઉપ-શ્રેણી",
+  cs_selectCategory: "શ્રેણી પસંદ કરો",
+  cs_selectSubCategory: "ઉપ-શ્રેણી પસંદ કરો",
+  cs_selectCategoryFirst: "પહેલા શ્રેણી પસંદ કરો",
+  cs_subTypes: "{{n}} ઉપ-પ્રકાર",
 } as const;

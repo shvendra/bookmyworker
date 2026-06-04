@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'অবস্থান নির্বাচন করুন',
+  lp_useGps: 'বর্তমান অবস্থান ব্যবহার করুন (GPS)',
+  lp_detecting: 'শনাক্ত করা হচ্ছে…',
+  lp_searchPlaceholder: 'শহর, গ্রাম, ঠিকানা খুঁজুন…',
+  lp_selectedLabel: 'নির্বাচিত অবস্থান',
+  lp_movePin: 'পিন রাখতে মানচিত্রে ট্যাপ করুন বা খুঁজুন',
+  lp_locating: 'অবস্থান খোঁজা হচ্ছে…',
+  lp_confirm: 'অবস্থান নিশ্চিত করুন',
+  lp_noResults: 'কোনো ফলাফল পাওয়া যায়নি',
+  lp_gpsUnavailable: 'উপলব্ধ নয়',
+  lp_gpsUnavailableMsg: 'এই ডিভাইসে অবস্থান পরিষেবা উপলব্ধ নয়।',
+  lp_gpsServicesOff: "অবস্থান পরিষেবা বন্ধ আছে। অনুগ্রহ করে আপনার ডিভাইস সেটিংসে GPS/অবস্থান চালু করে আবার চেষ্টা করুন।",
+  lp_locErrorTitle: 'অবস্থান ত্রুটি',
+  lp_permDenied: 'অবস্থান অনুমতি প্রত্যাখ্যাত। অনুগ্রহ করে সেটিংসে অবস্থান অ্যাক্সেস সক্ষম করুন।',
+  lp_locFailed: 'আপনার অবস্থান পাওয়া যায়নি। অনুগ্রহ করে নিজে খুঁজুন।',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'কাজের স্থান',
   kycLocationHint: 'আপনার ব্যবসা বা কাজ কোথায় অবস্থিত তা নির্বাচন করুন।',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'অফার, টিপস এবং প্ল্যাটফর্ম ঘোষণা',
   notifPrefNewReqLabel:        'নতুন প্রয়োজনীয়তা',
   notifPrefNewReqDesc:         'যখন কোনো নিয়োগকর্তা নতুন কাজের চাহিদা পোস্ট করেন',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "উপ-বিভাগ",
+  cs_selectCategory: "বিভাগ নির্বাচন করুন",
+  cs_selectSubCategory: "উপ-বিভাগ নির্বাচন করুন",
+  cs_selectCategoryFirst: "প্রথমে বিভাগ নির্বাচন করুন",
+  cs_subTypes: "{{n}} উপ-প্রকার",
 } as const;

@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
+import { getWorkTypeLabel } from '../../../shared/utils/labelUtils';
+import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { useAuth } from '../../../state/auth/AuthContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
@@ -110,6 +112,7 @@ function ReqCard({
   onPress: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation('employer');
+  const { t: tDefault } = useTranslation(); // cat_* keys live in the default namespace
   const color  = statusDotColor(req.status);
   const bg     = statusBg(req.status);
   const s = (req.status ?? '').toLowerCase();
@@ -117,10 +120,10 @@ function ReqCard({
                 : s === 'assigned'  ? t('calStatusAssigned')
                 : (s === 'closed' || s === 'expired') ? t('calStatusClosed')
                 : t('calStatusOpen');
-  const title  = [req.workType, req.subCategory]
-    .filter(Boolean)
-    .map((s) => (s ?? '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
-    .join(' · ');
+  const title  = [
+    req.workType ? getWorkTypeLabel(req.workType, tDefault as Parameters<typeof getWorkTypeLabel>[1]).replace(/\n/g, ' ') : '',
+    req.subCategory ? subcatDisplay(req.subCategory) : '',
+  ].filter(Boolean).join(' · ');
 
   const { theme } = useAppTheme();
   return (
@@ -145,7 +148,7 @@ function ReqCard({
         </AppText>
         {req.salaryType && (
           <AppText style={rcs.rate}>
-            {req.salaryType} wages
+            {t('calWages', { period: t(req.salaryType === 'Monthly' ? 'salaryMonthly' : req.salaryType === 'Weekly' ? 'salaryWeekly' : 'salaryDaily') })}
             {req.minBudgetPerWorker ? `  ·  ₹${req.minBudgetPerWorker}+` : ''}
           </AppText>
         )}
@@ -173,6 +176,12 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
   const insets = useSafeAreaInsets();
   const { state: authState } = useAuth();
   const userId = authState.session?.user?.id ?? '';
+
+  // Month names localized to the active language (falls back to English MONTH_NAMES).
+  const localizedMonths = t('calMonthNames', { returnObjects: true }) as unknown;
+  const monthNames = Array.isArray(localizedMonths) && localizedMonths.length === 12
+    ? (localizedMonths as string[])
+    : MONTH_NAMES;
 
   const today = new Date();
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
@@ -251,7 +260,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
               <AppText style={[cal.navArrow, { color: theme.colors.text }]}>‹</AppText>
             </TouchableOpacity>
             <AppText style={[cal.monthTitle, { color: theme.colors.text }]}>
-              {MONTH_NAMES[viewMonth]} {viewYear}
+              {monthNames[viewMonth]} {viewYear}
             </AppText>
             <TouchableOpacity onPress={nextMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
               <AppText style={[cal.navArrow, { color: theme.colors.text }]}>›</AppText>
@@ -397,7 +406,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
         {!selectedKey && (
           <View style={cal.monthListBox}>
             <AppText style={[cal.monthListTitle, { color: theme.colors.mutedText }]}>
-              {t('allRequirementsInMonth', { month: MONTH_NAMES[viewMonth] ?? '', year: viewYear })}
+              {t('allRequirementsInMonth', { month: monthNames[viewMonth] ?? '', year: viewYear })}
             </AppText>
             {(() => {
               const all = Object.entries(reqsByDate)

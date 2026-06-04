@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'స్థానాన్ని ఎంచుకోండి',
+  lp_useGps: 'ప్రస్తుత స్థానాన్ని ఉపయోగించండి (GPS)',
+  lp_detecting: 'గుర్తిస్తోంది…',
+  lp_searchPlaceholder: 'నగరం, గ్రామం, చిరునామా శోధించండి…',
+  lp_selectedLabel: 'ఎంచుకున్న స్థానం',
+  lp_movePin: 'పిన్ ఉంచడానికి మ్యాప్‌పై నొక్కండి లేదా శోధించండి',
+  lp_locating: 'స్థానం కనుగొనబడుతోంది…',
+  lp_confirm: 'స్థానాన్ని నిర్ధారించండి',
+  lp_noResults: 'ఫలితాలు లేవు',
+  lp_gpsUnavailable: 'అందుబాటులో లేదు',
+  lp_gpsUnavailableMsg: 'ఈ పరికరంలో స్థాన సేవలు అందుబాటులో లేవు.',
+  lp_gpsServicesOff: "స్థాన సేవలు ఆఫ్‌లో ఉన్నాయి. దయచేసి మీ పరికర సెట్టింగ్‌లలో GPS/స్థానాన్ని ఆన్ చేసి మళ్లీ ప్రయత్నించండి.",
+  lp_locErrorTitle: 'స్థాన లోపం',
+  lp_permDenied: 'స్థాన అనుమతి తిరస్కరించబడింది. దయచేసి సెట్టింగ్‌లలో స్థాన యాక్సెస్‌ను ప్రారంభించండి.',
+  lp_locFailed: 'మీ స్థానాన్ని పొందలేకపోయాం. దయచేసి మాన్యువల్‌గా శోధించండి.',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'పని ప్రదేశం',
   kycLocationHint: 'మీ వ్యాపారం లేదా పని ఎక్కడ ఉందో ఎంచుకోండి.',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'ఆఫర్లు, చిట్కాలు మరియు ప్లాట్‌ఫాం ప్రకటనలు',
   notifPrefNewReqLabel:        'కొత్త అవసరాలు',
   notifPrefNewReqDesc:         'యజమాని కొత్త ఉద్యోగ అవసరం పోస్ట్ చేసినప్పుడు',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ఉప-వర్గం",
+  cs_selectCategory: "వర్గాన్ని ఎంచుకోండి",
+  cs_selectSubCategory: "ఉప-వర్గాన్ని ఎంచుకోండి",
+  cs_selectCategoryFirst: "ముందుగా వర్గాన్ని ఎంచుకోండి",
+  cs_subTypes: "{{n}} ఉప-రకాలు",
 } as const;

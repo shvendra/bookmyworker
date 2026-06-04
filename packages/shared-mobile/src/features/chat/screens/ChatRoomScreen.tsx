@@ -129,9 +129,10 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
 
     const handler = (msg: Record<string, unknown>): void => {
       if ((msg.roomId as string) !== roomId) return;
-      // Skip echo of our own optimistic messages
       const msgId = (msg._id ?? `${msg.sender}-${msg.timestamp}`) as string;
+      // Already handled this exact server id (guards against duplicate broadcasts).
       if (localIds.current.has(msgId)) return;
+      localIds.current.add(msgId);
 
       const newMsg: ChatMessage = {
         id: msgId,
@@ -145,7 +146,26 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         mediaType: (msg.mediaType as 'image' | 'file' | null) ?? null,
         fileName: (msg.fileName as string | null) ?? null,
       };
-      setMessages((prev) => [newMsg, ...prev]);
+      setMessages((prev) => {
+        // Echo of our OWN message: replace the optimistic copy (client id `local-…`)
+        // with the server-confirmed one instead of duplicating. Match by media URL
+        // for attachments, else by text.
+        if (newMsg.senderId === userId) {
+          const idx = prev.findIndex(
+            (m) => m.id.startsWith('local-') && m.senderId === userId && (
+              newMsg.mediaUrl ? m.mediaUrl === newMsg.mediaUrl : (!m.mediaUrl && m.text === newMsg.text)
+            ),
+          );
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = newMsg;
+            return next;
+          }
+        }
+        // Safety net: never add a message whose id is already present.
+        if (prev.some((m) => m.id === msgId)) return prev;
+        return [newMsg, ...prev];
+      });
       socketService.markMessagesRead(roomId, userId);
     };
 

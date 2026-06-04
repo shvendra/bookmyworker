@@ -59,19 +59,19 @@ describe('walletApi.getAgentPayoutSummary', () => {
 
 describe('walletApi.getEmployerTransactions', () => {
   it('returns employer transactions', async () => {
-    mock.onGet('/api/v1/payment/transactions/by-employer/emp-001').reply(200, { transactions: [tx] });
+    mock.onGet('/api/v1/mobile/employer/transactions').reply(200, { transactions: [tx] });
     const res = await walletApi.getEmployerTransactions('emp-001');
     expect(res.transactions).toHaveLength(1);
   });
 
   it('returns empty transactions array on 404 (no transactions yet)', async () => {
-    mock.onGet('/api/v1/payment/transactions/by-employer/emp-new').reply(404, { message: 'Not found' });
+    mock.onGet('/api/v1/mobile/employer/transactions').reply(404, { message: 'Not found' });
     const res = await walletApi.getEmployerTransactions('emp-new');
     expect(res.transactions).toEqual([]);
   });
 
   it('re-throws non-404 errors', async () => {
-    mock.onGet('/api/v1/payment/transactions/by-employer/emp-err').reply(500, { message: 'Internal error' });
+    mock.onGet('/api/v1/mobile/employer/transactions').reply(500, { message: 'Internal error' });
     await expect(walletApi.getEmployerTransactions('emp-err')).rejects.toMatchObject({ statusCode: 500 });
   });
 });

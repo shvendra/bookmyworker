@@ -107,6 +107,9 @@ export const AppText = ({
   return (
     <Text
       style={[
+        // Android: always reserve room for Devanagari/Indic top & bottom matras
+        // so glyphs are never vertically clipped. No-op on iOS, never changes width.
+        { includeFontPadding: true },
         variantStyles[variant],
         {
           color: color ?? theme.colors.text,

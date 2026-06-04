@@ -84,15 +84,18 @@ export const walletApi = {
       .get<AgentPayoutSummary>(`/api/v1/payment/transactions/by-agent/${agentId}`)
       .then((r) => r.data),
 
-  getEmployerTransactions: async (employerId: string): Promise<EmployerTransactions> => {
+  getEmployerTransactions: async (_employerId?: string): Promise<EmployerTransactions> => {
     try {
+      // Mobile-only endpoint, scoped to the authenticated employer (req.user):
+      // case-insensitive completion filter + includes subscription payments, so a
+      // subscription marked from the CRM shows here. The shared
+      // /payment/transactions/by-employer endpoint is left untouched (CRM Payout uses it).
       const res = await apiClient.get<EmployerTransactions>(
-        `/api/v1/payment/transactions/by-employer/${employerId}`
+        `/api/v1/mobile/employer/transactions`
       );
       return res.data;
     } catch (err: unknown) {
-      // Backend returns 404 when no completed transactions exist (not a real error).
-      // The apiClient interceptor transforms AxiosError → ApiClientError with statusCode.
+      // Treat 404 (no transactions) as an empty list, not a real error.
       const statusCode = (err as { statusCode?: number })?.statusCode;
       if (statusCode === 404) return { transactions: [] };
       throw err;

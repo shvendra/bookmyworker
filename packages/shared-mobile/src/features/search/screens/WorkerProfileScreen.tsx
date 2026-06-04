@@ -33,6 +33,7 @@ import type { MappingStatus, OpenRequirement } from '../../../core/api/endpoints
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
@@ -240,6 +241,37 @@ const STATUS_META: Record<MappingStatus, { labelKey: string; color: string; bg: 
   Joined:      { labelKey: 'wp_actMarkJoined', color: '#15803d', bg: '#f0fdf4' },
 };
 
+// Mirrors the backend's ALLOWED_TRANSITIONS (workerMappingController.js): a worker
+// can only advance Shortlisted → Selected → Joined. A requirement is only actionable
+// from a given sheet if the target status is a valid *forward* move from the worker's
+// current status (or the worker isn't mapped to it yet).
+const FORWARD_TRANSITIONS: Record<MappingStatus, MappingStatus[]> = {
+  Shortlisted: ['Selected'],
+  Selected:    ['Joined'],
+  Joined:      [],
+};
+
+// Requirement's own hiring status → translation key (covers all 11 languages).
+const REQ_STATUS_KEY: Record<string, string> = {
+  Pending:  'rd_statusPending',
+  Active:   'wp_reqStatus_Active',
+  Assigned: 'rd_assignedBadge',
+};
+
+// i18n key for a worker's existing mapping status badge.
+const MAPPING_STATUS_KEY: Record<MappingStatus, string> = {
+  Shortlisted: 'rd_status_Shortlisted',
+  Selected:    'rd_status_Selected',
+  Joined:      'rd_status_Joined',
+};
+
+// Gender raw value → translation key (covers all 11 languages via ws_male/female/other).
+const GENDER_KEY: Record<string, string> = {
+  male:   'ws_male',
+  female: 'ws_female',
+  other:  'ws_other',
+};
+
 // ─── Requirement Picker Modal ─────────────────────────────────────────────────
 interface RequirementPickerProps {
   visible: boolean;
@@ -262,6 +294,8 @@ const RequirementPickerModal = ({
   const [selected,     setSelected]     = useState<string[]>([]);
   const [loading,      setLoading]      = useState(false);
   const [saving,       setSaving]       = useState(false);
+  // requirementId → this worker's existing mapping status (if already in the pipeline)
+  const [workerStatusByReq, setWorkerStatusByReq] = useState<Record<string, MappingStatus>>({});
 
   // Rate step — shown only when status === 'Joined'
   const [step,      setStep]      = useState<'pick' | 'rate'>('pick');
@@ -273,14 +307,36 @@ const RequirementPickerModal = ({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const reqs = await workerMappingApi.getEmployerOpenRequirements();
+      // Load open requirements + this employer's pipeline so we know which
+      // requirements this worker is already mapped to (and at what status).
+      const [reqs, overview] = await Promise.all([
+        workerMappingApi.getEmployerOpenRequirements(),
+        workerMappingApi.getEmployerPipelineOverview().catch(() => null),
+      ]);
       setRequirements(reqs);
+
+      const phone  = (workerPhone || '').trim();
+      const nameLc = (workerName || '').trim().toLowerCase();
+      const statusMap: Record<string, MappingStatus> = {};
+      for (const entry of overview?.requirements ?? []) {
+        const reqId = entry.requirement?._id ? String(entry.requirement._id) : '';
+        if (!reqId) continue;
+        // Match this worker by phone (most reliable); fall back to name when no phone.
+        const mine = entry.workers.find((w) =>
+          phone ? (w.workerPhone || '').trim() === phone
+                : nameLc.length > 0 && (w.workerName || '').trim().toLowerCase() === nameLc,
+        );
+        if (mine && (mine.status === 'Shortlisted' || mine.status === 'Selected' || mine.status === 'Joined')) {
+          statusMap[reqId] = mine.status;
+        }
+      }
+      setWorkerStatusByReq(statusMap);
     } catch {
       toast.error(t('wp_toastLoadReqFail'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workerPhone, workerName]);
 
   useEffect(() => {
     if (visible) { setSelected([]); setStep('pick'); setAgreedRate(''); setRateType('Daily'); void load(); }
@@ -436,10 +492,24 @@ const RequirementPickerModal = ({
                   style={pm.list}
                   renderItem={({ item: r }) => {
                     const isChk = selected.includes(r._id);
+                    // Worker's current pipeline status on this requirement (if any).
+                    const existing = workerStatusByReq[r._id];
+                    // Disabled unless the sheet's target status is a valid forward move
+                    // (or the worker isn't mapped to this requirement yet).
+                    const isDisabled = existing ? !FORWARD_TRANSITIONS[existing].includes(status) : false;
+                    // Badge: show the worker's mapping status if mapped, else the
+                    // requirement's own hiring status — both fully translated.
+                    const badgeColor = existing ? STATUS_META[existing].color : meta.color;
+                    const badgeText  = existing
+                      ? t(MAPPING_STATUS_KEY[existing])
+                      : r.status
+                      ? (REQ_STATUS_KEY[r.status] ? t(REQ_STATUS_KEY[r.status]) : r.status)
+                      : '';
                     return (
                       <TouchableOpacity
                         onPress={() => toggle(r._id)}
-                        style={[pm.reqRow, isChk && { backgroundColor: meta.bg }]}
+                        disabled={isDisabled}
+                        style={[pm.reqRow, isChk && { backgroundColor: meta.bg }, isDisabled && pm.reqRowDisabled]}
                         activeOpacity={0.7}
                       >
                         <View style={[pm.checkbox, isChk && { backgroundColor: meta.color, borderColor: meta.color }]}>
@@ -447,15 +517,15 @@ const RequirementPickerModal = ({
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <AppText style={pm.reqTitle} numberOfLines={1}>
-                            {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
+                            {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                           </AppText>
                           <AppText style={pm.reqSub}>
                             ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}
                           </AppText>
                         </View>
-                        {r.status ? (
-                          <View style={pm.statusTag}>
-                            <AppText style={[pm.statusTxt, { color: meta.color }]}>{r.status}</AppText>
+                        {badgeText ? (
+                          <View style={[pm.statusTag, existing && { backgroundColor: STATUS_META[existing].bg }]}>
+                            <AppText style={[pm.statusTxt, { color: badgeColor }]}>{badgeText}</AppText>
                           </View>
                         ) : null}
                       </TouchableOpacity>
@@ -506,6 +576,7 @@ const pm = StyleSheet.create({
   postBtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
   list:       { maxHeight: 320 },
   reqRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
+  reqRowDisabled: { opacity: 0.5 },
   checkbox:   { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   reqTitle:   { fontSize: 13.5, fontWeight: '700', color: '#0f172a' },
   reqSub:     { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
@@ -618,7 +689,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <AppText style={inv.reqTitle} numberOfLines={1}>
-                        {r.workType?.replace(/_/g, ' ')}{r.subCategory ? ` · ${r.subCategory.replace(/_/g, ' ')}` : ''}
+                        {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                       </AppText>
                       <AppText style={inv.reqSub}>ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}</AppText>
                     </View>
@@ -855,6 +926,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const isVerified  = worker.status === 'Verified' || worker.veryfiedBage === true;
   const age         = getAge(worker.dob);
   const areas       = formatAreas(worker.areasOfWork ?? []);
+  // Translated gender label (falls back to the raw value for unknown values).
+  const genderKey   = worker.gender ? GENDER_KEY[worker.gender.trim().toLowerCase()] : undefined;
+  const genderLabel = genderKey ? t(genderKey) : (worker.gender ?? '');
   const exp         = worker.workExperience != null ? Number(worker.workExperience) : null;
   const wage        = worker.fixedSalary ?? worker.salaryFrom;
   const wageDisplay = wage
@@ -906,7 +980,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           <AppText style={s.heroName}>{displayName}</AppText>
           {areas.length > 0 && (
             <AppText style={s.heroCategory} numberOfLines={1}>
-              {areas.slice(0, 2).join('  ·  ')}
+              {areas.slice(0, 2).map((a) => subcatDisplay(a)).join('  ·  ')}
             </AppText>
           )}
           {!!location && (
@@ -929,7 +1003,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
             </View>
             {!!worker.gender && (
               <View style={[s.badge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-                <AppText style={[s.badgeTxt, { color: 'rgba(255,255,255,0.8)' }]}>{worker.gender.toUpperCase()}</AppText>
+                <AppText style={[s.badgeTxt, { color: 'rgba(255,255,255,0.8)' }]}>{genderLabel.toUpperCase()}</AppText>
               </View>
             )}
           </View>
@@ -976,7 +1050,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
               <View style={s.skillsGrid}>
                 {areas.map((skill, i) => (
                   <View key={i} style={s.skillChip}>
-                    <AppText style={s.skillTxt}>{skill}</AppText>
+                    <AppText style={s.skillTxt} maxFontSizeMultiplier={1.3}>{subcatDisplay(skill)}</AppText>
                   </View>
                 ))}
               </View>
@@ -986,10 +1060,10 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           {/* Profile details */}
           <Section title={t('wp_profileDetails')} accent={C.indigo}>
             <InfoRow icon="⏳" label={t('wp_expLabel')}  value={exp && exp > 0 ? t('wp_years', { count: exp }) : t('wp_fresher')} iconBg="#EBF1FF" />
-            <InfoRow icon="👤" label={t('wp_gender')}      value={worker.gender} iconBg="#F1F5F9" />
+            <InfoRow icon="👤" label={t('wp_gender')}      value={genderLabel} iconBg="#F1F5F9" />
             <InfoRow icon="🎂" label={t('wp_age')}         value={age ? t('wp_years', { count: Number(age) }) : null} iconBg="#FFF7ED" />
             <InfoRow icon="🔖" label={t('wp_workerType')} value={isAgent ? t('wp_agentGroup') : t('wp_individualWorker')} iconBg="#F5F3FF" />
-            <InfoRow icon="📊" label={t('wp_statusLabel')}      value={worker.status} iconBg="#F0FDF4" />
+            <InfoRow icon="📊" label={t('wp_statusLabel')}      value={isVerified ? t('wp_verified') : t('wp_unverified')} iconBg="#F0FDF4" />
             {!!bio && (
               <View style={s.bioWrap}>
                 <AppText style={s.bioLabel}>{t('wp_about')}</AppText>
@@ -1253,8 +1327,10 @@ const s = StyleSheet.create({
 
   // Skills
   skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  skillChip:  { backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#bfdbfe' },
-  skillTxt:   { fontSize: 12, fontWeight: '600', color: '#2563eb' },
+  // flexShrink:0 keeps each chip at its content width so the label is never
+  // squeezed/clipped; chips wrap to the next line instead of compressing.
+  skillChip:  { flexShrink: 0, backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#bfdbfe' },
+  skillTxt:   { fontSize: 12, lineHeight: 18, fontWeight: '600', color: '#2563eb' },
 
   // Bio
   bioWrap:  { paddingTop: 12 },

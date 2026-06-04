@@ -31,7 +31,8 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<'otp' | 'password'>('otp');
+  // Employer app defaults to password login; other apps default to OTP.
+  const [mode, setMode] = useState<'otp' | 'password'>(appContext === 'employer-app' ? 'password' : 'otp');
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;

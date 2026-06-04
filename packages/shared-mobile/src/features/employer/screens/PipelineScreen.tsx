@@ -13,6 +13,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { apiClient } from '../../../core/api/client';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerMappingApi, type WorkerMapping } from '../../../core/api/endpoints/workerMappingApi';
@@ -20,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'EmployerPipeline'>;
 
@@ -102,9 +104,29 @@ interface WorkerRowProps {
 }
 
 const statusConfig = {
-  Shortlisted: { color: '#2563eb', bg: '#eff6ff', label: 'Shortlisted' },
-  Selected:    { color: '#7c3aed', bg: '#f5f3ff', label: 'Selected' },
-  Joined:      { color: '#059669', bg: '#ecfdf5', label: 'Joined' },
+  Shortlisted: { color: '#2563eb', bg: '#eff6ff', labelKey: 'shortlisted' },
+  Selected:    { color: '#7c3aed', bg: '#f5f3ff', labelKey: 'selected' },
+  Joined:      { color: '#059669', bg: '#ecfdf5', labelKey: 'joined' },
+} as const;
+
+// Pipeline stage → existing i18n key (all 11 locales). Reused for the global
+// totals cards, the per-requirement count pills and the worker status badges.
+const STAGE_TKEY: Record<string, string> = {
+  Interested: 'ws_outcome_interested',
+  Shortlisted: 'shortlisted',
+  Selected: 'selected',
+  Joined: 'joined',
+};
+
+// Backend requirement status → existing i18n key (all 11 locales).
+const REQ_STATUS_TKEY: Record<string, string> = {
+  open: 'statusOpen',
+  pending: 'statusPending',
+  closed: 'statusClosed',
+  expired: 'statusClosed',
+  completed: 'stageCompleted',
+  assigned: 'statusOngoing',
+  ongoing: 'statusOngoing',
 };
 
 const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: WorkerRowProps): React.JSX.Element => {
@@ -116,7 +138,7 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
     .map(w => w[0]).join('').toUpperCase();
 
   const rateInfo = worker.status === 'Joined' && worker.agreedRate
-    ? `₹${worker.agreedRate}/${worker.rateType === 'Daily' ? 'day' : 'mo'}`
+    ? `₹${worker.agreedRate}${worker.rateType === 'Daily' ? t('perDay') : t('perMonth')}`
     : null;
 
   return (
@@ -132,14 +154,14 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
           {worker.workerName}
         </AppText>
         <AppText style={[wr.skill, { color: theme.colors.mutedText }]} numberOfLines={1}>
-          {[worker.workerSkill ?? 'Worker', rateInfo].filter(Boolean).join(' · ')}
+          {[worker.workerSkill ? subcatDisplay(worker.workerSkill) : t('rd_workerFallback'), rateInfo].filter(Boolean).join(' · ')}
         </AppText>
       </View>
 
       {/* Status + actions */}
       <View style={wr.right}>
         <View style={[wr.badge, { backgroundColor: sc.bg }]}>
-          <AppText style={[wr.badgeTxt, { color: sc.color }]}>{sc.label}</AppText>
+          <AppText style={[wr.badgeTxt, { color: sc.color }]}>{t(sc.labelKey)}</AppText>
         </View>
 
         <View style={wr.btnRow}>
@@ -235,10 +257,11 @@ const ReqSection = ({
 }: ReqSectionProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
-  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  // Localize the work-type / sub-category to the active language (all 11) —
+  // subcatDisplay falls back to readable Title Case for labels not in the catalog.
   const title = [req.workType, req.subCategory]
     .filter(Boolean)
-    .map(s => capitalize((s ?? '').replace(/_/g, ' ')))
+    .map(s => subcatDisplay(String(s)))
     .join(' · ');
   const location = getLocationStr({ district: req.district, state: req.state }, i18n.language, '');
   const interestedCount = (req.intrestedAgents ?? []).length;
@@ -261,7 +284,7 @@ const ReqSection = ({
       <TouchableOpacity onPress={onToggle} activeOpacity={0.82} style={rs.headerRow}>
         <View style={{ flex: 1 }}>
           <AppText style={[rs.title, { color: theme.colors.text }]} numberOfLines={2}>
-            {title || 'Requirement'}
+            {title || t('calRequirement')}
           </AppText>
           <AppText style={[rs.sub, { color: theme.colors.mutedText }]} numberOfLines={1}>
             {req.ERN_NUMBER ? `ERN ${req.ERN_NUMBER}` : ''}
@@ -272,7 +295,7 @@ const ReqSection = ({
         <View style={{ alignItems: 'flex-end', gap: 6 }}>
           <View style={[rs.statusBadge, { backgroundColor: statusBg }]}>
             <View style={[rs.statusDot, { backgroundColor: statusColor }]} />
-            <AppText style={[rs.statusTxt, { color: statusColor }]}>{req.status ?? 'Open'}</AppText>
+            <AppText style={[rs.statusTxt, { color: statusColor }]}>{t(REQ_STATUS_TKEY[statusRaw] ?? 'statusOpen')}</AppText>
           </View>
           {totalPipelined > 0 && (
             <AppText style={[rs.pipeCount, { color: theme.colors.mutedText }]}>
@@ -290,7 +313,7 @@ const ReqSection = ({
         {countPills.map(p => (
           <View key={p.key} style={[rs.pill, { backgroundColor: p.bg }]}>
             <AppText style={[rs.pillNum, { color: p.color }]}>{p.count}</AppText>
-            <AppText style={[rs.pillLabel, { color: p.color }]}>{p.key}</AppText>
+            <AppText style={[rs.pillLabel, { color: p.color }]}>{t(STAGE_TKEY[p.key])}</AppText>
           </View>
         ))}
       </View>
@@ -337,7 +360,7 @@ const ReqSection = ({
               {interestedCount > 0 && (
                 <TouchableOpacity onPress={onViewInterested} style={rs.viewMoreBtn} activeOpacity={0.8}>
                   <AppText style={[rs.viewMoreTxt, { color: BRAND }]}>
-                    {`${interestedCount} interested · View all  →`}
+                    {`${interestedCount} ${t('ws_outcome_interested')} · ${t('viewAll')}`}
                   </AppText>
                 </TouchableOpacity>
               )}
@@ -506,7 +529,11 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
     if (!exp) return true;
     return new Date(exp).getTime() > Date.now();
   })();
-  const pipelineEnabled = profileQuery.data?.planFeatures?.pipelineEnabled ?? false;
+  // Use the shared plan-features hook so pipelineEnabled resolves from the
+  // employer tier (Contractor/Agency/Industry = true) when the backend user
+  // doc omits the raw planFeatures flag — instead of defaulting to a false lock.
+  const plan = usePlanFeatures();
+  const pipelineEnabled = plan.pipelineEnabled;
   const hasAccess = isSubscribed && pipelineEnabled;
 
   // ── Data queries ─────────────────────────────────────────────────────────
@@ -766,7 +793,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
                     <AppText style={[sg.count, { color: s.color }]}>
                       {pipelineQuery.isLoading ? '—' : String(totals[s.key] ?? 0)}
                     </AppText>
-                    <AppText style={[sg.label, { color: s.color }]}>{s.key}</AppText>
+                    <AppText style={[sg.label, { color: s.color }]}>{t(STAGE_TKEY[s.key])}</AppText>
                   </View>
                 ))}
               </View>

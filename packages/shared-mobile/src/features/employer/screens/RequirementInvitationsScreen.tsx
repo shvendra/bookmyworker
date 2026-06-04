@@ -51,6 +51,16 @@ const fmtTime = (d?: string): string => {
   catch { return ''; }
 };
 
+// Map a raw requirement status → a translated label key (employer ns).
+// Unknown statuses fall back to the raw value so nothing ever disappears.
+const REQ_STATUS_LABEL_KEYS: Record<string, string> = {
+  pending: 'rd_statusPending',
+  open: 'rd_statusOpen', active: 'rd_statusOpen', approved: 'rd_statusOpen',
+  closed: 'rd_statusClosed', expired: 'rd_statusClosed', completed: 'rd_statusClosed',
+  ongoing: 'rd_statusOngoing', assigned: 'rd_statusOngoing',
+  rejected: 'rd_statusRejected',
+};
+
 // ─── Requirement header card ──────────────────────────────────────────────────
 const RequirementHeader = React.memo(({ requirementId }: { requirementId: string }): React.JSX.Element | null => {
   const { theme } = useAppTheme();
@@ -71,8 +81,13 @@ const RequirementHeader = React.memo(({ requirementId }: { requirementId: string
   const isOpen = statusRaw !== 'closed' && statusRaw !== 'expired' && statusRaw !== 'completed';
   const location = getLocationStr({ district: req.district, state: req.state }, lang, '');
   const totalWorkers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
-  const workTypeLabel = getWorkTypeLabel(req.workType, tDefault as Parameters<typeof getWorkTypeLabel>[1]);
+  // Category labels embed a literal "\n" for the 2-line grid cards; flatten it
+  // to a space so the single-line title here doesn't break mid-name.
+  const workTypeLabel = getWorkTypeLabel(req.workType, tDefault as Parameters<typeof getWorkTypeLabel>[1]).replace(/\n/g, ' ');
   const subCatLabel   = req.subCategory ? getSubCatLabel(req.subCategory, lang) : null;
+  const statusLabel   = REQ_STATUS_LABEL_KEYS[statusRaw]
+    ? t(REQ_STATUS_LABEL_KEYS[statusRaw] as Parameters<typeof t>[0])
+    : (req.status ?? t('rd_statusOpen'));
 
   return (
     <View style={[rh.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
@@ -89,8 +104,8 @@ const RequirementHeader = React.memo(({ requirementId }: { requirementId: string
           )}
           <View style={[rh.statusPill, { backgroundColor: isOpen ? '#ECFDF5' : '#F1F5F9' }]}>
             <View style={[rh.statusDot, { backgroundColor: isOpen ? '#10B981' : '#94A3B8' }]} />
-            <AppText style={[rh.statusTxt, { color: isOpen ? '#047857' : '#64748B' }]}>
-              {req.status ?? 'Open'}
+            <AppText style={[rh.statusTxt, { color: isOpen ? '#047857' : '#64748B' }]} numberOfLines={1}>
+              {statusLabel}
             </AppText>
           </View>
         </View>

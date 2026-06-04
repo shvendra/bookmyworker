@@ -423,21 +423,22 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
 
         {/* Account Settings */}
         <MenuSection label={t('profile_sectionAccount')}>
-          {user?.role !== 'employer' && (
-            <MenuItem
-              icon="🌐"
-              label={t('profile_language')}
-              onPress={() => setLangModalVisible(true)}
-              right={
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <AppText variant="micro" color={theme.colors.primary} weight="700">
-                    {currentLang?.nativeLabel ?? 'English'}
-                  </AppText>
-                  <AppText style={styles.menuChevron} color={theme.colors.mutedText}>›</AppText>
-                </View>
-              }
-            />
-          )}
+          {/* Language picker — available to all roles (employer included). The
+              choice persists to the DB via setLanguage and is rehydrated into the
+              app-specific lang key on each boot by useLangSync. */}
+          <MenuItem
+            icon="🌐"
+            label={t('profile_language')}
+            onPress={() => setLangModalVisible(true)}
+            right={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <AppText variant="micro" color={theme.colors.primary} weight="700">
+                  {currentLang?.nativeLabel ?? 'English'}
+                </AppText>
+                <AppText style={styles.menuChevron} color={theme.colors.mutedText}>›</AppText>
+              </View>
+            }
+          />
           <MenuItem
             icon="🔔"
             label={t('profile_notificationsHub')}

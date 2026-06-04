@@ -1,4 +1,20 @@
 export const translation = {
+  // -- Map location picker --
+  lp_title: 'ସ୍ଥାନ ବାଛନ୍ତୁ',
+  lp_useGps: 'ବର୍ତ୍ତମାନ ସ୍ଥାନ ବ୍ୟବହାର କରନ୍ତୁ (GPS)',
+  lp_detecting: 'ଚିହ୍ନଟ କରାଯାଉଛି…',
+  lp_searchPlaceholder: 'ସହର, ଗାଁ, ଠିକଣା ଖୋଜନ୍ତୁ…',
+  lp_selectedLabel: 'ବଛାଯାଇଥିବା ସ୍ଥାନ',
+  lp_movePin: 'ପିନ୍ ରଖିବାକୁ ମାନଚିତ୍ରରେ ଟ୍ୟାପ୍ କରନ୍ତୁ କିମ୍ବା ଖୋଜନ୍ତୁ',
+  lp_locating: 'ସ୍ଥାନ ଖୋଜାଯାଉଛି…',
+  lp_confirm: 'ସ୍ଥାନ ନିଶ୍ଚିତ କରନ୍ତୁ',
+  lp_noResults: 'କୌଣସି ଫଳାଫଳ ମିଳିଲା ନାହିଁ',
+  lp_gpsUnavailable: 'ଉପଲବ୍ଧ ନାହିଁ',
+  lp_gpsUnavailableMsg: 'ଏହି ଡିଭାଇସରେ ଲୋକେସନ୍ ସେବା ଉପଲବ୍ଧ ନାହିଁ।',
+  lp_gpsServicesOff: "ସ୍ଥାନ ସେବା ବନ୍ଦ ଅଛି। ଦୟାକରି ଆପଣଙ୍କ ଡିଭାଇସ ସେଟିଂସରେ GPS/ସ୍ଥାନ ଚାଲୁ କରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+  lp_locErrorTitle: 'ଲୋକେସନ୍ ତ୍ରୁଟି',
+  lp_permDenied: 'ଲୋକେସନ୍ ଅନୁମତି ପ୍ରତ୍ୟାଖ୍ୟାନ। ଦୟାକରି ସେଟିଂସରେ ଲୋକେସନ୍ ଆକ୍ସେସ୍ ସକ୍ଷମ କରନ୍ତୁ।',
+  lp_locFailed: 'ଆପଣଙ୍କ ସ୍ଥାନ ମିଳିପାରିଲା ନାହିଁ। ଦୟାକରି ନିଜେ ଖୋଜନ୍ତୁ।',
   // ── Employer KYC: work location + industry GST ──
   kycLocationSection: 'କାର୍ଯ୍ୟ ସ୍ଥାନ',
   kycLocationHint: 'ଆପଣଙ୍କ ବ୍ୟବସାୟ କିମ୍ବା କାର୍ଯ୍ୟ କେଉଁଠାରେ ଅଛି ବାଛନ୍ତୁ।',
@@ -882,4 +898,10 @@ export const translation = {
   notifPrefPromoDesc:          'ଅଫର, ଟିପ୍ସ ଏବଂ ପ୍ଲାଟଫର୍ମ ଘୋଷଣା',
   notifPrefNewReqLabel:        'ନୂଆ ଆବଶ୍ୟକତା',
   notifPrefNewReqDesc:         'ଯେତେବେଳେ ଜଣେ ନିୟୋଗକର୍ତ୍ତା ନୂଆ ଚାକିରି ଆବଶ୍ୟକତା ପୋଷ୍ଟ କରନ୍ତି',
+  // ── Category selector (work category + sub-category picker) ──
+  cs_subCategory: "ଉପ-ଶ୍ରେଣୀ",
+  cs_selectCategory: "ଶ୍ରେଣୀ ବାଛନ୍ତୁ",
+  cs_selectSubCategory: "ଉପ-ଶ୍ରେଣୀ ବାଛନ୍ତୁ",
+  cs_selectCategoryFirst: "ପ୍ରଥମେ ଶ୍ରେଣୀ ବାଛନ୍ତୁ",
+  cs_subTypes: "{{n}} ଉପ-ପ୍ରକାର",
 } as const;
