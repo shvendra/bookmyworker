@@ -11,6 +11,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -64,7 +65,7 @@ const REQ_TYPES: ReqTypeOption[] = [
     value: 'Supply_Based',
     label: 'Supply Based',
     description: 'Bulk labour supply for large-scale or ongoing workforce needs',
-    icon: '🏗️',
+    icon: '👥',
     color: '#F59E0B',
   },
   {
@@ -122,12 +123,14 @@ type BooleanFlagKey = (typeof BOOLEAN_FLAGS)[number]['key'];
 interface TypeSelectionProps {
   onSelect: (type: RequirementType) => void;
   onBack: () => void;
+  showBack: boolean;
 }
 
-const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element => {
+const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const { config } = useAppConfig();
+  const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
@@ -136,13 +139,23 @@ const TypeSelectionStep = ({ onSelect }: TypeSelectionProps): React.JSX.Element 
       showsVerticalScrollIndicator={false}
     >
       {/* ── Premium Hero ─────────────────────────────────────────────────── */}
-      <View style={styles.hero}>
+      <View style={[styles.hero, { paddingTop: insets.top + 14 }]}>
         <View style={styles.heroDeco1} />
         <View style={styles.heroDeco2} />
         <View style={styles.heroDeco3} />
+        {showBack && (
+          <TouchableOpacity
+            onPress={onBack}
+            style={[styles.heroBack, { top: insets.top + 8 }]}
+            activeOpacity={0.75}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <AppText style={styles.heroBackIcon}>‹</AppText>
+          </TouchableOpacity>
+        )}
         <View style={styles.heroInner}>
           <View style={styles.heroIconWrap}>
-            <AppText style={styles.heroEmoji}>📣</AppText>
+            <AppText style={styles.heroEmoji}>🔊</AppText>
           </View>
           <AppText
             style={styles.heroTitle}
@@ -262,6 +275,50 @@ interface FormStepProps {
   initialWorkType?: string;
   prefill?: PrefillData;
 }
+
+// ─── Numeric stepper (− value +) for worker counts ─────────────────────────────
+interface StepperProps {
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  min: number;
+}
+
+const Stepper = ({ label, required, value, onChange, min }: StepperProps): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  const num = parseInt(value || '0', 10) || 0;
+  const set = (n: number): void => onChange(String(Math.max(min, n)));
+  const atMin = num <= min;
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <View style={ps.stepperLabelRow}>
+        <AppText variant="labelSm" color={theme.colors.textSecondary} style={{ letterSpacing: 0.2 }}>{label}</AppText>
+        {required && <AppText style={ps.stepperAsterisk}>*</AppText>}
+      </View>
+      <View style={[ps.stepperRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
+        <TouchableOpacity
+          onPress={() => set(num - 1)}
+          disabled={atMin}
+          activeOpacity={0.7}
+          style={[ps.stepperBtn, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border, opacity: atMin ? 0.45 : 1 }]}
+        >
+          <AppText style={[ps.stepperBtnTxt, { color: theme.colors.primary }]}>−</AppText>
+        </TouchableOpacity>
+        <View style={[ps.stepperValueBox, { borderColor: theme.colors.border }]}>
+          <AppText style={[ps.stepperValueTxt, { color: theme.colors.text }]}>{num}</AppText>
+        </View>
+        <TouchableOpacity
+          onPress={() => set(num + 1)}
+          activeOpacity={0.7}
+          style={[ps.stepperBtn, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
+        >
+          <AppText style={[ps.stepperBtnTxt, { color: theme.colors.primary }]}>+</AppText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: FormStepProps): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -435,20 +492,27 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       keyboardShouldPersistTaps="handled"
     >
       {/* ── Type badge ── */}
-      <View style={[ps.typeBanner, { backgroundColor: typeInfo.color + '14', borderColor: typeInfo.color + '35' }]}>
-        <View style={[ps.typeBannerIcon, { backgroundColor: typeInfo.color + '20' }]}>
+      <View style={[ps.typeBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.typeBannerIcon, { backgroundColor: theme.colors.primaryLight }]}>
           <AppText style={{ fontSize: 22 }}>{typeInfo.icon}</AppText>
         </View>
         <View style={{ flex: 1 }}>
-          <AppText style={[ps.typeBannerLabel, { color: typeInfo.color }]}>{t(`type_${reqType}_label` as any)}</AppText>
+          <AppText style={[ps.typeBannerLabel, { color: theme.colors.primary }]}>{t(`type_${reqType}_label` as any)}</AppText>
           <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={1}>{t(`type_${reqType}_desc` as any)}</AppText>
         </View>
+        <TouchableOpacity
+          onPress={onBack}
+          activeOpacity={0.75}
+          style={[ps.changeBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]}
+        >
+          <AppText style={[ps.changeBtnTxt, { color: theme.colors.primary }]}>{t('post_changeType')}</AppText>
+        </TouchableOpacity>
       </View>
 
       {/* ── 1. Work Type ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#3B82F615' }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#F3EEE6' }]}>
             <AppText style={ps.sectionIcon}>💼</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secWorkType')}</AppText>
@@ -470,25 +534,36 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 2. Worker Details ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#8B5CF615' }]}>
-            <AppText style={ps.sectionIcon}>👷</AppText>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
+            <AppText style={ps.sectionIcon}>👤</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secWorkerDetails')}</AppText>
         </View>
         <View style={ps.sectionBody}>
-          <FormInput
+          <Controller
             control={control}
             name="workerQuantitySkilled"
-            label={t('post_skilledWorkers')}
-            placeholder={t('jp_phEg5')}
-            keyboardType="number-pad"
+            render={({ field: { value, onChange } }) => (
+              <Stepper
+                label={t('post_skilledWorkers').replace(/\s*\*\s*$/, '')}
+                required
+                value={value ?? '1'}
+                onChange={onChange}
+                min={1}
+              />
+            )}
           />
-          <FormInput
+          <Controller
             control={control}
             name="workerQuantityUnskilled"
-            label={t('post_helperWorkers')}
-            placeholder={t('jp_phEg2')}
-            keyboardType="number-pad"
+            render={({ field: { value, onChange } }) => (
+              <Stepper
+                label={t('post_helperWorkers').replace(/\s*\*\s*$/, '')}
+                value={value ?? '0'}
+                onChange={onChange}
+                min={0}
+              />
+            )}
           />
           <Controller
             control={control}
@@ -509,7 +584,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 3. Location ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#10B98115' }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#FDECEF' }]}>
             <AppText style={ps.sectionIcon}>📍</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secLocation')}</AppText>
@@ -573,7 +648,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 4. Schedule & Duration ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#F59E0B15' }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#FDF5E8' }]}>
             <AppText style={ps.sectionIcon}>📅</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secSchedule')}</AppText>
@@ -644,8 +719,8 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 5. Payment ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#05966915' }]}>
-            <AppText style={ps.sectionIcon}>💰</AppText>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#EBF8F0' }]}>
+            <AppText style={ps.sectionIcon}>💲</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPayment')}{'  '}<AppText style={[ps.sectionSub, { color: theme.colors.mutedText }]}>{t('post_perWorker')}</AppText></AppText>
         </View>
@@ -706,7 +781,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 6. Perks & Benefits ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#EC489915' }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#FDECEF' }]}>
             <AppText style={ps.sectionIcon}>🎁</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPerks')}</AppText>
@@ -748,8 +823,8 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── 7. Work Description ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#6366F115' }]}>
-            <AppText style={ps.sectionIcon}>📝</AppText>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
+            <AppText style={ps.sectionIcon}>✏️</AppText>
           </View>
           <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secDescription')}</AppText>
           <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
@@ -951,12 +1026,12 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   if (!reqType) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
         <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-        <ScreenHeader title={t('postRequirement')} onBack={goBack} />
         <TypeSelectionStep
           onSelect={(type) => setReqType(type)}
           onBack={goBack}
+          showBack={navigation.canGoBack()}
         />
       </View>
     );
@@ -1017,6 +1092,18 @@ const styles = StyleSheet.create({
     top: 20,
     left: '45%',
   },
+  heroBack: {
+    position: 'absolute',
+    left: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  heroBackIcon: { fontSize: 26, color: '#fff', fontWeight: '300', lineHeight: 30, marginLeft: -2 },
   heroInner: { alignItems: 'center', zIndex: 1 },
   heroIconWrap: {
     width: 72,
@@ -1163,23 +1250,34 @@ const locBtnStyles = StyleSheet.create({
 // ─── Premium Section Styles ────────────────────────────────────────────────────
 const ps = StyleSheet.create({
   // Type banner (replaces old typeBadge — no duplicate title)
-  typeBanner:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 13, marginBottom: 14 },
+  typeBanner:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 13, marginBottom: 14, elevation: 1, shadowColor: '#142250', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 12 },
   typeBannerIcon:   { width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  typeBannerLabel:  { fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
+  typeBannerLabel:  { fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
   typeBannerDesc:   { fontSize: 11.5, fontWeight: '500', marginTop: 2 },
+  changeBtn:        { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, flexShrink: 0 },
+  changeBtnTxt:     { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.2 },
 
-  // Section card
-  section:          { borderRadius: 16, borderWidth: 1, marginBottom: 12, overflow: 'hidden', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  sectionIconBox:   { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  sectionIcon:      { fontSize: 16, lineHeight: 20 },
-  sectionTitle:     { fontSize: 14, fontWeight: '800', flex: 1, letterSpacing: -0.1 },
+  // Numeric stepper (worker counts)
+  stepperLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 8 },
+  stepperAsterisk:  { color: '#E11D48', fontSize: 13, fontWeight: '700' },
+  stepperRow:       { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, overflow: 'hidden', height: 54 },
+  stepperBtn:       { width: 56, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  stepperBtnTxt:    { fontSize: 26, fontWeight: '600', lineHeight: 30 },
+  stepperValueBox:  { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', borderLeftWidth: 1, borderRightWidth: 1 },
+  stepperValueTxt:  { fontSize: 18, fontWeight: '800' },
+
+  // Section card (Figma: radius 20, soft shadow)
+  section:          { borderRadius: 20, borderWidth: 1, marginBottom: 16, overflow: 'hidden', elevation: 1, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
+  sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  sectionIconBox:   { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sectionIcon:      { fontSize: 17, lineHeight: 21 },
+  sectionTitle:     { fontSize: 15, fontWeight: '800', flex: 1, letterSpacing: -0.1 },
   sectionSub:       { fontSize: 12, fontWeight: '500' },
-  sectionBody:      { padding: 14, gap: 0 },
+  sectionBody:      { padding: 16, gap: 0 },
 
-  // Required / Optional tags
-  requiredDot:      { backgroundColor: '#FEF2F2', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: '#FECACA' },
-  requiredTxt:      { fontSize: 9.5, fontWeight: '700', color: '#DC2626', letterSpacing: 0.3 },
+  // Required / Optional tags (Figma rose)
+  requiredDot:      { backgroundColor: '#FEF0F2', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderColor: '#F8D6DD' },
+  requiredTxt:      { fontSize: 10, fontWeight: '800', color: '#E11D48', letterSpacing: 0.3 },
   optionalTag:      { fontSize: 11, fontWeight: '500' },
 
   // Map / GPS picker button (inside section body)

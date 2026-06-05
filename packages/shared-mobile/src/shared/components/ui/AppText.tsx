@@ -100,9 +100,21 @@ export const AppText = ({
   weight,
   color,
   center,
+  numberOfLines,
+  adjustsFontSizeToFit,
+  minimumFontScale,
+  maxFontSizeMultiplier,
   ...rest
 }: AppTextProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+
+  // ── Global text-overflow guards (employer + agent apps) ───────────────────
+  // 1. Cap OS font-scaling so large system fonts can't blow text out of its
+  //    container — the #1 cause of clipped labels on high-accessibility devices.
+  // 2. When a line limit is set, shrink-to-fit instead of ellipsizing — so long
+  //    translations (Hindi/Tamil/…) scale down to fit rather than getting cut off.
+  const hasLineLimit = numberOfLines != null;
+  const shrinkToFit = adjustsFontSizeToFit ?? hasLineLimit;
 
   return (
     <Text
@@ -119,6 +131,10 @@ export const AppText = ({
         style,
       ]}
       allowFontScaling
+      maxFontSizeMultiplier={maxFontSizeMultiplier ?? 1.3}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={shrinkToFit}
+      minimumFontScale={minimumFontScale ?? 0.75}
       {...rest}
     >
       {children}

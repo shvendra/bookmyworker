@@ -1,7 +1,7 @@
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal,
+  ActivityIndicator, FlatList, KeyboardAvoidingView, Modal,
   Platform, RefreshControl, ScrollView, StatusBar, StyleSheet,
   TextInput, TouchableOpacity, View,
 } from 'react-native';
@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -417,7 +418,7 @@ const JoinRateModal = ({ state, onConfirm, onClose }: JoinModalProps): React.JSX
   const handleConfirm = () => {
     const parsed = parseFloat(rate);
     if (!parsed || parsed <= 0) {
-      Alert.alert(t('error'), t('pipelineJoinRateRequired'));
+      showAlert(t('error'), t('pipelineJoinRateRequired'));
       return;
     }
     onConfirm(parsed, rateType);
@@ -582,7 +583,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
     onSuccess: () => { invalidatePipeline(); setBusyId(null); },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to update status.';
-      Alert.alert(t('error'), msg);
+      showAlert(t('error'), msg);
       setBusyId(null);
     },
   });
@@ -592,11 +593,11 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
     onSuccess: () => {
       invalidatePipeline();
       setBusyId(null);
-      Alert.alert('', t('pipelineRevertedSuccess'));
+      showAlert('', t('pipelineRevertedSuccess'));
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to revert.';
-      Alert.alert(t('error'), msg);
+      showAlert(t('error'), msg);
       setBusyId(null);
     },
   });
@@ -606,18 +607,18 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
     onSuccess: () => {
       invalidatePipeline();
       setBusyId(null);
-      Alert.alert('', t('pipelineRemovedSuccess'));
+      showAlert('', t('pipelineRemovedSuccess'));
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to remove.';
-      Alert.alert(t('error'), msg);
+      showAlert(t('error'), msg);
       setBusyId(null);
     },
   });
 
   // ── Worker action handlers ───────────────────────────────────────────────
   const handleSelect = (w: WorkerMapping) => {
-    Alert.alert(
+    showAlert(
       t('pipelineConfirmSelectTitle'),
       t('pipelineConfirmSelectBody', { name: w.workerName }),
       [
@@ -649,7 +650,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
 
   const handleRevert = (w: WorkerMapping) => {
     const isJoined = w.status === 'Joined';
-    Alert.alert(
+    showAlert(
       isJoined ? t('pipelineConfirmUnjoinTitle') : t('pipelineConfirmUnselectTitle'),
       isJoined ? t('pipelineConfirmUnjoinBody', { name: w.workerName }) : t('pipelineConfirmUnselectBody', { name: w.workerName }),
       [
@@ -665,7 +666,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
   };
 
   const handleRemove = (w: WorkerMapping) => {
-    Alert.alert(
+    showAlert(
       t('pipelineConfirmRemoveTitle'),
       t('pipelineConfirmRemoveBody', { name: w.workerName }),
       [

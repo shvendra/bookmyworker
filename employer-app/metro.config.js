@@ -9,6 +9,11 @@ const config = getDefaultConfig(projectRoot);
 // Watch the shared package source
 config.watchFolders = [sharedRoot];
 
+// Don't use Watchman — it intermittently hangs on `watch-project` in this monorepo
+// during release bundling. Metro falls back to a one-shot Node file crawl, which is
+// reliable for builds. (Dev hot-reload still works, just via Node's watcher.)
+config.resolver.useWatchman = false;
+
 // Always resolve node_modules from THIS app only — prevents duplicate React
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),

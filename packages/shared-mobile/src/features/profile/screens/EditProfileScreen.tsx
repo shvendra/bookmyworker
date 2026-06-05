@@ -132,7 +132,9 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   const [gender, setGender] = useState<string>(user?.gender ?? '');
   const [age, setAge] = useState<string>(user?.dob ? String(user.dob) : '');
   const [experience, setExperience] = useState<string>('');
-  const [areas, setAreas] = useState<string[]>(user?.areasOfWork ?? []);
+  // Serviceable areas = districts where the worker WANTS to work → `serviceArea`
+  // (the "Work categories" below map to areasOfWork; sub-skills to categories).
+  const [areas, setAreas] = useState<string[]>(user?.serviceArea ?? []);
   const [areaSearch, setAreaSearch] = useState('');
 
   // Role type (agentType for agents, workerSubType for workers/selfworkers)
@@ -180,6 +182,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             block?: string; address?: string; accountNumber?: string;
             ifscCode?: string; bankName?: string;
             gender?: string; dob?: string | number; areasOfWork?: string[];
+            serviceArea?: string[];
             workExperience?: string | number; categories?: string[];
             agentType?: string; workerSubType?: string;
           };
@@ -200,7 +203,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         if (u.block)       setBlockVal(u.block);
         if (u.gender)      setGender(u.gender);
         if (u.dob)         setAge(String(u.dob));
-        if (u.areasOfWork) setAreas(u.areasOfWork);
+        if (u.serviceArea) setAreas(u.serviceArea);
         if (u.workExperience != null && u.workExperience !== '') setExperience(String(u.workExperience));
         if (isAgent ? u.agentType : u.workerSubType) setRoleType((isAgent ? u.agentType : u.workerSubType) ?? '');
         if (u.categories?.length) {
@@ -322,8 +325,9 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         if (gender) workerUpdates.gender = gender;
         if (age && Number(age) >= 15 && Number(age) <= 70) workerUpdates.dob = Number(age);
         if (experience !== '' && Number(experience) >= 0 && Number(experience) <= 60) workerUpdates.workExperience = Number(experience);
-        if (areas.length > 0) workerUpdates.areasOfWork = areas;
+        if (selectedCats.length > 0) workerUpdates.areasOfWork = selectedCats;
         if (selectedSubs.length > 0) workerUpdates.categories = selectedSubs;
+        if (areas.length > 0) workerUpdates.serviceArea = areas;
         if (roleType) workerUpdates[isAgent ? 'agentType' : 'workerSubType'] = roleType;
         if (Object.keys(workerUpdates).length > 0) {
           await updateProfileFields(workerUpdates);
@@ -338,8 +342,9 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         profileImage: updatedUser.profileImage,
         ...(isWorkerRole && gender ? { gender } : {}),
         ...(isWorkerRole && age ? { dob: String(age) } : {}),
-        ...(isWorkerRole && areas.length > 0 ? { areasOfWork: areas } : {}),
+        ...(isWorkerRole && selectedCats.length > 0 ? { areasOfWork: selectedCats } : {}),
         ...(isWorkerRole && selectedSubs.length > 0 ? { categories: selectedSubs } : {}),
+        ...(isWorkerRole && areas.length > 0 ? { serviceArea: areas } : {}),
         ...(isWorkerRole && roleType ? (isAgent ? { agentType: roleType } : { workerSubType: roleType }) : {}),
       });
       toast.success(t('ep_profileSavedMsg'), t('ep_profileSaved'));
@@ -385,22 +390,27 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             )}
           </TouchableOpacity>
           <View style={styles.photoButtons}>
-            <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.primary }]}>
-              <AppText variant="caption" color="#fff">{t('ep_galleryBtn')}</AppText>
+            <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+              <AppText style={styles.photoBtnIcon}>🖼️</AppText>
+              <AppText style={styles.photoBtnTxt} color="#fff">{t('ep_galleryBtn')}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={takePhoto} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}>
-              <AppText variant="caption" color={theme.colors.text}>{t('ep_cameraBtn')}</AppText>
+            <TouchableOpacity onPress={takePhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <AppText style={styles.photoBtnIcon}>📷</AppText>
+              <AppText style={styles.photoBtnTxt} color={theme.colors.text}>{t('ep_cameraBtn')}</AppText>
             </TouchableOpacity>
           </View>
           <View style={styles.cropTipBanner}>
-            <AppText style={styles.cropTipText}>{t('ep_cropTip')}</AppText>
+            <AppText style={styles.cropTipText}>✂️ {t('ep_cropTip')}</AppText>
           </View>
         </View>
 
-        {/* Read-only mobile */}
+        {/* Read-only mobile (verified) */}
         <View style={[styles.readOnlyRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <AppText variant="caption" color={theme.colors.mutedText}>{t('ep_mobileNumber')}</AppText>
-          <AppText variant="body">+91 {user?.phone}</AppText>
+          <AppText style={[styles.mobileLabel, { color: theme.colors.mutedText }]}>{t('ep_mobileNumber')}</AppText>
+          <AppText style={[styles.mobileValue, { color: theme.colors.text }]}>+91 {user?.phone}</AppText>
+          <View style={styles.verifiedBadge}>
+            <AppText style={styles.verifiedTxt}>🔒 {t('ep_verified', 'Verified')}</AppText>
+          </View>
         </View>
 
         {/* BASIC INFO */}
@@ -699,27 +709,33 @@ const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { padding: 16, paddingBottom: 48 },
 
-  avatarSection:     { alignItems: 'center', marginBottom: 20, marginTop: 8 },
+  avatarSection:     { alignItems: 'center', marginBottom: 22, marginTop: 8 },
   avatarTouchable:   { position: 'relative', alignItems: 'center', justifyContent: 'center' },
-  avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  avatar:            { width: 100, height: 100, borderRadius: 50 },
-  avatarEditBadge:   { position: 'absolute', bottom: 2, right: 2, width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#fff' },
-  avatarEditIcon:    { fontSize: 14 },
-  avatarOverlay:     { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 50, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
-  photoButtons:      { flexDirection: 'row', gap: 10, marginTop: 10 },
-  photoBtn:          { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  cropTipBanner:     { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, borderWidth: 1, borderColor: '#BFDBFE' },
-  cropTipText:       { fontSize: 11, color: '#1D4ED8', fontWeight: '600' },
+  avatarPlaceholder: { width: 102, height: 102, borderRadius: 51, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  avatar:            { width: 102, height: 102, borderRadius: 51, borderWidth: 3, borderColor: '#2243BC' },
+  avatarEditBadge:   { position: 'absolute', bottom: 3, right: 3, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#EEF1F8' },
+  avatarEditIcon:    { fontSize: 15, color: '#FFFFFF' },
+  avatarOverlay:     { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 51, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  photoButtons:      { flexDirection: 'row', gap: 10, marginTop: 16 },
+  photoBtn:          { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 11, borderRadius: 14, borderWidth: 1.6 },
+  photoBtnIcon:      { fontSize: 15 },
+  photoBtnTxt:       { fontSize: 14.5, fontWeight: '800' },
+  cropTipBanner:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: '#EEF2FE', borderRadius: 13, paddingHorizontal: 12, paddingVertical: 12, marginTop: 14, borderWidth: 1, borderColor: '#E1E8FD' },
+  cropTipText:       { fontSize: 13, color: '#2243BC', fontWeight: '700' },
 
-  readOnlyRow: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10, gap: 2 },
-  sectionLabel:{ marginTop: 20, marginBottom: 8, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.8, fontWeight: '700' },
+  readOnlyRow: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 22, gap: 4, position: 'relative', shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 12 },
+  mobileLabel: { fontSize: 12, fontWeight: '700' },
+  mobileValue: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  verifiedBadge: { position: 'absolute', right: 16, top: 16, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F7EE', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  verifiedTxt: { fontSize: 11, fontWeight: '800', color: '#137A38' },
+  sectionLabel:{ marginTop: 20, marginBottom: 14, textTransform: 'uppercase', fontSize: 12, letterSpacing: 1.1, fontWeight: '800' },
   card:        { marginBottom: 4 },
   cardHint:    { marginBottom: 12 },
   error:       { marginTop: 8 },
   saveBtn:     { marginTop: 20 },
 
   // Gender chips
-  fieldLabel:    { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+  fieldLabel:    { fontSize: 13.5, fontWeight: '700', letterSpacing: 0, marginBottom: 9 },
   genderRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   genderChip:    { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 9 },
   genderChipText:{ fontSize: 13.5, fontWeight: '600' },
@@ -728,9 +744,9 @@ const styles = StyleSheet.create({
   ageInput: { fontSize: 20, fontWeight: '800', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, textAlign: 'center' },
 
   // Serviceable area
-  searchBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8, gap: 8 },
+  searchBox:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.6, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, marginTop: 8, gap: 8 },
   searchInput:  { flex: 1, fontSize: 14, fontWeight: '500', padding: 0 },
-  dropdown:     { borderWidth: 1, borderRadius: 12, marginTop: 4, maxHeight: 200, overflow: 'hidden' },
+  dropdown:     { borderWidth: 1, borderRadius: 14, marginTop: 4, maxHeight: 200, overflow: 'hidden' },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth },
   areaTag:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, marginRight: 6, marginBottom: 6 },
 });

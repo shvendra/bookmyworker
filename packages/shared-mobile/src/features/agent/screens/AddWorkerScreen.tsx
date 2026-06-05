@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -27,9 +28,18 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { indianStates } from '../../../shared/data/stateDistrict';
 
 interface CatEntry { label: string; value: string; subcategories: Array<{ label: string; value: string }> }
 const ALL_CATS: CatEntry[] = categoriesData as CatEntry[];
+
+// Flattened list of every district (with its state) for the serviceable-area
+// search. serviceArea is what the employer "city" search matches against, so an
+// agent-added worker is only findable in these districts (plus their residence).
+const ALL_DISTRICTS: { label: string; state: string }[] = [];
+Object.entries(indianStates as Record<string, Record<string, unknown>>).forEach(([stateName, districts]) => {
+  Object.keys(districts).forEach((d) => ALL_DISTRICTS.push({ label: d, state: stateName }));
+});
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -110,6 +120,23 @@ export const AddWorkerScreen = (): React.JSX.Element => {
   const [districtVal, setDistrictVal] = useState('');
   const [tehsilVal, setTehsilVal] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Serviceable areas (districts the worker will work in) → serviceArea.
+  const [serviceAreas, setServiceAreas] = useState<string[]>([]);
+  const [areaSearch, setAreaSearch] = useState('');
+
+  const filteredAreas = React.useMemo(() => {
+    const q = areaSearch.trim().toLowerCase();
+    if (!q) return [];
+    return ALL_DISTRICTS
+      .filter((d) => d.label.toLowerCase().includes(q) || d.state.toLowerCase().includes(q))
+      .slice(0, 30);
+  }, [areaSearch]);
+
+  const toggleArea = (district: string): void => {
+    setServiceAreas((prev) =>
+      prev.includes(district) ? prev.filter((a) => a !== district) : [...prev, district]
+    );
+  };
 
   const { control, handleSubmit, watch } = useForm<FormValues>({
     resolver: zodResolver(addWorkerSchema),
@@ -145,6 +172,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
       if (values.pinCode) formData.append('pinCode', values.pinCode);
       if (values.workExperience) formData.append('workExperience', JSON.stringify(values.workExperience));
       if (selectedCategories.length > 0) formData.append('areasOfWork', JSON.stringify(selectedCategories));
+      if (serviceAreas.length > 0) formData.append('serviceArea', JSON.stringify(serviceAreas));
       if (values.salaryType) formData.append('salaryType', values.salaryType);
       if (values.fixedSalary) formData.append('fixedSalary', values.fixedSalary);
       if (values.salaryFrom) formData.append('salaryFrom', values.salaryFrom);
@@ -235,6 +263,83 @@ export const AddWorkerScreen = (): React.JSX.Element => {
               keyboardType="number-pad"
               maxLength={6}
             />
+          </SectionCard>
+
+          {/* Serviceable Areas — where the worker will work (drives employer search) */}
+          <SectionCard
+            icon="🗺️"
+            title={`Serviceable Areas${serviceAreas.length > 0 ? `  ·  ${serviceAreas.length} selected` : ''}`}
+            theme={theme}
+          >
+            <AppText variant="caption" color={theme.colors.mutedText} style={styles.areaHint}>
+              Cities / districts where this worker will travel for work. Employers searching a city are matched against these areas.
+            </AppText>
+
+            <View style={[styles.searchBox, {
+              backgroundColor: isDark ? theme.colors.surface : '#fff',
+              borderColor: isDark ? theme.colors.border : '#DDE3F0',
+            }]}>
+              <AppText style={styles.searchIcon}>🔍</AppText>
+              <TextInput
+                style={[styles.searchInput, { color: theme.colors.text }]}
+                value={areaSearch}
+                onChangeText={setAreaSearch}
+                placeholder="Search city or district…"
+                placeholderTextColor={theme.colors.mutedText}
+                autoCorrect={false}
+              />
+              {areaSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setAreaSearch('')}>
+                  <AppText style={{ color: theme.colors.mutedText, fontSize: 15, fontWeight: '700', paddingHorizontal: 4 }}>✕</AppText>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {filteredAreas.length > 0 && (
+              <View style={[styles.dropdownBox, {
+                backgroundColor: isDark ? theme.colors.surface : '#fff',
+                borderColor: isDark ? theme.colors.border : '#DDE3F0',
+              }]}>
+                {filteredAreas.map((d) => {
+                  const sel = serviceAreas.includes(d.label);
+                  return (
+                    <TouchableOpacity
+                      key={`${d.state}-${d.label}`}
+                      style={[styles.dropdownItem, { borderBottomColor: isDark ? theme.colors.border : '#F1F5F9' },
+                        sel && { backgroundColor: isDark ? BRAND + '22' : '#EBF1FF' }]}
+                      onPress={() => { toggleArea(d.label); setAreaSearch(''); }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <AppText style={{ fontSize: 14, fontWeight: '600', color: sel ? BRAND : theme.colors.text }}>{d.label}</AppText>
+                        <AppText style={{ fontSize: 11, color: theme.colors.mutedText }}>{d.state}</AppText>
+                      </View>
+                      {sel && <AppText style={{ fontSize: 15, fontWeight: '800', color: BRAND }}>✓</AppText>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {areaSearch.trim().length > 0 && filteredAreas.length === 0 && (
+              <AppText variant="caption" color={theme.colors.mutedText} style={styles.areaHint}>No districts found</AppText>
+            )}
+
+            {serviceAreas.length > 0 && (
+              <View style={styles.chipGrid}>
+                {serviceAreas.map((a) => (
+                  <TouchableOpacity
+                    key={a}
+                    onPress={() => toggleArea(a)}
+                    activeOpacity={0.75}
+                    style={[styles.chip, { backgroundColor: BRAND, borderColor: BRAND }]}
+                  >
+                    <AppText variant="caption" color="#FFFFFF" style={styles.chipText} numberOfLines={1}>{a}</AppText>
+                    <AppText style={styles.chipCheck}>✕</AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </SectionCard>
 
           {/* Areas of Work */}
@@ -432,6 +537,21 @@ const styles = StyleSheet.create({
   chipCheck: { fontSize: 11, color: '#FFFFFF', fontWeight: '800' },
   chipText:  { fontWeight: '600' },
   chipHint:  { marginTop: 8, fontStyle: 'italic' },
+
+  areaHint:   { marginBottom: 10, lineHeight: 17 },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, height: 46,
+  },
+  searchIcon:  { fontSize: 15 },
+  searchInput: { flex: 1, fontSize: 14, padding: 0 },
+  dropdownBox: {
+    borderWidth: 1, borderRadius: 12, marginTop: 8, overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1,
+  },
 
   rangeRow:  { flexDirection: 'row', gap: 10 },
   rangeField: { flex: 1 },

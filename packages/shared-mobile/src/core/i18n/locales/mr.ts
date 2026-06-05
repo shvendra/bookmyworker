@@ -1,4 +1,6 @@
 export const translation = {
+  lp_tapHint: 'पिन ठेवण्यासाठी कुठेही टॅप करा',
+  profile_pendingVerification: 'प्रोफाइल पडताळणी प्रलंबित',
   // -- Map location picker --
   lp_title: 'स्थान निवडा',
   lp_useGps: 'सध्याचे स्थान वापरा (GPS)',
@@ -669,6 +671,17 @@ export const translation = {
   noJobsYet: 'सध्या कोणतीही नोकरी नाही. लवकरच तपासा!',
   // KYC Verification screen
   kyc_title: 'KYC पडताळणी',
+  kyc_gstQuestion: 'तुमच्याकडे GST नोंदणी आहे का?',
+  kyc_yes: 'होय',
+  kyc_no: 'नाही',
+  kyc_gstDetails: 'GST तपशील',
+  kyc_gstNumber: 'GST क्रमांक',
+  kyc_gstNumberPh: '15 अंकी GSTIN टाका',
+  kyc_firmName: 'फर्मचे नाव',
+  kyc_firmNamePh: 'नोंदणीकृत फर्मचे नाव',
+  kyc_firmAddress: 'फर्मचा पत्ता',
+  kyc_firmAddressPh: 'नोंदणीकृत फर्मचा पत्ता',
+  kyc_gstRequiredMsg: 'कृपया GST क्रमांक, फर्म नाव आणि पत्ता भरा',
   kyc_subtitle: 'संपूर्ण प्लॅटफॉर्म ॲक्सेससाठी KYC पूर्ण करा।',
   kyc_statusLabel: 'पडताळणी स्थिती',
   kyc_statusVerified: 'तुमची ओळख पडताळली गेली आहे. तुम्हाला संपूर्ण प्लॅटफॉर्म ॲक्सेस आहे।',
@@ -725,6 +738,7 @@ export const translation = {
   ep_confirmPassword: 'पासवर्ड पुष्टी करा',
   ep_confirmPasswordPlaceholder: 'नवीन पासवर्ड पुन्हा टाका',
   ep_galleryBtn: '📷 गॅलरी',
+  ep_verified: 'सत्यापित',
   ep_cameraBtn: '📸 कॅमेरा',
   ep_saveChanges: 'बदल जतन करा',
   ep_profileSaved: 'प्रोफाइल जतन केली',

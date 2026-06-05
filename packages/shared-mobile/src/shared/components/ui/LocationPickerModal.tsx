@@ -278,11 +278,13 @@ export const LocationPickerModal = ({
   const subAddress = (r: NominatimResult): string => r.display_name.split(',').slice(4, 7).join(',').trim();
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
-      <View style={[styles.root, { backgroundColor: c.background }]}>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent onRequestClose={handleClose}>
+      <View style={[styles.backdrop, { paddingTop: insets.top + 10 }]}>
+        <View style={[styles.sheet, { backgroundColor: c.background }]}>
+          <View style={[styles.handle, { backgroundColor: c.border }]} />
 
         {/* ── Header ────────────────────────────────────────────────────── */}
-        <View style={[styles.header, { backgroundColor: c.card, borderBottomColor: c.border, paddingTop: insets.top + 12 }]}>
+        <View style={[styles.header, { backgroundColor: c.card, borderBottomColor: c.border }]}>
           <AppText style={[styles.headerTitle, { color: c.text }]} numberOfLines={1}>{title ?? t('lp_title')}</AppText>
           <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={[styles.closeBtn, { backgroundColor: c.surface1 }]}>
             <AppText style={[styles.closeTxt, { color: c.text }]}>✕</AppText>
@@ -350,6 +352,15 @@ export const LocationPickerModal = ({
             style={styles.map}
           />
 
+          {/* Centered hint until a pin is dropped */}
+          {!picked && (
+            <View pointerEvents="none" style={styles.mapHintWrap}>
+              <View style={[styles.mapHint, { backgroundColor: c.card }]}>
+                <AppText style={[styles.mapHintTxt, { color: c.mutedText }]}>{t('lp_tapHint')}</AppText>
+              </View>
+            </View>
+          )}
+
           {/* Floating GPS pill */}
           <TouchableOpacity
             onPress={handleGPS}
@@ -392,6 +403,7 @@ export const LocationPickerModal = ({
             <AppText style={styles.confirmTxt}>{t('lp_confirm')}</AppText>
           </TouchableOpacity>
         </View>
+        </View>
       </View>
     </Modal>
   );
@@ -400,9 +412,14 @@ export const LocationPickerModal = ({
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
+  // Bottom-sheet presentation
+  backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' },
+  sheet: { flex: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  handle: { width: 40, height: 5, borderRadius: 3, alignSelf: 'center', marginTop: 8, marginBottom: 4 },
+
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', marginRight: 12 },
   closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -427,6 +444,12 @@ const styles = StyleSheet.create({
 
   mapWrap: { flex: 1, overflow: 'hidden' },
   map: { flex: 1 },
+  mapHintWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  mapHint: {
+    borderRadius: 999, paddingVertical: 10, paddingHorizontal: 18, maxWidth: '70%',
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 4,
+  },
+  mapHintTxt: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
   gpsPill: {
     position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 14,

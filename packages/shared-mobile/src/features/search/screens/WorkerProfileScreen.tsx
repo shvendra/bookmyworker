@@ -163,7 +163,7 @@ const Section = ({ title, accent, children }: {
   );
 };
 const sec = StyleSheet.create({
-  card:     { borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  card:     { borderRadius: 20, padding: 16, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 1 },
   titleRow: { borderLeftWidth: 3, paddingLeft: 10, marginBottom: 14 },
   title:    { fontSize: 14, fontWeight: '800', color: C.navy, letterSpacing: 0.2 },
 });
@@ -196,7 +196,7 @@ const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
 };
 const dr = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  iconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  iconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:    { fontSize: 18, lineHeight: 22 },
   name:    { fontSize: 13, fontWeight: '700' },
   meta:    { fontSize: 11, color: C.slate, marginTop: 2 },
@@ -516,7 +516,7 @@ const RequirementPickerModal = ({
                           {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <AppText style={pm.reqTitle} numberOfLines={1}>
+                          <AppText style={pm.reqTitle} numberOfLines={2} maxFontSizeMultiplier={1.3}>
                             {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                           </AppText>
                           <AppText style={pm.reqSub}>
@@ -688,7 +688,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
                       {isChk && <View style={inv.radioDot} />}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText style={inv.reqTitle} numberOfLines={1}>
+                      <AppText style={inv.reqTitle} numberOfLines={2} maxFontSizeMultiplier={1.3}>
                         {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                       </AppText>
                       <AppText style={inv.reqSub}>ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}</AppText>
@@ -925,7 +925,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const accentColor = isAgent ? C.indigo : C.blue;
   const isVerified  = worker.status === 'Verified' || worker.veryfiedBage === true;
   const age         = getAge(worker.dob);
-  const areas       = formatAreas(worker.areasOfWork ?? []);
+  // Show both work categories (areasOfWork) and sub-skills (categories); formatAreas de-dupes.
+  const areas       = formatAreas([...(worker.areasOfWork ?? []), ...(worker.categories ?? [])]);
   // Translated gender label (falls back to the raw value for unknown values).
   const genderKey   = worker.gender ? GENDER_KEY[worker.gender.trim().toLowerCase()] : undefined;
   const genderLabel = genderKey ? t(genderKey) : (worker.gender ?? '');
@@ -1303,8 +1304,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   // Hero section
-  hero:        { alignItems: 'center', paddingBottom: 28, paddingHorizontal: 20, overflow: 'hidden', position: 'relative' },
-  heroDepth:   { ...StyleSheet.absoluteFillObject, backgroundColor: '#0F2888', opacity: 0.45 },
+  hero:        { alignItems: 'center', paddingBottom: 28, paddingHorizontal: 20, overflow: 'hidden', position: 'relative', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  heroDepth:   { ...StyleSheet.absoluteFillObject, backgroundColor: '#1037A4', opacity: 0.45 },
   heroCircle1: { position: 'absolute', width: 280, height: 280, borderRadius: 140, top: -90, right: -70, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroCircle2: { position: 'absolute', width: 200, height: 200, borderRadius: 100, bottom: -40, left: -60, backgroundColor: 'rgba(255,255,255,0.03)' },
 

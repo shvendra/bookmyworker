@@ -1,4 +1,6 @@
 export const translation = {
+  lp_tapHint: 'పిన్ ఉంచడానికి ఎక్కడైనా నొక్కండి',
+  profile_pendingVerification: 'ప్రొఫైల్ ధృవీకరణ పెండింగ్‌లో ఉంది',
   // -- Map location picker --
   lp_title: 'స్థానాన్ని ఎంచుకోండి',
   lp_useGps: 'ప్రస్తుత స్థానాన్ని ఉపయోగించండి (GPS)',
@@ -587,6 +589,17 @@ export const translation = {
   noJobsFound: 'ఉద్యోగాలు దొరకలేదు',
   // KYC Verification screen
   kyc_title: 'KYC ధృవీకరణ',
+  kyc_gstQuestion: 'మీకు GST నమోదు ఉందా?',
+  kyc_yes: 'అవును',
+  kyc_no: 'కాదు',
+  kyc_gstDetails: 'GST వివరాలు',
+  kyc_gstNumber: 'GST నంబర్',
+  kyc_gstNumberPh: '15 అంకెల GSTIN నమోదు చేయండి',
+  kyc_firmName: 'సంస్థ పేరు',
+  kyc_firmNamePh: 'నమోదిత సంస్థ పేరు',
+  kyc_firmAddress: 'సంస్థ చిరునామా',
+  kyc_firmAddressPh: 'నమోదిత సంస్థ చిరునామా',
+  kyc_gstRequiredMsg: 'దయచేసి GST నంబర్, సంస్థ పేరు మరియు చిరునామా నింపండి',
   kyc_subtitle: 'పూర్తి ప్లాట్‌ఫారమ్ యాక్సెస్ పొందడానికి KYC పూర్తి చేయండి.',
   kyc_statusLabel: 'ధృవీకరణ స్థితి',
   kyc_statusVerified: 'మీ గుర్తింపు ధృవీకరించబడింది. మీకు పూర్తి యాక్సెస్ ఉంది.',
@@ -643,6 +656,7 @@ export const translation = {
   ep_confirmPassword: 'పాస్‌వర్డ్ నిర్ధారించండి',
   ep_confirmPasswordPlaceholder: 'కొత్త పాస్‌వర్డ్ మళ్ళీ నమోదు చేయండి',
   ep_galleryBtn: '📷 గ్యాలరీ',
+  ep_verified: 'ధృవీకరించబడింది',
   ep_cameraBtn: '📸 కెమెరా',
   ep_saveChanges: 'మార్పులు సేవ్ చేయి',
   ep_profileSaved: 'ప్రొఫైల్ సేవ్ అయింది',

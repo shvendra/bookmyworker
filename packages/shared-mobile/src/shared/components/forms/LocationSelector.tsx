@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../core/i18n';
 import { indianStates } from '../../data/stateDistrict';
@@ -150,55 +151,59 @@ export const LocationSelector = ({
         transparent
         onRequestClose={() => setMode(null)}
       >
-        <View style={styles.backdrop}>
-          <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
-            <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.border }]}>
-              <AppText variant="label">{modalTitle}</AppText>
-              <TouchableOpacity onPress={() => setMode(null)}>
-                <AppText variant="body" color={theme.colors.primary}>{t('done')}</AppText>
+        <TouchableOpacity activeOpacity={1} onPress={() => setMode(null)} style={styles.backdrop}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.sheet, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.grab, { backgroundColor: theme.colors.border }]} />
+
+            <View style={styles.sheetHeader}>
+              <AppText variant="label" style={styles.sheetTitle}>{modalTitle}</AppText>
+              <TouchableOpacity onPress={() => setMode(null)} style={[styles.closeBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+                <Ionicons name="close" size={17} color={theme.colors.mutedText} />
               </TouchableOpacity>
             </View>
 
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t('searchEllipsis')}
-              placeholderTextColor={theme.colors.mutedText}
-              style={[
-                styles.search,
-                {
-                  backgroundColor: theme.colors.card,
-                  color: theme.colors.text,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-              autoFocus
-            />
+            <View style={[styles.searchWrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+              <Ionicons name="search" size={18} color={theme.colors.mutedText} style={styles.searchIcon} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t('searchEllipsis')}
+                placeholderTextColor={theme.colors.mutedText}
+                style={[styles.search, { color: theme.colors.text }]}
+                autoFocus
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} style={styles.searchClear}>
+                  <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
+                </TouchableOpacity>
+              )}
+            </View>
 
             <FlatList
               data={activeList}
               keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
               renderItem={({ item }) => {
                 const selected = item.value === activeValue;
                 return (
                   <TouchableOpacity
                     style={[
                       styles.option,
-                      { borderBottomColor: theme.colors.border },
-                      selected && { backgroundColor: theme.colors.primary + '15' },
+                      { borderColor: selected ? theme.colors.primary : theme.colors.border, backgroundColor: selected ? theme.colors.primary + '0F' : theme.colors.card },
                     ]}
                     onPress={() => handleSelect(item)}
+                    activeOpacity={0.8}
                   >
                     <AppText
                       variant="body"
                       color={selected ? theme.colors.primary : theme.colors.text}
+                      style={styles.optionTxt}
                     >
                       {item.display}
                     </AppText>
-                    {selected && (
-                      <AppText variant="caption" color={theme.colors.primary}>✓</AppText>
-                    )}
+                    {selected && <Ionicons name="checkmark" size={18} color={theme.colors.primary} />}
                   </TouchableOpacity>
                 );
               }}
@@ -208,8 +213,8 @@ export const LocationSelector = ({
                 </AppText>
               }
             />
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -282,34 +287,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
-    height: '75%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
+    height: '80%',
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingHorizontal: 18,
+    paddingTop: 10,
   },
+  grab: { width: 42, height: 5, borderRadius: 3, alignSelf: 'center', marginTop: 4, marginBottom: 16 },
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 14,
   },
-  search: {
-    margin: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
+  sheetTitle: { fontSize: 17, fontWeight: '800' },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, height: 48, marginBottom: 12 },
+  searchIcon: { marginLeft: 14 },
+  search: { flex: 1, paddingHorizontal: 10, fontSize: 15, fontWeight: '600' },
+  searchClear: { paddingHorizontal: 12 },
+  listContent: { gap: 9, paddingBottom: 18 },
   option: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    borderWidth: 1.6,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  optionTxt: { flex: 1, fontWeight: '800', marginRight: 8 },
   empty: { textAlign: 'center', padding: 24 },
 });

@@ -168,11 +168,11 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                   {/* Cancel on left */}
                   {cancelBtn && (
                     <TouchableOpacity
-                      style={[styles.btn, styles.btnCancel, { borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0' }]}
+                      style={[styles.btn, styles.btnCancel, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#F1F5F9' }]}
                       onPress={() => handleButton(cancelBtn)}
                       activeOpacity={0.7}
                     >
-                      <AppText style={[styles.btnCancelText, { color: isDark ? '#94A3B8' : '#64748B' }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>
+                      <AppText style={[styles.btnCancelText, { color: isDark ? '#CBD5E1' : '#475569' }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>
                         {cancelBtn.text}
                       </AppText>
                     </TouchableOpacity>
@@ -203,7 +203,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       key={i}
                       style={[
                         styles.btnStack,
-                        isCancel && [styles.btnStackCancel, { borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0' }],
+                        isCancel && [styles.btnStackCancel, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#F1F5F9' }],
                         !isCancel && [styles.btnStackAction, { backgroundColor: isDestructive ? '#DC2626' : meta.color }],
                         i > 0 && styles.btnStackGap,
                       ]}
@@ -213,7 +213,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       <AppText
                         style={[
                           styles.btnStackText,
-                          isCancel && { color: isDark ? '#94A3B8' : '#64748B' },
+                          isCancel && { color: isDark ? '#CBD5E1' : '#475569' },
                           !isCancel && { color: '#FFFFFF' },
                         ]}
                         numberOfLines={1}
@@ -245,137 +245,141 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(7,14,30,0.65)',
   },
   card: {
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.22,
-    shadowRadius: 28,
-    elevation: 18,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.26,
+    shadowRadius: 32,
+    elevation: 20,
   },
 
   // ── Icon hero ───────────────────────────────────────────────────────────────
   iconSection: {
-    height: 110,
+    height: 116,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   deco1: {
     position: 'absolute',
-    top: -30,
-    right: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    top: -34,
+    right: -34,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
   },
   deco2: {
     position: 'absolute',
-    bottom: -20,
-    left: -20,
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    bottom: -24,
+    left: -24,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   iconCircleOuter: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 74,
+    height: 74,
+    borderRadius: 37,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconCircleInner: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
   iconText: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
-    lineHeight: 28,
+    lineHeight: 30,
     textAlign: 'center',
   },
 
   // ── Content ─────────────────────────────────────────────────────────────────
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
-    gap: 8,
+    paddingHorizontal: 26,
+    paddingTop: 22,
+    paddingBottom: 18,
+    gap: 9,
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 25,
+    letterSpacing: -0.3,
   },
   message: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
 
   // ── Buttons ─────────────────────────────────────────────────────────────────
   buttonArea: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+    paddingTop: 4,
+    gap: 11,
   },
   buttonAreaRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 11,
   },
   btn: {
     flex: 1,
-    paddingVertical: 13,
-    borderRadius: 14,
+    paddingVertical: 15,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnCancel: {
-    borderWidth: 1.5,
-    backgroundColor: 'transparent',
+    backgroundColor: '#F1F5F9',
   },
   btnCancelText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   btnAction: {
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.32,
+    shadowRadius: 12,
+    elevation: 6,
   },
   btnActionText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   // Stacked (single or 3+)
   btnStack: {
-    paddingVertical: 13,
-    borderRadius: 14,
+    paddingVertical: 15,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnStackCancel: {
-    borderWidth: 1.5,
-    backgroundColor: 'transparent',
+    backgroundColor: '#F1F5F9',
   },
   btnStackAction: {
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.26,
+    shadowRadius: 10,
+    elevation: 5,
   },
   btnStackText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   btnStackGap: {
     marginTop: 0,

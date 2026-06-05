@@ -63,7 +63,7 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
   const { t } = useTranslation('employer');
   const cfg = ACTION_COLOR[item.action] ?? ACTION_COLOR.UPDATE;
   return (
-    <View style={s.row}>
+    <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.mode === 'dark' ? theme.colors.border : '#E8EDF6' }]}>
       <View style={[s.dot, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
         <AppText style={[s.dotTxt, { color: cfg.color }]}>{cfg.symbol}</AppText>
       </View>
@@ -74,8 +74,8 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
           </View>
           <AppText style={[s.entity, { color: theme.colors.text }]}>{item.entity}</AppText>
         </View>
-        <AppText style={s.desc} numberOfLines={2}>{fmtDesc(item.description) || item.action}</AppText>
-        <AppText style={s.time}>{timeAgo(item.createdAt, t)}</AppText>
+        <AppText style={[s.desc, { color: theme.colors.mutedText }]} numberOfLines={2}>{fmtDesc(item.description) || item.action}</AppText>
+        <AppText style={[s.time, { color: theme.colors.mutedText }]}>{timeAgo(item.createdAt, t)}</AppText>
       </View>
     </View>
   );
@@ -164,7 +164,6 @@ export const MyActivityScreen = (): React.JSX.Element => {
             />
           }
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={[s.separator, { backgroundColor: theme.colors.border }]} />}
         />
       )}
     </View>
@@ -174,22 +173,21 @@ export const MyActivityScreen = (): React.JSX.Element => {
 const s = StyleSheet.create({
   root:         { flex: 1 },
   loadWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:         { paddingBottom: 40 },
+  list:         { padding: 16, paddingBottom: 40 },
   emptyContainer: { flex: 1 },
 
-  row:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 14, paddingHorizontal: 16 },
-  dot:    { width: 34, height: 34, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  card:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 10, elevation: 1, shadowColor: '#142250', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 12 },
+  dot:    { width: 36, height: 36, borderRadius: 11, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   dotTxt: { fontSize: 15, fontWeight: '700', lineHeight: 18 },
   body:   { flex: 1, gap: 3 },
 
   topRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge:    { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1 },
   badgeTxt: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
-  entity:   { fontSize: 13, fontWeight: '700', color: '#0f172a', flex: 1 },
-  desc:     { fontSize: 12, color: '#475569', lineHeight: 17 },
-  time:     { fontSize: 11, color: '#94a3b8' },
+  entity:   { fontSize: 13.5, fontWeight: '800', flex: 1 },
+  desc:     { fontSize: 12, lineHeight: 17 },
+  time:     { fontSize: 11 },
 
-  separator:    { height: StyleSheet.hairlineWidth, marginLeft: 62 },
   loadMoreWrap: { paddingVertical: 16, alignItems: 'center' },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 10 },

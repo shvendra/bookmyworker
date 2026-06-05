@@ -167,8 +167,10 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   const [subSearch, setSubSearch] = useState('');
   const [subError, setSubError] = useState(false);
 
-  // Step 6 — Areas of work (where they want to work — multiple districts)
-  const [areas, setAreas] = useState<string[]>(user?.areasOfWork ?? []);
+  // Step 7 — Serviceable area (where they want to work — multiple districts).
+  // This is the worker's preferred WORK LOCATION, persisted to `serviceArea`
+  // (NOT areasOfWork, which holds the work categories).
+  const [areas, setAreas] = useState<string[]>(user?.serviceArea ?? []);
   const [areaSearch, setAreaSearch] = useState('');
 
   // Completion state — shows congrats screen after successful save
@@ -260,9 +262,35 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     }
   };
 
+  // Persist the data entered in a given step to the backend the moment the user
+  // taps "Next", so partial progress is never lost if they drop off mid-wizard.
+  // Fire-and-forget: it never blocks the step transition, and a failed save is
+  // harmless because the final save (step 7) re-sends every field. The PUT
+  // /user/update endpoint merges fields (unsent ones are preserved), so sending
+  // one step at a time is safe. Only runs after canNext() passes, so values are valid.
+  const persistStep = (s: number): void => {
+    let partial: Record<string, unknown> | null = null;
+    switch (s) {
+      case 1: partial = { gender }; break;
+      case 2: partial = { dob: Number(age) }; break;
+      case 3: partial = { workExperience: Number(experience) }; break;
+      case 4: partial = { areasOfWork: selectedCats }; break;
+      case 5: partial = { categories: selectedSubs }; break;
+      case 6: partial = { state: selectedState, district: selectedDistrict, ...(selectedBlock ? { block: selectedBlock } : {}) }; break;
+      default: partial = null;
+    }
+    if (partial) {
+      updateProfileFields(partial as Parameters<typeof updateProfileFields>[0]).catch(() => {});
+    }
+  };
+
   const handleNext = () => {
     if (step === 5 && selectedSubs.length === 0) { setSubError(true); return; }
-    if (step < TOTAL_STEPS) { setStep((s) => s + 1); return; }
+    if (step < TOTAL_STEPS) {
+      persistStep(step);          // save this step's data before advancing
+      setStep((s) => s + 1);
+      return;
+    }
     void handleSave();
   };
 
@@ -271,10 +299,14 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     const updates = {
       gender,
       dob: Number(age),
+      // What work the worker does → areasOfWork (categories) + categories (sub-skills).
+      areasOfWork: selectedCats,
       categories: selectedSubs,
+      // Where the worker WANTS to work → serviceArea. This is the field the
+      // worker-search "city" filter matches against — never put it in areasOfWork.
+      serviceArea: areas,
       state: selectedState,
       district: selectedDistrict,
-      areasOfWork: areas,
       ...(selectedBlock ? { block: selectedBlock } : {}),
     };
     try {

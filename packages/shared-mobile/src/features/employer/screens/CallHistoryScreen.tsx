@@ -167,7 +167,7 @@ function WorkerCard({
 }
 
 const wc = StyleSheet.create({
-  card:         { borderRadius: 14, borderWidth: 1, marginBottom: 10, flexDirection: 'row', overflow: 'hidden' },
+  card:         { borderRadius: 16, borderWidth: 1, marginBottom: 12, flexDirection: 'row', overflow: 'hidden', elevation: 1, shadowColor: '#142250', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 12 },
   accent:       { width: 4 },
   body:         { flex: 1, padding: 12, gap: 8 },
   topRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },

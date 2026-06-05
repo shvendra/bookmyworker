@@ -40,6 +40,7 @@ interface BackendUser {
   agentType?: string;
   resumeUrl?: string;
   areasOfWork?: string[];
+  serviceArea?: string[];
   categories?: string[];
   gender?: string;
   dob?: string | number;
@@ -87,6 +88,7 @@ function mapBackendUser(u: BackendUser): UserProfile {
     agentType: u.agentType,
     resumeUrl: u.resumeUrl,
     areasOfWork: u.areasOfWork,
+    serviceArea: u.serviceArea,
     categories: u.categories,
     gender: u.gender,
     dob: u.dob !== undefined ? String(u.dob) : undefined,
@@ -264,6 +266,7 @@ export interface ProfileFields {
   address?: string;
   email?: string;
   areasOfWork?: string[];
+  serviceArea?: string[];
   categories?: string[];
   workerSubType?: string;
   agentType?: string;

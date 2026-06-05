@@ -31,6 +31,7 @@ export interface RawAgent {
   district?: string;
   block?: string;
   areasOfWork?: string[];
+  categories?: string[];
   fixedSalary?: number;
   salaryFrom?: number;
   salaryTo?: number;
@@ -131,12 +132,17 @@ export const workerApi = {
     });
     const agents = response.data?.agents ?? [];
     const pagination = response.data?.pagination;
+    const lim   = params.limit ?? 25;
+    const total = pagination?.total ?? pagination?.totalCount ?? agents.length;
+    // The backend's pagination only sends { page, limit, total, hasMore } (no totalPages),
+    // so derive totalPages from total + limit — otherwise infinite scroll never advances.
+    const pages = pagination?.totalPages ?? (total > 0 ? Math.ceil(total / lim) : 1);
     return {
       workers: agents.map(mapAgentToWorkerProfile),
       rawAgents: agents,
-      total: pagination?.total ?? pagination?.totalCount ?? agents.length,
-      pages: pagination?.totalPages ?? 1,
-      currentPage: pagination?.currentPage ?? 1,
+      total,
+      pages,
+      currentPage: pagination?.currentPage ?? params.page ?? 1,
     };
   },
 

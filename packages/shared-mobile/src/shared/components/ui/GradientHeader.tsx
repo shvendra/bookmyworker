@@ -68,7 +68,9 @@ export const GradientHeader = ({
 
   const topPad = insets.top; // insets.top already includes status bar on both iOS and Android
   const bgColor = gradientColor ?? (isDark ? theme.colors.headerBg : '#1037A4');
-  const bgColor2 = isDark ? theme.colors.headerBg2 : '#0F2888';
+  // Light mode: keep the header a single flat tone (== base) so it blends seamlessly with any
+  // hero/section rendered directly below it (no visible seam). Dark mode keeps its subtle depth.
+  const bgColor2 = isDark ? theme.colors.headerBg2 : bgColor;
 
   return (
     <View

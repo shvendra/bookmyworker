@@ -56,7 +56,8 @@ const fmtTime = (d?: string): string => {
 const REQ_STATUS_LABEL_KEYS: Record<string, string> = {
   pending: 'rd_statusPending',
   open: 'rd_statusOpen', active: 'rd_statusOpen', approved: 'rd_statusOpen',
-  closed: 'rd_statusClosed', expired: 'rd_statusClosed', completed: 'rd_statusClosed',
+  closed: 'rd_statusClosed', expired: 'rd_statusClosed',
+  completed: 'rd_statusCompleted', fulfilled: 'rd_statusCompleted',
   ongoing: 'rd_statusOngoing', assigned: 'rd_statusOngoing',
   rejected: 'rd_statusRejected',
 };
@@ -78,7 +79,9 @@ const RequirementHeader = React.memo(({ requirementId }: { requirementId: string
 
   const lang = i18n.language;
   const statusRaw = (req.status ?? '').toLowerCase();
-  const isOpen = statusRaw !== 'closed' && statusRaw !== 'expired' && statusRaw !== 'completed';
+  const isCompleted = statusRaw === 'completed' || statusRaw === 'fulfilled';
+  const isClosedStatus = statusRaw === 'closed' || statusRaw === 'expired';
+  const isOpen = !isCompleted && !isClosedStatus;
   const location = getLocationStr({ district: req.district, state: req.state }, lang, '');
   const totalWorkers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
   // Category labels embed a literal "\n" for the 2-line grid cards; flatten it
@@ -102,9 +105,9 @@ const RequirementHeader = React.memo(({ requirementId }: { requirementId: string
           ) : (
             <View />
           )}
-          <View style={[rh.statusPill, { backgroundColor: isOpen ? '#ECFDF5' : '#F1F5F9' }]}>
-            <View style={[rh.statusDot, { backgroundColor: isOpen ? '#10B981' : '#94A3B8' }]} />
-            <AppText style={[rh.statusTxt, { color: isOpen ? '#047857' : '#64748B' }]} numberOfLines={1}>
+          <View style={[rh.statusPill, { backgroundColor: isCompleted ? '#EFF6FF' : isOpen ? '#ECFDF5' : '#F1F5F9' }]}>
+            <View style={[rh.statusDot, { backgroundColor: isCompleted ? '#2563EB' : isOpen ? '#10B981' : '#94A3B8' }]} />
+            <AppText style={[rh.statusTxt, { color: isCompleted ? '#1D4ED8' : isOpen ? '#047857' : '#64748B' }]} numberOfLines={1}>
               {statusLabel}
             </AppText>
           </View>

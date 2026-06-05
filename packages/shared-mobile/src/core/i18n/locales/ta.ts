@@ -1,4 +1,6 @@
 export const translation = {
+  lp_tapHint: 'பின் வைக்க எங்கும் தட்டவும்',
+  profile_pendingVerification: 'சுயவிவரம் சரிபார்ப்பு நிலுவையில்',
   // -- Map location picker --
   lp_title: 'இடத்தைத் தேர்ந்தெடுக்கவும்',
   lp_useGps: 'தற்போதைய இடத்தைப் பயன்படுத்து (GPS)',
@@ -649,6 +651,17 @@ export const translation = {
   noJobsYet: 'இப்போது வேலை இல்லை. விரைவில் சரிபார்க்கவும்!',
   // KYC Verification screen
   kyc_title: 'KYC சரிபார்ப்பு',
+  kyc_gstQuestion: 'உங்களிடம் GST பதிவு உள்ளதா?',
+  kyc_yes: 'ஆம்',
+  kyc_no: 'இல்லை',
+  kyc_gstDetails: 'GST விவரங்கள்',
+  kyc_gstNumber: 'GST எண்',
+  kyc_gstNumberPh: '15 இலக்க GSTIN ஐ உள்ளிடவும்',
+  kyc_firmName: 'நிறுவனப் பெயர்',
+  kyc_firmNamePh: 'பதிவு செய்யப்பட்ட நிறுவனப் பெயர்',
+  kyc_firmAddress: 'நிறுவன முகவரி',
+  kyc_firmAddressPh: 'பதிவு செய்யப்பட்ட நிறுவன முகவரி',
+  kyc_gstRequiredMsg: 'GST எண், நிறுவனப் பெயர் மற்றும் முகவரியை நிரப்பவும்',
   kyc_subtitle: 'முழு தளம் அணுகலைத் திறக்க KYC முடிக்கவும்.',
   kyc_statusLabel: 'சரிபார்ப்பு நிலை',
   kyc_statusVerified: 'உங்கள் அடையாளம் சரிபார்க்கப்பட்டது. முழு அணுகல் உள்ளது.',
@@ -705,6 +718,7 @@ export const translation = {
   ep_confirmPassword: 'கடவுச்சொல் உறுதிசெய்',
   ep_confirmPasswordPlaceholder: 'புதிய கடவுச்சொல் மீண்டும் உள்ளிடுக',
   ep_galleryBtn: '📷 கேலரி',
+  ep_verified: 'சரிபார்க்கப்பட்டது',
   ep_cameraBtn: '📸 கேமரா',
   ep_saveChanges: 'மாற்றங்கள் சேமி',
   ep_profileSaved: 'சுயவிவரம் சேமிக்கப்பட்டது',

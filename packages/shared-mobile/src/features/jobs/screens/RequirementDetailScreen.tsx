@@ -106,8 +106,10 @@ const formatTime = (t?: string): string => {
 };
 
 const statusMeta = (status?: string, isAssigned?: boolean): { labelKey: string; color: string; bg: string; border: string } => {
-  if (isAssigned) return { labelKey: 'rd_statusOngoing',  color: '#7C3AED', bg: '#F5F3FF', border: '#C4B5FD' };
   const s = (status ?? '').toLowerCase();
+  // Completed/fulfilled is a terminal state — show it before anything else.
+  if (s === 'completed' || s === 'fulfilled') return { labelKey: 'rd_statusCompleted', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' };
+  if (isAssigned) return { labelKey: 'rd_statusOngoing',  color: '#7C3AED', bg: '#F5F3FF', border: '#C4B5FD' };
   if (s === 'closed' || s === 'expired') return { labelKey: 'rd_statusClosed', color: '#64748B', bg: '#F1F5F9', border: '#CBD5E1' };
   return { labelKey: 'rd_statusOpen', color: GREEN, bg: GREEN_SOFT, border: GREEN_BDR };
 };
@@ -807,7 +809,11 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      // Android uses windowSoftInputMode="adjustResize" (see AndroidManifest), so the
+      // OS already resizes for the keyboard. Adding behavior="height" here double-handles
+      // it and mis-sizes the screen, which clips the body and blocks vertical scrolling.
+      // Leave Android to the native resize; only iOS needs the padding behavior.
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 

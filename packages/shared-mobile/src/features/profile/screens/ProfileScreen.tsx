@@ -215,31 +215,54 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             <AppText style={styles.heroBackIcon}>‹</AppText>
           </TouchableOpacity>
         )}
-        <Avatar
-          name={user?.fullName ?? 'U'}
-          uri={user?.profileImage}
-          size={80}
-          ring
-          ringColor="rgba(255,255,255,0.55)"
-          online={user?.kycStatus === 'verified'}
-        />
-        {user?.kycStatus === 'verified' && (
-          <View style={styles.verifiedBadge}>
-            <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
-          </View>
-        )}
+        {/* Avatar with an edit-pencil badge — ring color reflects KYC state */}
+        <View style={styles.avatarWrap}>
+          <Avatar
+            name={user?.fullName ?? 'U'}
+            uri={user?.profileImage}
+            size={80}
+            ring
+            ringColor={
+              user?.kycStatus === 'verified'
+                ? '#22C55E'
+                : user?.kycStatus === 'rejected'
+                ? '#EF4444'
+                : '#F59E0B'
+            }
+          />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditProfile')}
+            style={styles.avatarEditBtn}
+            activeOpacity={0.8}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <AppText style={styles.avatarEditIcon}>✏️</AppText>
+          </TouchableOpacity>
+        </View>
         <AppText style={styles.profileName}>{user?.fullName ?? t('employer:pf_userFallback')}</AppText>
         {(user?.district ?? user?.state) ? (
           <AppText style={styles.profileLocation}>
             📍 {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
           </AppText>
         ) : null}
+        {/* Verification status pill */}
+        {user?.kycStatus === 'verified' ? (
+          <View style={styles.verifiedBadge}>
+            <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
+          </View>
+        ) : (
+          <View style={styles.pendingPill}>
+            <View style={styles.pendingPillDot} />
+            <AppText style={styles.pendingPillTxt}>{t('profile_pendingVerification')}</AppText>
+          </View>
+        )}
         {/* Edit Public Profile button */}
         <TouchableOpacity
           onPress={() => navigation.navigate('EditProfile')}
           style={styles.editProfileBtn}
           activeOpacity={0.8}
         >
+          <AppText style={styles.editProfileIcon}>✏️</AppText>
           <AppText style={styles.editProfileTxt}>{t('profile_editPublicProfile')}</AppText>
         </TouchableOpacity>
       </View>
@@ -271,7 +294,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             icon="🛡️"
             label={t('profile_kycVerification')}
             onPress={() => navigation.navigate('KycVerification')}
-            badge={user?.kycStatus === 'pending' ? '!' : undefined}
+            badge={user?.kycStatus === 'pending' ? '1' : undefined}
             right={
               user?.kycStatus === 'verified' ? (
                 <View style={styles.approvedBadge}>
@@ -810,7 +833,7 @@ const styles = StyleSheet.create({
   },
   heroDepth: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0F2888',
+    backgroundColor: '#1037A4',
     opacity: 0.45,
   },
   heroCircle: { position: 'absolute', borderRadius: 999 },
@@ -822,9 +845,40 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    marginTop: -4,
+    marginTop: 2,
   },
   verifiedBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  // Avatar with edit-pencil badge
+  avatarWrap: { position: 'relative' },
+  avatarEditBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#1037A4',
+  },
+  avatarEditIcon: { fontSize: 12, lineHeight: 16 },
+  // Pending verification pill
+  pendingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(245,158,11,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  pendingPillDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#F59E0B' },
+  pendingPillTxt: { fontSize: 10.5, fontWeight: '800', color: '#FBBF24', letterSpacing: 0.6 },
   profileName: {
     fontSize: 20,
     fontWeight: '800',
@@ -845,13 +899,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   editProfileBtn: {
-    marginTop: 8,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 10,
-    paddingVertical: 9,
+    borderRadius: 12,
+    paddingVertical: 11,
     paddingHorizontal: 28,
   },
+  editProfileIcon: { fontSize: 13, lineHeight: 17 },
   editProfileTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
   heroBack: {
     position: 'absolute',
@@ -885,7 +944,7 @@ const styles = StyleSheet.create({
   switchArrow: { fontSize: 26, opacity: 0.8 },
 
   menuCard: {
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -905,13 +964,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIcon: { fontSize: 17, lineHeight: 20 },
+  menuIcon: { fontSize: 19, lineHeight: 23 },
   menuLabel: { flex: 1 },
   menuBadge: {
     borderRadius: 999,
@@ -925,8 +984,8 @@ const styles = StyleSheet.create({
   menuChevron: { fontSize: 22, opacity: 0.4, lineHeight: 26 },
 
   signOutBtn: {
-    borderRadius: 18,
-    borderWidth: 1.5,
+    borderRadius: 15,
+    borderWidth: 1.6,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,4 +1,6 @@
 export const translation = {
+  lp_tapHint: 'പിൻ ഇടാൻ എവിടെയും ടാപ്പ് ചെയ്യുക',
+  profile_pendingVerification: 'പ്രൊഫൈൽ പരിശോധന തീർച്ചപ്പെടുത്തിയിട്ടില്ല',
   // -- Map location picker --
   lp_title: 'സ്ഥലം തിരഞ്ഞെടുക്കുക',
   lp_useGps: 'നിലവിലെ സ്ഥലം ഉപയോഗിക്കുക (GPS)',
@@ -587,6 +589,17 @@ export const translation = {
   noJobsFound: 'ജോലി കണ്ടെത്തിയില്ല',
   // KYC Verification screen
   kyc_title: 'KYC സ്ഥിരീകരണം',
+  kyc_gstQuestion: 'നിങ്ങൾക്ക് GST രജിസ്ട്രേഷൻ ഉണ്ടോ?',
+  kyc_yes: 'അതെ',
+  kyc_no: 'ഇല്ല',
+  kyc_gstDetails: 'GST വിശദാംശങ്ങൾ',
+  kyc_gstNumber: 'GST നമ്പർ',
+  kyc_gstNumberPh: '15 അക്ക GSTIN നൽകുക',
+  kyc_firmName: 'സ്ഥാപനത്തിന്റെ പേര്',
+  kyc_firmNamePh: 'രജിസ്റ്റർ ചെയ്ത സ്ഥാപനത്തിന്റെ പേര്',
+  kyc_firmAddress: 'സ്ഥാപന വിലാസം',
+  kyc_firmAddressPh: 'രജിസ്റ്റർ ചെയ്ത സ്ഥാപന വിലാസം',
+  kyc_gstRequiredMsg: 'ദയവായി GST നമ്പർ, സ്ഥാപന പേര്, വിലാസം പൂരിപ്പിക്കുക',
   kyc_subtitle: 'പൂർണ്ണ പ്ലാറ്റ്‌ഫോം ആക്‌സസ് അൺലോക്ക് ചെയ്യാൻ KYC പൂർത്തിയാക്കൂ.',
   kyc_statusLabel: 'സ്ഥിരീകരണ നില',
   kyc_statusVerified: 'നിങ്ങളുടെ ഐഡന്റിറ്റി സ്ഥിരീകരിച്ചു. പൂർണ്ണ ആക്‌സസ് ലഭ്യമാണ്.',
@@ -643,6 +656,7 @@ export const translation = {
   ep_confirmPassword: 'പാസ്‌വേഡ് ഉറപ്പ് നൽകൂ',
   ep_confirmPasswordPlaceholder: 'പുതിയ പാസ്‌വേഡ് വീണ്ടും നൽകൂ',
   ep_galleryBtn: '📷 ഗ്യാലറി',
+  ep_verified: 'പരിശോധിച്ചു',
   ep_cameraBtn: '📸 ക്യാമറ',
   ep_saveChanges: 'മാറ്റങ്ങൾ സംരക്ഷിക്കൂ',
   ep_profileSaved: 'പ്രൊഫൈൽ സംരക്ഷിച്ചു',

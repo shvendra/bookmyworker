@@ -24,6 +24,7 @@ import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigA
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { SuggestedWorkersModal } from '../components/SuggestedWorkersModal';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
@@ -36,7 +37,6 @@ import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
-import { BrandLogo } from '../../../shared/components/ui/BrandLogo';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { buildPhotoUrl } from '../../../core/config/env';
@@ -73,7 +73,7 @@ const REQ_PALETTES_DARK = [
 
 // Light mode — medium-dark, rich but not oppressive
 const REQ_PALETTES_LIGHT = [
-  { bg: '#1B3F8B', accent: '#93C5FD', accentLight: 'rgba(147,197,253,0.22)' },
+  { bg: '#2243BC', accent: '#93C5FD', accentLight: 'rgba(147,197,253,0.22)' },
   { bg: '#3B1A72', accent: '#C4B5FD', accentLight: 'rgba(196,181,253,0.22)' },
   { bg: '#0C4040', accent: '#6EE7B7', accentLight: 'rgba(110,231,183,0.22)' },
   { bg: '#7C3000', accent: '#FCD34D', accentLight: 'rgba(252,211,77,0.22)'  },
@@ -98,6 +98,10 @@ const fmtDate = (d?: string): string => {
 const isClosed = (r: RawRequirement): boolean => {
   const s = String(r.status ?? '').toLowerCase();
   return s === 'closed' || s === 'expired';
+};
+const isCompleted = (r: RawRequirement): boolean => {
+  const s = String(r.status ?? '').toLowerCase();
+  return s === 'completed' || s === 'fulfilled';
 };
 const isAssigned = (r: RawRequirement): boolean => !!r.assignedAgentId;
 
@@ -149,13 +153,14 @@ interface CardProps {
 const RequirementCard = React.memo(({ req, onPress, onClose, closing, colors }: CardProps): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { t: tDefault } = useTranslation(); // cat_* keys live in the default namespace
+  const completed = isCompleted(req);
   const closed    = isClosed(req);
   const assigned  = isAssigned(req);
   const interested = req.intrestedAgents?.length ?? 0;
 
-  const statusLabel = closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
-  const statusColor = closed ? '#64748B' : assigned ? '#7C3AED' : '#059669';
-  const accentColor = closed ? '#94A3B8' : assigned ? '#7C3AED' : '#059669';
+  const statusLabel = completed ? t('statusCompleted') : closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
+  const statusColor = completed ? '#2563EB' : closed ? '#64748B' : assigned ? '#7C3AED' : '#059669';
+  const accentColor = completed ? '#2563EB' : closed ? '#94A3B8' : assigned ? '#7C3AED' : '#059669';
 
   const handlePress    = useCallback(() => onPress(req._id), [onPress, req._id]);
   const handleClose    = useCallback(() => onClose(req), [onClose, req]);
@@ -338,13 +343,16 @@ interface ReqSliderCardProps {
   onPress: (id: string) => void;
   onClose: (req: RawRequirement) => void;
   closing: boolean;
+  canInvite?: boolean;
+  onInvite?: (req: RawRequirement) => void;
 }
 
-const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSliderCardProps): React.JSX.Element => {
+const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvite, onInvite }: ReqSliderCardProps): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { t: tDefault } = useTranslation(); // cat_* keys live in the default namespace
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
+  const completed = isCompleted(req);
   const closed    = isClosed(req);
   const assigned  = isAssigned(req);
   const interested = req.intrestedAgents?.length ?? 0;
@@ -355,11 +363,13 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSl
     ? { bg: isDark ? '#111827' : '#374151', accent: '#94A3B8', accentLight: 'rgba(148,163,184,0.15)' }
     : PALETTES[idx % PALETTES.length];
 
-  const statusLabel = closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
-  const statusColor = closed ? '#94A3B8' : assigned ? '#C4B5FD' : '#6EE7B7';
+  const statusLabel = completed ? t('statusCompleted') : closed ? t('statusClosed') : assigned ? t('statusOngoing') : t('statusOpen');
+  const statusColor = completed ? '#BFDBFE' : closed ? '#94A3B8' : assigned ? '#C4B5FD' : '#9CF0BE';
+  const statusBg    = completed ? 'rgba(59,130,246,0.25)' : closed ? 'rgba(148,163,184,0.18)' : assigned ? 'rgba(167,139,250,0.22)' : 'rgba(22,163,74,0.30)';
+  const statusBdr   = completed ? 'rgba(147,197,253,0.45)' : closed ? 'rgba(148,163,184,0.40)' : assigned ? 'rgba(196,181,253,0.45)' : 'rgba(120,240,170,0.45)';
+  const statusDotClr = completed ? '#93C5FD' : closed ? '#94A3B8' : assigned ? '#C4B5FD' : '#34D77F';
 
   const handlePress      = useCallback(() => onPress(req._id), [onPress, req._id]);
-  const handleClose      = useCallback(() => onClose(req), [onClose, req]);
   const handlePhonePress = useCallback(() => {
     if (req.assignedAgentPhone) void Linking.openURL(`tel:${req.assignedAgentPhone}`);
   }, [req.assignedAgentPhone]);
@@ -370,7 +380,8 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSl
       activeOpacity={0.88}
       style={[rsc.card, { width: REQ_CARD_WIDTH, backgroundColor: pal.bg, shadowColor: pal.accent }]}
     >
-      {/* Decorative background circles */}
+      {/* Gradient depth (darker toward bottom) + decorative circles */}
+      <View pointerEvents="none" style={rsc.grad} />
       <View pointerEvents="none" style={[rsc.deco1, { backgroundColor: pal.accent + '12' }]} />
       <View pointerEvents="none" style={[rsc.deco2, { backgroundColor: pal.accent + '08' }]} />
 
@@ -389,8 +400,8 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSl
               </View>
             ) : null}
           </View>
-          <View style={[rsc.statusPill, { backgroundColor: pal.accentLight, borderColor: pal.accent + '55' }]}>
-            <View style={[rsc.statusDot, { backgroundColor: statusColor }]} />
+          <View style={[rsc.statusPill, { backgroundColor: statusBg, borderColor: statusBdr }]}>
+            <View style={[rsc.statusDot, { backgroundColor: statusDotClr }]} />
             <AppText style={[rsc.statusTxt, { color: statusColor }]} numberOfLines={1}>{statusLabel}</AppText>
           </View>
         </View>
@@ -450,32 +461,28 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing }: ReqSl
             </View>
           ) : null}
           {req.minBudgetPerWorker != null ? (
-            <View style={[rsc.metaChip, { backgroundColor: pal.accentLight, borderColor: pal.accent + '44' }]}>
-              <AppText style={[rsc.metaTxt, { color: pal.accent, fontWeight: '800' }]}>
+            <View style={rsc.metaChip}>
+              <AppText style={[rsc.metaTxt, { fontWeight: '800', color: '#FFFFFF' }]}>
                 {'₹'}{req.minBudgetPerWorker}{req.maxBudgetPerWorker ? '–' + String(req.maxBudgetPerWorker) : ''}{'/day'}
               </AppText>
             </View>
           ) : null}
         </View>
 
-        {/* ── Footer: view + close ── */}
-        <View style={rsc.footer}>
-          <View style={[rsc.viewBtn, { backgroundColor: pal.accent }]}>
-            <AppText style={rsc.viewBtnTxt}>{t('view')} {'→'}</AppText>
-          </View>
-          {!closed ? (
-            <TouchableOpacity
-              onPress={handleClose}
-              disabled={closing}
-              activeOpacity={0.7}
-              style={rsc.closeBtn}
-            >
-              {closing
-                ? <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
-                : <AppText style={rsc.closeTxt} numberOfLines={1}>{t('close')}</AppText>}
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {/* Footer (View / Close buttons) removed — the whole card is tappable to open the requirement. */}
+
+        {/* ── Invite Workers (plan-gated; opens same-category suggestions) ── */}
+        {canInvite && !closed ? (
+          <TouchableOpacity
+            onPress={() => onInvite?.(req)}
+            activeOpacity={0.85}
+            style={rsc.inviteBtn}
+          >
+            <AppText style={rsc.inviteBtnTxt} numberOfLines={1}>
+              {'🧑‍🔧'} {t('sw_inviteWorkers')}
+            </AppText>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -494,10 +501,12 @@ interface RequirementCarouselProps {
   allCount: number;
   t: (key: string, opts?: any) => string;
   themeColors: any;
+  canInvite?: boolean;
+  onInvite?: (req: RawRequirement) => void;
 }
 
 const RequirementCarousel = React.memo(({
-  requirements, onPress, onClose, closingId, isLoading, onPost, tab, allCount, t, themeColors,
+  requirements, onPress, onClose, closingId, isLoading, onPost, tab, allCount, t, themeColors, canInvite, onInvite,
 }: RequirementCarouselProps): React.JSX.Element => {
   const scrollRef = useRef<ScrollView>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -570,6 +579,8 @@ const RequirementCarousel = React.memo(({
             onPress={onPress}
             onClose={onClose}
             closing={closingId === req._id}
+            canInvite={canInvite}
+            onInvite={onInvite}
           />
         ))}
       </ScrollView>
@@ -595,8 +606,11 @@ RequirementCarousel.displayName = 'RequirementCarousel';
 // ─── Premium Card Styles ───────────────────────────────────────────────────────
 const rsc = StyleSheet.create({
   // Card shell
-  card:          { borderRadius: 24, overflow: 'hidden', elevation: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 20 },
-  inner:         { padding: 13, gap: 8 },
+  card:          { borderRadius: 20, overflow: 'hidden', elevation: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 20 },
+  grad:          { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%', backgroundColor: 'rgba(8,16,46,0.22)' },
+  inner:         { padding: 16, gap: 10 },
+  inviteBtn:     { marginTop: 4, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  inviteBtnTxt:  { fontSize: 14, fontWeight: '800', color: '#6D3FD6' },
   deco1:         { position: 'absolute', width: 220, height: 220, borderRadius: 110, top: -80, right: -50 },
   deco2:         { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: -20 },
   // Top row
@@ -608,8 +622,8 @@ const rsc = StyleSheet.create({
   statusDot:     { width: 6, height: 6, borderRadius: 3 },
   statusTxt:     { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
   // Title
-  subCat:        { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, textTransform: 'uppercase' },
-  workType:      { fontSize: 18, fontWeight: '900', color: '#FFFFFF', lineHeight: 24, letterSpacing: -0.3 },
+  subCat:        { fontSize: 11.5, fontWeight: '800', color: '#9FB0E6', letterSpacing: 0.6, textTransform: 'uppercase' },
+  workType:      { fontSize: 21, fontWeight: '900', color: '#FFFFFF', lineHeight: 26, letterSpacing: -0.4 },
   // Agent strip
   agentStrip:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 10, gap: 8 },
   agentStripIcon:{ fontSize: 16, lineHeight: 20 },
@@ -716,18 +730,14 @@ const tile = StyleSheet.create({
 const WorkerSliderCard = React.memo(({
   agent, onPress,
 }: { agent: RawAgent; onPress: (id: string) => void }): React.JSX.Element => {
-  const { t } = useTranslation('employer');
+  // Subscribe to i18n so this memoized card re-renders when the language changes
+  // (the app boots in English then switches to the user's language — without this
+  // subscription the role chips stay in the boot language).
+  const { i18n: i18nInstance } = useTranslation();
+  const lang = i18nInstance.language;
   const photoUrl = buildPhotoUrl(agent.profilePhoto);
 
-  const age = (() => {
-    if (!agent.dob) return null;
-    const birth = new Date(String(agent.dob));
-    if (isNaN(birth.getTime())) return null;
-    const years = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    return years > 10 && years < 80 ? years : null;
-  })();
-
-  const workType = (() => {
+  const workType = useMemo(() => {
     if (!agent.areasOfWork?.length) return null;
     let areas: (string | null | undefined)[] = [...agent.areasOfWork];
     // Some backends store a JSON-stringified array as the first element — unwrap it
@@ -740,45 +750,30 @@ const WorkerSliderCard = React.memo(({
       (a): a is string => typeof a === 'string' && !!a && a.toLowerCase() !== 'null' && a.toLowerCase() !== 'undefined',
     );
     return valid.length > 0 ? valid.map(subcatDisplay).join(' · ') : null;
-  })();
-  const location = translateLocationString([agent.district, agent.state].filter(Boolean).join(', '), i18n.language);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent.areasOfWork, lang]);
+  const location = translateLocationString([agent.district, agent.state].filter(Boolean).join(', '), lang);
 
-  const { workerTypeKey, workerTypeColor } = (() => {
-    const st = (agent.workerSubType ?? '').toLowerCase();
-    if (st.includes('iti') || st.includes('diploma')) return { workerTypeKey: 'workerCardITI', workerTypeColor: '#7C3AED' };
-    if (st.includes('graduate') || st.includes('degree')) return { workerTypeKey: 'workerCardGraduate', workerTypeColor: '#0891B2' };
-    if (st.includes('unskilled')) return { workerTypeKey: 'workerCardUnskilled', workerTypeColor: '#EA580C' };
-    if (st.includes('skilled')) return { workerTypeKey: 'workerCardSkilled', workerTypeColor: '#059669' };
-    return { workerTypeKey: null as string | null, workerTypeColor: '#64748B' };
-  })();
+  // Colored avatar when there's no profile photo (matches the Figma colored-initial circles)
+  const AVATAR_PALETTE = ['#E5683C', '#C0392B', '#2C50D6', '#0E8A6B', '#6D3FD6', '#B8336A', '#0F7A8A', '#C2410C'];
+  const avatarColor = AVATAR_PALETTE[((agent.name ?? '?').charCodeAt(0) || 0) % AVATAR_PALETTE.length];
 
-  const initials = (agent.name ?? '?').trim().split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+  const initials =(agent.name ?? '?').trim().split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const handlePress = useCallback(() => onPress(agent._id), [onPress, agent._id]);
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.87} style={wsc.card}>
-      {/* Decorative background circles */}
+      {/* Subtle gradient + decorative circles */}
+      <View pointerEvents="none" style={wsc.grad} />
       <View pointerEvents="none" style={wsc.bgCircle1} />
       <View pointerEvents="none" style={wsc.bgCircle2} />
 
-      {/* Verified badge (top-left, only if verified) */}
-      <View style={wsc.topRow}>
-        {agent.veryfiedBage ? (
-          <View style={wsc.verifiedBadge}>
-            <AppText style={wsc.verifiedTxt}>✓ {t('workerCardVerified').replace('✓ ', '')}</AppText>
-          </View>
-        ) : <View />}
-        <View />
-      </View>
-
-      {/* Photo */}
-      <View style={wsc.photoWrap}>
+      {/* Avatar — photo, or colored initials */}
+      <View style={[wsc.photoWrap, !photoUrl && { backgroundColor: avatarColor }]}>
         {photoUrl ? (
           <Image source={{ uri: photoUrl }} style={wsc.photo} />
         ) : (
-          <View style={wsc.photoFallback}>
-            <AppText style={wsc.photoInitials}>{initials}</AppText>
-          </View>
+          <AppText style={wsc.photoInitials}>{initials}</AppText>
         )}
       </View>
 
@@ -787,12 +782,7 @@ const WorkerSliderCard = React.memo(({
         {(agent.name ?? '').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
       </AppText>
 
-      {/* Age */}
-      {age !== null && (
-        <AppText style={wsc.age}>{t('workerCardAgeYrs', { age })}</AppText>
-      )}
-
-      {/* Work type chip */}
+      {/* Role chip */}
       {workType !== null && (
         <View style={wsc.workTypeChip}>
           <AppText style={wsc.workTypeTxt} numberOfLines={1}>{workType}</AppText>
@@ -806,15 +796,6 @@ const WorkerSliderCard = React.memo(({
           <AppText style={wsc.locationTxt} numberOfLines={1}>{location}</AppText>
         </View>
       )}
-
-      {/* Worker type badge */}
-      {workerTypeKey !== null && (
-        <View style={[wsc.workerTypeBadge, { backgroundColor: workerTypeColor + '22', borderColor: workerTypeColor + '66' }]}>
-          <AppText style={[wsc.workerTypeTxt, { color: workerTypeKey === 'workerCardUnskilled' ? '#FF8800' : workerTypeColor }]}>
-            {t(workerTypeKey as any)}
-          </AppText>
-        </View>
-      )}
     </TouchableOpacity>
   );
 });
@@ -822,50 +803,42 @@ WorkerSliderCard.displayName = 'WorkerSliderCard';
 
 const wsc = StyleSheet.create({
   card: {
-    width: 156,
-    borderRadius: 22,
-    backgroundColor: '#0F2F8C',
+    width: 128,
+    borderRadius: 18,
+    backgroundColor: '#2243BC',
     paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingTop: 14,
     paddingBottom: 14,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     overflow: 'hidden',
-    elevation: 6,
+    elevation: 5,
     shadowColor: '#0B1F6E',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
   },
-  bgCircle1:       { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.07)', top: -55, right: -45 },
-  bgCircle2:       { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.04)', bottom: -22, left: -22 },
-  topRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-  verifiedBadge:   { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#16A34A', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3 },
-  verifiedTxt:     { color: '#fff', fontSize: 9, fontWeight: '800' },
-  ratingBadge:     { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  ratingStar:      { color: '#FCD34D', fontSize: 10, lineHeight: 13 },
-  ratingVal:       { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
-  photoWrap:       { width: 74, height: 74, borderRadius: 37, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.32)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A4BC2', marginTop: 8 },
-  photo:           { width: 74, height: 74 },
-  photoFallback:   { width: 74, height: 74, alignItems: 'center', justifyContent: 'center' },
-  photoInitials:   { fontSize: 26, fontWeight: '800', color: '#FFFFFF' },
-  name:            { fontSize: 13, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', width: '100%', letterSpacing: -0.2 },
-  age:             { fontSize: 11, color: 'rgba(255,255,255,0.62)', fontWeight: '500' },
-  workTypeChip:    { backgroundColor: 'rgba(255,255,255,0.13)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', maxWidth: '100%' },
-  workTypeTxt:     { color: '#E0ECFF', fontSize: 11, fontWeight: '700' },
-  locationRow:     { flexDirection: 'row', alignItems: 'center', gap: 3, maxWidth: '100%' },
+  // Fake vertical gradient (#2243BC top → #1B379A bottom)
+  grad:            { position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%', backgroundColor: '#1B379A', opacity: 0.55 },
+  bgCircle1:       { position: 'absolute', width: 110, height: 110, borderRadius: 55, backgroundColor: 'rgba(255,255,255,0.06)', top: -40, right: -32 },
+  bgCircle2:       { position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.04)', bottom: -16, left: -16 },
+  photoWrap:       { width: 58, height: 58, borderRadius: 29, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.5)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A4BC2', marginTop: 2 },
+  photo:           { width: 58, height: 58 },
+  photoInitials:   { fontSize: 21, fontWeight: '800', color: '#FFFFFF' },
+  name:            { fontSize: 14, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', width: '100%', letterSpacing: -0.2, lineHeight: 18 },
+  workTypeChip:    { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, maxWidth: '100%' },
+  workTypeTxt:     { color: '#FFFFFF', fontSize: 11.5, fontWeight: '700', textAlign: 'center' },
+  locationRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, maxWidth: '100%' },
   locationPin:     { fontSize: 10 },
-  locationTxt:     { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '500', flexShrink: 1 },
-  workerTypeBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, marginTop: 2 },
-  workerTypeTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.2 },
-  // "View All" tile at end of slider
-  moreCard:        { width: 108, borderRadius: 22, borderWidth: 2, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10 },
-  moreCount:       { fontSize: 24, fontWeight: '900', color: '#1D4ED8' },
-  moreTxt:         { fontSize: 11, fontWeight: '700', color: '#1D4ED8', textAlign: 'center', lineHeight: 15 },
+  locationTxt:     { fontSize: 11, color: '#BACBF4', fontWeight: '600', flexShrink: 1 },
+  // "View All" tile at end of slider — matches worker-card height
+  moreCard:        { width: 110, borderRadius: 18, borderWidth: 1.6, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 8 },
+  moreCount:       { fontSize: 24, fontWeight: '900', color: '#1D4ED8', letterSpacing: -0.5 },
+  moreTxt:         { fontSize: 11, fontWeight: '800', color: '#1D4ED8', textAlign: 'center', lineHeight: 14 },
 });
 
-// ─── Nearby Workers auto-sliding carousel ──────────────────────────────────────
-const NEARBY_STEP = 168; // card width 156 + slider gap 12
+// ─── Nearby Workers rail ───────────────────────────────────────────────────────
+const NEARBY_STEP = 140; // card width 128 + slider gap 12
 
 interface NearbyWorkersSliderProps {
   workers: RawAgent[];
@@ -881,18 +854,8 @@ const NearbyWorkersSlider = React.memo(({
   const { t } = useTranslation('employer');
   const scrollRef = useRef<ScrollView>(null);
   const idxRef = useRef(0);
-  const pageCount = workers.length + 1; // worker cards + trailing "view all" tile
 
-  // Auto-slide every 3 s, looping back to the start after the last page
-  useEffect(() => {
-    if (workers.length <= 1) return;
-    const timer = setInterval(() => {
-      const next = (idxRef.current + 1) % pageCount;
-      idxRef.current = next;
-      scrollRef.current?.scrollTo({ x: next * NEARBY_STEP, animated: true });
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [workers.length, pageCount]);
+  // Calm, user-controlled rail — no auto-slide (keeps the first card aligned to the gutter).
 
   return (
     <ScrollView
@@ -943,15 +906,16 @@ interface SubStatusProps {
 
 // Promo slides shown alongside the subscription card (active subscribers only).
 const SSW_SLIDE_W = REQ_CARD_WIDTH;       // full-bleed inside 16px content padding
-const SSW_SLIDE_H = 130;
+const SSW_SLIDE_H = 176;
 const SSW_AUTO_MS = 4500;
 interface SswPromo {
   id: string; emoji: string; tagKey: string; titleKey: string; subKey: string; ctaKey: string;
   action: 'find' | 'post'; bg1: string; bg2: string; accent: string;
 }
 const SSW_PROMOS: SswPromo[] = [
-  { id: 'p1', emoji: '👷', tagKey: 'ssw_promo1_tag', titleKey: 'ssw_promo1_title', subKey: 'ssw_promo1_sub', ctaKey: 'ssw_promo1_cta', action: 'find', bg1: '#0F2888', bg2: '#1A56DB', accent: '#93C5FD' },
-  { id: 'p2', emoji: '⚡', tagKey: 'ssw_promo2_tag', titleKey: 'ssw_promo2_title', subKey: 'ssw_promo2_sub', ctaKey: 'ssw_promo2_cta', action: 'post', bg1: '#0D4A5C', bg2: '#0891B2', accent: '#67E8F9' },
+  // Palette aligned to the Figma promo slides (find = blue slide, post = teal slide).
+  { id: 'p1', emoji: '👷', tagKey: 'ssw_promo1_tag', titleKey: 'ssw_promo1_title', subKey: 'ssw_promo1_sub', ctaKey: 'ssw_promo1_cta', action: 'find', bg1: '#1B379A', bg2: '#2C50D6', accent: '#BFE0FF' },
+  { id: 'p2', emoji: '⚡', tagKey: 'ssw_promo2_tag', titleKey: 'ssw_promo2_title', subKey: 'ssw_promo2_sub', ctaKey: 'ssw_promo2_cta', action: 'post', bg1: '#0C3B40', bg2: '#10666B', accent: '#7FE7DE' },
 ];
 
 const SubscriptionStatusWidget = React.memo(({
@@ -1015,60 +979,84 @@ const SubscriptionStatusWidget = React.memo(({
     return <EmployerPromoSlider onPress={onSubscribe} />;
   }
 
+  /* ── Active premium → Figma green-gradient card; expired → white renew card ── */
+  const premium = !isExpired;
+  const cardBg   = premium ? '#0E5A33' : theme.colors.card;
+  const cardBdr  = premium ? '#0E5A33' : theme.colors.border;
+  const labelClr = premium ? '#FFFFFF' : (isExpired ? '#DC2626' : '#16A34A');
+  const dotClr   = premium ? '#34D77F' : (isExpired ? '#DC2626' : '#16A34A');
+  const postsClr = premium ? 'rgba(255,255,255,0.9)' : theme.colors.textSecondary;
+  const tuBg     = premium ? '#FFFFFF' : (isExpired ? '#FEF2F2' : '#EBF1FF');
+  const tuBdr    = premium ? '#FFFFFF' : (isExpired ? '#FECACA' : '#BFDBFE');
+  const tuTxt    = premium ? '#137A38' : (isExpired ? '#DC2626' : '#1037A4');
+  // Stat boxes: keep red warning states even on the green card; otherwise translucent-white on green
+  const cBoxBg  = isLowContacts ? '#FEF2F2' : (premium ? 'rgba(255,255,255,0.16)' : contactBg);
+  const cBoxBdr = isLowContacts ? '#FECACA' : (premium ? 'rgba(255,255,255,0.28)' : contactBdr);
+  const cBoxTxt = isLowContacts ? '#DC2626' : (premium ? '#FFFFFF' : contactColor);
+  const eWarn   = isExpiringSoon || isExpired;
+  const eBoxBg  = eWarn ? '#FEF2F2' : (premium ? 'rgba(255,255,255,0.16)' : expiryBg);
+  const eBoxBdr = eWarn ? '#FECACA' : (premium ? 'rgba(255,255,255,0.28)' : expiryBdr);
+  const eBoxTxt = eWarn ? '#DC2626' : (premium ? '#FFFFFF' : expiryColor);
+
   /* ── The subscription status card (slide 1 / or standalone when expired) ── */
   const subscriptionCard = (
     <TouchableOpacity
       onPress={isExpired ? onRenew : onTopUp}
       activeOpacity={0.9}
-      style={[ssw.card, showSlider && ssw.cardInSlide, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+      style={[ssw.card, showSlider && ssw.cardInSlide, premium && ssw.cardPremium, { backgroundColor: cardBg, borderColor: cardBdr }]}
     >
-      {/* Header row */}
+      {/* Green gradient overlay (active premium only) */}
+      {premium && <View pointerEvents="none" style={[StyleSheet.absoluteFill, ssw.cardGlowR]} />}
+      {premium && <View pointerEvents="none" style={ssw.cardGlowCircle} />}
+
+      {/* Header row — title (left) + Top-up (right) */}
       <View style={ssw.headerRow}>
         <View style={ssw.activeBadge}>
-          <View style={[ssw.activeDot, { backgroundColor: isExpired ? '#DC2626' : '#16A34A' }]} />
-          <AppText style={[ssw.activeLabel, { color: isExpired ? '#DC2626' : '#16A34A' }]}>
+          <View style={[ssw.activeDot, { backgroundColor: dotClr }]} />
+          <AppText style={[ssw.activeLabel, { color: labelClr }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.2}>
             {isExpired ? t('subscriptionExpired') : t('premiumSubscription')}
           </AppText>
         </View>
-        <View style={ssw.headerRight}>
-          {!!postsLabel && (
-            <View style={ssw.postsInline}>
-              <AppText style={ssw.postsInlineIcon}>{'📝'}</AppText>
-              <AppText style={[ssw.postsInlineTxt, { color: theme.colors.textSecondary }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-                {postsLabel}
-              </AppText>
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={isExpired ? onRenew : onTopUp}
-            style={[ssw.actionBtn, { backgroundColor: isExpired ? '#FEF2F2' : '#EBF1FF', borderColor: isExpired ? '#FECACA' : '#BFDBFE' }]}
-            activeOpacity={0.8}
-          >
-            <AppText style={[ssw.actionBtnTxt, { color: isExpired ? '#DC2626' : '#1037A4' }]}>
-              {isExpired ? t('renew') : t('topUp')}
-            </AppText>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={isExpired ? onRenew : onTopUp}
+          style={[ssw.actionBtn, { backgroundColor: tuBg, borderColor: tuBdr }]}
+          activeOpacity={0.8}
+        >
+          <AppText style={[ssw.actionBtnTxt, { color: tuTxt }]}>
+            {isExpired ? t('renew') : t('topUp')}
+          </AppText>
+        </TouchableOpacity>
       </View>
+
+      {/* Subtitle line (e.g. "Unlimited posts") */}
+      {!!postsLabel && (
+        <AppText style={[ssw.subLine, { color: postsClr }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
+          {postsLabel}
+        </AppText>
+      )}
 
       {/* Stats row */}
       <View style={ssw.statsRow}>
         {/* Remaining contacts */}
-        <View style={[ssw.statBox, { backgroundColor: contactBg, borderColor: contactBdr }]}>
-          <AppText style={ssw.statEmoji}>{'📞'}</AppText>
-          <AppText style={[ssw.statNum, { color: contactColor }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>{remainingContacts}</AppText>
-          <AppText style={[ssw.statLabel, { color: contactColor }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>
+        <View style={[ssw.statBox, { backgroundColor: cBoxBg, borderColor: cBoxBdr }]}>
+          <View style={ssw.statTop}>
+            <AppText style={ssw.statEmoji}>{'📞'}</AppText>
+            <AppText style={[ssw.statNum, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>{remainingContacts}</AppText>
+          </View>
+          <AppText style={[ssw.statLabel, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
             {isLowContacts && remainingContacts === 0 ? t('ssw_noContacts') : t('ssw_contactsLeft')}
           </AppText>
         </View>
 
         {/* Expiry */}
-        <View style={[ssw.statBox, { backgroundColor: expiryBg, borderColor: expiryBdr }]}>
-          <AppText style={ssw.statEmoji}>{'⏰'}</AppText>
-          <AppText style={[ssw.statNum, { color: expiryColor, fontSize: isExpiringSoon || isExpired ? 15 : 13 }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>
-            {expiryLabel}
-          </AppText>
-          <AppText style={[ssw.statLabel, { color: expiryColor }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>
+        <View style={[ssw.statBox, { backgroundColor: eBoxBg, borderColor: eBoxBdr }]}>
+          <View style={ssw.statTop}>
+            <AppText style={ssw.statEmoji}>{'⏰'}</AppText>
+            <AppText style={[ssw.statNum, { color: eBoxTxt, fontSize: isExpiringSoon || isExpired ? 15 : 13 }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>
+              {expiryLabel}
+            </AppText>
+          </View>
+          <AppText style={[ssw.statLabel, { color: eBoxTxt }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
             {isExpired ? t('ssw_renewNow') : isExpiringSoon ? t('ssw_expiringSoon') : t('ssw_expiryDate')}
           </AppText>
         </View>
@@ -1151,11 +1139,15 @@ SubscriptionStatusWidget.displayName = 'SubscriptionStatusWidget';
 
 const ssw = StyleSheet.create({
   // Active subscription card
-  card:         { borderRadius: 18, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8, gap: 8, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  card:         { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 14, gap: 12, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  subLine:      { fontSize: 12.5, fontWeight: '600', marginTop: -4 },
+  cardPremium:  { overflow: 'hidden', shadowColor: '#0E5A33', shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  cardGlowR:    { backgroundColor: '#16A34A', opacity: 0.6, left: '40%', borderRadius: 18 },
+  cardGlowCircle:{ position: 'absolute', width: 150, height: 150, borderRadius: 75, bottom: -70, right: -30, backgroundColor: 'rgba(180,255,200,0.16)' },
   headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  activeBadge:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  activeBadge:  { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0, marginRight: 8 },
   activeDot:    { width: 8, height: 8, borderRadius: 4 },
-  activeLabel:  { fontSize: 13, fontWeight: '800' },
+  activeLabel:  { fontSize: 16, fontWeight: '800', letterSpacing: -0.2, flexShrink: 1 },
   actionBtn:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 5 },
   actionBtnTxt: { fontSize: 12, fontWeight: '800' },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
@@ -1164,35 +1156,36 @@ const ssw = StyleSheet.create({
   postsInlineTxt:  { fontSize: 11, fontWeight: '700', flexShrink: 1 },
   // Stats
   statsRow:     { flexDirection: 'row', gap: 8 },
-  statBox:      { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 6, flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  statBox:      { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 8, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  statTop:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, maxWidth: '100%' },
   statEmoji:    { fontSize: 16, lineHeight: 20 },
-  statNum:      { fontSize: 18, fontWeight: '900', lineHeight: 22 },
-  statLabel:    { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center', flexShrink: 1 },
+  statNum:      { fontSize: 18, fontWeight: '900', lineHeight: 22, flexShrink: 1 },
+  statLabel:    { fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
 
   // ── Slider (active subscribers) ──
-  sliderWrap:   { marginBottom: 8 },
-  slide:        { width: SSW_SLIDE_W, height: SSW_SLIDE_H },
-  cardInSlide:  { flex: 1, marginBottom: 0 },          // card fills the slide; slider owns the margin
+  sliderWrap:   { marginBottom: 14 },
+  slide:        { width: SSW_SLIDE_W, minHeight: SSW_SLIDE_H },   // grows with content; height is just a floor
+  cardInSlide:  { flex: 1, marginBottom: 0 },          // subscription card stretches to the row height
   dots:         { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 8 },
   dot:          { height: 6, borderRadius: 3 },
 
   // ── Promo card ──
-  promoCard:    { flex: 1, borderRadius: 18, overflow: 'hidden', position: 'relative', elevation: 3, shadowColor: '#0f2f8c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10 },
+  promoCard:    { alignSelf: 'stretch', borderRadius: 22, overflow: 'hidden', position: 'relative', elevation: 3, shadowColor: '#0f2f8c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10 },
   promoFill:      { ...StyleSheet.absoluteFillObject },
   promoFillRight: { ...StyleSheet.absoluteFillObject, opacity: 0.5, left: '38%' },
-  promoCircle1:   { position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -50, right: -30 },
+  promoCircle1:   { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -60, right: -40 },
   promoCircle2:   { position: 'absolute', width: 90, height: 90, borderRadius: 45, bottom: -30, right: 45 },
-  promoRow:     { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 10 },
-  promoLeft:    { flex: 1, gap: 4 },
-  promoTag:     { alignSelf: 'flex-start', borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.16)', paddingHorizontal: 9, paddingVertical: 2 },
-  promoTagTxt:  { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.4 },
-  promoTitle:   { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 18, letterSpacing: -0.2 },
-  promoSub:     { color: 'rgba(255,255,255,0.78)', fontSize: 10.5, fontWeight: '500', lineHeight: 14 },
-  promoCta:     { alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, marginTop: 3, elevation: 3, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 5 },
-  promoCtaTxt:  { fontSize: 12, fontWeight: '900', letterSpacing: 0.2 },
-  promoRight:   { alignItems: 'center', flexShrink: 0 },
-  promoEmojiBubble: { width: 60, height: 60, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  promoEmoji:   { fontSize: 32, lineHeight: 40 },
+  promoRow:     { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingVertical: 18, gap: 10 },
+  promoLeft:    { flex: 1, gap: 6 },
+  promoTag:     { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 12, paddingVertical: 5 },
+  promoTagTxt:  { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
+  promoTitle:   { color: '#FFFFFF', fontSize: 21, fontWeight: '800', lineHeight: 24, letterSpacing: -0.4, marginTop: 6 },
+  promoSub:     { color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '600', lineHeight: 17 },
+  promoCta:     { alignSelf: 'flex-start', borderRadius: 22, paddingHorizontal: 18, paddingVertical: 11, marginTop: 8, elevation: 3, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  promoCtaTxt:  { fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  promoRight:   { alignSelf: 'flex-end', flexShrink: 0 },
+  promoEmojiBubble: { width: 62, height: 62, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  promoEmoji:   { fontSize: 30, lineHeight: 38 },
 });
 
 // ─── Quick Action Card ─────────────────────────────────────────────────────────
@@ -1343,8 +1336,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       .find((t) => String(profile?.employerType ?? user?.employerType ?? '').toLowerCase().includes(t))
   ) ?? 'individual';
 
-  // Only show KYC warning when profile has loaded and status is explicitly 'Unverified'
-  const kycUnverified = profileQuery.isSuccess && profile?.status === 'Unverified';
 
   const reqQuery = useQuery({
     queryKey: ['employer-requirements', user?.id],
@@ -1396,13 +1387,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
   // ── Memoized Computations ──────────────────────────────────────────────────
   const all = reqQuery.data?.requirements ?? [];
-  const openCount   = useMemo(() => all.filter((r) => !isAssigned(r) && !isClosed(r)).length, [all]);
-  const closedCount = useMemo(() => all.filter((r) => isClosed(r)).length, [all]);
+  // Completed/fulfilled requirements count as INACTIVE — grouped with closed, never "open".
+  const openCount   = useMemo(() => all.filter((r) => !isAssigned(r) && !isClosed(r) && !isCompleted(r)).length, [all]);
+  const closedCount = useMemo(() => all.filter((r) => isClosed(r) || isCompleted(r)).length, [all]);
 
   const filteredRequirements = useMemo(() => {
     return all.filter((r) => {
-      if (reqTab === 'open')   return !isAssigned(r) && !isClosed(r);
-      if (reqTab === 'closed') return isClosed(r);
+      if (reqTab === 'open')   return !isAssigned(r) && !isClosed(r) && !isCompleted(r);
+      if (reqTab === 'closed') return isClosed(r) || isCompleted(r);
       return true;
     });
   }, [all, reqTab]);
@@ -1489,6 +1481,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const handleAgentTilePress = useCallback((id: string) => navigation.navigate('WorkerProfile', { workerId: id }), [navigation]);
   const handleReqCardPress = useCallback((id: string) => navigation.navigate('RequirementDetail', { requirementId: id }), [navigation]);
   const handleReqCardClose = useCallback((req: RawRequirement) => setCloseTarget(req), []);
+  // Invite-workers modal (opened from a requirement card; same-category suggestions)
+  const [inviteReq, setInviteReq] = useState<RawRequirement | null>(null);
+  const handleInviteReq = useCallback((req: RawRequirement) => setInviteReq(req), []);
 
   // ── Render Sub-blocks for FlatList ──────────────────────────────────────────
   const renderHeader = useMemo(() => (
@@ -1513,14 +1508,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <View style={styles.qaRow}>
         {/* Post Requirement */}
         <TouchableOpacity onPress={handlePost} activeOpacity={0.88} style={[styles.qaCard, styles.qaCardBlue]}>
-          <View style={styles.qaCardInner}>
-            <View style={styles.qaTopLeft}>
-              <View style={styles.qaIconWrap}>
-                <AppText style={styles.qaIcon}>⚡</AppText>
-              </View>
-              <AppText style={styles.qaCount} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-                {reqQuery.isLoading ? '—' : String(openCount)}
-              </AppText>
+          {/* Top: icon + status pill */}
+          <View style={styles.qaTop}>
+            <View style={styles.qaIconWrap}>
+              <AppText style={styles.qaIcon}>⚡</AppText>
             </View>
             <View style={styles.qaNewBadge}>
               <AppText style={styles.qaNewTxt}>
@@ -1528,41 +1519,50 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               </AppText>
             </View>
           </View>
+          {/* Big number */}
+          <AppText style={styles.qaCount} maxFontSizeMultiplier={1.2} numberOfLines={1}>
+            {reqQuery.isLoading ? '—' : String(openCount)}
+          </AppText>
+          {/* Title + arrow */}
           <View style={styles.qaTitleRow}>
-            <AppText style={[styles.qaTitle, styles.qaTitleFlex]} numberOfLines={1}>{t('postRequirement')}</AppText>
+            <AppText style={[styles.qaTitle, styles.qaTitleFlex]} numberOfLines={2}>{t('postRequirement')}</AppText>
             <View style={styles.qaArrow}>
               <AppText style={styles.qaArrowTxt}>→</AppText>
             </View>
           </View>
-          <AppText style={styles.qaSub}>
+          {/* Description */}
+          <AppText style={styles.qaSub} numberOfLines={2}>
             {openCount > 0 ? t(openCount === 1 ? 'activeRequirements' : 'activeRequirements_plural', { count: openCount }) : t('publishNew')}
           </AppText>
         </TouchableOpacity>
 
         {/* Browse Workers */}
         <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.88} style={[styles.qaCard, styles.qaCardGreen]}>
-          <View style={styles.qaCardInner}>
-            <View style={styles.qaTopLeft}>
-              <View style={[styles.qaIconWrap, styles.qaIconWrapGreen]}>
-                <AppText style={styles.qaIcon}>👷</AppText>
-              </View>
-              <AppText style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1}>{totalWorkersDisplay}</AppText>
+          {/* Top: icon + status pill */}
+          <View style={styles.qaTop}>
+            <View style={[styles.qaIconWrap, styles.qaIconWrapGreen]}>
+              <AppText style={styles.qaIcon}>👷</AppText>
             </View>
             <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
               <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>{t('badgeAvailable')}</AppText>
             </View>
           </View>
+          {/* Big number */}
+          <AppText style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1}>{totalWorkersDisplay}</AppText>
+          {/* Title + arrow */}
           <View style={styles.qaTitleRow}>
-            <AppText style={[styles.qaTitle, styles.qaTitleGreen, styles.qaTitleFlex]} numberOfLines={1}>{t('browseWorkers')}</AppText>
+            <AppText style={[styles.qaTitle, styles.qaTitleGreen, styles.qaTitleFlex]} numberOfLines={2}>{t('browseWorkers')}</AppText>
             <View style={[styles.qaArrow, styles.qaArrowGreen]}>
               <AppText style={[styles.qaArrowTxt, { color: '#065f46' }]}>→</AppText>
             </View>
           </View>
-          <AppText style={[styles.qaSub, styles.qaSubGreen]}>{t('exploreVerified')}</AppText>
+          {/* Description */}
+          <AppText style={[styles.qaSub, styles.qaSubGreen]} numberOfLines={2}>{t('exploreVerified')}</AppText>
         </TouchableOpacity>
       </View>
 
-      {/* ── Nearby Workers — CRM NearbyWorkersSection style ── */}
+      {/* ── Nearby Workers — hidden when the employer has an active (open) requirement ── */}
+      {openCount === 0 && (
       <View style={[nws.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {/* Header */}
         <View style={nws.header}>
@@ -1617,8 +1617,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </>
         )}
       </View>
+      )}
 
-      {/* ── Requirements Card ── */}
+      {/* ── Requirements Card — only when there's an active (open) requirement;
+             when all are closed/completed (or none), show Workers Near You instead ── */}
+      {(reqQuery.isLoading || openCount > 0) && (
       <View style={[reqCard.wrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
 
         {/* Card header */}
@@ -1639,8 +1642,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
 
-        {/* Tab row */}
-        <View style={[reqCard.tabRow, { borderColor: theme.colors.border }]}>
+        {/* Tab row — segmented pill group (Figma) */}
+        <View style={[reqCard.tabRow, { backgroundColor: theme.colors.surface1 }]}>
           {REQ_TABS.map((t) => {
             const count = t.value === 'open' ? openCount : t.value === 'closed' ? closedCount : all.length;
             const active = reqTab === t.value;
@@ -1648,13 +1651,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <TouchableOpacity
                 key={t.value}
                 onPress={() => setReqTab(t.value)}
-                style={[reqCard.tab, active && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 }]}
+                activeOpacity={0.85}
+                style={[reqCard.tab, active && [reqCard.tabActive, { backgroundColor: theme.colors.card }]]}
               >
                 <AppText style={[reqCard.tabLabel, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
                   {t.label}
                 </AppText>
                 <View style={[reqCard.tabBadge, { backgroundColor: active ? theme.colors.primary : theme.colors.border }]}>
-                  <AppText style={reqCard.tabBadgeTxt}>{count}</AppText>
+                  <AppText style={[reqCard.tabBadgeTxt, { color: active ? '#FFFFFF' : theme.colors.textSecondary }]}>{count}</AppText>
                 </View>
               </TouchableOpacity>
             );
@@ -1673,15 +1677,18 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           allCount={all.length}
           t={t}
           themeColors={theme.colors}
+          canInvite={plan.inviteEnabled}
+          onInvite={handleInviteReq}
         />
       </View>
+      )}
 
       {/* ── Hiring Pipeline strip (subscribed only) ── */}
       {isSubscribed && (
         <TouchableOpacity
           onPress={handlePipelineNavigate}
           activeOpacity={0.85}
-          style={[pip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 4 }]}
+          style={[pip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
         >
           <View style={pip.header}>
             <View style={pip.titleRow}>
@@ -1722,7 +1729,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <TouchableOpacity
         onPress={handleCalendarNavigate}
         activeOpacity={0.85}
-        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 8 }]}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
       >
         <View style={calStrip.left}>
           <View style={[calStrip.iconWrap, { backgroundColor: '#EFF6FF' }]}>
@@ -1740,7 +1747,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <TouchableOpacity
         onPress={handleAnalyticsNavigate}
         activeOpacity={0.85}
-        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 8 }]}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
       >
         <View style={calStrip.left}>
           <View style={[calStrip.iconWrap, { backgroundColor: '#F5F3FF' }]}>
@@ -1758,7 +1765,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <TouchableOpacity
         onPress={handleAgreementNavigate}
         activeOpacity={0.85}
-        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, marginTop: 8 }]}
+        style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
       >
         <View style={calStrip.left}>
           <View style={[calStrip.iconWrap, { backgroundColor: '#FEF3C7' }]}>
@@ -1773,7 +1780,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       </TouchableOpacity>
 
     </View>
-  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel]);
+  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq]);
 
   const renderFooter = useMemo(() => (
     <View>
@@ -1844,13 +1851,17 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       <View style={[fh.wrap, { paddingTop: insets.top + 8 }]}>
         <View style={fh.circle1} />
         <View style={fh.circle2} />
-        {/* Top brand bar */}
+        {/* Top brand bar — greeting + name + status replaces the wordmark */}
         <View style={fh.brandRow}>
           <View style={fh.brandLeft}>
-            <BrandLogo style={fh.brandLogoImg} />
-            <AppText style={fh.brandLogo}>BookMyWorker</AppText>
+            {/* Big two-line greeting — full first name always shows, wraps to a second line */}
+            <AppText style={fh.greetName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+              {t(getGreetingKey())}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
+            </AppText>
           </View>
           <View style={fh.headerActions}>
+            {/* Wave kept outside the name text so it stays visible even for long names */}
+            <AppText style={fh.greetWave}>👋</AppText>
             <TouchableOpacity
               onPress={() => navigation.navigate('ChatRoom', {
                 roomId: `support_${user?.id ?? ''}`,
@@ -1860,27 +1871,20 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               activeOpacity={0.8}
             >
               <AppText style={fh.shortlistIcon}>💬</AppText>
+              <View style={fh.shortlistDot} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
               <Avatar name={user?.fullName ?? 'E'} size={38} uri={buildPhotoUrl(profile?.profilePhoto)} ring ringColor="rgba(255,255,255,0.55)" />
             </TouchableOpacity>
           </View>
         </View>
-        {/* Greeting + subscription status — lives inside the header */}
-        <View style={fh.greetRow}>
-          <View style={{ flex: 1 }}>
-            <AppText style={fh.greetName}>
-              {t(getGreetingKey())}, {(user?.fullName ?? 'Employer').split(' ')[0]}!
-            </AppText>
-            <AppText style={fh.greetStatus} numberOfLines={1}>
-              {kycUnverified
-                ? t('dashGreetSub_pending')
-                : isSubscribed
-                ? t('dashGreetSub_premium', { count: remainingContacts })
-                : t('dashGreetSub_welcome')}
-            </AppText>
-          </View>
-          <AppText style={fh.greetEmoji}>{'👋'}</AppText>
+        {/* Status pill — welcome / premium subtitle (profile-verification notice intentionally not shown) */}
+        <View style={fh.statusPill}>
+          <AppText style={fh.statusPillTxt} numberOfLines={1}>
+            {isSubscribed
+              ? t('dashGreetSub_premium', { count: remainingContacts })
+              : t('dashGreetSub_welcome')}
+          </AppText>
         </View>
       </View>
 
@@ -1967,6 +1971,17 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </View>
       </Modal>
 
+      {/* ── Invite Workers (same-category suggestions for a requirement) ── */}
+      {!!inviteReq && (
+        <SuggestedWorkersModal
+          visible={!!inviteReq}
+          onClose={() => setInviteReq(null)}
+          requirementId={inviteReq._id}
+          workType={inviteReq.workType}
+          titleLabel={(inviteReq.workType || '').replace(/_/g, ' ')}
+        />
+      )}
+
       {/* Profile-completion popup disabled for now. */}
       {/* {user && <ProfileCompletionModal user={user} />} */}
 
@@ -1994,29 +2009,28 @@ const styles = StyleSheet.create({
   content:  { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
 
   // ── Quick Action Cards ──────────────────────────────────────────────────────
-  qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  qaCard:         { flex: 1, borderRadius: 20, padding: 10, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12 },
-  qaCardBlue:     { backgroundColor: '#1037A4', shadowColor: '#1037A4' },
-  qaCardGreen:    { backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0', shadowColor: '#059669', elevation: 2, shadowOpacity: 0.08 },
-  qaCardInner:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  qaTopLeft:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-  qaIconWrap:     { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  qaIconWrapGreen:{ backgroundColor: '#D1FAE5' },
-  qaIcon:         { fontSize: 18, lineHeight: 22 },
-  qaNewBadge:     { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  qaNewBadgeGreen:{ backgroundColor: '#A7F3D0' },
-  qaNewTxt:       { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.9)' },
-  qaCount:        { fontSize: 20, fontWeight: '900', color: '#FFFFFF', lineHeight: 22, marginBottom: 1 },
-  qaCountGreen:   { color: '#065F46', fontSize: 17 },
-  qaTitle:        { fontSize: 12, fontWeight: '800', color: '#FFFFFF', marginBottom: 1 },
-  qaTitleGreen:   { color: '#065F46' },
+  qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'stretch' },
+  qaCard:         { flex: 1, minHeight: 152, borderRadius: 20, padding: 14, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12 },
+  qaCardBlue:     { backgroundColor: '#2243BC', shadowColor: '#1B379A' },
+  qaCardGreen:    { backgroundColor: '#E8F7EE', borderWidth: 1, borderColor: '#CBEBD6', shadowColor: '#16A34A', elevation: 2, shadowOpacity: 0.08 },
+  qaTop:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  qaIconWrap:     { width: 42, height: 42, borderRadius: 13, backgroundColor: 'rgba(255,194,75,0.22)', alignItems: 'center', justifyContent: 'center' },
+  qaIconWrapGreen:{ backgroundColor: '#FFFFFF' },
+  qaIcon:         { fontSize: 19, lineHeight: 23 },
+  qaNewBadge:     { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  qaNewBadgeGreen:{ backgroundColor: '#FFFFFF' },
+  qaNewTxt:       { fontSize: 9, fontWeight: '900', letterSpacing: 0.4, color: 'rgba(255,255,255,0.92)' },
+  qaCount:        { fontSize: 25, fontWeight: '900', color: '#FFFFFF', lineHeight: 30, letterSpacing: -0.5, marginTop: 13 },
+  qaCountGreen:   { color: '#065F46' },
+  qaTitle:        { fontSize: 15, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.2, marginTop: 4 },
+  qaTitleGreen:   { color: '#0E3A22' },
   qaTitleRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   qaTitleFlex:    { flexShrink: 1 },
-  qaSub:          { fontSize: 10, color: 'rgba(255,255,255,0.72)', lineHeight: 13, marginTop: 2 },
-  qaSubGreen:     { color: '#047857' },
-  qaArrow:        { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  qaArrowGreen:   { backgroundColor: '#A7F3D0' },
-  qaArrowTxt:     { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+  qaSub:          { fontSize: 11.5, color: 'rgba(197,208,245,0.95)', lineHeight: 15, marginTop: 5, minHeight: 30 },
+  qaSubGreen:     { color: '#3C7A55' },
+  qaArrow:        { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  qaArrowGreen:   { backgroundColor: '#FFFFFF' },
+  qaArrowTxt:     { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   sectionTitle:  { fontSize: 16, fontWeight: '800' },
@@ -2033,22 +2047,22 @@ const styles = StyleSheet.create({
 
 // ─── Nearby Workers Section Styles ────────────────────────────────────────────
 const nws = StyleSheet.create({
-  card:         { borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 12 },
-  header:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  card:         { borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 14, elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
+  header:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
   headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' },
   // lineHeight is required so Devanagari/Indic top matras aren't clipped.
   title:        { fontSize: 15, fontWeight: '800', color: '#0f172a', lineHeight: 22, flexShrink: 1 },
   countPill:    { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa', flexShrink: 0 },
   countPillTxt: { fontSize: 11, fontWeight: '700', color: '#ea580c', lineHeight: 16 },
-  sub:          { fontSize: 11, lineHeight: 16, paddingHorizontal: 14, paddingTop: 2, paddingBottom: 6 },
+  sub:          { fontSize: 11, lineHeight: 16, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 6 },
   viewAllTxt:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
   loadWrap:     { paddingVertical: 28, alignItems: 'center' },
   emptyWrap:    { paddingVertical: 28, paddingHorizontal: 20, alignItems: 'center', gap: 10 },
   emptyTxt:     { fontSize: 13, color: '#64748b', textAlign: 'center' },
   browseBtn:    { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#ea580c' },
   browseBtnTxt: { fontSize: 12, fontWeight: '700', color: '#ea580c' },
-  sliderContent:{ paddingHorizontal: 14, paddingBottom: 10, paddingTop: 4, gap: 12 },
-  footer:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
+  sliderContent:{ paddingHorizontal: 16, paddingBottom: 10, paddingTop: 4, gap: 12 },
+  footer:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
   footerTxt:    { fontSize: 11, lineHeight: 16, color: '#94a3b8', fontWeight: '500', flex: 1 },
   footerLink:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
 });
@@ -2056,7 +2070,7 @@ const nws = StyleSheet.create({
 
 // ─── Upgrade Banner Styles ─────────────────────────────────────────────────────
 const ub = StyleSheet.create({
-  card:        { borderRadius: 18, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', padding: 18, marginBottom: 16 },
+  card:        { borderRadius: 18, borderWidth: 1, borderColor: '#f1f5f9', backgroundColor: '#fff', padding: 18, marginBottom: 14 },
   header:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   iconWrap:    { width: 48, height: 48, borderRadius: 14, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:        { fontSize: 24 },
@@ -2132,7 +2146,7 @@ const expBanner = StyleSheet.create({
 
 // ─── Pipeline Strip Styles ─────────────────────────────────────────────────────
 const calStrip = StyleSheet.create({
-  card:     { borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  card:     { borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
   left:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:     { fontSize: 20, lineHeight: 24 },
@@ -2143,15 +2157,15 @@ const calStrip = StyleSheet.create({
 });
 
 const pip = StyleSheet.create({
-  card:       { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingTop: 2, paddingBottom: 8, marginBottom: 4, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 12 },
-  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+  card:       { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 14, marginBottom: 14, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 12 },
+  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
   titleDot:   { width: 5, height: 16, borderRadius: 3, backgroundColor: '#7C3AED' },
   title:      { fontSize: 15, fontWeight: '900', letterSpacing: 0.1, lineHeight: 18 },
   viewAllRow: { flexDirection: 'row', alignItems: 'center' },
   viewAll:    { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
   row:        { flexDirection: 'row', gap: 10 },
-  cell:       { flex: 1, borderRadius: 16, borderWidth: 1.5, paddingVertical: 2, alignItems: 'center', gap: 0 },
+  cell:       { flex: 1, borderRadius: 16, borderWidth: 1.5, paddingVertical: 12, alignItems: 'center', gap: 3 },
   cellEmoji:  { fontSize: 15, lineHeight: 18 },
   count:      { fontSize: 18, fontWeight: '900', lineHeight: 21 },
   label:      { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
@@ -2162,13 +2176,17 @@ const fh = StyleSheet.create({
   circle1:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 220, height: 220, top: -80, right: -60 },
   circle2:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 140, height: 140, bottom: -45, left: -30 },
   // Brand bar: logo + actions + avatar
-  brandRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  brandLeft:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandLogoImg:      { width: 28, height: 28, borderRadius: 6 },
-  brandLogo:         { fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.3 },
-  headerActions:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandRow:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  // minWidth:0 lets the greeting text truncate instead of pushing the action buttons (RN flexbox gotcha).
+  brandLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  brandGreet:        { flex: 1, minWidth: 0 },
+  brandLogoImg:      { width: 32, height: 32, borderRadius: 7 },
+  // flexShrink:0 keeps the chat + avatar at full size no matter how long the name is.
+  headerActions:     { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 },
   shortlistBtn:      { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   shortlistIcon:     { fontSize: 19, lineHeight: 22 },
+  // Static red notification dot on the chat bubble
+  shortlistDot:      { position: 'absolute', top: 1, right: 1, width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', borderWidth: 1.5, borderColor: '#1037A4' },
   shortlistBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#1037A4' },
   shortlistBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900', lineHeight: 12 },
   // User + verification status
@@ -2179,17 +2197,24 @@ const fh = StyleSheet.create({
   proBadge:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
   proBadgeTxt:   { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   // Greeting row inside the hero header
-  greetRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
-  greetName:     { fontSize: 16, fontWeight: '800', color: '#fff', marginBottom: 2, letterSpacing: -0.2 },
+  greetNameRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  greetName:     { fontSize: 24, lineHeight: 29, fontWeight: '800', color: '#fff', letterSpacing: -0.4, flexShrink: 1 },
+  greetWave:     { fontSize: 24, flexShrink: 0 },
   greetStatus:   { fontSize: 12, color: 'rgba(255,255,255,0.82)', fontWeight: '500' },
-  greetEmoji:    { fontSize: 24, lineHeight: 28 },
+  // Verification / status pill below the greeting
+  statusPillPending:  { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10, marginTop: 14 },
+  statusPill:         { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12, marginTop: 14 },
+  statusDot:          { width: 16, height: 16, borderRadius: 8, backgroundColor: '#f59e0b', alignItems: 'center', justifyContent: 'center' },
+  statusDotTxt:       { color: '#fff', fontSize: 11, fontWeight: '900', lineHeight: 13 },
+  statusPillTxtPending: { fontSize: 12.5, fontWeight: '700', color: '#fbbf24', flexShrink: 1 },
+  statusPillTxt:      { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.92)', flexShrink: 1 },
   // Body lifts over hero
   body:          { flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, overflow: Platform.OS === 'android' ? 'hidden' : 'visible' },
 });
 
 // ─── Requirements Card (unified section wrapper) ──────────────────────────────
 const reqCard = StyleSheet.create({
-  wrap:        { borderRadius: 16, borderWidth: 1, marginBottom: 4, overflow: 'hidden', elevation: 1, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  wrap:        { borderRadius: 20, borderWidth: 1, marginBottom: 14, overflow: 'hidden', elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
 
   // Header row
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6 },
@@ -2203,10 +2228,11 @@ const reqCard = StyleSheet.create({
   postBtnTxt:  { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 
   // Tab row
-  tabRow:      { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, marginBottom: 8 },
-  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, gap: 5, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabLabel:    { fontWeight: '600', fontSize: 13 },
-  tabBadge:    { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: 'center' },
-  tabBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  tabRow:      { flexDirection: 'row', borderRadius: 13, padding: 5, gap: 6, marginBottom: 14, marginHorizontal: 14 },
+  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 36, borderRadius: 9, gap: 6 },
+  tabActive:   { shadowColor: '#142250', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 2 },
+  tabLabel:    { fontWeight: '800', fontSize: 13 },
+  tabBadge:    { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 1, minWidth: 18, alignItems: 'center' },
+  tabBadgeTxt: { fontSize: 11, fontWeight: '800' },
 });
 

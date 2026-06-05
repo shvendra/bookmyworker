@@ -1,4 +1,6 @@
 export const translation = {
+  lp_tapHint: 'ಪಿನ್ ಇರಿಸಲು ಎಲ್ಲಿಯಾದರೂ ಟ್ಯಾಪ್ ಮಾಡಿ',
+  profile_pendingVerification: 'ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ',
   // -- Map location picker --
   lp_title: 'ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ',
   lp_useGps: 'ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ (GPS)',
@@ -587,6 +589,17 @@ export const translation = {
   noJobsFound: 'ಉದ್ಯೋಗ ದೊರೆಯಲಿಲ್ಲ',
   // KYC Verification screen
   kyc_title: 'KYC ಪರಿಶೀಲನೆ',
+  kyc_gstQuestion: 'ನಿಮ್ಮ ಬಳಿ GST ನೋಂದಣಿ ಇದೆಯೇ?',
+  kyc_yes: 'ಹೌದು',
+  kyc_no: 'ಇಲ್ಲ',
+  kyc_gstDetails: 'GST ವಿವರಗಳು',
+  kyc_gstNumber: 'GST ಸಂಖ್ಯೆ',
+  kyc_gstNumberPh: '15 ಅಂಕಿಯ GSTIN ನಮೂದಿಸಿ',
+  kyc_firmName: 'ಸಂಸ್ಥೆಯ ಹೆಸರು',
+  kyc_firmNamePh: 'ನೋಂದಾಯಿತ ಸಂಸ್ಥೆಯ ಹೆಸರು',
+  kyc_firmAddress: 'ಸಂಸ್ಥೆಯ ವಿಳಾಸ',
+  kyc_firmAddressPh: 'ನೋಂದಾಯಿತ ಸಂಸ್ಥೆಯ ವಿಳಾಸ',
+  kyc_gstRequiredMsg: 'ದಯವಿಟ್ಟು GST ಸಂಖ್ಯೆ, ಸಂಸ್ಥೆಯ ಹೆಸರು ಮತ್ತು ವಿಳಾಸ ಭರ್ತಿ ಮಾಡಿ',
   kyc_subtitle: 'ಸಂಪೂರ್ಣ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಪ್ರವೇಶ ಅನ್‌ಲಾಕ್ ಮಾಡಲು KYC ಪೂರ್ಣಗೊಳಿಸಿ.',
   kyc_statusLabel: 'ಪರಿಶೀಲನಾ ಸ್ಥಿತಿ',
   kyc_statusVerified: 'ನಿಮ್ಮ ಗುರುತು ಪರಿಶೀಲಿಸಲಾಗಿದೆ. ನಿಮಗೆ ಸಂಪೂರ್ಣ ಪ್ರವೇಶವಿದೆ.',
@@ -643,6 +656,7 @@ export const translation = {
   ep_confirmPassword: 'ಪಾಸ್‌ವರ್ಡ್ ದೃಢೀಕರಿಸಿ',
   ep_confirmPasswordPlaceholder: 'ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಮತ್ತೆ ನಮೂದಿಸಿ',
   ep_galleryBtn: '📷 ಗ್ಯಾಲರಿ',
+  ep_verified: 'ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
   ep_cameraBtn: '📸 ಕ್ಯಾಮೆರಾ',
   ep_saveChanges: 'ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ',
   ep_profileSaved: 'ಪ್ರೊಫೈಲ್ ಉಳಿಸಲಾಗಿದೆ',

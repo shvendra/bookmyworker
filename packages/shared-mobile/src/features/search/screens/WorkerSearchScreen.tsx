@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -207,6 +208,22 @@ const EMPTY_FILTERS: WorkerFilters = {
   qualification: '',
 };
 
+// Figma outcome palette — map each status to a semantic colour (dot + text)
+const OUTCOME_RED   = { color: '#B91C40', dot: '#E11D48' };
+const OUTCOME_GREEN = { color: '#137A38', dot: '#16A34A' };
+const OUTCOME_BLUE  = { color: '#2243BC', dot: '#2C50D6' };
+const OUTCOME_AMBER = { color: '#B45309', dot: '#D97706' };
+const OUTCOME_GREY  = { color: '#5B6478', dot: '#9AA3B5' };
+const getOutcomeColor = (v?: string): { color: string; dot: string } => {
+  const s = (v ?? '').toLowerCase();
+  if (!s) return OUTCOME_GREY;
+  if (/(not_interest|not_relevant|not_looking|wrong|invalid|declin|reject)/.test(s)) return OUTCOME_RED;
+  if (/(confirm|hired|joined|onboard|placed)/.test(s)) return OUTCOME_BLUE;
+  if (/(later|maybe|follow_up_required|busy|pending|reschedul)/.test(s)) return OUTCOME_AMBER;
+  if (/(interest|relevant|available|follow_up_done|selected|shortlist)/.test(s)) return OUTCOME_GREEN;
+  return OUTCOME_GREY;
+};
+
 const CALL_OUTCOMES = [
   { value: 'not_picked',            labelKey: 'ws_outcome_not_picked' },
   { value: 'switched_off',          labelKey: 'ws_outcome_switched_off' },
@@ -384,36 +401,27 @@ const PickerModal = ({
   const display = (o: string): string => (labelFor ? labelFor(o) : o);
   const shown = options.filter((o) => display(o).toLowerCase().includes(q.toLowerCase()));
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={[pm.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[pm.header, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
-          <View>
-            <AppText style={[pm.title, { color: theme.colors.text }]}>{title}</AppText>
-            <AppText style={[pm.sub, { color: theme.colors.mutedText }]}>
-              {t('ws_options_available', { count: options.length })}
-            </AppText>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity activeOpacity={1} onPress={onClose} style={pm.scrim}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[pm.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 18 }]}>
+          <View style={[pm.grab, { backgroundColor: theme.colors.border }]} />
+
+          {/* Header */}
+          <View style={pm.oh}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText style={[pm.ot, { color: theme.colors.text }]} numberOfLines={1}>{title}</AppText>
+              <AppText style={[pm.os, { color: theme.colors.mutedText }]} numberOfLines={1}>
+                {t('ws_options_available', { count: options.length })}
+              </AppText>
+            </View>
+            <TouchableOpacity onPress={onClose} style={[pm.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+              <Ionicons name="close" size={17} color={theme.colors.mutedText} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={onClose}
-            style={[pm.closeBtn, { backgroundColor: theme.colors.surface1 }]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText style={[pm.closeTxt, { color: theme.colors.mutedText }]}>✕</AppText>
-          </TouchableOpacity>
-        </View>
-        {options.length > 6 && (
-          <View
-            style={[
-              pm.searchWrap,
-              { backgroundColor: theme.colors.card, borderColor: C.border },
-            ]}
-          >
-            <AppText style={[pm.searchIcon, { color: theme.colors.mutedText }]}>⌕</AppText>
+
+          {/* Search */}
+          <View style={[pm.searchWrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+            <Ionicons name="search" size={18} color={theme.colors.mutedText} style={pm.searchIcon} />
             <TextInput
               value={q}
               onChangeText={setQ}
@@ -422,80 +430,59 @@ const PickerModal = ({
               style={[pm.searchInput, { color: theme.colors.text }]}
             />
             {q.length > 0 && (
-              <TouchableOpacity onPress={() => setQ('')} style={{ paddingRight: 14 }}>
-                <AppText style={{ color: theme.colors.mutedText, fontSize: 14 }}>✕</AppText>
+              <TouchableOpacity onPress={() => setQ('')} style={pm.searchClear}>
+                <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
               </TouchableOpacity>
             )}
           </View>
-        )}
-        <FlatList
-          data={[allLabel, ...shown]}
-          keyExtractor={(item) => item}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => {
-            const val = item === allLabel ? '' : item;
-            const active = selected === val;
-            return (
-              <TouchableOpacity
-                onPress={() => {
-                  onSelect(val);
-                  setQ('');
-                  onClose();
-                }}
-                activeOpacity={0.7}
-                style={[
-                  pm.item,
-                  {
-                    borderBottomColor: C.border,
-                    backgroundColor: active ? C.blueSoft : 'transparent',
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    pm.itemText,
-                    {
-                      color: active ? C.blue : theme.colors.text,
-                      fontWeight: active ? '700' : '400',
-                    },
-                  ]}
+
+          {/* Options */}
+          <FlatList
+            data={[allLabel, ...shown]}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="handled"
+            style={pm.list}
+            contentContainerStyle={pm.listContent}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => {
+              const val = item === allLabel ? '' : item;
+              const active = selected === val;
+              return (
+                <TouchableOpacity
+                  onPress={() => { onSelect(val); setQ(''); onClose(); }}
+                  activeOpacity={0.8}
+                  style={[pm.oopt, { borderColor: active ? BRAND : theme.colors.border, backgroundColor: active ? BRAND + '0F' : theme.colors.card }]}
                 >
-                  {item === allLabel ? item : display(item)}
-                </AppText>
-                {active && (
-                  <View style={pm.checkCircle}>
-                    <AppText style={pm.checkTxt}>✓</AppText>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </View>
+                  <AppText style={[pm.ol, { color: active ? BRAND : theme.colors.text }]} numberOfLines={1}>
+                    {item === allLabel ? item : display(item)}
+                  </AppText>
+                  {active && <Ionicons name="checkmark" size={18} color={BRAND} style={pm.ock} />}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
 const pm = StyleSheet.create({
-  root: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-  },
-  title:      { fontSize: 17, fontWeight: '800' },
-  sub:        { fontSize: 12, marginTop: 1 },
-  closeBtn:   { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  closeTxt:   { fontSize: 13, fontWeight: '700' },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginVertical: 12 },
-  searchIcon: { fontSize: 18, paddingHorizontal: 12 },
-  searchInput:{ flex: 1, paddingVertical: 12, fontSize: 15 },
-  item:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  itemText:   { flex: 1, fontSize: 15, marginRight: 12 },
-  checkCircle:{ width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
-  checkTxt:   { color: WHITE, fontSize: 12, fontWeight: '800' },
+  scrim:       { flex: 1, backgroundColor: 'rgba(12,20,46,0.5)', justifyContent: 'flex-end' },
+  sheet:       { borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 10, maxHeight: '85%' },
+  grab:        { width: 42, height: 5, borderRadius: 3, alignSelf: 'center', marginTop: 4, marginBottom: 16 },
+  oh:          { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 14 },
+  ot:          { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  os:          { fontSize: 12.5, fontWeight: '600', marginTop: 1 },
+  ox:          { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  searchWrap:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, height: 48, marginBottom: 12 },
+  searchIcon:  { marginLeft: 14 },
+  searchInput: { flex: 1, paddingHorizontal: 10, fontSize: 15, fontWeight: '600' },
+  searchClear: { paddingHorizontal: 12 },
+  list:        { flexShrink: 1 },
+  listContent: { gap: 9, paddingBottom: 8 },
+  oopt:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.6, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14 },
+  ol:          { flex: 1, fontSize: 14.5, fontWeight: '800' },
+  ock:         { marginLeft: 'auto' },
 });
 
 // ─── Dropdown Field ───────────────────────────────────────────────────────────
@@ -604,6 +591,8 @@ const FilterSheet = ({
     [f.state, f.district],
   );
   const catLabels    = useMemo(() => CATEGORIES.map((c) => c.label), []);
+  // Sub-category filter is hidden for now (see commented UI below); keep the
+  // computation but mark it used to avoid an unused-var error.
   const subCatLabels = useMemo(
     () =>
       CATEGORIES.find((c) => c.label === f.workerType)?.subcategories?.map(
@@ -611,6 +600,7 @@ const FilterSheet = ({
       ) ?? [],
     [f.workerType],
   );
+  void subCatLabels;
 
   // Locked location is a plan constraint, not a user-chosen filter — exclude it
   // from the "active filters" count so Reset visibly clears to zero.
@@ -666,7 +656,7 @@ const FilterSheet = ({
           {/* ── Location ──────────────────────────────────────────────── */}
           <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.primaryLight }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#FDECEF' }]}>
                 <AppText style={{ fontSize: 14 }}>📍</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_location')}</AppText>
@@ -704,7 +694,7 @@ const FilterSheet = ({
           {/* ── Work Type ─────────────────────────────────────────────── */}
           <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.secondaryLight }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#F3EEE6' }]}>
                 <AppText style={{ fontSize: 14 }}>💼</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_work_type')}</AppText>
@@ -715,6 +705,9 @@ const FilterSheet = ({
               placeholder={t('ws_all_categories')}
               onPress={() => setPicker('cat')}
             />
+            {/* Sub-category filter hidden for now — filtering by main category
+                already covers its sub-skills on the backend. Re-enable by
+                un-commenting (the subcat picker modal below is also commented).
             {f.workerType && subCatLabels.length > 0 && (
               <DropField
                 label={t('ws_sub_category')}
@@ -723,12 +716,13 @@ const FilterSheet = ({
                 onPress={() => setPicker('subcat')}
               />
             )}
+            */}
           </View>
 
           {/* ── Professional Type ─────────────────────────────────────── */}
           <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: GREEN_SOFT }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#EBF8F0' }]}>
                 <AppText style={{ fontSize: 14 }}>🧑‍💼</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_professional_type')}</AppText>
@@ -766,7 +760,7 @@ const FilterSheet = ({
           {/* ── Demographics ──────────────────────────────────────────── */}
           <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#FDECEF' }]}>
                 <AppText style={{ fontSize: 14 }}>🎯</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_demographics')}</AppText>
@@ -850,7 +844,7 @@ const FilterSheet = ({
           {/* ── Qualification ─────────────────────────────────────────────── */}
           <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
             <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: theme.colors.warningLight }]}>
+              <View style={[fsh.cardIcon, { backgroundColor: '#FDF5E8' }]}>
                 <AppText style={{ fontSize: 14 }}>🎓</AppText>
               </View>
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_qualification')}</AppText>
@@ -909,6 +903,7 @@ const FilterSheet = ({
           allLabel={t('ws_all_categories_opt')}
           labelFor={catDisplay}
         />
+        {/* Sub-category picker hidden for now — see the commented DropField above.
         <PickerModal
           visible={picker === 'subcat'}
           title={t('ws_sub_category')}
@@ -919,6 +914,7 @@ const FilterSheet = ({
           allLabel={t('ws_all_sub_categories_opt')}
           labelFor={subcatDisplay}
         />
+        */}
         <PickerModal
           visible={picker === 'state'}
           title={t('ws_state')}
@@ -968,8 +964,8 @@ const fsh = StyleSheet.create({
   closeTxt:      { fontSize: 13, fontWeight: '700' },
 
   // Body / cards
-  body:          { padding: 14, gap: 10, paddingBottom: 28 },
-  card:          { borderRadius: 16, borderWidth: 1, padding: 16 },
+  body:          { padding: 14, gap: 14, paddingBottom: 28 },
+  card:          { borderRadius: 20, borderWidth: 1, padding: 16, elevation: 1, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 16 },
   cardHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   cardIcon:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardTitle:     { fontSize: 14, fontWeight: '800', letterSpacing: 0.1 },
@@ -1014,12 +1010,18 @@ const CallOutcomePicker = ({
   onSave,
   saving,
   remarkTime,
+  name,
+  initials,
+  accentColor,
 }: {
   agentId: string;
   current: string;
   onSave: (id: string, val: string) => void;
   saving: boolean;
   remarkTime?: Date;
+  name?: string;
+  initials?: string;
+  accentColor?: string;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -1028,6 +1030,7 @@ const CallOutcomePicker = ({
   const outcome = CALL_OUTCOMES.find((o) => o.value === current);
   const label = outcome ? t(outcome.labelKey) : undefined;
   const hasOutcome = !!current;
+  const oc = getOutcomeColor(current);
 
   return (
     <>
@@ -1037,11 +1040,11 @@ const CallOutcomePicker = ({
         activeOpacity={0.8}
         style={[co.btn, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.card }]}
       >
-        <View style={[co.dot, { backgroundColor: hasOutcome ? BRAND : theme.colors.mutedText }]} />
-        <AppText style={[co.btnText, { color: hasOutcome ? theme.colors.text : theme.colors.mutedText }]} numberOfLines={1}>
+        <View style={[co.dot, { backgroundColor: hasOutcome ? oc.dot : theme.colors.mutedText }]} />
+        <AppText style={[co.btnText, { color: hasOutcome ? oc.color : theme.colors.mutedText }]} numberOfLines={1}>
           {saving ? t('ws_saving') : (label ?? t('ws_log_call_outcome'))}
         </AppText>
-        {remarkTime && (
+        {hasOutcome && remarkTime && (
           <AppText style={[co.remarkTime, { color: theme.colors.mutedText }]}>{timeAgoDate(remarkTime, t)}</AppText>
         )}
         <AppText style={[co.chevron, { color: theme.colors.mutedText }]}>›</AppText>
@@ -1049,84 +1052,87 @@ const CallOutcomePicker = ({
 
       <Modal
         visible={show}
+        transparent
         animationType="slide"
-        presentationStyle="pageSheet"
         onRequestClose={() => setShow(false)}
       >
-        <View style={[co.sheet, { backgroundColor: theme.colors.background }]}>
-          <View style={[co.sheetHeader, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
-            <View>
-              <AppText style={[co.sheetTitle, { color: theme.colors.text }]}>{t('ws_call_outcome')}</AppText>
-              <AppText style={[co.sheetSub, { color: theme.colors.mutedText }]}>
-                {t('ws_call_outcome_sub')}
-              </AppText>
+        <TouchableOpacity activeOpacity={1} onPress={() => setShow(false)} style={co.scrim}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[co.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 18 }]}>
+            <View style={[co.grab, { backgroundColor: theme.colors.border }]} />
+
+            {/* Header: avatar + name + sub + close */}
+            <View style={co.oh}>
+              <View style={[co.oav, { backgroundColor: accentColor ?? BRAND }]}>
+                <AppText style={co.oavTxt}>{initials ?? '?'}</AppText>
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <AppText style={[co.ot, { color: theme.colors.text }]} numberOfLines={1}>{name ?? t('ws_call_outcome')}</AppText>
+                <AppText style={[co.os, { color: theme.colors.mutedText }]} numberOfLines={1}>{t('ws_log_this_call')}</AppText>
+              </View>
+              <TouchableOpacity onPress={() => setShow(false)} style={[co.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+                <Ionicons name="close" size={17} color={theme.colors.mutedText} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => setShow(false)} style={[co.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
-              <AppText style={[co.closeTxt, { color: theme.colors.mutedText }]}>✕</AppText>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={CALL_OUTCOMES}
-            keyExtractor={(item) => item.value}
-            renderItem={({ item }) => {
-              const active = current === item.value;
-              return (
-                <TouchableOpacity
-                  onPress={() => {
-                    onSave(agentId, item.value);
-                    setShow(false);
-                  }}
-                  activeOpacity={0.7}
-                  style={[
-                    co.item,
-                    {
-                      borderBottomColor: theme.colors.border,
-                      backgroundColor: active ? theme.colors.primaryLight : 'transparent',
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      co.itemText,
-                      {
-                        color: active ? BRAND : theme.colors.text,
-                        fontWeight: active ? '700' : '400',
-                      },
-                    ]}
+
+            {/* Options */}
+            <ScrollView style={co.olist} contentContainerStyle={co.olistContent} showsVerticalScrollIndicator={false}>
+              {CALL_OUTCOMES.map((item) => {
+                const active = current === item.value;
+                const c = getOutcomeColor(item.value);
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    onPress={() => { onSave(agentId, item.value); setShow(false); }}
+                    activeOpacity={0.8}
+                    style={[co.oopt, { borderColor: active ? c.dot : theme.colors.border, backgroundColor: active ? c.dot + '0F' : theme.colors.card }]}
                   >
-                    {t(item.labelKey)}
-                  </AppText>
-                  {active && (
-                    <View style={co.checkCircle}>
-                      <AppText style={{ color: WHITE, fontSize: 11, fontWeight: '800' }}>
-                        ✓
-                      </AppText>
-                    </View>
-                  )}
+                    <View style={[co.od, { backgroundColor: c.dot }]} />
+                    <AppText style={[co.ol, { color: theme.colors.text }]} numberOfLines={1}>{t(item.labelKey)}</AppText>
+                    {active && <Ionicons name="checkmark" size={18} color={c.dot} style={co.ock} />}
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Clear outcome */}
+              {hasOutcome && (
+                <TouchableOpacity
+                  onPress={() => { onSave(agentId, ''); setShow(false); }}
+                  activeOpacity={0.8}
+                  style={[co.oopt, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
+                >
+                  <View style={[co.od, { backgroundColor: '#CBD2DE' }]} />
+                  <AppText style={[co.ol, { color: theme.colors.mutedText }]}>{t('ws_clear_outcome')}</AppText>
                 </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
+              )}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </>
   );
 };
 const co = StyleSheet.create({
-  btn:         { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
-  dot:         { width: 7, height: 7, borderRadius: 3.5 },
-  btnText:     { flex: 1, fontSize: 13, fontWeight: '500' },
-  remarkTime:  { fontSize: 12 },
-  chevron:     { fontSize: 18, fontWeight: '300' },
-  sheet:       { flex: 1 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
-  sheetTitle:  { fontSize: 17, fontWeight: '800' },
-  sheetSub:    { fontSize: 12, marginTop: 2 },
-  closeBtn:    { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  closeTxt:    { fontSize: 13, fontWeight: '700' },
-  item:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  itemText:    { flex: 1, fontSize: 15, marginRight: 12 },
-  checkCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
+  btn:         { flexDirection: 'row', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, minHeight: 50, paddingVertical: 8, gap: 9 },
+  dot:         { width: 8, height: 8, borderRadius: 4 },
+  btnText:     { flex: 1, fontSize: 14, fontWeight: '800' },
+  remarkTime:  { fontSize: 12, fontWeight: '700' },
+  chevron:     { fontSize: 18, fontWeight: '400' },
+  // Bottom sheet (Figma)
+  scrim:       { flex: 1, backgroundColor: 'rgba(12,20,46,0.5)', justifyContent: 'flex-end' },
+  sheet:       { borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 10, maxHeight: '85%' },
+  grab:        { width: 42, height: 5, borderRadius: 3, alignSelf: 'center', marginTop: 4, marginBottom: 16 },
+  oh:          { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 4 },
+  oav:         { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  oavTxt:      { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+  ot:          { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  os:          { fontSize: 12.5, fontWeight: '600', marginTop: 1 },
+  ox:          { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  olist:       { marginTop: 14, flexGrow: 0 },
+  olistContent:{ gap: 9, paddingBottom: 8 },
+  oopt:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.6, borderRadius: 14, padding: 14 },
+  od:          { width: 11, height: 11, borderRadius: 6 },
+  ol:          { flex: 1, fontSize: 14.5, fontWeight: '800' },
+  ock:         { marginLeft: 'auto' },
 });
 
 // ─── Worker Card ──────────────────────────────────────────────────────────────
@@ -1171,7 +1177,8 @@ const AgentCard = ({
   const initials  = formatName(agent.name ?? '?')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const isAgent      = String(agent.role ?? '').toLowerCase() === 'agent';
-  const matchedAreas = cleanSkills(getMatchedAreasOfWork(agent.areasOfWork ?? [], workerTypeApplied));
+  // Show both work categories (areasOfWork) and sub-skills (categories).
+  const matchedAreas = cleanSkills(getMatchedAreasOfWork([...(agent.areasOfWork ?? []), ...(agent.categories ?? [])], workerTypeApplied));
   const age          = getAge(agent.dob);
   const exp          = agent.workExperience !== undefined
     ? Number(agent.workExperience) > 0 ? Number(agent.workExperience) : 3
@@ -1203,11 +1210,8 @@ const AgentCard = ({
               <AppText style={[wc.initials, { color: accentColor }]}>{initials}</AppText>
             </View>
           )}
-          {agent.veryfiedBage && (
-            <View style={wc.verifiedBadge}>
-              <AppText style={wc.verifiedTxt}>✓</AppText>
-            </View>
-          )}
+          <View style={[wc.presDot, { backgroundColor: agent.veryfiedBage ? GREEN : AMBER, borderColor: theme.colors.card }]} />
+
         </View>
 
         {/* Text block */}
@@ -1216,6 +1220,11 @@ const AgentCard = ({
             <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
               {agent.name ? formatName(agent.name) : t('ws_unknown')}
             </AppText>
+            <View style={[wc.rolePill, { backgroundColor: accentBg, borderColor: accentColor + '40' }]}>
+              <AppText style={[wc.roleTxt, { color: accentColor }]} numberOfLines={1}>
+                {isAgent ? t('ws_role_agent') : t('ws_role_worker')}
+              </AppText>
+            </View>
           </View>
 
           {!!locationStr && (
@@ -1256,9 +1265,9 @@ const AgentCard = ({
           contentContainerStyle={wc.skillsContent}
         >
           {matchedAreas.map((area, idx) => (
-            <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: theme.colors.primary + '14', borderColor: theme.colors.primary + '2E' }]}>
-              <AppText style={wc.skillChipIcon}>🔧</AppText>
-              <AppText style={[wc.skillChipTxt, { color: theme.colors.primary }]} numberOfLines={1}>
+            <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: '#F6F8FE', borderColor: '#E1E8FD' }]}>
+              <AppText style={wc.skillChipIcon}>📎</AppText>
+              <AppText style={[wc.skillChipTxt, { color: '#2243BC' }]} numberOfLines={1}>
                 {subcatDisplay(area)}
               </AppText>
             </View>
@@ -1326,7 +1335,7 @@ const AgentCard = ({
             ) : (
               <>
                 <AppText style={wc.callAgentIcon}>📞</AppText>
-                <AppText style={wc.callAgentTxt}>{t('ws_call_agent')}</AppText>
+                <AppText style={wc.callAgentTxt}>{isAgent ? t('ws_call_agent') : t('ws_call_worker')}</AppText>
               </>
             )}
           </TouchableOpacity>
@@ -1341,6 +1350,9 @@ const AgentCard = ({
           onSave={onSaveRemark}
           saving={savingRemark}
           remarkTime={remarkTime}
+          name={agent.name ? formatName(agent.name) : t('ws_unknown')}
+          initials={initials}
+          accentColor={accentColor}
         />
       )}
 
@@ -1356,21 +1368,20 @@ const AgentCard = ({
 };
 
 const wc = StyleSheet.create({
-  card:           { borderRadius: 16, marginBottom: 9, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, borderWidth: StyleSheet.hairlineWidth },
+  card:           { borderRadius: 20, marginBottom: 14, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 16, borderWidth: StyleSheet.hairlineWidth },
 
   infoRow:        { flexDirection: 'row', padding: 11, gap: 10 },
 
   avatarWrap:     { position: 'relative', alignSelf: 'flex-start' },
-  avatar:         { width: 46, height: 46, borderRadius: 23, borderWidth: 2 },
-  avatarFallback: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  initials:       { fontSize: 17, fontWeight: '800' },
-  verifiedBadge:  { position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: WHITE },
-  verifiedTxt:    { color: WHITE, fontSize: 7, fontWeight: '900' },
+  avatar:         { width: 52, height: 52, borderRadius: 26, borderWidth: 2.5 },
+  avatarFallback: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5 },
+  initials:       { fontSize: 18, fontWeight: '800' },
+  presDot:        { position: 'absolute', right: -1, bottom: -1, width: 13, height: 13, borderRadius: 6.5, borderWidth: 2.5 },
 
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
-  name:           { fontSize: 15, fontWeight: '800', flex: 1 },
-  rolePill:       { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
-  roleTxt:        { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  name:           { fontSize: 16.5, fontWeight: '800', flex: 1, letterSpacing: -0.2 },
+  rolePill:       { borderWidth: 1, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
+  roleTxt:        { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   location:       { fontSize: 11, marginBottom: 5 },
   metaRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, flexShrink: 0 },
@@ -1407,13 +1418,13 @@ const wc = StyleSheet.create({
   // CTA
   ctaSection:     { paddingHorizontal: 11, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   unlockedRow:    { flexDirection: 'row', gap: 8 },
-  callBtn:        { flex: 1, borderRadius: 11, paddingVertical: 11, alignItems: 'center' },
+  callBtn:        { flex: 1, borderRadius: 13, paddingVertical: 13, alignItems: 'center' },
   callBtnTxt:     { color: WHITE, fontSize: 14, fontWeight: '800' },
   waBtn:          { flex: 1, backgroundColor: '#25D366', borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingVertical: 11 },
   waBtnTxt:       { color: WHITE, fontSize: 14, fontWeight: '800' },
-  callAgentBtn:   { flexDirection: 'row', backgroundColor: BRAND, borderRadius: 11, paddingVertical: 11, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  callAgentIcon:  { fontSize: 15 },
-  callAgentTxt:   { color: WHITE, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  callAgentBtn:   { flexDirection: 'row', backgroundColor: '#2243BC', borderRadius: 13, height: 50, alignItems: 'center', justifyContent: 'center', gap: 9, shadowColor: '#2243BC', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 4 },
+  callAgentIcon:  { fontSize: 16, color: WHITE },
+  callAgentTxt:   { color: WHITE, fontSize: 15.5, fontWeight: '800', letterSpacing: 0.2 },
   viewContactBtn: { backgroundColor: BRAND, borderRadius: 11, paddingVertical: 11, alignItems: 'center' },
   viewContactTxt: { color: WHITE, fontSize: 14, fontWeight: '800' },
   lockCta:        { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
@@ -1788,24 +1799,25 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const isDark = theme.mode === 'dark';
   return (
     <View style={[sc.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-      {/* ── Header (white) ── */}
-      <View style={[sc.header, { paddingTop: headerPaddingTop, backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+      {/* ── Header (blue gradient, Figma) ── */}
+      <View style={[sc.header, { paddingTop: headerPaddingTop }]}>
+        <View pointerEvents="none" style={sc.headerBlob} />
         <View style={sc.headerRow1}>
           {canGoBack && (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={[sc.backBtn, { backgroundColor: theme.colors.surface1 }]}
+              style={sc.backBtn}
               activeOpacity={0.7}
             >
-              <AppText style={[sc.backTxt, { color: theme.colors.text }]}>←</AppText>
+              <AppText style={sc.backTxt}>←</AppText>
             </TouchableOpacity>
           )}
           <View style={sc.headerTitleBlock}>
-            <AppText style={[sc.headerTitle, { color: theme.colors.text }]}>{t('ws_header_title')}</AppText>
-            <AppText style={[sc.headerSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
+            <AppText style={sc.headerTitle} numberOfLines={1}>{t('ws_header_title')}</AppText>
+            <AppText style={sc.headerSub} numberOfLines={1}>
               📍 {appliedFilters.state
                 ? t('ws_results_in', { state: getLocationDisplayName(appliedFilters.state, 'state', i18n.language) })
                 : t('ws_all_india')}
@@ -1814,9 +1826,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.8}
-            style={[sc.bellBtn, { backgroundColor: theme.colors.surface1 }]}
+            style={sc.bellBtn}
           >
             <AppText style={sc.bellIcon}>🔔</AppText>
+            <View style={sc.bellDot} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1838,30 +1851,32 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         </TouchableOpacity>
       )}
 
-      {/* ── Search + chips bar (white) ── */}
-      <View style={[sc.searchSection, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        {/* Search bar */}
-        <View style={[sc.searchBarWrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
-          <AppText style={[sc.searchIcon, { color: theme.colors.mutedText }]}>🔍</AppText>
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('ws_main_search_placeholder')}
-            placeholderTextColor={theme.colors.mutedText}
-            style={[sc.searchInput, { color: theme.colors.text }]}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={sc.searchClear}>
-              <AppText style={[sc.searchClearTxt, { color: theme.colors.mutedText }]}>✕</AppText>
-            </TouchableOpacity>
-          )}
+      {/* ── Search row — straddles the blue header / light list (blue behind top half) ── */}
+      <View style={[sc.searchSection, { backgroundColor: theme.colors.background }]}>
+        <View pointerEvents="none" style={sc.searchBlueTop} />
+        <View style={sc.searchRow}>
+          <View style={sc.searchBarWrap}>
+            <Ionicons name="search" size={20} color="#7A839B" style={sc.searchIcon} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('ws_main_search_placeholder')}
+              placeholderTextColor="#7A839B"
+              style={[sc.searchInput, { color: '#111A2E' }]}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={sc.searchClear}>
+                <AppText style={sc.searchClearTxt}>✕</AppText>
+              </TouchableOpacity>
+            )}
+          </View>
           <TouchableOpacity
             onPress={() => setShowFilters(true)}
             activeOpacity={0.85}
-            style={[sc.filterBtn, { backgroundColor: activeFilterCount > 0 ? BRAND : theme.colors.surface1 }, activeFilterCount > 0 && sc.filterBtnActive]}
+            style={sc.filterBtn}
           >
-            <AppText style={[sc.filterIcon, { color: activeFilterCount > 0 ? WHITE : theme.colors.mutedText }]}>⊟</AppText>
+            <Ionicons name="options-outline" size={24} color="#FFFFFF" />
             {activeFilterCount > 0 && (
               <View style={sc.filterBadge}>
                 <AppText style={sc.filterBadgeTxt}>{activeFilterCount}</AppText>
@@ -1997,29 +2012,32 @@ const sc = StyleSheet.create({
   container:       { flex: 1 },
   flex1:           { flex: 1 },
 
-  // Header
-  header:          { paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  headerRow1:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  backBtn:         { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  backTxt:         { fontSize: 20, fontWeight: '600', lineHeight: 24 },
+  // Header (blue)
+  header:          { paddingHorizontal: 20, paddingBottom: 18, backgroundColor: '#1037A4', overflow: 'hidden' },
+  headerBlob:      { position: 'absolute', width: 240, height: 240, borderRadius: 120, top: -100, right: -80, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerRow1:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  backBtn:         { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  backTxt:         { fontSize: 20, fontWeight: '700', lineHeight: 24, color: '#FFFFFF' },
   headerTitleBlock:{ flex: 1 },
-  headerTitle:     { fontSize: 18, fontWeight: '800', marginBottom: 2 },
-  headerSub:       { fontSize: 11, fontWeight: '500' },
-  bellBtn:         { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  headerTitle:     { fontSize: 21, fontWeight: '800', letterSpacing: -0.3, color: '#FFFFFF' },
+  headerSub:       { fontSize: 13, fontWeight: '600', color: '#C5D0F5', marginTop: 4 },
+  bellBtn:         { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', position: 'relative' },
   bellIcon:        { fontSize: 18 },
+  bellDot:         { position: 'absolute', top: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: '#FF8A3D', borderWidth: 2, borderColor: '#1037A4' },
 
-  // Search section
-  searchSection:   { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  searchBarWrap:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 0, height: 46, marginBottom: 0, gap: 8 },
-  searchIcon:      { fontSize: 16 },
-  searchInput:     { flex: 1, fontSize: 14, paddingVertical: 0 },
+  // Search band — light bg with a blue strip behind only the top half of the input
+  searchSection:   { paddingHorizontal: 16, paddingBottom: 14, position: 'relative' },
+  searchBlueTop:   { position: 'absolute', top: 0, left: 0, right: 0, height: 26, backgroundColor: '#1037A4' },
+  searchRow:       { flexDirection: 'row', gap: 10 },
+  searchBarWrap:   { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, height: 52, paddingHorizontal: 14, gap: 11, shadowColor: '#142250', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.28, shadowRadius: 18, elevation: 6 },
+  searchIcon:      { marginRight: 0 },
+  searchInput:     { flex: 1, fontSize: 15, fontWeight: '600', paddingVertical: 0 },
   searchClear:     { padding: 4 },
-  searchClearTxt:  { fontSize: 18, lineHeight: 22 },
-  filterBtn:       { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  filterBtnActive: {},
-  filterIcon:      { fontSize: 16 },
-  filterBadge:     { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: AMBER, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
-  filterBadgeTxt:  { fontSize: 9, fontWeight: '900', color: WHITE },
+  searchClearTxt:  { fontSize: 16, lineHeight: 20, color: '#475069' },
+  filterBtn:       { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: '#2243BC', shadowColor: '#2243BC', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 6 },
+  filterIcon:      { fontSize: 18, color: '#FFFFFF' },
+  filterBadge:     { position: 'absolute', top: -6, right: -6, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#FF8A3D', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 2, borderColor: '#EEF1F8' },
+  filterBadgeTxt:  { fontSize: 11, fontWeight: '800', color: WHITE },
 
   // Category chips
   chipsContent:    { gap: 8, paddingBottom: 4 },

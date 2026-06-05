@@ -107,7 +107,26 @@ export function usePlanFeatures(): PlanFeaturesResult {
     profile?.employerType ?? sessionUser?.employerType,
   );
   const planDefaults = EMPLOYER_PLANS_DEFAULTS[employerType].features;
-  const rawFeatures = profile?.planFeatures ?? {};
+
+  // Live SuperAdmin plan-feature config (Settings.employerPlans) from the public
+  // settings endpoint, so changes apply immediately on mobile — matching the CRM.
+  // Priority: live admin settings > stored planFeatures (subscription snapshot) > hardcoded.
+  const settingsQuery = useQuery({
+    queryKey: ['settings-employer-plans'],
+    queryFn: async () => {
+      const res = await apiClient.get<{ data?: { employerPlans?: Record<string, { features?: Partial<typeof planDefaults> }> } }>('/api/v1/settings/public');
+      return res.data?.data?.employerPlans ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+  const liveFeatures: Partial<typeof planDefaults> =
+    (settingsQuery.isSuccess && settingsQuery.data?.[employerType]?.features) || {};
+
+  const stored = profile?.planFeatures ?? {};
+  // hardcoded defaults  <  stored snapshot  <  live admin settings
+  const rawFeatures = { ...planDefaults, ...stored, ...liveFeatures };
 
   // Active subscription: explicit flag + non-expired expiry (mirror CRM).
   const isSubscribed = (() => {

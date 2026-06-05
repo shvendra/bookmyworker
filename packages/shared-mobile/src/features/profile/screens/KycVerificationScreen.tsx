@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -84,7 +85,7 @@ const SectionTitle = ({ icon, text }: { icon: string; text: string }): React.JSX
 };
 const st = StyleSheet.create({
   row:     { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  iconBox: { width: 34, height: 34, borderRadius: 9, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center' },
+  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center' },
   icon:    { fontSize: 16 },
   label:   { fontSize: 15, fontWeight: '800', color: C.navy },
 });
@@ -103,7 +104,7 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
       onPress={disabled ? undefined : onPick}
       style={({ pressed }) => [
         ds.slot,
-        { borderColor: doc ? C.blue : C.border, backgroundColor: theme.colors.card, opacity: pressed ? 0.75 : 1 },
+        { borderColor: doc ? '#CBEBD6' : '#C7D0E2', borderStyle: doc ? 'solid' : 'dashed', backgroundColor: doc ? theme.colors.card : '#F7F9FD', opacity: pressed ? 0.75 : 1 },
       ]}
     >
       {doc ? (
@@ -127,14 +128,14 @@ const DocUploadSlot = ({ label, doc, onPick, disabled }: {
   );
 };
 const ds = StyleSheet.create({
-  slot:         { flex: 1, height: 150, borderWidth: 1.5, borderRadius: 14, borderStyle: 'dashed', overflow: 'hidden' },
+  slot:         { flex: 1, height: 172, borderWidth: 2, borderRadius: 16, borderStyle: 'dashed', overflow: 'hidden' },
   preview:      { width: '100%', height: '100%' },
   overlay:      { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(37,99,235,0.85)', padding: 8, alignItems: 'center' },
   overlayTick:  { color: '#fff', fontSize: 12, fontWeight: '800' },
   overlayLabel: { color: '#fff', fontSize: 11, fontWeight: '700' },
   overlayChange:{ color: 'rgba(255,255,255,0.75)', fontSize: 10 },
   empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 12 },
-  camBox:       { width: 44, height: 44, borderRadius: 12, backgroundColor: C.blueSoft, alignItems: 'center', justifyContent: 'center' },
+  camBox:       { width: 50, height: 50, borderRadius: 14, backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   emptyLabel:   { fontSize: 12, fontWeight: '700', color: C.navy, textAlign: 'center' },
   emptyHint:    { fontSize: 11, color: C.slate },
   cropHint:     { fontSize: 10, color: C.blue, fontWeight: '600', textAlign: 'center', marginTop: 2 },
@@ -157,6 +158,13 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   const [front, setFront] = useState<DocState | null>(null);
   const [back,  setBack]  = useState<DocState | null>(null);
 
+  // Industry employers can verify via GST instead of a government ID
+  const isIndustry = !!user?.employerType?.industry;
+  const [hasGst, setHasGst] = useState<'yes' | 'no' | null>(null);
+  const [gstNumber, setGstNumber] = useState('');
+  const [firmName, setFirmName] = useState('');
+  const [firmAddress, setFirmAddress] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [success,    setSuccess]    = useState(false);
@@ -166,7 +174,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     const load = async (): Promise<void> => {
       try {
         const res = await apiClient.get<{
-          user?: { kyc?: { aadharFront?: string; aadharBack?: string } };
+          user?: { kyc?: { aadharFront?: string; aadharBack?: string; gstNumber?: string; firmName?: string; firmAddress?: string } };
         }>('/api/v1/user/getuser');
         const kyc = res.data?.user?.kyc;
         if (kyc?.aadharFront || kyc?.aadharBack) {
@@ -175,6 +183,10 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           if (frontUrl) setFront({ uri: frontUrl, name: 'id_front.jpg', type: 'image/jpeg' });
           if (backUrl)  setBack({ uri: backUrl,   name: 'id_back.jpg',  type: 'image/jpeg' });
         }
+        // Prefill existing GST / firm details (industry employers)
+        if (kyc?.gstNumber) { setGstNumber(kyc.gstNumber); setHasGst('yes'); }
+        if (kyc?.firmName) setFirmName(kyc.firmName);
+        if (kyc?.firmAddress) setFirmAddress(kyc.firmAddress);
       } catch { /* use defaults */ }
       finally { setProfileLoaded(true); }
     };
@@ -185,6 +197,21 @@ export const KycVerificationScreen = (): React.JSX.Element => {
     setError(null);
     setSubmitting(true);
     try {
+      // Industry + has GST → submit GST/firm details instead of a government ID
+      if (isIndustry && hasGst === 'yes') {
+        if (!gstNumber.trim() || !firmName.trim() || !firmAddress.trim()) {
+          toast.warning(t('kyc_gstRequiredMsg'), t('kyc_docsRequired'));
+          return;
+        }
+        await apiClient.put('/api/v1/user/update', {
+          gstNumber: gstNumber.trim(),
+          firmName: firmName.trim(),
+          firmAddress: firmAddress.trim(),
+        });
+        setSuccess(true);
+        toast.success(t('kyc_docsSubmittedMsg'), t('kyc_docsSubmitted'));
+        return;
+      }
       if (!front || !back) {
         toast.warning(t('kyc_docsRequiredMsg'), t('kyc_docsRequired'));
         return;
@@ -242,30 +269,79 @@ export const KycVerificationScreen = (): React.JSX.Element => {
       {/* ── KYC form (hidden if verified) ───────────────────────────── */}
       {!isVerified && (
         <>
-          {/* ── Government ID upload ──────────────────────────────────── */}
-          <AppCard style={scr.card}>
-            <SectionTitle icon="🪪" text={t('kyc_uploadIdTitle')} />
-            <AppText style={[scr.fieldHint, { color: theme.colors.mutedText }]}>{t('kyc_uploadIdHint')}</AppText>
-            <View style={scr.docsRow}>
-              <DocUploadSlot
-                label={t('kyc_idFront')}
-                doc={front}
-                onPick={() => void pickImage('id_front').then((d) => { if (d) setFront(d); })}
-                disabled={submitting}
+          {/* ── Industry: Do you have GST? ───────────────────────────── */}
+          {isIndustry && (
+            <AppCard style={scr.card}>
+              <SectionTitle icon="🏢" text={t('kyc_gstQuestion')} />
+              <View style={scr.gstToggleRow}>
+                {(['yes', 'no'] as const).map((opt) => {
+                  const on = hasGst === opt;
+                  return (
+                    <TouchableOpacity
+                      key={opt}
+                      onPress={() => setHasGst(opt)}
+                      activeOpacity={0.85}
+                      style={[scr.gstToggle, { borderColor: on ? C.blue : theme.colors.border, backgroundColor: on ? C.blueSoft : theme.colors.card }]}
+                    >
+                      <AppText style={[scr.gstToggleTxt, { color: on ? C.blue : theme.colors.text }]}>
+                        {opt === 'yes' ? t('kyc_yes') : t('kyc_no')}
+                      </AppText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </AppCard>
+          )}
+
+          {/* ── Industry + GST: firm details ─────────────────────────── */}
+          {isIndustry && hasGst === 'yes' ? (
+            <AppCard style={scr.card}>
+              <SectionTitle icon="📄" text={t('kyc_gstDetails')} />
+              <AppText style={[scr.gstLabel, { color: theme.colors.text }]}>{t('kyc_gstNumber')}</AppText>
+              <TextInput
+                value={gstNumber} onChangeText={setGstNumber}
+                placeholder={t('kyc_gstNumberPh')} placeholderTextColor={C.slate}
+                autoCapitalize="characters" editable={!submitting}
+                style={[scr.gstInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
               />
-              <DocUploadSlot
-                label={t('kyc_idBack')}
-                doc={back}
-                onPick={() => void pickImage('id_back').then((d) => { if (d) setBack(d); })}
-                disabled={submitting}
+              <AppText style={[scr.gstLabel, { color: theme.colors.text }]}>{t('kyc_firmName')}</AppText>
+              <TextInput
+                value={firmName} onChangeText={setFirmName}
+                placeholder={t('kyc_firmNamePh')} placeholderTextColor={C.slate} editable={!submitting}
+                style={[scr.gstInput, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
               />
-            </View>
-            {/* File format hint */}
-            <View style={scr.formatHint}>
-              <AppText style={{ fontSize: 13 }}>📎</AppText>
-              <AppText style={[scr.formatHintTxt, { color: C.slate }]}>{t('kyc_formatHint')}</AppText>
-            </View>
-          </AppCard>
+              <AppText style={[scr.gstLabel, { color: theme.colors.text }]}>{t('kyc_firmAddress')}</AppText>
+              <TextInput
+                value={firmAddress} onChangeText={setFirmAddress}
+                placeholder={t('kyc_firmAddressPh')} placeholderTextColor={C.slate} multiline editable={!submitting}
+                style={[scr.gstInput, scr.gstInputArea, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.card }]}
+              />
+            </AppCard>
+          ) : (!isIndustry || hasGst === 'no') ? (
+            <AppCard style={scr.card}>
+              <SectionTitle icon="🪪" text={t('kyc_uploadIdTitle')} />
+              <AppText style={[scr.fieldHint, { color: theme.colors.mutedText }]}>{t('kyc_uploadIdHint')}</AppText>
+              <View style={scr.docsRow}>
+                <DocUploadSlot
+                  label={t('kyc_idFront')}
+                  doc={front}
+                  onPick={() => void pickImage('id_front').then((d) => { if (d) setFront(d); })}
+                  disabled={submitting}
+                />
+                <DocUploadSlot
+                  label={t('kyc_idBack')}
+                  doc={back}
+                  onPick={() => void pickImage('id_back').then((d) => { if (d) setBack(d); })}
+                  disabled={submitting}
+                />
+              </View>
+              {/* File format hint */}
+              <View style={scr.formatHint}>
+                <AppText style={{ fontSize: 13 }}>📎</AppText>
+                <AppText style={[scr.formatHintTxt, { color: C.slate }]}>{t('kyc_formatHint')}</AppText>
+              </View>
+            </AppCard>
+          ) : null}
 
           {/* ── Feedback messages ─────────────────────────────────────── */}
           {!!error && (
@@ -284,11 +360,11 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           {/* ── Submit ────────────────────────────────────────────────── */}
           <TouchableOpacity
             onPress={() => void handleSubmit()}
-            disabled={submitting || !profileLoaded}
+            disabled={submitting || !profileLoaded || (isIndustry && hasGst === null)}
             activeOpacity={0.85}
             style={[scr.submitBtn, {
               backgroundColor: submitting ? C.slate : C.navy,
-              opacity: !profileLoaded ? 0.5 : 1,
+              opacity: (!profileLoaded || (isIndustry && hasGst === null)) ? 0.5 : 1,
             }]}
           >
             {submitting ? (
@@ -326,7 +402,7 @@ const scr = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { padding: 16, paddingBottom: 48, gap: 12 },
 
-  statusBanner: { borderRadius: 14, borderWidth: 1, padding: 14 },
+  statusBanner: { borderRadius: 18, borderWidth: 1, padding: 16 },
   statusRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   statusLabel:  { fontSize: 13, fontWeight: '700', color: '#0f172a' },
   statusMsg:    { fontSize: 12, lineHeight: 18 },
@@ -335,8 +411,16 @@ const scr = StyleSheet.create({
   fieldHint:  { fontSize: 12, lineHeight: 18, marginBottom: 14 },
 
   docsRow:    { flexDirection: 'row', gap: 10 },
-  formatHint:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: '#F8FAFC', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: C.border },
+  formatHint:    { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 16, backgroundColor: '#F1F6FB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, borderWidth: 1, borderColor: '#E0E9F4' },
   formatHintTxt: { fontSize: 12, lineHeight: 17 },
+
+  // GST (industry) flow
+  gstToggleRow:  { flexDirection: 'row', gap: 10, marginTop: 14 },
+  gstToggle:     { flex: 1, borderWidth: 1.6, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  gstToggleTxt:  { fontSize: 15, fontWeight: '800' },
+  gstLabel:      { fontSize: 13.5, fontWeight: '700', marginTop: 14, marginBottom: 9 },
+  gstInput:      { height: 54, borderWidth: 1.6, borderRadius: 13, paddingHorizontal: 15, fontSize: 15, fontWeight: '700' },
+  gstInputArea:  { height: 92, paddingTop: 14, textAlignVertical: 'top' },
 
   feedbackBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
   feedbackText: { flex: 1, fontSize: 13, lineHeight: 18 },
