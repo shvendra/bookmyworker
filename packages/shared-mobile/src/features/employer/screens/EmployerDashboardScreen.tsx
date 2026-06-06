@@ -1286,6 +1286,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           isSubscribed?: boolean;
           subscriptionExpery?: string;
           remainingContacts?: number;
+          freeContactsRemaining?: number;
           status?: string;
           phone?: string;
           employerType?: string;
@@ -1319,6 +1320,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   })();
 
   const remainingContacts = profile?.remainingContacts ?? 0;
+  // Gifted free contacts still available (SuperAdmin-configured). Shown as a
+  // banner when > 0 so employers know they can unlock contacts at no cost.
+  const freeContactsRemaining = Math.max(0, profile?.freeContactsRemaining ?? 0);
 
   // Plan-derived feature flags + posts-remaining (degrades gracefully when absent)
   const plan = usePlanFeatures();
@@ -1503,6 +1507,26 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         onPost={handlePost}
         workerCountLabel={totalWorkersDisplay}
       />
+
+      {/* ── Free contacts banner (gifted unlocks remaining) ── */}
+      {freeContactsRemaining > 0 && (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleWorkerSearchNavigate}
+          style={styles.freeBanner}
+        >
+          <AppText style={styles.freeBannerEmoji}>🎁</AppText>
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.freeBannerTitle} maxFontSizeMultiplier={1.3} numberOfLines={1}>
+              {t('dashFreeContactsTitle', { count: freeContactsRemaining })}
+            </AppText>
+            <AppText style={styles.freeBannerSub} maxFontSizeMultiplier={1.3} numberOfLines={2}>
+              {t('dashFreeContactsSub')}
+            </AppText>
+          </View>
+          <AppText style={styles.freeBannerChevron}>›</AppText>
+        </TouchableOpacity>
+      )}
 
       {/* ── Quick Action Cards ── */}
       <View style={styles.qaRow}>
@@ -1780,7 +1804,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       </TouchableOpacity>
 
     </View>
-  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq]);
+  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining]);
 
   const renderFooter = useMemo(() => (
     <View>
@@ -2007,6 +2031,13 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   content:  { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
+
+  // ── Free contacts banner ────────────────────────────────────────────────────
+  freeBanner:        { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7', borderRadius: 16, padding: 14, marginBottom: 14 },
+  freeBannerEmoji:   { fontSize: 24 },
+  freeBannerTitle:   { fontSize: 14, fontWeight: '800', color: '#137A38' },
+  freeBannerSub:     { fontSize: 11.5, fontWeight: '600', color: '#0E7A3A', marginTop: 2, opacity: 0.9 },
+  freeBannerChevron: { fontSize: 26, fontWeight: '800', color: '#137A38', marginLeft: 2 },
 
   // ── Quick Action Cards ──────────────────────────────────────────────────────
   qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'stretch' },

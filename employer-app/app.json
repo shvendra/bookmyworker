@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker Employer",
     "slug": "bookmyworker-employer",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "bookmyworker-employer",
     "icon": "./assets/icon.png",
@@ -50,6 +50,7 @@
 
     "android": {
       "package": "com.bookmyworkers.employer",
+      "googleServicesFile": "./android/app/google-services.json",
 
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

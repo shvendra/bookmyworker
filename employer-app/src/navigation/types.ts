@@ -21,6 +21,8 @@ export type EmployerStackParamList = {
     gender?: string;
     dob?: string;
     address?: string;
+    // Set when finishing a Google sign-up — RegisterOtp finalizes via google/register.
+    googleTicket?: string;
   };
   ForgotPassword: { roleHint?: 'employer' } | undefined;
   // Onboarding

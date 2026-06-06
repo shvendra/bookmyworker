@@ -4,6 +4,9 @@ const FALLBACK_SOCKET_BASE_URL = 'https://bookmyworkers.com';
 export const ENV = {
   API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL ?? FALLBACK_API_BASE_URL,
   SOCKET_BASE_URL: process.env.EXPO_PUBLIC_SOCKET_BASE_URL ?? FALLBACK_SOCKET_BASE_URL,
+  // Google OAuth Web Client ID (from Google Cloud Console). Empty → "Continue
+  // with Google" stays hidden and the native module is never loaded.
+  GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
 } as const;
 
 // All user/worker/agent photos are stored in this S3 bucket (matches CRM config.FILE_BASE_URL)

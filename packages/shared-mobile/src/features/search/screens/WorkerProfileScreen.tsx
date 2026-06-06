@@ -230,6 +230,7 @@ interface FullUserProfile {
   isSubscribed?: boolean;
   subscriptionExpery?: string;
   remainingContacts?: number;
+  freeContactsRemaining?: number;
   employerType?: string;
   planFeatures?: { inviteEnabled?: boolean; pipelineEnabled?: boolean };
 }
@@ -849,6 +850,11 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     return 'individual' as const;
   })();
 
+  // Gifted free contacts left. These are consumed before a subscription is
+  // needed, so when > 0 the unlock works even for non-subscribed employers.
+  // Stay at 0 until the profile loads so the free box never flashes prematurely.
+  const freeContactsRemaining = empProfileLoaded ? (empProfile?.freeContactsRemaining ?? 0) : 0;
+
   const handleUnlock = async (): Promise<void> => {
     if (unlocking || unlockedPhone) return;
     setUnlocking(true);
@@ -860,7 +866,10 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         if (res.alreadyHired) {
           toast.success(t('wp_toastAlreadyHired'), t('wp_alreadyHiredTitle'));
         } else {
-          toast.success(t('wp_toastUnlocked'), t('wp_unlockedTitle'));
+          toast.success(
+            res.usedFreeContact ? t('wp_toastFreeUnlocked') : t('wp_toastUnlocked'),
+            t('wp_unlockedTitle'),
+          );
           // Decrement happened on backend — refresh remaining contacts immediately
           void refetchEmpProfile();
           void queryClient.invalidateQueries({ queryKey: ['employer-full-profile'] });
@@ -1207,6 +1216,28 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       <AppText style={s.waBtnTxt}>{t('wp_whatsapp')}</AppText>
                     </TouchableOpacity>
                   </View>
+                </View>
+              ) : freeContactsRemaining > 0 ? (
+                // ─ Gifted free contact available — unlock at no cost, no subscription needed
+                <View style={s.unlockBox}>
+                  <View style={s.unlockHint}>
+                    <AppText style={s.unlockHintTxt}>
+                      {t('wp_freeContactHint') + ' · '}
+                      <AppText style={[s.unlockHintTxt, { color: C.green, fontWeight: '800' }]}>
+                        {t('wp_freeRemaining', { count: freeContactsRemaining })}
+                      </AppText>
+                    </AppText>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => void handleUnlock()}
+                    disabled={unlocking}
+                    style={[s.viewContactBtn, { backgroundColor: C.green, opacity: unlocking ? 0.6 : 1 }]}
+                    activeOpacity={0.85}
+                  >
+                    {unlocking
+                      ? <ActivityIndicator color={C.white} size="small" />
+                      : <AppText style={s.viewContactIcon}>{'🎁'}</AppText>}
+                  </TouchableOpacity>
                 </View>
               ) : isSubscribed ? (
                 // ─ Active subscription — unlock costs 1 contact credit

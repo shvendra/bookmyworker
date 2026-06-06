@@ -192,6 +192,41 @@ export const setDefaultRoleApi = async (role: string): Promise<void> => {
   await apiClient.post('/api/v1/user/set-default-role', { role });
 };
 
+// ── Google Sign-In (employer) ────────────────────────────────────────────────
+export interface GoogleStartResult {
+  loggedIn: boolean;
+  needsPhone?: boolean;
+  name?: string;
+  email?: string;
+  googleTicket?: string;
+  session?: VerifyOtpResponse;   // present when loggedIn
+}
+
+export const googleStart = async (idToken: string, appContext?: AppContext): Promise<GoogleStartResult> => {
+  const response = await apiClient.post('/api/v1/user/google/start', { idToken, appContext });
+  const body = response.data as { loggedIn?: boolean; token?: string; user?: BackendUser; availableRoles?: string[]; needsPhone?: boolean; name?: string; email?: string; googleTicket?: string };
+  if (body.loggedIn && body.token && body.user) {
+    return { loggedIn: true, session: { token: body.token, user: mapBackendUser(body.user), availableRoles: body.availableRoles } };
+  }
+  return { loggedIn: false, needsPhone: !!body.needsPhone, name: body.name, email: body.email, googleTicket: body.googleTicket };
+};
+
+export const googleRegister = async (payload: {
+  googleTicket: string;
+  phone: string;
+  name?: string;
+  employerType?: unknown;
+  state?: string;
+  district?: string;
+  block?: string;
+  referredBy?: string;
+}): Promise<VerifyOtpResponse> => {
+  const response = await apiClient.post('/api/v1/user/google/register', payload);
+  const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };
+  if (!body.token || !body.user) throw new Error('Google registration failed.');
+  return { token: body.token, user: mapBackendUser(body.user), availableRoles: body.availableRoles };
+};
+
 export const switchRoleApi = async (role: string, phone?: string): Promise<VerifyOtpResponse> => {
   const response = await apiClient.post('/api/v1/user/setrole', { role, phone });
   const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };

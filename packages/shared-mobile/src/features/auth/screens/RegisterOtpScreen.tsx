@@ -122,6 +122,30 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
     setErrorMessage(null);
     try {
       await authService.verifyOtpForRegistration(params.phone, otp);
+
+      // ── Google sign-up flow: no password — finalize via google/register ──
+      if (params.googleTicket) {
+        const gLang = params.language ?? i18n.language ?? 'hi';
+        const gSession = await authService.googleRegister({
+          googleTicket: params.googleTicket,
+          phone: params.phone,
+          name: params.name,
+          employerType: params.employerType
+            ? (JSON.parse(params.employerType) as Record<string, boolean>)
+            : undefined,
+          state: params.state,
+          district: params.district,
+          block: params.block,
+          referredBy: params.referredBy,
+        });
+        gSession.onboardingCompleted = false; // fresh employer → KYC
+        if (i18n.language !== gLang) await i18n.changeLanguage(gLang);
+        toast.success(t('accountCreated'), t('registrationSuccessful'));
+        await signIn(gSession);
+        toast.success(t('welcomeToApp'), t('registrationSuccessful'));
+        return;
+      }
+
       // Use the language the user selected before registration (passed as a param).
       // Fall back to the current i18n language so we never send undefined.
       const selectedLang = params.language ?? i18n.language ?? 'hi';

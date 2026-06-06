@@ -1,4 +1,4 @@
-import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
+import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, googleStart as googleStartApi, googleRegister as googleRegisterApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
 import { registerForPushNotifications } from '../../../core/notifications/pushService';
 import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
@@ -85,6 +85,45 @@ export const authService = {
 
   register: async (payload: RegisterPayload): Promise<void> => {
     await registerUser(payload);
+  },
+
+  // ── Google Sign-In (employer) ──────────────────────────────────────────────
+  // Verify Google credential. Either an existing Employer is logged in (session
+  // returned) or the caller must collect a mobile number (needsPhone + ticket).
+  googleStart: async (idToken: string, appContext?: AppContext): Promise<{
+    loggedIn: boolean; session?: AuthSession; needsPhone?: boolean; name?: string; email?: string; googleTicket?: string;
+  }> => {
+    const res = await googleStartApi(idToken, appContext);
+    if (res.loggedIn && res.session) {
+      const pushToken = await registerForPushNotifications();
+      if (pushToken) notificationApi.registerToken(pushToken).catch(() => {});
+      return {
+        loggedIn: true,
+        session: {
+          tokens: { accessToken: res.session.token, refreshToken: res.session.token, expiresAt: Date.now() + 24 * 60 * 60 * 1000 },
+          user: res.session.user,
+          onboardingCompleted: true,
+          availableRoles: res.session.availableRoles,
+        },
+      };
+    }
+    return { loggedIn: false, needsPhone: res.needsPhone, name: res.name, email: res.email, googleTicket: res.googleTicket };
+  },
+
+  // Finish Google registration after the mobile number + OTP step.
+  googleRegister: async (payload: {
+    googleTicket: string; phone: string; name?: string;
+    employerType?: unknown; state?: string; district?: string; block?: string; referredBy?: string;
+  }): Promise<AuthSession> => {
+    const pushToken = await registerForPushNotifications();
+    const res = await googleRegisterApi(payload);
+    if (pushToken) notificationApi.registerToken(pushToken).catch(() => {});
+    return {
+      tokens: { accessToken: res.token, refreshToken: res.token, expiresAt: Date.now() + 24 * 60 * 60 * 1000 },
+      user: res.user,
+      onboardingCompleted: false, // fresh employer → route to KYC
+      availableRoles: res.availableRoles,
+    };
   },
 
   verifyOtpForRegistration: async (phone: string, otp: string): Promise<void> => {

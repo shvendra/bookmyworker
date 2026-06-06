@@ -20,6 +20,8 @@ interface RawUser {
   isSubscribed?: boolean;
   subscriptionExpery?: string;
   remainingContacts?: number;
+  /** Gifted free-contact unlocks still available (computed by backend). */
+  freeContactsRemaining?: number;
   /** Backend may expose remaining job-post quota; often absent — degrade gracefully. */
   remainingPosts?: number;
   postsRemaining?: number;
@@ -56,6 +58,8 @@ export interface PlanFeaturesResult {
   remainingPosts: number | null;
   /** Remaining contact unlocks. */
   remainingContacts: number;
+  /** Gifted free-contact unlocks still available (0 ⇒ none / feature off). */
+  freeContactsRemaining: number;
 }
 
 function resolveEmployerType(raw?: string | Record<string, boolean>): EmployerTypeKey {
@@ -173,5 +177,6 @@ export function usePlanFeatures(): PlanFeaturesResult {
 
     remainingPosts,
     remainingContacts: profile?.remainingContacts ?? sessionUser?.remainingContacts ?? 0,
+    freeContactsRemaining: Math.max(0, profile?.freeContactsRemaining ?? 0),
   };
 }

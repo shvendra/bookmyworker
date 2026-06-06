@@ -33,6 +33,8 @@ export type RootStackParamList = {
     agentType?: string;
     resumeUri?: string;
     resumeName?: string;
+    // Set when finishing a Google sign-up — RegisterOtp finalizes via google/register.
+    googleTicket?: string;
   };
   ForgotPassword: { roleHint?: AppRole } | undefined;
   // ── Onboarding ────────────────────────────────────────────────

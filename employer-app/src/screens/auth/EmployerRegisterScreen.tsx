@@ -22,6 +22,8 @@ import { AppButton } from '../../../../packages/shared-mobile/src/shared/compone
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
+import { isGoogleSignInAvailable, signInWithGoogle } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
+import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
 import {
   registerStep2Schema,
   type RegisterStep2Values,
@@ -45,11 +47,69 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTypes, setSelectedTypes] = useState<Record<EmployerTypeKey, boolean>>({
     individual: false, contractor: false, agency: false, industry: false,
   });
+
+  // ── Google sign-in state ──
+  const googleAvailable = isGoogleSignInAvailable();
+  const [googleBusy, setGoogleBusy]     = useState(false);
+  const [googleMode, setGoogleMode]     = useState(false);
+  const [googleTicket, setGoogleTicket] = useState('');
+  const [googleName, setGoogleName]     = useState('');
+  const [googlePhone, setGooglePhone]   = useState('');
+
+  const handleGoogle = async (): Promise<void> => {
+    if (googleBusy) return;
+    if (!hasType) { showAlert(t('selectAtLeastOneType'), t('selectAtLeastOneType')); return; }
+    setGoogleBusy(true);
+    try {
+      const idToken = await signInWithGoogle();
+      if (!idToken) return; // cancelled / unavailable
+      const res = await authService.googleStart(idToken, 'employer-app');
+      if (res.loggedIn && res.session) {
+        await signIn(res.session); // app routes automatically
+        return;
+      }
+      if (res.needsPhone && res.googleTicket) {
+        setGoogleTicket(res.googleTicket);
+        setGoogleName(res.name || '');
+        setGoogleMode(true);
+      }
+    } catch (error) {
+      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  const handleGoogleContinue = async (): Promise<void> => {
+    const phone = googlePhone.replace(/\D/g, '');
+    if (phone.length !== 10) {
+      showAlert(t('alertError'), t('enterValidPhone') || 'Enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await authService.requestOtp(phone, undefined);
+      const typesToSend = hasType ? selectedTypes : { ...selectedTypes, individual: true };
+      navigation.navigate('RegisterOtp', {
+        phone,
+        role: 'Employer',
+        name: googleName || 'Employer',
+        password: '', // not used for Google flow
+        employerType: JSON.stringify(typesToSend),
+        googleTicket,
+      });
+    } catch (error) {
+      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const {
     control,
@@ -92,6 +152,60 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
   });
 
   const isDark = theme.mode === 'dark';
+
+  // ── Google flow: collect the mandatory mobile number ─────────────────────────
+  if (googleMode) {
+    return (
+      <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F0F4FB' }]}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+        <View style={[styles.hero, { paddingTop: insets.top + 12 }]}>
+          <View style={[styles.circle, styles.c1]} />
+          <View style={[styles.circle, styles.c2]} />
+          <View style={styles.orangeStrip} />
+          <View style={styles.brandRow}>
+            <View style={styles.logoBox}>
+              <Image source={require('../../../../packages/shared-mobile/assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+              <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
+            </View>
+            <TouchableOpacity onPress={() => setGoogleMode(false)} style={styles.backBtn} activeOpacity={0.7}>
+              <AppText style={styles.backArrow}>←</AppText>
+            </TouchableOpacity>
+          </View>
+          <AppText style={styles.heroTitle} color="#FFFFFF">{t('yourDetails')}</AppText>
+          <AppText style={styles.heroSub} color="rgba(255,255,255,0.70)">
+            {t('registerStep2Sub')}
+          </AppText>
+        </View>
+
+        <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={[styles.card, { backgroundColor: theme.colors.card }, !isDark && styles.cardShadow]}>
+              <View style={{ marginBottom: 14, padding: 12, borderRadius: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }}>
+                <AppText variant="body" color="#16A34A" style={{ fontWeight: '600' }}>
+                  ✓ Signed in with Google{googleName ? ` as ${googleName}` : ''} — add your mobile number to finish.
+                </AppText>
+              </View>
+              <View style={styles.field}>
+                <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>{t('mobileNumber')}</AppText>
+                <AppInput
+                  value={googlePhone}
+                  onChangeText={(v: string) => setGooglePhone(v.replace(/\D/g, ''))}
+                  placeholder="9876543210"
+                  keyboardType="phone-pad"
+                  leadingIcon="+91"
+                  maxLength={10}
+                />
+              </View>
+              <AppButton title={t('sendOtpRegister')} onPress={handleGoogleContinue} loading={isLoading} size="lg" fullWidth style={styles.submitBtn} />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   // ── Step 1: Employer type selection ──────────────────────────────────────────
   if (step === 1) {
@@ -178,6 +292,42 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             size="lg"
             fullWidth
           />
+
+          {/* Continue with Google — only after a type is selected, so the rate-
+              determining employer type is always captured. Hidden until the
+              native module + client ID are configured. */}
+          {googleAvailable && (
+            <View style={{ marginTop: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
+                <Text style={{ marginHorizontal: 10, color: theme.colors.mutedText, fontSize: 12 }}>{t('orLabel') || 'or'}</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
+              </View>
+              <TouchableOpacity
+                onPress={handleGoogle}
+                disabled={googleBusy || !hasType}
+                activeOpacity={0.85}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E2E8F0',
+                  borderRadius: 14, paddingVertical: 14, opacity: (googleBusy || !hasType) ? 0.45 : 1,
+                }}
+              >
+                <Image
+                  source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                  style={{ width: 18, height: 18 }}
+                />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>
+                  {googleBusy ? t('processing') : (t('continueWithGoogle') || 'Continue with Google')}
+                </Text>
+              </TouchableOpacity>
+              {!hasType && (
+                <Text style={{ marginTop: 8, fontSize: 12, color: theme.colors.mutedText, textAlign: 'center' }}>
+                  {t('selectTypeBeforeGoogle') || 'Select your employer type above to continue with Google'}
+                </Text>
+              )}
+            </View>
+          )}
 
           <AppText variant="body" color={theme.colors.mutedText} style={styles.loginRow}>
             {t('alreadyHaveAccount')}{' '}

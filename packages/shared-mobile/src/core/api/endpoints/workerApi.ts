@@ -150,12 +150,16 @@ export const workerApi = {
     phone?: string;
     message?: string;
     alreadyHired?: boolean;  // true when worker has Joined status — contact is free
+    usedFreeContact?: boolean;  // true when a gifted free contact was used (no charge)
+    freeContactsRemaining?: number;  // free contacts left after this unlock
     code?: 'SUBSCRIPTION_REQUIRED' | 'SUBSCRIPTION_EXPIRED' | 'CONTACT_LIMIT';
   }> => {
     const res = await apiClient.get<{
       phone?: string;
       message?: string;
       alreadyHired?: boolean;
+      usedFreeContact?: boolean;
+      freeContactsRemaining?: number;
       code?: string;
     }>(`/api/v1/user/unlock-number/${agentId}`);
     return res.data;
