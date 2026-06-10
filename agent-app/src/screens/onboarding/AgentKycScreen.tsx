@@ -174,6 +174,37 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
           </View>
         </View>
 
+        {/* ID proof upload card */}
+        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={s.sectionHead}>
+            <View style={[s.iconBox, { backgroundColor: BRAND_SOFT }]}>
+              <AppText style={s.iconEmoji}>🪪</AppText>
+            </View>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('kycIdProof')}</AppText>
+          </View>
+          <Pressable
+            style={[s.uploadSlot, { borderColor: idFront ? BRAND : BORDER }]}
+            onPress={() => void handlePickId()}
+          >
+            {idFront ? (
+              <>
+                <Image source={{ uri: idFront.uri }} style={s.uploadPreview} resizeMode="cover" />
+                <View style={s.uploadOverlay}>
+                  <AppText style={s.overlayTick}>✓ {t('kycIdUploaded')}</AppText>
+                </View>
+              </>
+            ) : (
+              <View style={s.uploadEmpty}>
+                <View style={[s.camBox, { backgroundColor: BRAND_SOFT }]}>
+                  <AppText style={s.iconEmoji}>📷</AppText>
+                </View>
+                <AppText style={[s.uploadLabel, { color: theme.colors.text }]}>{t('kycUploadId')}</AppText>
+                <AppText style={[s.uploadHint, { color: SLATE }]}>{t('kycUploadIdHint')}</AppText>
+              </View>
+            )}
+          </Pressable>
+        </View>
+
         {/* Error */}
         {errorMessage ? (
           <View style={[s.errorBox, { backgroundColor: '#FFF1F2', borderColor: '#FCA5A5' }]}>

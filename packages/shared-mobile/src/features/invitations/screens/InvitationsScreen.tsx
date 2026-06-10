@@ -85,7 +85,7 @@ const InvitationCard = React.memo(({
         {/* Header: title + status pill */}
         <View style={card.topRow}>
           <View style={{ flex: 1, gap: 3 }}>
-            <AppText style={[card.title, { color: theme.colors.text }]} numberOfLines={2}>
+            <AppText style={[card.title, { color: theme.colors.text }]} numberOfLines={3}>
               {workTypeLabel}{subCatLabel ? ` · ${subCatLabel}` : ''}
             </AppText>
             {!!locationStr && (
@@ -409,7 +409,7 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
 const s = StyleSheet.create({
   container:  { flex: 1 },
-  filterRow:  { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, gap: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  filterRow:  { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, paddingVertical: 10, gap: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   chip:       { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 6 },
   chipTxt:    { fontSize: 12, fontWeight: '700' },
   list:       { padding: 14, paddingTop: 10, paddingBottom: 40 },

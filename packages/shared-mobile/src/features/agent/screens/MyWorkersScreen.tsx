@@ -178,12 +178,12 @@ export const MyWorkersScreen = (): React.JSX.Element => {
               <AppCard style={styles.workerCard}>
                 <Avatar name={workerName(w)} size={44} uri={w.profilePhoto} />
                 <View style={styles.workerInfo}>
-                  <AppText variant="label" numberOfLines={1}>{workerName(w)}</AppText>
-                  <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+                  <AppText variant="label" numberOfLines={2}>{workerName(w)}</AppText>
+                  <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
                     {w.phone ?? '—'} · {workerLocation(w)}
                   </AppText>
                  {workerWork(w) !== '—' && (
-  <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+  <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
     {(() => {
       const rawValue = workerWork(w);
       try {

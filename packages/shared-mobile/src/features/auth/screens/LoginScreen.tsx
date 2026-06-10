@@ -21,6 +21,7 @@ import { useAppTheme } from '../../../core/theme';
 import { ROUTES } from '../../../shared/constants/routes';
 import { OtpLoginForm } from './OtpLoginForm';
 import { PasswordLoginForm } from './PasswordLoginForm';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -31,8 +32,15 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  // SuperAdmin toggle — when OTP login is disabled, only password login is shown.
+  const { config } = useAppConfig();
+  const loginOtpEnabled = config.authFlags.loginOtpEnabled;
   // Employer app defaults to password login; other apps default to OTP.
   const [mode, setMode] = useState<'otp' | 'password'>(appContext === 'employer-app' ? 'password' : 'otp');
+
+  useEffect(() => {
+    if (!loginOtpEnabled && mode === 'otp') setMode('password');
+  }, [loginOtpEnabled, mode]);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -54,7 +62,7 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
       <View style={[styles.brandStrip, { paddingTop: insets.top + 16 }]}>
         <View style={styles.brandContent}>
           <BrandLogo style={styles.brandLogoImg} />
-          <View style={styles.brandTextWrap}>
+          <View style={[styles.brandTextWrap, { flex: 1, minWidth: 0 }]}>
             <AppText variant="heading" color="#FFFFFF" style={styles.brandName}>
               BookMyWorker
             </AppText>
@@ -87,53 +95,62 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
               !isDark && styles.cardShadow,
             ]}
           >
-            {/* Mode tabs */}
-            <View style={[styles.modeTabs, { borderColor: theme.colors.border }]}>
-              <TouchableOpacity
-                onPress={() => setMode('otp')}
-                style={[styles.modeTab, mode === 'otp' && { backgroundColor: theme.colors.primary }]}
-                activeOpacity={0.8}
-              >
-                <AppText variant="labelSm" color={mode === 'otp' ? '#fff' : theme.colors.mutedText}>
-                  {t('otpLoginTab')}
-                </AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setMode('password')}
-                style={[styles.modeTab, mode === 'password' && { backgroundColor: theme.colors.primary }]}
-                activeOpacity={0.8}
-              >
-                <AppText variant="labelSm" color={mode === 'password' ? '#fff' : theme.colors.mutedText}>
-                  {t('passwordLoginTab')}
-                </AppText>
-              </TouchableOpacity>
-            </View>
+            {/* Mode tabs — hidden entirely when OTP login is disabled by the admin */}
+            {loginOtpEnabled && (
+              <View style={[styles.modeTabs, { borderColor: theme.colors.border }]}>
+                <TouchableOpacity
+                  onPress={() => setMode('otp')}
+                  style={[styles.modeTab, mode === 'otp' && { backgroundColor: theme.colors.primary }]}
+                  activeOpacity={0.8}
+                >
+                  <AppText variant="labelSm" color={mode === 'otp' ? '#fff' : theme.colors.mutedText}>
+                    {t('otpLoginTab')}
+                  </AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setMode('password')}
+                  style={[styles.modeTab, mode === 'password' && { backgroundColor: theme.colors.primary }]}
+                  activeOpacity={0.8}
+                >
+                  <AppText variant="labelSm" color={mode === 'password' ? '#fff' : theme.colors.mutedText}>
+                    {t('passwordLoginTab')}
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Each form gets a unique key so React fully remounts when switching */}
-            {mode === 'otp' ? (
+            {loginOtpEnabled && mode === 'otp' ? (
               <OtpLoginForm key="otp" navigation={navigation} roleHint={roleHint} appContext={appContext} />
             ) : (
               <PasswordLoginForm key="password" navigation={navigation} roleHint={roleHint} appContext={appContext} />
             )}
           </Animated.View>
 
-          {/* Register link */}
-          <View style={styles.registerRow}>
-            <AppText variant="body" color={theme.colors.mutedText}>
+          {/* Register link — single inline-wrapping line so long Hindi/Indic
+              translations flow onto a second line instead of overlapping/clipping. */}
+          <Pressable
+            style={styles.registerRow}
+            onPress={() => navigation.navigate(ROUTES.AUTH.REGISTER)}
+          >
+            <AppText variant="body" color={theme.colors.mutedText} center>
               {t('newToApp')}{' '}
-            </AppText>
-            <Pressable onPress={() => navigation.navigate(ROUTES.AUTH.REGISTER)}>
               <AppText variant="body" color={theme.colors.primary} style={styles.registerLink}>
                 {t('createAccount')}
               </AppText>
-            </Pressable>
-          </View>
+            </AppText>
+          </Pressable>
 
-          {/* Trust badges */}
+          {/* Trust badges — shrink-to-fit + wrap so they never clip at large font scales. */}
           <View style={styles.trustRow}>
             {[t('trustBadge1'), t('trustBadge2'), t('trustBadge3')].map((item) => (
               <View key={item} style={[styles.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
-                <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
+                <AppText
+                  variant="micro"
+                  color={theme.colors.primary}
+                >
+                  {item}
+                </AppText>
               </View>
             ))}
           </View>
@@ -196,10 +213,8 @@ const styles = StyleSheet.create({
   },
 
   registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     marginTop: 24,
-    flexWrap: 'wrap',
+    paddingHorizontal: 8,
   },
   registerLink: { fontWeight: '700' },
 
@@ -211,6 +226,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   trustBadge: {
+    flexShrink: 1,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,

@@ -167,7 +167,7 @@ function WorkerRow({
           <AppText style={[wr.initials, { color: avatarColor }]}>{initials}</AppText>
         </View>
         <View style={{ flex: 1 }}>
-          <AppText style={[wr.name, { color: theme.colors.text }]} numberOfLines={1}>
+          <AppText style={[wr.name, { color: theme.colors.text }]} numberOfLines={2}>
             {worker.workerName}
           </AppText>
           <AppText style={[wr.sub, { color: theme.colors.mutedText }]}>
@@ -243,7 +243,7 @@ function SummaryCard({ s }: { s: WorkerSummary }): React.JSX.Element {
           <AppText style={[sc.initials, { color: BRAND }]}>{initials}</AppText>
         </View>
         <View style={{ flex: 1 }}>
-          <AppText style={[sc.name, { color: theme.colors.text }]} numberOfLines={1}>{s.workerName}</AppText>
+          <AppText style={[sc.name, { color: theme.colors.text }]} numberOfLines={2}>{s.workerName}</AppText>
           <AppText style={[sc.sub, { color: theme.colors.mutedText }]}>
             {s.agreedRate ? `₹${s.agreedRate}${s.rateType === 'Monthly' ? t('perMonth') : t('perDay')}` : t('rateNotSet')}
           </AppText>

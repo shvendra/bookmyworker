@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google ସହିତ ଜାରି ରଖିବାକୁ ଉପରେ ଆପଣଙ୍କ ନିଯୁକ୍ତିଦାତା ପ୍ରକାର ବାଛନ୍ତୁ",
+  orLabel: "କିମ୍ବା",
+  continueWithGoogle: "Google ସହିତ ଜାରି ରଖନ୍ତୁ",
   lp_tapHint: 'ପିନ୍ ରଖିବାକୁ ଯେକୌଣସି ସ୍ଥାନରେ ଟ୍ୟାପ୍ କରନ୍ତୁ',
   profile_pendingVerification: 'ପ୍ରୋଫାଇଲ୍ ଯାଞ୍ଚ ବାକି',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'ପୋଷ୍ଟ',
   tab_payments: 'ଦେୟ',
   tab_chat: 'ଚ୍ୟାଟ',
-  tab_liked: 'Liked',
+  tab_liked: 'ପସନ୍ଦ',
   tab_placements: 'ପ୍ଲେସମେଣ୍ଟ',
   tab_saved: 'ସଞ୍ଚିତ',
   tab_applications: 'ଆବେଦନ',
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'ଦେୟ ଏବଂ ବିଲ',
   profile_paymentHistory: 'ଦେୟ ଇତିହାସ',
   profile_myActivity: 'ମୋ ଗତିବିଧି',
-  profile_viewedContacts: 'ଦେଖିଥିବା ସମ୍ପର୍କ',
+  profile_viewedContacts: 'ଦେଖିଥିବା ଶ୍ରମିକ ପ୍ରୋଫାଇଲ',
   profile_jobInvitations: 'ଚାକିରି ଆମନ୍ତ୍ରଣ',
   profile_callHistory: 'କଲ ଇତିହାସ',
   profile_notificationSettings: 'ବିଜ୍ଞପ୍ତି ସେଟିଂ',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'ଖୋଜନ୍ତୁ ଯଥା ରାଜ ମିସ୍ତ୍ରି, ଡ୍ରାଇଭର…',
   wpc_subCatSelected: 'ବାଛିଥିବା ଦକ୍ଷତା',
   wpc_subCatRequired: 'ଆଗକୁ ଯିବାକୁ ଅତ୍ୟୁକ୍ତ ଏକ ଦକ୍ଷତା ବାଛନ୍ତୁ',
+  wpc_limitTitle: 'ସୀମା ପୂରଣ ହୋଇଛି',
+  wpc_workCatLimit: 'ଆପଣ ସର୍ବାଧିକ {{count}}ଟି କାର୍ଯ୍ୟ ବର୍ଗ ବାଛିପାରିବେ।',
+  wpc_subCatLimit: 'ଆପଣ ସର୍ବାଧିକ {{count}}ଟି ଦକ୍ଷତା ବାଛିପାରିବେ।',
   wpc_locationQ: 'ଆପଣ କେଉଁଠି ଅଛନ୍ତି?',
   wpc_locationHint: 'ଆପଣଙ୍କ ରାଜ୍ୟ, ଜିଲ୍ଲା ଓ ବ୍ଲକ ବାଛନ୍ତୁ',
   wpc_stateLabel: 'ରାଜ୍ୟ',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "ଉପ-ଶ୍ରେଣୀ ବାଛନ୍ତୁ",
   cs_selectCategoryFirst: "ପ୍ରଥମେ ଶ୍ରେଣୀ ବାଛନ୍ତୁ",
   cs_subTypes: "{{n}} ଉପ-ପ୍ରକାର",
+  req_boostedBadge: "ବୁଷ୍ଟ୍ କରାଯାଇଛି",
 } as const;

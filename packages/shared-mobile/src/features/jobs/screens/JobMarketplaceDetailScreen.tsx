@@ -183,7 +183,7 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: {
               <View style={[S.wageBanner, { backgroundColor: visual.bg }]}>
                 <AppText style={{ fontSize: 32 }}>{visual.emoji}</AppText>
                 <View style={{ flex: 1 }}>
-                  <AppText style={[S.wageBannerTitle, { color: visual.color }]} numberOfLines={1}>
+                  <AppText style={[S.wageBannerTitle, { color: visual.color }]}>
                     {getJobTitle(req?.workType, req?.subCategory, i18n.language, t)}
                   </AppText>
                   <AppText style={{ fontSize: 12, color: visual.color + 'AA' }}>{req?.district} · ₹{minWage}+/{period}</AppText>
@@ -280,7 +280,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
       showAlert(t('verifiedBadgeRequired'), t('verifiedAgentCallMsg'), [{ text: 'OK' }]);
       return;
     }
-    setContactInfo({ phone: '', name: req?.employerName ?? '', loading: true, error: null });
+    setContactInfo({ phone: '', name: req?.contactPersonName ?? req?.employerName ?? '', loading: true, error: null });
     revealMutation.mutate();
   }, [isSelfWorker, isAgent, isVerifiedAgent, req, revealMutation, t]);
 
@@ -342,6 +342,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
   type InfoRow = { icon: string; label: string; value: string };
   const INFO: InfoRow[] = [
     req.employerName   ? { icon: '🏢', label: t('detailEmployer'),     value: req.employerName } : null,
+    req.contactPersonName ? { icon: '👤', label: 'Contact Person', value: req.contactPersonName } : null,
     { icon: '📍', label: t('locationLabel'), value: locationStr },
     req.workerNeedDate ? { icon: '📅', label: t('detailStartDate'),    value: fmtDate(req.workerNeedDate, i18n.language) } : null,
     (req.inTime && req.outTime) ? { icon: '⏰', label: t('detailTiming'), value: `${fmtTime(req.inTime, i18n.language)} – ${fmtTime(req.outTime, i18n.language)}` } : null,
@@ -354,54 +355,58 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
     <View style={[S.root, { backgroundColor: bg }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* ── Hero Header ──────────────────────────────────────────────────────── */}
-      <View style={[S.heroGrad, { paddingTop: insets.top + 8, backgroundColor: visual.gradFrom }]}>
-        {/* Nav row */}
-        <View style={S.navRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={S.navBtn} hitSlop={10}>
-            <AppText style={S.navIcon}>←</AppText>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={handleLike} style={[S.navBtn, { backgroundColor: isLiked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
-            <AppText style={{ fontSize: 18, lineHeight: 22 }}>{isLiked ? '❤️' : '🤍'}</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { void handleShare(); }} style={[S.navBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
-            <Ionicons name="share-social" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Emoji + Title */}
-        <View style={S.heroContent}>
-          <View style={S.heroEmojiWrap}>
-            <AppText style={S.heroEmoji}>{visual.emoji}</AppText>
-          </View>
-          <AppText style={S.heroTitle}>{jobTitle}</AppText>
-          <View style={S.heroCategoryChip}>
-            <AppText style={S.heroCategoryText}>{categoryLabel}</AppText>
-          </View>
-          <View style={S.heroMeta}>
-            <AppText style={S.heroMetaText}>📍 {locationStr}</AppText>
-          </View>
-        </View>
-
-        {/* Salary strip */}
-        <View style={S.salaryStrip}>
-          <View style={S.salaryLeft}>
-            <AppText style={S.salaryAmount}>₹{req.minBudgetPerWorker ?? 0}–{req.maxBudgetPerWorker ?? 0}</AppText>
-            <AppText style={S.salaryPer}>{t('salaryPer')} {periodLabel}</AppText>
-          </View>
-          {totalWorkers > 0 && (
-            <View style={S.workerBadge}>
-              <AppText style={S.workerBadgeText}>👷 {t('workerNeeded', { count: totalWorkers })}</AppText>
-            </View>
-          )}
-        </View>
-      </View>
-
       <ScrollView
-        contentContainerStyle={[S.scroll, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Hero Header (scrolls with the whole page) ─────────────────────── */}
+        <View style={[S.heroGrad, { paddingTop: insets.top + 8, backgroundColor: visual.gradFrom }]}>
+          {/* Nav row */}
+          <View style={S.navRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={S.navBtn} hitSlop={10}>
+              <AppText style={S.navIcon}>←</AppText>
+            </TouchableOpacity>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity onPress={handleLike} style={[S.navBtn, { backgroundColor: isLiked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
+              <AppText style={{ fontSize: 18, lineHeight: 22 }}>{isLiked ? '❤️' : '🤍'}</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { void handleShare(); }} style={[S.navBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
+              <Ionicons name="share-social" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Icon on the LEFT + Title / Category beside it */}
+          <View style={S.heroContent}>
+            <View style={S.heroEmojiWrap}>
+              <AppText style={S.heroEmoji}>{visual.emoji}</AppText>
+            </View>
+            <View style={S.heroTextCol}>
+              <AppText style={S.heroTitle} numberOfLines={2}>{jobTitle}</AppText>
+              <View style={S.heroCategoryChip}>
+                <AppText style={S.heroCategoryText} numberOfLines={1}>{categoryLabel}</AppText>
+              </View>
+            </View>
+          </View>
+          <View style={S.heroMeta}>
+            <AppText style={S.heroMetaText} numberOfLines={1}>📍 {locationStr}</AppText>
+          </View>
+
+          {/* Salary strip */}
+          <View style={S.salaryStrip}>
+            <View style={S.salaryLeft}>
+              <AppText style={S.salaryAmount}>₹{req.minBudgetPerWorker ?? 0}–{req.maxBudgetPerWorker ?? 0}</AppText>
+              <AppText style={S.salaryPer}>{t('salaryPer')} {periodLabel}</AppText>
+            </View>
+            {totalWorkers > 0 && (
+              <View style={S.workerBadge}>
+                <AppText style={S.workerBadgeText}>👷 {t('workerNeeded', { count: totalWorkers })}</AppText>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ── Body ──────────────────────────────────────────────────────────── */}
+        <View style={S.body}>
         {/* ── Worker breakdown ──────────────────────────────────────────────── */}
         {(skilledCount > 0 || unskilledCount > 0) && (
           <View style={[S.card, { backgroundColor: cardBg, borderColor: border }]}>
@@ -452,12 +457,13 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
               {PERKS.map((p, i) => (
                 <View key={i} style={[S.perkItem, { backgroundColor: p.bg, borderColor: p.border }]}>
                   <AppText style={S.perkEmoji}>{p.icon}</AppText>
-                  <AppText style={[S.perkLabel, { color: p.color }]} numberOfLines={1}>{p.label}</AppText>
+                  <AppText style={[S.perkLabel, { color: p.color }]}>{p.label}</AppText>
                 </View>
               ))}
             </View>
           </View>
         )}
+        </View>
       </ScrollView>
 
       {/* ── Bottom CTA ───────────────────────────────────────────────────────── */}
@@ -512,30 +518,31 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
 const S = StyleSheet.create({
   root: { flex: 1 },
 
-  // Hero
-  heroGrad: { paddingHorizontal: 16, paddingBottom: 20 },
-  navRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 8 },
+  // Hero — compact, left-aligned (icon on the left of the title/category)
+  heroGrad: { paddingHorizontal: 16, paddingBottom: 14 },
+  navRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 },
   navBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   navIcon: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-  heroContent: { alignItems: 'center', paddingHorizontal: 8, marginBottom: 20 },
-  heroEmojiWrap: { width: 80, height: 80, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)' },
-  heroEmoji: { fontSize: 42, lineHeight: 50 },
-  heroTitle: { fontSize: 22, fontWeight: '900', color: '#FFFFFF', textAlign: 'center', lineHeight: 28, marginBottom: 10, letterSpacing: -0.3 },
-  heroCategoryChip: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', marginBottom: 12 },
-  heroCategoryText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heroMetaText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500', textAlign: 'center' },
+  heroContent: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+  heroEmojiWrap: { width: 54, height: 54, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)' },
+  heroEmoji: { fontSize: 28, lineHeight: 34 },
+  heroTextCol: { flex: 1, gap: 7 },
+  heroTitle: { fontSize: 19, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', lineHeight: 24, letterSpacing: -0.3 },
+  heroCategoryChip: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  heroCategoryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  heroMetaText: { color: 'rgba(255,255,255,0.85)', fontSize: 12.5, fontWeight: '500', textAlign: 'left' },
 
-  // Salary strip (inside hero)
-  salaryStrip: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-  salaryLeft: { gap: 2 },
-  salaryAmount: { fontSize: 26, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.5 },
-  salaryPer: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
-  workerBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-  workerBadgeText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  // Salary strip (inside hero) — reduced size
+  salaryStrip: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
+  salaryLeft: { gap: 1 },
+  salaryAmount: { fontSize: 20, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.4 },
+  salaryPer: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+  workerBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  workerBadgeText: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' },
 
   // Cards
-  scroll: { padding: 12, gap: 10 },
+  body: { padding: 12, gap: 10 },
   card: { borderRadius: 16, borderWidth: 1, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   cardTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, marginBottom: 14 },
 

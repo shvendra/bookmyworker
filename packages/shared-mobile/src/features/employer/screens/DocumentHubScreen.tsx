@@ -339,7 +339,7 @@ const um = StyleSheet.create({
   input:        { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   typeGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   typeChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
-  typeChipTxt:  { fontSize: 11, fontWeight: '600' },
+  typeChipTxt:  { fontSize: 11, fontWeight: '600', flexShrink: 1 },
   filePreview:  { borderWidth: 1.5, borderRadius: 12, padding: 12, gap: 4 },
   fileName:     { fontSize: 13, fontWeight: '700' },
   fileSize:     { fontSize: 11 },

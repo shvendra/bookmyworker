@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google સાથે ચાલુ રાખવા માટે ઉપર તમારો નિયોક્તા પ્રકાર પસંદ કરો",
+  orLabel: "અથવા",
+  continueWithGoogle: "Google સાથે ચાલુ રાખો",
   lp_tapHint: 'પિન મૂકવા માટે ગમે ત્યાં ટૅપ કરો',
   profile_pendingVerification: 'પ્રોફાઇલ ચકાસણી બાકી',
   // -- Map location picker --
@@ -323,7 +326,7 @@ export const translation = {
   profile_paymentsBilling: 'ચૂકવણી અને બિલિંગ',
   profile_paymentHistory: 'ચૂકવણી ઇતિહાસ',
   profile_myActivity: 'મારી પ્રવૃત્તિ',
-  profile_viewedContacts: 'જોયેલા સંપર્કો',
+  profile_viewedContacts: 'જોયેલા કામદાર પ્રોફાઇલ',
   profile_jobInvitations: 'નોકરીના આમંત્રણ',
   profile_callHistory: 'કૉલ ઇતિહાસ',
   profile_notificationSettings: 'સૂચના સેટિંગ',
@@ -816,6 +819,9 @@ export const translation = {
   wpc_subCatSearch: 'શોધો ઉ.દા. રાજ, ડ્રાઈવર, રસોઈ…',
   wpc_subCatSelected: 'પસંદ કરેલ કૌશલ્ય',
   wpc_subCatRequired: 'આગળ વધવા માટે ઓછામાં ઓછી એક કૌશલ્ય પસંદ કરો',
+  wpc_limitTitle: 'મર્યાદા પૂર્ણ',
+  wpc_workCatLimit: 'તમે વધુમાં વધુ {{count}} કાર્ય શ્રેણીઓ પસંદ કરી શકો છો.',
+  wpc_subCatLimit: 'તમે વધુમાં વધુ {{count}} કૌશલ્યો પસંદ કરી શકો છો.',
   wpc_locationQ: 'તમે ક્યાં છો?',
   wpc_locationHint: 'તમારું રાજ્ય, જિલ્લો અને બ્લૉક પસંદ કરો',
   wpc_stateLabel: 'રાજ્ય',
@@ -916,4 +922,5 @@ export const translation = {
   cs_selectSubCategory: "ઉપ-શ્રેણી પસંદ કરો",
   cs_selectCategoryFirst: "પહેલા શ્રેણી પસંદ કરો",
   cs_subTypes: "{{n}} ઉપ-પ્રકાર",
+  req_boostedBadge: "બૂસ્ટ કર્યું",
 } as const;

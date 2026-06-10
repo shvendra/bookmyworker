@@ -118,7 +118,7 @@ export const PromoBannerSlider = ({ onCategoryPress, onPress }: PromoBannerSlide
             {/* Content */}
             <View style={styles.slideInner}>
               <View style={styles.slideLeft}>
-                <AppText style={styles.slideTitle} numberOfLines={1}>
+                <AppText style={styles.slideTitle} numberOfLines={2}>
                   {t(cat.translationKey as TranslationKeys).replace(/\n/g, ' ')}
                 </AppText>
                 <AppText style={styles.slideSub} numberOfLines={2}>
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   slideLeft: { flex: 1, gap: 5 },
   slideTitle: {
-    color: '#FFFFFF', fontSize: 17, fontWeight: '900', lineHeight: 22,
+    color: '#FFFFFF', fontSize: 17, fontWeight: '900', lineHeight: 23,
     textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4,
   },
   slideSub: {

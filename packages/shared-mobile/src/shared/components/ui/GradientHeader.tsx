@@ -120,7 +120,7 @@ export const GradientHeader = ({
           <AppText
             variant={compact ? 'subtitle' : 'heading'}
             color="#FFFFFF"
-            numberOfLines={2}
+            numberOfLines={3}
             ellipsizeMode="tail"
             maxFontSizeMultiplier={1.3}
             style={[styles.titleText, compact && styles.titleCompact]}

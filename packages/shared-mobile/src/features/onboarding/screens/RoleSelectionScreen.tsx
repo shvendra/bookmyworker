@@ -134,7 +134,7 @@ const RoleCard = ({
           <AppText variant="caption" color={selected ? role.color : theme.colors.primary} style={styles.roleTagline}>
             {role.tagline}
           </AppText>
-          <AppText variant="caption" color={theme.colors.mutedText} style={styles.roleDesc} numberOfLines={2}>
+          <AppText variant="caption" color={theme.colors.mutedText} style={styles.roleDesc} numberOfLines={3}>
             {role.description}
           </AppText>
           {/* Feature list */}
@@ -271,13 +271,14 @@ const styles = StyleSheet.create({
   roleIcon: { fontSize: 26, lineHeight: 32 },
   roleInfo: { flex: 1, gap: 4 },
   roleTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  roleTitle: { fontSize: 17, lineHeight: 22 },
+  roleTitle: { fontSize: 17, lineHeight: 24, flexShrink: 1 },
   indexBadge: {
     width: 22,
     height: 22,
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   indexNum: { fontSize: 11, fontWeight: '800' },
   roleTagline: { fontWeight: '700', fontSize: 11, letterSpacing: 0.2 },

@@ -103,7 +103,7 @@ const cardStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   icon:  { fontSize: 18, lineHeight: 22 },
-  title: { fontSize: 14, fontWeight: '700', letterSpacing: 0.1 },
+  title: { flexShrink: 1, fontSize: 14, fontWeight: '700', letterSpacing: 0.1 },
   body:  { padding: 16, paddingTop: 14 },
 });
 
@@ -368,7 +368,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
                       variant="caption"
                       color={selected ? '#FFFFFF' : (isDark ? theme.colors.text : BRAND)}
                       style={styles.chipText}
-                      numberOfLines={2}
+                      numberOfLines={3}
                     >
                       {cat.label}
                     </AppText>

@@ -181,7 +181,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
           <View style={styles.recordRow}>
             <View style={styles.recordInfo}>
               <AppText variant="label">{item.date}</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+              <AppText variant="caption" color={theme.colors.mutedText}>
                 {item.requirementTitle}
               </AppText>
               <AppText variant="caption" color={theme.colors.mutedText}>

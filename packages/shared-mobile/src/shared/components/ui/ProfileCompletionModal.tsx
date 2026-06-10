@@ -12,7 +12,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
@@ -189,17 +188,17 @@ const OptionCard = ({
       >
         {/* Colored icon badge */}
         <View style={[oc.iconBadge, { backgroundColor: color + '18' }]}>
-          <Text style={oc.iconTxt}>{icon}</Text>
+          <AppText style={oc.iconTxt}>{icon}</AppText>
         </View>
 
         <View style={oc.textWrap}>
-          <Text style={[oc.label, { color: selected ? color : '#111827' }]}>{label}</Text>
-          <Text style={oc.desc}>{desc}</Text>
+          <AppText style={[oc.label, { color: selected ? color : '#111827' }]}>{label}</AppText>
+          <AppText style={oc.desc}>{desc}</AppText>
         </View>
 
         {/* Radio */}
         <View style={[oc.radio, { borderColor: selected ? color : '#D1D9E6', backgroundColor: selected ? color : 'transparent' }]}>
-          {selected && <Text style={oc.radioCheck}>✓</Text>}
+          {selected && <AppText style={oc.radioCheck}>✓</AppText>}
         </View>
       </Pressable>
     </Animated.View>
@@ -240,16 +239,16 @@ const CatChip = ({
         ]}
       >
         <View style={[chip.iconCircle, { backgroundColor: selected ? color + '20' : '#EEF2FA' }]}>
-          <Text style={chip.iconTxt}>{icon}</Text>
+          <AppText style={chip.iconTxt}>{icon}</AppText>
         </View>
-        <Text style={[chip.label, { color: selected ? color : '#374151', fontWeight: selected ? '700' : '500' }]}
-          numberOfLines={2}
+        <AppText style={[chip.label, { color: selected ? color : '#374151', fontWeight: selected ? '700' : '500' }]}
+          numberOfLines={3}
         >
           {label}
-        </Text>
+        </AppText>
         {selected && (
           <View style={[chip.checkDot, { backgroundColor: color }]}>
-            <Text style={chip.checkTxt}>✓</Text>
+            <AppText style={chip.checkTxt}>✓</AppText>
           </View>
         )}
       </Pressable>
@@ -265,7 +264,7 @@ const chip = StyleSheet.create({
                shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   iconCircle:{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconTxt:   { fontSize: 22 },
-  label:     { fontSize: 11.5, lineHeight: 15, textAlign: 'center' },
+  label:     { fontSize: 11.5, lineHeight: 16, textAlign: 'center' },
   checkDot:  { position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   checkTxt:  { fontSize: 10, color: '#fff', fontWeight: '900', lineHeight: 13 },
 });
@@ -531,12 +530,12 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           <View style={[cs.deco2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
           <View style={cs.card}>
             <View style={cs.emojiWrap}>
-              <Text style={cs.emoji}>🎉</Text>
+              <AppText style={cs.emoji}>🎉</AppText>
             </View>
-            <Text style={cs.title}>{t('wizard_doneTitle')}</Text>
-            <Text style={cs.sub}>{t('wizard_doneSub')}</Text>
+            <AppText style={cs.title}>{t('wizard_doneTitle')}</AppText>
+            <AppText style={cs.sub}>{t('wizard_doneSub')}</AppText>
             <TouchableOpacity onPress={() => { setDone(false); setShowNudge(false); }} style={cs.btn} activeOpacity={0.85}>
-              <Text style={cs.btnTxt}>{t('wizard_goDashboard')} →</Text>
+              <AppText style={cs.btnTxt}>{t('wizard_goDashboard')} →</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -551,16 +550,16 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
         <View style={nu.container} pointerEvents="auto">
           <View style={[nu.stripe, { backgroundColor: BRAND }]} />
           <View style={nu.body}>
-            <Text style={nu.emoji}>📋</Text>
+            <AppText style={nu.emoji}>📋</AppText>
             <View style={nu.textWrap}>
-              <Text style={nu.title}>{t('wizard_completeProfile')}</Text>
-              <Text style={nu.sub}>{t('wizard_completeSub')}</Text>
+              <AppText style={nu.title}>{t('wizard_completeProfile')}</AppText>
+              <AppText style={nu.sub}>{t('wizard_completeSub')}</AppText>
             </View>
             <TouchableOpacity onPress={handleReopenWizard} style={[nu.btn, { backgroundColor: BRAND }]} activeOpacity={0.85}>
-              <Text style={nu.btnTxt}>{t('wizard_completeBtn')} →</Text>
+              <AppText style={nu.btnTxt}>{t('wizard_completeBtn')} →</AppText>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowNudge(false)} style={nu.closeBtn} activeOpacity={0.7}>
-              <Text style={nu.closeTxt}>✕</Text>
+              <AppText style={nu.closeTxt}>✕</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -594,7 +593,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                 style={s.navIconBtn}
                 activeOpacity={0.7}
               >
-                <Text style={s.navIconTxt}>{stepIdx > 0 ? '←' : '✕'}</Text>
+                <AppText style={s.navIconTxt}>{stepIdx > 0 ? '←' : '✕'}</AppText>
               </TouchableOpacity>
             ) : (
               stepIdx > 0 ? (
@@ -603,7 +602,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                   style={s.navIconBtn}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.navIconTxt}>←</Text>
+                  <AppText style={s.navIconTxt}>←</AppText>
                 </TouchableOpacity>
               ) : (
                 <View style={s.navIconBtn} />
@@ -625,7 +624,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
             {/* Skip header button — hidden on location step */}
             {step.id !== 'location' ? (
               <TouchableOpacity onPress={handleSkipStep} style={s.skipBtn} activeOpacity={0.7}>
-                <Text style={s.skipTxt}>{t('wizard_skip')}</Text>
+                <AppText style={s.skipTxt}>{t('wizard_skip')}</AppText>
               </TouchableOpacity>
             ) : (
               <View style={s.skipBtn} />
@@ -635,10 +634,10 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           {/* Icon + title */}
           <View style={s.headerContent}>
             <View style={[s.stepIconBadge, { backgroundColor: accent + '28' }]}>
-              <Text style={s.stepIconTxt}>{step.icon}</Text>
+              <AppText style={s.stepIconTxt}>{step.icon}</AppText>
             </View>
-            <Text style={s.headerTitle}>{t(step.titleKey)}</Text>
-            <Text style={s.headerSubtitle}>{t(step.subtitleKey)}</Text>
+            <AppText style={s.headerTitle}>{t(step.titleKey)}</AppText>
+            <AppText style={s.headerSubtitle}>{t(step.subtitleKey)}</AppText>
           </View>
 
           {/* Progress bar */}
@@ -647,7 +646,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               style={[s.progressFill, { width: `${progress * 100}%` as `${number}%` }]}
             />
           </View>
-          <Text style={s.stepLabel}>{stepIdx + 1} / {steps.length}</Text>
+          <AppText style={s.stepLabel}>{stepIdx + 1} / {steps.length}</AppText>
         </View>
 
         {/* ── Content card ───────────────────────────────────────────── */}
@@ -703,12 +702,12 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                 <View>
                   {/* Count badge row */}
                   <View style={s.catLabelRow}>
-                    <Text style={s.sectionLabel}>{t('wizard_selectAll').toUpperCase()}</Text>
+                    <AppText style={s.sectionLabel}>{t('wizard_selectAll').toUpperCase()}</AppText>
                     {selCats.length > 0 && (
                       <View style={[s.selBadge, { backgroundColor: accent + '18' }]}>
-                        <Text style={[s.selBadgeTxt, { color: accent }]}>
+                        <AppText style={[s.selBadgeTxt, { color: accent }]}>
                           {selCats.length} {t('selected')}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
                   </View>
@@ -733,9 +732,9 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
                   {/* Hint: subcategories will open in next step */}
                   {selCats.length > 0 && availableSubs.length > 0 && (
-                    <Text style={[s.subHint, { color: accent + 'BB' }]}>
+                    <AppText style={[s.subHint, { color: accent + 'BB' }]}>
                       ✦ After saving, you can choose specific skills →
-                    </Text>
+                    </AppText>
                   )}
                 </View>
               )}
@@ -761,7 +760,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
                   {/* Age */}
                   <View>
-                    <Text style={pd.label}>{t('ageLabel').toUpperCase()} *</Text>
+                    <AppText style={pd.label}>{t('ageLabel').toUpperCase()} *</AppText>
                     <TextInput
                       value={ageValue}
                       onChangeText={setAgeValue}
@@ -775,7 +774,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
                   {/* Gender */}
                   <View>
-                    <Text style={pd.label}>{t('genderLabel').toUpperCase()} *</Text>
+                    <AppText style={pd.label}>{t('genderLabel').toUpperCase()} *</AppText>
                     <View style={pd.genderRow}>
                       {[
                         { value: 'Male',   labelKey: 'genderMale',   icon: '👨' },
@@ -795,13 +794,13 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                                 : { backgroundColor: '#F8FAFF', borderColor: '#E2E8F0', borderWidth: 1.5 },
                             ]}
                           >
-                            <Text style={pd.genderIcon}>{g.icon}</Text>
-                            <Text style={[pd.genderLabel, { color: active ? accent : '#374151' }]}>
+                            <AppText style={pd.genderIcon}>{g.icon}</AppText>
+                            <AppText style={[pd.genderLabel, { color: active ? accent : '#374151' }]}>
                               {t(g.labelKey)}
-                            </Text>
+                            </AppText>
                             {active && (
                               <View style={[pd.checkDot, { backgroundColor: accent }]}>
-                                <Text style={pd.checkTxt}>✓</Text>
+                                <AppText style={pd.checkTxt}>✓</AppText>
                               </View>
                             )}
                           </TouchableOpacity>
@@ -812,8 +811,8 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
                   {/* Preferred work locations */}
                   <View>
-                    <Text style={pd.label}>{t('workLocationsLabel').toUpperCase()} *</Text>
-                    <Text style={pd.hint}>{t('workLocAddHint')}</Text>
+                    <AppText style={pd.label}>{t('workLocationsLabel').toUpperCase()} *</AppText>
+                    <AppText style={pd.hint}>{t('workLocAddHint')}</AppText>
 
                     {/* Search input */}
                     <View style={{ position: 'relative', zIndex: 10 }}>
@@ -844,8 +843,8 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                               activeOpacity={0.7}
                               style={pd.suggRow}
                             >
-                              <Text style={pd.suggPin}>📍</Text>
-                              <Text style={pd.suggTxt}>{city}</Text>
+                              <AppText style={pd.suggPin}>📍</AppText>
+                              <AppText style={pd.suggTxt}>{city}</AppText>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -857,9 +856,9 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                       <View style={pd.chipWrap}>
                         {workLocations.map(city => (
                           <View key={city} style={[pd.chip, { borderColor: accent + '55', backgroundColor: accent + '0D' }]}>
-                            <Text style={[pd.chipTxt, { color: accent }]}>📍 {city}</Text>
+                            <AppText style={[pd.chipTxt, { color: accent }]}>📍 {city}</AppText>
                             <TouchableOpacity onPress={() => removeWorkLocation(city)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                              <Text style={[pd.chipClose, { color: accent }]}>×</Text>
+                              <AppText style={[pd.chipClose, { color: accent }]}>×</AppText>
                             </TouchableOpacity>
                           </View>
                         ))}
@@ -883,14 +882,14 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                     : { backgroundColor: '#CBD5E1' },
                 ]}
               >
-                <Text style={[s.ctaTxt, !canContinue() && { color: '#94A3B8' }]}>
+                <AppText style={[s.ctaTxt, !canContinue() && { color: '#94A3B8' }]}>
                   {saving ? '…' : isLast ? `${t('wizard_completeBtn')} ✓` : `${t('continueBtn')}`}
-                </Text>
+                </AppText>
               </TouchableOpacity>
 
               {step.id !== 'location' && (
                 <TouchableOpacity onPress={handleSkipStep} style={s.skipStepBtn} activeOpacity={0.6}>
-                  <Text style={s.skipStepTxt}>{t('wizard_skipStep')}</Text>
+                  <AppText style={s.skipStepTxt}>{t('wizard_skipStep')}</AppText>
                 </TouchableOpacity>
               )}
             </View>
@@ -905,17 +904,17 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           <View style={[sp.header, { paddingTop: Platform.OS === 'ios' ? 54 : 36 }]}>
             <View style={sp.navRow}>
               <TouchableOpacity onPress={closeSubcatPicker} style={sp.backBtn} activeOpacity={0.7}>
-                <Text style={sp.backTxt}>← Back</Text>
+                <AppText style={sp.backTxt}>← Back</AppText>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { closeSubcatPicker(); advanceStep(); }} style={sp.skipBtn} activeOpacity={0.7}>
-                <Text style={sp.skipTxt}>Skip</Text>
+                <AppText style={sp.skipTxt}>Skip</AppText>
               </TouchableOpacity>
             </View>
             <View style={sp.titleRow}>
-              <Text style={sp.icon}>🎯</Text>
-              <Text style={sp.title}>{t('wizard_specificSkillsOpt')}</Text>
+              <AppText style={sp.icon}>🎯</AppText>
+              <AppText style={sp.title}>{t('wizard_specificSkillsOpt')}</AppText>
             </View>
-            <Text style={sp.subtitle}>Choose specific skills within your selected categories (optional)</Text>
+            <AppText style={sp.subtitle}>Choose specific skills within your selected categories (optional)</AppText>
           </View>
 
           {/* Body */}
@@ -930,9 +929,9 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                 {/* Group header */}
                 <View style={sp.groupHeader}>
                   <View style={[sp.groupIconBadge, { backgroundColor: group.color + '18' }]}>
-                    <Text style={sp.groupIcon}>{group.icon}</Text>
+                    <AppText style={sp.groupIcon}>{group.icon}</AppText>
                   </View>
-                  <Text style={[sp.groupLabel, { color: group.color }]}>{group.catLabel}</Text>
+                  <AppText style={[sp.groupLabel, { color: group.color }]}>{group.catLabel}</AppText>
                 </View>
 
                 {/* Sub-chips */}
@@ -953,12 +952,12 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                       >
                         {sel && (
                           <View style={[sp.checkDot, { backgroundColor: group.color }]}>
-                            <Text style={sp.checkTxt}>✓</Text>
+                            <AppText style={sp.checkTxt}>✓</AppText>
                           </View>
                         )}
-                        <Text style={[sp.subChipTxt, { color: sel ? group.color : '#374151', fontWeight: sel ? '700' : '500' }]}>
+                        <AppText style={[sp.subChipTxt, { color: sel ? group.color : '#374151', fontWeight: sel ? '700' : '500' }]}>
                           {getSubCatLabel(sub.value, i18n.language)}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     );
                   })}
@@ -972,7 +971,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           <View style={sp.footer}>
             {selSubs.length > 0 && (
               <View style={[sp.countPill, { backgroundColor: BRAND + '14' }]}>
-                <Text style={[sp.countTxt, { color: BRAND }]}>{selSubs.length} specific skill{selSubs.length !== 1 ? 's' : ''} selected</Text>
+                <AppText style={[sp.countTxt, { color: BRAND }]}>{selSubs.length} specific skill{selSubs.length !== 1 ? 's' : ''} selected</AppText>
               </View>
             )}
             <TouchableOpacity
@@ -981,7 +980,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               activeOpacity={0.88}
               style={[sp.saveBtn, { backgroundColor: saving ? '#CBD5E1' : BRAND }]}
             >
-              <Text style={sp.saveTxt}>{saving ? '…' : selSubs.length > 0 ? `Save Skills & Continue ✓` : `Skip & Continue →`}</Text>
+              <AppText style={sp.saveTxt}>{saving ? '…' : selSubs.length > 0 ? `Save Skills & Continue ✓` : `Skip & Continue →`}</AppText>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -1035,7 +1034,7 @@ const s = StyleSheet.create({
   stepIconTxt: { fontSize: 36 },
   headerTitle: {
     fontSize: 24, fontWeight: '900', color: '#fff', textAlign: 'center',
-    lineHeight: 31, letterSpacing: -0.4, marginBottom: 8,
+    lineHeight: 33, letterSpacing: -0.4, marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 13.5, color: 'rgba(255,255,255,0.72)', textAlign: 'center',
@@ -1203,7 +1202,7 @@ const sp = StyleSheet.create({
   skipTxt: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   icon:     { fontSize: 26 },
-  title:    { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: -0.3 },
+  title:    { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: -0.3, flexShrink: 1, lineHeight: 27 },
   subtitle: { color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 19 },
 
   body: { paddingHorizontal: 16, paddingTop: 20, gap: 22 },

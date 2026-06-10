@@ -62,7 +62,6 @@ export const FormSelect = ({
           variant="body"
           color={value ? theme.colors.text : theme.colors.mutedText}
           style={styles.selectorText}
-          numberOfLines={1}
         >
           {value || placeholder}
         </AppText>
@@ -111,6 +110,7 @@ export const FormSelect = ({
                   <AppText
                     variant="body"
                     color={item === value ? theme.colors.primary : theme.colors.text}
+                    style={styles.optionText}
                   >
                     {item}
                   </AppText>
@@ -178,4 +178,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  optionText: { flex: 1, marginRight: 8 },
 });

@@ -44,6 +44,8 @@ export interface CreateRequirementPayload {
   employerId?: string;
   employerName?: string;
   employerPhone?: string;
+  contactPersonName?: string;
+  contactPersonPhone?: string;
   accommodationAvailable?: boolean;
   foodAvailable?: boolean;
   transportProvided?: boolean;
@@ -87,6 +89,10 @@ export interface RawRequirement {
   employerId?: string;
   employerName?: string;
   employerPhone?: string;
+  // Designated contact person for non-individual employers. The name is returned
+  // on listings; the phone stays masked and is only delivered via the reveal flow.
+  contactPersonName?: string;
+  contactPersonPhone?: string;
   assignedAgentId?: string;
   assignedAgentName?: string;
   assignedAgentPhone?: string;
@@ -106,6 +112,7 @@ export interface RawRequirement {
   pfAvailable?: boolean;
   esicAvailable?: boolean;
   isAgentAccepted?: boolean;
+  isApproved?: boolean;
   finalAgentRequiredWage?: number;
   latitude?: number;
   longitude?: number;
@@ -124,6 +131,22 @@ export interface RawRequirement {
   // True when the employer who posted this requirement has an active subscription.
   // Used client-side to decide whether to show the "Call" button.
   employerSubscribed?: boolean;
+  // Boost: requirement was pushed to the top of search. Only "active" while
+  // boostedUntil is in the future (the backend sorts on this).
+  isBoosted?: boolean;
+  boostedUntil?: string;
+  boostCount?: number;
+}
+
+// Employer's boost quota for the current subscription period.
+export interface BoostQuota {
+  enabled: boolean;
+  durationDays: number;
+  tier?: string;
+  durationKey?: string;
+  allowance: number;
+  used: number;
+  remaining: number;
 }
 
 export interface RoleAwareFilters {
@@ -400,6 +423,25 @@ export const requirementsApi = {
         subCategory?: string;
         invitations: WorkerInvitation[];
       }>(`/api/v1/mobile/requirements/${requirementId}/invitations`)
+      .then((r) => r.data),
+
+  // Employer: read remaining boost quota for the current subscription period
+  getBoostQuota: () =>
+    apiClient
+      .get<{ success: boolean; boost: BoostQuota }>('/api/v1/application/boost/quota')
+      .then((r) => r.data.boost),
+
+  // Employer: boost one of their own requirements to the top of search
+  boostRequirement: (requirementId: string) =>
+    apiClient
+      .post<{
+        success: boolean;
+        message?: string;
+        requirementId: string;
+        isBoosted: boolean;
+        boostedUntil: string;
+        boost: BoostQuota;
+      }>(`/api/v1/application/${requirementId}/boost`, {})
       .then((r) => r.data),
 };
 

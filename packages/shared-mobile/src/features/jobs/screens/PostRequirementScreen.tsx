@@ -100,6 +100,12 @@ const requirementSchema = z.object({
   maxBudgetPerWorker: z.string().regex(/^\d+$/, 'Enter max budget'),
   estimated_days: z.string().optional(),
   workLocation: z.string().optional(),
+  contactPersonName: z.string().optional(),
+  contactPersonPhone: z
+    .string()
+    .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number')
+    .optional()
+    .or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof requirementSchema>;
@@ -205,7 +211,7 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
             {/* Body */}
             <View style={styles.typeCardBody}>
               <View style={styles.cardTitleRow}>
-                <AppText style={[styles.typeCardTitle, { color: theme.colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                <AppText style={[styles.typeCardTitle, { color: theme.colors.text, flexShrink: 1 }]} maxFontSizeMultiplier={1.2}>
                   {t(`type_${rt.value}_label` as any)}
                 </AppText>
                 {idx === 0 && (
@@ -396,8 +402,20 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       maxBudgetPerWorker: '',
       estimated_days: '',
       workLocation: '',
+      contactPersonName: '',
+      contactPersonPhone: '',
     },
   });
+
+  // Industry / Agency / Contractor employers can name a separate contact person;
+  // Individual employers post under their own details, so the fields stay hidden.
+  const empType = (user?.employerType ?? {}) as {
+    individual?: boolean;
+    contractor?: boolean;
+    agency?: boolean;
+    industry?: boolean;
+  };
+  const showContactPerson = !!(empType.industry || empType.agency || empType.contractor);
 
   // Pre-fill workType when navigating from "Hire Again"
   useEffect(() => {
@@ -466,6 +484,8 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         employerId: user?.id,
         employerName: user?.fullName,
         employerPhone: (userProfile as { phone?: string } | null)?.phone ?? user?.phone,
+        contactPersonName: showContactPerson ? (values.contactPersonName || undefined) : undefined,
+        contactPersonPhone: showContactPerson ? (values.contactPersonPhone || undefined) : undefined,
         ...boolFlags,
       }),
     onSuccess: () => {
@@ -498,7 +518,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={[ps.typeBannerLabel, { color: theme.colors.primary }]}>{t(`type_${reqType}_label` as any)}</AppText>
-          <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={1}>{t(`type_${reqType}_desc` as any)}</AppText>
+          <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={2}>{t(`type_${reqType}_desc` as any)}</AppText>
         </View>
         <TouchableOpacity
           onPress={onBack}
@@ -631,6 +651,37 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           />
         </View>
       </View>
+
+      {/* ── Contact Person (Industry / Agency / Contractor only) ── */}
+      {showContactPerson && (
+        <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+            <View style={[ps.sectionIconBox, { backgroundColor: '#EAF2FF' }]}>
+              <AppText style={ps.sectionIcon}>👤</AppText>
+            </View>
+            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>Contact Person</AppText>
+          </View>
+          <View style={ps.sectionBody}>
+            <FormInput
+              control={control}
+              name="contactPersonName"
+              label="Contact Person Name"
+              placeholder="e.g. Site supervisor name"
+            />
+            <FormInput
+              control={control}
+              name="contactPersonPhone"
+              label="Contact Person Mobile Number"
+              placeholder="10-digit mobile number"
+              keyboardType="number-pad"
+              maxLength={10}
+            />
+            <AppText style={[ps.sectionSub, { color: theme.colors.mutedText, marginTop: 4 }]}>
+              Shown to agents on this requirement. Leave blank to use your own number.
+            </AppText>
+          </View>
+        </View>
+      )}
 
       <LocationPickerModal
         visible={showLocationPicker}
@@ -807,7 +858,6 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
                   variant="caption"
                   color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
                   style={styles.flagChipLabel}
-                  numberOfLines={1}
                 >
                   {t(`rd_perk_${flag.key}` as any)}
                 </AppText>

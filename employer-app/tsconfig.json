@@ -13,5 +13,6 @@
     ".expo/types/**/*.d.ts",
     "../packages/shared-mobile/src/**/*.ts",
     "../packages/shared-mobile/src/**/*.tsx"
-  ]
+  ],
+  "exclude": ["src/__tests__"]
 }

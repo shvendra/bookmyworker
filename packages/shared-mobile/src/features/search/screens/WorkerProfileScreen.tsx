@@ -33,6 +33,7 @@ import type { MappingStatus, OpenRequirement } from '../../../core/api/endpoints
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { ageString } from '../../../shared/utils/ageUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
@@ -63,23 +64,8 @@ const C = {
 const formatName = (name = ''): string =>
   name.toLowerCase().split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-const getAge = (dob?: string | number): string => {
-  if (dob == null || dob === '') return '';
-  const timestamp = Number(dob);
-  if (isNaN(timestamp)) return '';
-  if (String(dob).length <= 5) {
-    if (timestamp > 1900 && timestamp <= new Date().getFullYear()) return String(new Date().getFullYear() - timestamp);
-    return String(timestamp);
-  }
-  const ms = timestamp < 10000000000 ? timestamp * 1000 : timestamp;
-  const birth = new Date(ms);
-  if (isNaN(birth.getTime())) return '';
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return String(age);
-};
+// Birth year / legacy age / full date string / timestamp → current age string.
+const getAge = (dob?: string | number): string => ageString(dob);
 
 // Handles arrays, JSON-encoded string arrays, underscore_keys, and deduplication
 const NULL_STRINGS = new Set(['null', 'undefined', 'nan', 'none', 'n/a', '']);
@@ -137,7 +123,7 @@ const InfoRow = ({ icon, label, value, iconBg }: {
         <AppText style={{ fontSize: 14 }}>{icon}</AppText>
       </View>
       <AppText style={[inf.label, { color: C.slate }]}>{label}</AppText>
-      <AppText style={[inf.value, { color: theme.colors.text }]} numberOfLines={2}>{String(value)}</AppText>
+      <AppText style={[inf.value, { color: theme.colors.text }]}>{String(value)}</AppText>
     </View>
   );
 };
@@ -185,7 +171,7 @@ const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
         <AppText style={dr.icon}>{icon}</AppText>
       </View>
       <View style={{ flex: 1 }}>
-        <AppText style={[dr.name, { color: theme.colors.text }]} numberOfLines={1}>{name}</AppText>
+        <AppText style={[dr.name, { color: theme.colors.text }]} numberOfLines={2}>{name}</AppText>
         <AppText style={dr.meta}>{meta}</AppText>
       </View>
       <View style={dr.pill}>
@@ -989,7 +975,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           {/* Name + location */}
           <AppText style={s.heroName}>{displayName}</AppText>
           {areas.length > 0 && (
-            <AppText style={s.heroCategory} numberOfLines={1}>
+            <AppText style={s.heroCategory} numberOfLines={2}>
               {areas.slice(0, 2).map((a) => subcatDisplay(a)).join('  ·  ')}
             </AppText>
           )}
@@ -1217,8 +1203,9 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : freeContactsRemaining > 0 ? (
-                // ─ Gifted free contact available — unlock at no cost, no subscription needed
+              ) : (!isSubscribed && freeContactsRemaining > 0) ? (
+                // ─ Gifted free contact — only for non-subscribed employers; a paying
+                //   employer falls through to the paid-credit branch below.
                 <View style={s.unlockBox}>
                   <View style={s.unlockHint}>
                     <AppText style={s.unlockHintTxt}>

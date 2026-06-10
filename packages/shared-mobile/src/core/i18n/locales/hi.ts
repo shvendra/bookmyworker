@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google से जारी रखने के लिए ऊपर अपना नियोक्ता प्रकार चुनें",
+  orLabel: "या",
+  continueWithGoogle: "Google के साथ जारी रखें",
   lp_tapHint: 'पिन लगाने के लिए कहीं भी टैप करें',
   profile_pendingVerification: 'प्रोफ़ाइल सत्यापन लंबित',
   // -- Map location picker --
@@ -343,7 +346,7 @@ export const translation = {
   profile_paymentsBilling: 'भुगतान और बिलिंग',
   profile_paymentHistory: 'भुगतान इतिहास',
   profile_myActivity: 'मेरी गतिविधि',
-  profile_viewedContacts: 'देखे गए संपर्क',
+  profile_viewedContacts: 'देखे गए कर्मचारी प्रोफ़ाइल',
   profile_jobInvitations: 'नौकरी के आमंत्रण',
   profile_callHistory: 'कॉल इतिहास',
   profile_notificationSettings: 'सूचना सेटिंग',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'खोजें जैसे राजमिस्त्री, ड्राइवर, रसोइया…',
   wpc_subCatSelected: 'चुने गए कौशल',
   wpc_subCatRequired: 'जारी रखने के लिए कम से कम एक कौशल चुनें',
+  wpc_limitTitle: 'सीमा पूरी हो गई',
+  wpc_workCatLimit: 'आप अधिकतम {{count}} कार्य श्रेणियाँ चुन सकते हैं।',
+  wpc_subCatLimit: 'आप अधिकतम {{count}} कौशल चुन सकते हैं।',
   wpc_locationQ: 'आप कहाँ के हैं?',
   wpc_locationHint: 'अपना राज्य, जिला और ब्लॉक चुनें',
   wpc_stateLabel: 'राज्य',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "उप-श्रेणी चुनें",
   cs_selectCategoryFirst: "पहले श्रेणी चुनें",
   cs_subTypes: "{{n}} उप-प्रकार",
+  req_boostedBadge: "बूस्ट किया गया",
 } as const;

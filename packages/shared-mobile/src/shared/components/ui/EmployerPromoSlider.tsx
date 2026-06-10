@@ -212,7 +212,7 @@ const s = StyleSheet.create({
   left:        { flex: 1, gap: 7 },
   tag:         { alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
   tagTxt:      { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
-  title:       { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 20, letterSpacing: -0.2 },
+  title:       { color: '#FFFFFF', fontSize: 15, fontWeight: '900', lineHeight: 21, letterSpacing: -0.2 },
   sub:         { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '500', lineHeight: 15 },
   cta:         { alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginTop: 2, elevation: 4, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 6 },
   ctaTxt:      { fontSize: 12, fontWeight: '900', letterSpacing: 0.2 },

@@ -44,6 +44,7 @@ export interface RawAgent {
   veryfiedBage?: boolean;
   workerSubType?: string;
   agentType?: string;
+  createdAt?: string;
   resumeUrl?: string;
   labourLicenceUrl?: string;
 }

@@ -105,7 +105,7 @@ const cc = StyleSheet.create({
   img:   { width: 60, height: 60 },
   pdfIcon: { fontSize: 28, lineHeight: 36 },
   info:  { flex: 1, gap: 3 },
-  name:  { fontSize: 14, fontWeight: '700', lineHeight: 18 },
+  name:  { fontSize: 14, fontWeight: '700', lineHeight: 20 },
   date:  { fontSize: 11, lineHeight: 15 },
   view:  { fontSize: 12, fontWeight: '700', marginTop: 2 },
   delBtn:{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

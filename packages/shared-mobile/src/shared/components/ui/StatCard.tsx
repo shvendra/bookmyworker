@@ -76,7 +76,7 @@ export const StatCard = ({
       </AppText>
 
       {/* Label */}
-      <AppText variant="caption" color={theme.colors.mutedText} style={styles.label} numberOfLines={2}>
+      <AppText variant="caption" color={theme.colors.mutedText} style={styles.label} numberOfLines={3}>
         {label}
       </AppText>
 
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   label: {
-    lineHeight: 16,
+    lineHeight: 17,
     marginTop: 1,
   },
   subBadge: {

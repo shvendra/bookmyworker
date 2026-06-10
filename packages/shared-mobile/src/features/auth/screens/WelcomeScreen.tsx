@@ -5,6 +5,7 @@ import {
   Dimensions,
   Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   View,
@@ -52,6 +53,14 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
 
+      {/* Scrollable so the hero + feature cards + CTAs never get clipped on
+          short screens or with large system font scaling. */}
+      <ScrollView
+        style={styles.scrollFlex}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
       {/* ── Hero header ─────────────────────────────────────────────── */}
       <View style={styles.hero}>
         <View style={[styles.decoCircle, styles.decoCircle1]} />
@@ -112,7 +121,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
               ]}
             >
               <AppText style={styles.featureIcon}>{feat.icon}</AppText>
-              <AppText variant="labelSm" color={theme.colors.text} numberOfLines={2} style={styles.featureTitle}>
+              <AppText variant="labelSm" color={theme.colors.text} numberOfLines={3} style={styles.featureTitle}>
                 {feat.title}
               </AppText>
               <AppText variant="caption" color={theme.colors.mutedText} style={styles.featureDesc}>
@@ -150,12 +159,18 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
           </AppText>
         </Animated.View>
       </Animated.View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
+  // ScrollView fills the screen; flexGrow lets the body stretch to fill when
+  // content is short, but allows it to grow & scroll when content overflows.
+  scrollFlex: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
 
   hero: {
     backgroundColor: '#1037A4',
@@ -179,10 +194,10 @@ const styles = StyleSheet.create({
   },
   proofDots: { flexDirection: 'row', alignItems: 'center' },
   proofDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#1037A4' },
-  proofText: { marginLeft: 8 },
+  proofText: { marginLeft: 8, flexShrink: 1 },
 
   body: {
-    flex: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    flexGrow: 1, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -24, paddingTop: 28, paddingHorizontal: 20, paddingBottom: 20,
   },
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24, alignContent: 'flex-start' },

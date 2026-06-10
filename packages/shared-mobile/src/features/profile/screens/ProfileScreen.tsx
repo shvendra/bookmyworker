@@ -454,8 +454,8 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             label={t('profile_language')}
             onPress={() => setLangModalVisible(true)}
             right={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <AppText variant="micro" color={theme.colors.primary} weight="700">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }}>
+                <AppText variant="micro" color={theme.colors.primary} weight="700" style={{ flexShrink: 1 }}>
                   {currentLang?.nativeLabel ?? 'English'}
                 </AppText>
                 <AppText style={styles.menuChevron} color={theme.colors.mutedText}>›</AppText>
@@ -467,8 +467,8 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             label={t('profile_notificationsHub')}
             onPress={() => navigation.navigate('Notifications')}
             right={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <AppText variant="micro" color={theme.colors.mutedText}>{t('profile_allActivityAlerts')}</AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }}>
+                <AppText variant="micro" color={theme.colors.mutedText} style={{ flexShrink: 1 }}>{t('profile_allActivityAlerts')}</AppText>
                 <AppText style={[styles.menuChevron, { color: theme.colors.mutedText }]}>›</AppText>
               </View>
             }
@@ -1087,9 +1087,9 @@ const certStyles = StyleSheet.create({
     shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  title:      { fontSize: 14, fontWeight: '800' },
-  manageBtn:  { fontSize: 12, fontWeight: '700' },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14 },
+  title:      { fontSize: 14, fontWeight: '800', flexShrink: 1, minWidth: 0 },
+  manageBtn:  { fontSize: 12, fontWeight: '700', flexShrink: 0 },
 
   // empty state
   emptyRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', padding: 14 },

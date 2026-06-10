@@ -100,7 +100,7 @@ function WorkerCard({
             {name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
           </AppText>
           {!!location && (
-            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {location}</AppText>
+            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={2}>📍 {location}</AppText>
           )}
           {wage != null && (
             <View style={[wc.wagePill, { backgroundColor: theme.colors.successLight, borderColor: GREEN_BDR }]}>

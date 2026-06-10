@@ -73,7 +73,7 @@ export const QuickActionCard = ({
         {title}
       </AppText>
       {subtitle ? (
-        <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={1} style={styles.subtitle}>
+        <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={2} style={styles.subtitle}>
           {subtitle}
         </AppText>
       ) : null}

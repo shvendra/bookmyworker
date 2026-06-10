@@ -75,7 +75,7 @@ const PipelineStepper = ({ activeIdx }: { activeIdx: number }): React.JSX.Elemen
             <AppText style={[ps.label, {
               color:      current ? BRAND : done ? theme.colors.textSecondary : theme.colors.mutedText,
               fontWeight: current ? '800' : '600',
-            }]} numberOfLines={1}>
+            }]}>
               {label}
             </AppText>
           </View>
@@ -154,7 +154,7 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
         <AppText style={[wr.name, { color: theme.colors.text }]} numberOfLines={1}>
           {worker.workerName}
         </AppText>
-        <AppText style={[wr.skill, { color: theme.colors.mutedText }]} numberOfLines={1}>
+        <AppText style={[wr.skill, { color: theme.colors.mutedText }]} numberOfLines={2}>
           {[worker.workerSkill ? subcatDisplay(worker.workerSkill) : t('rd_workerFallback'), rateInfo].filter(Boolean).join(' · ')}
         </AppText>
       </View>

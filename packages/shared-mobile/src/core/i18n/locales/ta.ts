@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google உடன் தொடர மேலே உங்கள் வேலைவழங்குநர் வகையைத் தேர்ந்தெடுக்கவும்",
+  orLabel: "அல்லது",
+  continueWithGoogle: "Google உடன் தொடரவும்",
   lp_tapHint: 'பின் வைக்க எங்கும் தட்டவும்',
   profile_pendingVerification: 'சுயவிவரம் சரிபார்ப்பு நிலுவையில்',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'பதிவிடு',
   tab_payments: 'கட்டணங்கள்',
   tab_chat: 'அரட்டை',
-  tab_liked: 'Liked',
+  tab_liked: 'பிடித்தவை',
   tab_placements: 'வேலை வழங்கல்',
   tab_saved: 'சேமித்தவை',
   tab_applications: 'விண்ணப்பங்கள்',
@@ -323,7 +326,7 @@ export const translation = {
   profile_paymentsBilling: 'கட்டணம் & பில்லிங்',
   profile_paymentHistory: 'கட்டண வரலாறு',
   profile_myActivity: 'என் செயல்பாடு',
-  profile_viewedContacts: 'பார்த்த தொடர்புகள்',
+  profile_viewedContacts: 'பார்த்த தொழிலாளர் சுயவிவரங்கள்',
   profile_jobInvitations: 'வேலை அழைப்புகள்',
   profile_callHistory: 'அழைப்பு வரலாறு',
   profile_notificationSettings: 'அறிவிப்பு அமைப்புகள்',
@@ -816,6 +819,9 @@ export const translation = {
   wpc_subCatSearch: 'தேடுங்கள் உ.தா. கட்டிடம், டிரைவர், சமையல்…',
   wpc_subCatSelected: 'தேர்ந்தெடுக்கப்பட்ட திறன்கள்',
   wpc_subCatRequired: 'தொடர குறைந்தது ஒரு திறனை தேர்ந்தெடுக்கவும்',
+  wpc_limitTitle: 'வரம்பு எட்டப்பட்டது',
+  wpc_workCatLimit: 'நீங்கள் அதிகபட்சம் {{count}} வேலை வகைகளைத் தேர்ந்தெடுக்கலாம்.',
+  wpc_subCatLimit: 'நீங்கள் அதிகபட்சம் {{count}} திறன்களைத் தேர்ந்தெடுக்கலாம்.',
   wpc_locationQ: 'நீங்கள் எங்கு இருக்கிறீர்கள்?',
   wpc_locationHint: 'உங்கள் மாநிலம், மாவட்டம் மற்றும் தொகுதியைத் தேர்ந்தெடுங்கள்',
   wpc_stateLabel: 'மாநிலம்',
@@ -916,4 +922,5 @@ export const translation = {
   cs_selectSubCategory: "துணை வகையைத் தேர்ந்தெடுக்கவும்",
   cs_selectCategoryFirst: "முதலில் வகையைத் தேர்ந்தெடுக்கவும்",
   cs_subTypes: "{{n}} துணை வகைகள்",
+  req_boostedBadge: "பூஸ்ட் செய்யப்பட்டது",
 } as const;

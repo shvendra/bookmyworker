@@ -4,6 +4,7 @@ export const addNotificationResponseReceivedListener = jest.fn(() => ({ remove: 
 export const getPermissionsAsync = jest.fn(async () => ({ status: 'granted' }));
 export const requestPermissionsAsync = jest.fn(async () => ({ status: 'granted' }));
 export const getExpoPushTokenAsync = jest.fn(async () => ({ data: 'ExponentPushToken[test-token]' }));
+export const getDevicePushTokenAsync = jest.fn(async () => ({ type: 'android', data: 'fcm-device-token-test' }));
 export const scheduleNotificationAsync = jest.fn();
 export const AndroidImportance = { MAX: 5 };
 export const setNotificationChannelAsync = jest.fn();

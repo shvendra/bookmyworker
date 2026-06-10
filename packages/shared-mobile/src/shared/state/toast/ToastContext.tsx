@@ -85,8 +85,14 @@ export const ToastProvider = ({ children }: React.PropsWithChildren): React.JSX.
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {/* Toast overlay — renders above all navigation content */}
-      <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, top: 0, zIndex: 9999 }}>
+      {/* Toast overlay — renders above all navigation content because it is the
+          LAST sibling (default Android paint order draws it on top). We must NOT
+          set `zIndex` here: a zIndex on a root-level, full-screen overlay that
+          persists across every screen transition makes the parent ReactViewGroup
+          enable a custom child-drawing-order, which react-native-screens then
+          replays mid-transition with a stale index → native crash
+          `IndexOutOfBoundsException: getChildDrawingOrder() returned invalid index`. */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, top: 0 }}>
         {toasts.map((toast, index) => (
           <Toast
             key={toast.id}

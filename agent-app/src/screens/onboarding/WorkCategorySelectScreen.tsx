@@ -159,7 +159,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
                 {/* Label */}
                 <AppText
                   style={[s.cardLabel, isOn && { color: cat.accent }]}
-                  numberOfLines={2}
+                  numberOfLines={3}
                 >
                   {cat.label.replace(' Workers', '').replace(' & ', '\n& ')}
                 </AppText>

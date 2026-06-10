@@ -35,6 +35,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { apiClient } from '../../../core/api/client';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { useContactQuotaNudge } from '../../../core/hooks/useContactQuotaNudge';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import WORKER_CATEGORIES from '../../../shared/data/categories.json';
@@ -42,9 +43,16 @@ import { indianStates } from '../../../shared/data/stateDistrict';
 import { buildPhotoUrl } from '../../../core/config/env';
 import i18n from '../../../core/i18n';
 import { getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
+import { ageString } from '../../../shared/utils/ageUtils';
 import { getLocationDisplayName } from '../../../shared/data/locationTranslations';
 
 const PAGE_LIMIT = 25;
+
+// Gender-based placeholder avatars — shown only when a worker has not
+// uploaded a real photo. A female illustration for female workers, a
+// generic illustration for everyone else.
+const AVATAR_FEMALE = require('../../../../assets/avatar-female.png');
+const AVATAR_MALE = require('../../../../assets/avatar-male.png');
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const BRAND       = '#1037A4';
@@ -54,6 +62,16 @@ const AGENT_COL   = '#7c3aed';
 const AGENT_SOFT  = '#f5f3ff';
 const GREEN       = '#16a34a';
 const GREEN_SOFT  = '#f0fdf4';
+
+// A worker is "new" when registered within the last 15 days (uses createdAt
+// from the search API). Display-only; independent of the verified badge.
+const NEW_WORKER_WINDOW_MS = 15 * 24 * 60 * 60 * 1000;
+const isNewWorker = (createdAt?: string): boolean => {
+  if (!createdAt) return false;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= NEW_WORKER_WINDOW_MS;
+};
 const AMBER       = '#d97706';
 const AMBER_SOFT  = '#fffbeb';
 const WHITE       = '#ffffff';
@@ -275,24 +293,8 @@ const formatName = (name = ''): string =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
-const getAge = (dob?: string | number): string => {
-  if (dob == null || dob === '') return '';
-  const timestamp = Number(dob);
-  if (isNaN(timestamp)) return '';
-  if (String(dob).length <= 5) {
-    if (timestamp > 1900 && timestamp <= new Date().getFullYear())
-      return String(new Date().getFullYear() - timestamp);
-    return String(timestamp);
-  }
-  const ms = timestamp < 10000000000 ? timestamp * 1000 : timestamp;
-  const birth = new Date(ms);
-  if (isNaN(birth.getTime())) return '';
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return String(age);
-};
+// Birth year / legacy age / full date string / timestamp → current age string.
+const getAge = (dob?: string | number): string => ageString(dob);
 
 const getCategorySubcategories = (selected: string): string[] => {
   if (!selected) return [];
@@ -744,8 +746,8 @@ const FilterSheet = ({
                     }]}
                   >
                     <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]} numberOfLines={1}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]} numberOfLines={1}>{opt.sub}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]}>{opt.sub}</AppText>
                     {active && (
                       <View style={fsh.typeCheck}>
                         <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
@@ -866,8 +868,8 @@ const FilterSheet = ({
                     }]}
                   >
                     <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]} numberOfLines={1}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]} numberOfLines={1}>{opt.sub}</AppText>
+                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]}>{opt.label}</AppText>
+                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]}>{opt.sub}</AppText>
                     {active && (
                       <View style={fsh.typeCheck}>
                         <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
@@ -1206,9 +1208,10 @@ const AgentCard = ({
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={[wc.avatar, { borderColor: accentColor }]} />
           ) : (
-            <View style={[wc.avatarFallback, { backgroundColor: accentBg, borderColor: accentColor }]}>
-              <AppText style={[wc.initials, { color: accentColor }]}>{initials}</AppText>
-            </View>
+            <Image
+              source={String(agent.gender ?? '').trim().toLowerCase() === 'female' ? AVATAR_FEMALE : AVATAR_MALE}
+              style={[wc.avatar, { borderColor: accentColor }]}
+            />
           )}
           <View style={[wc.presDot, { backgroundColor: agent.veryfiedBage ? GREEN : AMBER, borderColor: theme.colors.card }]} />
 
@@ -1225,6 +1228,13 @@ const AgentCard = ({
                 {isAgent ? t('ws_role_agent') : t('ws_role_worker')}
               </AppText>
             </View>
+            {isNewWorker(agent.createdAt) && (
+              <View style={wc.newBadge}>
+                <AppText style={wc.newBadgeTxt} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                  ✨ {t('ws_newWorker')}
+                </AppText>
+              </View>
+            )}
           </View>
 
           {!!locationStr && (
@@ -1232,10 +1242,10 @@ const AgentCard = ({
           )}
 
           <View style={wc.metaRow}>
-            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
-            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
-            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
-            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText numberOfLines={1} style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
+            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
+            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
+            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
+            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
           </View>
 
           {!!(agent.workerSubType || agent.agentType) && (
@@ -1267,7 +1277,7 @@ const AgentCard = ({
           {matchedAreas.map((area, idx) => (
             <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: '#F6F8FE', borderColor: '#E1E8FD' }]}>
               <AppText style={wc.skillChipIcon}>📎</AppText>
-              <AppText style={[wc.skillChipTxt, { color: '#2243BC' }]} numberOfLines={1}>
+              <AppText style={[wc.skillChipTxt, { color: '#2243BC' }]} numberOfLines={1} adjustsFontSizeToFit={false}>
                 {subcatDisplay(area)}
               </AppText>
             </View>
@@ -1382,10 +1392,13 @@ const wc = StyleSheet.create({
   name:           { fontSize: 16.5, fontWeight: '800', flex: 1, letterSpacing: -0.2 },
   rolePill:       { borderWidth: 1, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
   roleTxt:        { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  newBadge:       { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#059669', flexShrink: 0,
+                    shadowColor: '#059669', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 3 },
+  newBadgeTxt:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.4, color: '#FFFFFF' },
   location:       { fontSize: 11, marginBottom: 5 },
   metaRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  metaChip:       { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, flexShrink: 0 },
-  metaChipTxt:    { fontSize: 11, fontWeight: '600', lineHeight: 16 },
+  metaChip:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 0 },
+  metaChipTxt:    { fontSize: 12, fontWeight: '600', lineHeight: 17 },
   wageChip:       { backgroundColor: GREEN_SOFT },
   wageTxt:        { color: GREEN, fontWeight: '800' },
 
@@ -1402,9 +1415,9 @@ const wc = StyleSheet.create({
   // Skills
   skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },
   skillsContent:  { paddingHorizontal: 12, paddingVertical: 9, gap: 7, flexDirection: 'row' },
-  skillChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
-  skillChipIcon:  { fontSize: 10.5 },
-  skillChipTxt:   { fontSize: 12, fontWeight: '700' },
+  skillChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1 },
+  skillChipIcon:  { fontSize: 12, lineHeight: 18 },
+  skillChipTxt:   { fontSize: 13, lineHeight: 18, fontWeight: '700' },
 
   // Documents row (resume + licence chips)
   docsRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
@@ -1494,7 +1507,11 @@ interface FullUserProfile {
   isSubscribed?: boolean;
   subscriptionExpery?: string;
   remainingContacts?: number;
-  employerType?: string;
+  employerType?: string | Record<string, boolean>;
+  subscriptionTpype?: string;
+  freeContactsUsed?: number;
+  freeContactsRemaining?: number;
+  contactsTotal?: number;
 }
 
 const scopeBanner = StyleSheet.create({
@@ -1593,6 +1610,27 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
   const remainingContacts   = profile?.remainingContacts ?? 0;
 
+  // Contact-quota usage nudges (25/50/75% toasts, redirect at 100%). Employer-only
+  // by construction — agents have no quota, so this never fires for them. Emits
+  // toasts only; the search UI is unchanged.
+  const goToSubscription = useCallback(() => navigation.navigate('Subscription'), [navigation]);
+  // NOTE: the app stores role lowercase (authApi maps 'Employer' → 'employer'),
+  // so compare case-insensitively — a strict 'Employer' check would never match.
+  const isEmployerRole = String(user?.role ?? '').toLowerCase() === 'employer';
+  useContactQuotaNudge(
+    {
+      enabled: profileQuery.isSuccess && isEmployerRole,
+      isSubscribed,
+      employerType: profile?.employerType,
+      subscriptionTpype: profile?.subscriptionTpype,
+      remainingContacts,
+      freeContactsUsed: profile?.freeContactsUsed ?? 0,
+      freeContactsRemaining: profile?.freeContactsRemaining ?? 0,
+      contactsTotal: profile?.contactsTotal ?? 0,
+    },
+    goToSubscription,
+  );
+
   // Sync local exhausted state when profile loads (mirrors CRM's useState(user?.remainingContacts <= 0))
   useEffect(() => {
     if (profileQuery.isSuccess && isSubscribed && remainingContacts <= 0) {
@@ -1601,6 +1639,15 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   }, [profileQuery.isSuccess, isSubscribed, remainingContacts]);
 
   const isContactsExhausted = isLimitExhausted || (profileQuery.isSuccess && isSubscribed && remainingContacts <= 0);
+
+  // FlatList re-renders rows only when `data` or `extraData` changes by reference.
+  // Each card reads per-worker state (call status, unlocked phone, loading flags)
+  // from these maps — without extraData the rows show STALE values after a
+  // mutation (e.g. call outcome change didn't reflect until a manual refresh).
+  const listExtraData = useMemo(
+    () => ({ callStatus, unlockedPhones, loadingUnlock, savingRemark, remarkTimes, isContactsExhausted, isSubscribed }),
+    [callStatus, unlockedPhones, loadingUnlock, savingRemark, remarkTimes, isContactsExhausted, isSubscribed],
+  );
 
   // Load call remarks
   useQuery({
@@ -1701,6 +1748,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       setLoadingUnlock((p) => ({ ...p, [agentId]: true }));
       const res = await workerApi.unlockNumber(agentId);
       if (res.phone) setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone }));
+      // Contact consumed → refresh the count everywhere (search header, dashboard,
+      // plan features). Mirrors WorkerProfileScreen / PaymentWebViewScreen.
+      void qc.invalidateQueries({ queryKey: ['search-user-profile'] });
+      void qc.invalidateQueries({ queryKey: ['employer-full-profile'] });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response
         ?.data?.message;
@@ -1953,6 +2004,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       ) : (
         <FlatList
           data={displayedAgents}
+          extraData={listExtraData}
           keyExtractor={(item) => item._id}
           style={sc.flex1}
           contentContainerStyle={sc.list}
@@ -2049,11 +2101,11 @@ const sc = StyleSheet.create({
   // Active filter pills
   pillsBar:        { flexGrow: 0, marginTop: 6 },
   pillsContent:    { gap: 7, flexDirection: 'row' },
-  pill:            { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
-  pillTxt:         { fontSize: 12, fontWeight: '600', color: BRAND, maxWidth: 110 },
+  pill:            { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },
+  pillTxt:         { fontSize: 13, lineHeight: 19, fontWeight: '600', color: BRAND, maxWidth: 130 },
   pillClose:       { fontSize: 16, fontWeight: '700', color: BRAND, lineHeight: 18 },
-  pillClear:       { borderRadius: 20, borderWidth: 1, borderColor: '#fca5a5', backgroundColor: '#fee2e2', paddingHorizontal: 10, paddingVertical: 5 },
-  pillClearTxt:    { fontSize: 12, fontWeight: '700', color: '#dc2626' },
+  pillClear:       { borderRadius: 20, borderWidth: 1, borderColor: '#fca5a5', backgroundColor: '#fee2e2', paddingHorizontal: 12, paddingVertical: 7, justifyContent: 'center' },
+  pillClearTxt:    { fontSize: 13, lineHeight: 19, fontWeight: '700', color: '#dc2626' },
 
   // Result count bar
 

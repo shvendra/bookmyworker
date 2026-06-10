@@ -9,7 +9,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -193,7 +192,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
           {/* Who are you? */}
           <View style={styles.secHeader}>
             <View style={[styles.secDot, { backgroundColor: BRAND }]} />
-            <Text style={[styles.secLabel, { color: theme.colors.mutedText }]}>{t('whoAreYou')}</Text>
+            <AppText style={[styles.secLabel, { color: theme.colors.mutedText }]}>{t('whoAreYou')}</AppText>
           </View>
 
           <View style={styles.roleList}>
@@ -214,21 +213,21 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                   ]}
                 >
                   <View style={[styles.roleIconWrap, { backgroundColor: sel ? opt.color : opt.color + '1A' }]}>
-                    <Text style={styles.roleEmoji}>{opt.icon}</Text>
+                    <AppText style={styles.roleEmoji}>{opt.icon}</AppText>
                   </View>
                   <View style={styles.roleTexts}>
-                    <Text style={[styles.roleName, { color: sel ? opt.color : theme.colors.text }]}>
+                    <AppText style={[styles.roleName, { color: sel ? opt.color : theme.colors.text }]}>
                       {t(opt.labelKey)}
-                    </Text>
-                    <Text style={[styles.roleDesc, { color: theme.colors.mutedText }]} numberOfLines={3}>
+                    </AppText>
+                    <AppText style={[styles.roleDesc, { color: theme.colors.mutedText }]} numberOfLines={3}>
                       {t(opt.descKey)}
-                    </Text>
+                    </AppText>
                   </View>
                   <View style={[styles.checkCircle, {
                     backgroundColor: sel ? opt.color : 'transparent',
                     borderColor: sel ? opt.color : (isDark ? theme.colors.border : '#CBD5E1'),
                   }]}>
-                    {sel && <Text style={styles.checkMark}>✓</Text>}
+                    {sel && <AppText style={styles.checkMark}>✓</AppText>}
                   </View>
                 </TouchableOpacity>
               );
@@ -240,9 +239,9 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
             <>
               <View style={[styles.secHeader, { marginTop: 22 }]}>
                 <View style={[styles.secDot, { backgroundColor: accentColor }]} />
-                <Text style={[styles.secLabel, { color: theme.colors.mutedText }]}>
+                <AppText style={[styles.secLabel, { color: theme.colors.mutedText }]}>
                   {role === 'SelfWorker' ? t('myWorkType') : t('myRoleAsAgent')}
-                </Text>
+                </AppText>
               </View>
 
               {useGrid ? (
@@ -269,21 +268,21 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                       >
                         {sel && (
                           <View style={[styles.gridCheckBadge, { backgroundColor: accentColor }]}>
-                            <Text style={styles.gridCheckMark}>✓</Text>
+                            <AppText style={styles.gridCheckMark}>✓</AppText>
                           </View>
                         )}
                         <View style={[
                           styles.subGridIconWrap,
                           { backgroundColor: sel ? accentColor + '22' : (isDark ? '#1E293B' : '#F1F5F9') },
                         ]}>
-                          <Text style={styles.subGridEmoji}>{st.icon}</Text>
+                          <AppText style={styles.subGridEmoji}>{st.icon}</AppText>
                         </View>
-                        <Text style={[styles.subGridLabel, { color: sel ? accentColor : theme.colors.text }]}>
+                        <AppText style={[styles.subGridLabel, { color: sel ? accentColor : theme.colors.text }]}>
                           {t(st.labelKey)}
-                        </Text>
-                        <Text style={[styles.subGridDesc, { color: theme.colors.mutedText }]} numberOfLines={2}>
+                        </AppText>
+                        <AppText style={[styles.subGridDesc, { color: theme.colors.mutedText }]} numberOfLines={3}>
                           {t(st.descKey)}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     );
                   })}
@@ -307,14 +306,14 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                           },
                         ]}
                       >
-                        <Text style={styles.subEmoji}>{st.icon}</Text>
+                        <AppText style={styles.subEmoji}>{st.icon}</AppText>
                         <View style={styles.subTexts}>
-                          <Text style={[styles.subLabel, { color: sel ? accentColor : theme.colors.text }]}>
+                          <AppText style={[styles.subLabel, { color: sel ? accentColor : theme.colors.text }]}>
                             {t(st.labelKey)}
-                          </Text>
-                          <Text style={[styles.subDesc, { color: theme.colors.mutedText }]} numberOfLines={2}>
+                          </AppText>
+                          <AppText style={[styles.subDesc, { color: theme.colors.mutedText }]} numberOfLines={3}>
                             {t(st.descKey)}
-                          </Text>
+                          </AppText>
                         </View>
                         <View style={[styles.radioOuter, {
                           borderColor: sel ? accentColor : (isDark ? theme.colors.border : '#CBD5E1'),
@@ -337,14 +336,14 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                   onPress={() => void pickResume()}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.resumeEmoji}>{resumeUri ? '📄' : '⬆️'}</Text>
+                  <AppText style={styles.resumeEmoji}>{resumeUri ? '📄' : '⬆️'}</AppText>
                   <View style={styles.resumeTexts}>
-                    <Text style={[styles.resumeTitle, { color: resumeUri ? '#d97706' : theme.colors.text }]}>
+                    <AppText style={[styles.resumeTitle, { color: resumeUri ? '#d97706' : theme.colors.text }]}>
                       {resumeUri ? 'Resume Uploaded ✓' : 'Upload Resume / CV'}
-                    </Text>
-                    <Text style={[styles.resumeSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
+                    </AppText>
+                    <AppText style={[styles.resumeSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
                       {resumeName ?? 'PDF or Word document (optional but recommended)'}
-                    </Text>
+                    </AppText>
                   </View>
                   {resumeUri && (
                     <TouchableOpacity
@@ -352,7 +351,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                       style={styles.resumeClearBtn}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text style={styles.resumeClearTxt}>✕</Text>
+                      <AppText style={styles.resumeClearTxt}>✕</AppText>
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>

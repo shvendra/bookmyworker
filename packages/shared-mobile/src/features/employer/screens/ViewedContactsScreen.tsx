@@ -70,7 +70,7 @@ function ContactCard({
           {(item.workerName || 'Worker').replace(/\b\w/g, (c) => c.toUpperCase())}
         </AppText>
         {/* Worker phone intentionally NOT shown in history */}
-        <AppText style={[card.meta, { color: theme.colors.mutedText }]} numberOfLines={1}>
+        <AppText style={[card.meta, { color: theme.colors.mutedText }]} numberOfLines={2}>
           {t('vcLastViewed')}: {formatRelative(item.lastViewedAt)} · {t('vcViews', { count: item.viewCount || 1 })}
         </AppText>
       </View>

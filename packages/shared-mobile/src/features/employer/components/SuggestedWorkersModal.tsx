@@ -7,6 +7,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import { buildPhotoUrl } from '../../../core/config/env';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { getWorkTypeLabel } from '../../../shared/utils/labelUtils';
+import { ageString } from '../../../shared/utils/ageUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
 const PAGE_SIZE = 20;
@@ -16,23 +17,8 @@ const PAGE_SIZE = 20;
 const norm = (s?: string): string =>
   String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-const getAge = (dob?: string | number): string => {
-  if (dob == null || dob === '') return '';
-  const ts = Number(dob);
-  if (isNaN(ts)) return '';
-  if (String(dob).length <= 5) {
-    const yr = new Date().getFullYear();
-    return ts > 1900 && ts <= yr ? String(yr - ts) : String(ts);
-  }
-  const ms = ts < 10000000000 ? ts * 1000 : ts;
-  const d = new Date(ms);
-  if (isNaN(d.getTime())) return '';
-  const today = new Date();
-  let age = today.getFullYear() - d.getFullYear();
-  const m = today.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
-  return age > 0 ? String(age) : '';
-};
+// Birth year / legacy age / full date string / timestamp → current age string.
+const getAge = (dob?: string | number): string => ageString(dob);
 
 // Merge areasOfWork (category) + categories (sub-skills), translate each to the
 // active language (subcatDisplay handles category + sub-category labels), de-dupe, cap 2.
@@ -171,7 +157,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
           <View style={s.header}>
             <View style={{ flex: 1 }}>
               <AppText style={s.headerTitle}>{t('wp_inviteTitle')}</AppText>
-              {!!headerLabel && <AppText style={s.headerSub} numberOfLines={1}>{headerLabel}</AppText>}
+              {!!headerLabel && <AppText style={s.headerSub} numberOfLines={2}>{headerLabel}</AppText>}
             </View>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
               <AppText style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
@@ -232,7 +218,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {unlockingId === w._id
                             ? <ActivityIndicator color="#2243BC" size="small" />
-                            : <AppText style={s.contactTxt} numberOfLines={1}>{t('sw_viewContact')}</AppText>}
+                            : <AppText style={s.contactTxt}>{t('sw_viewContact')}</AppText>}
                         </TouchableOpacity>
                       )}
                       {invited ? (
@@ -246,7 +232,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {inviting
                             ? <ActivityIndicator color="#FFFFFF" size="small" />
-                            : <AppText style={s.inviteTxt} numberOfLines={1}>{t('sw_invite')}</AppText>}
+                            : <AppText style={s.inviteTxt}>{t('sw_invite')}</AppText>}
                         </TouchableOpacity>
                       )}
                     </View>
@@ -277,7 +263,7 @@ const s = StyleSheet.create({
   avatarFallback:{ alignItems: 'center', justifyContent: 'center' },
   avatarTxt:     { fontSize: 16, fontWeight: '800', color: '#2243BC' },
   name:          { fontSize: 14, fontWeight: '800', color: '#0f172a' },
-  skills:        { fontSize: 12, fontWeight: '600', color: '#475569', marginTop: 2, lineHeight: 16 },
+  skills:        { fontSize: 12, fontWeight: '600', color: '#475569', marginTop: 2, lineHeight: 17 },
   meta:          { fontSize: 11.5, color: '#64748b', marginTop: 2 },
   loc:           { fontSize: 11.5, color: '#94a3b8', marginTop: 2 },
   actions:       { alignItems: 'flex-end', gap: 6, flexShrink: 0 },

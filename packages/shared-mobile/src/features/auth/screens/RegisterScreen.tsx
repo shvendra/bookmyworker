@@ -18,6 +18,9 @@ import { registerStep2Schema, type RegisterStep2Values } from '../validation/aut
 import { ROUTES } from '../../../shared/constants/routes';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import * as DocumentPicker from 'expo-document-picker';
+import { useAuth } from '../../../state/auth/AuthContext';
+import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 type Role = 'Employer' | 'Agent' | 'SelfWorker';
@@ -48,8 +51,13 @@ const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
 
 export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
+  const { signIn } = useAuth();
+  // SuperAdmin toggle — when false, registration skips the WhatsApp OTP step and
+  // creates the account directly.
+  const { config } = useAppConfig();
+  const registrationOtpEnabled = config.authFlags.registrationOtpEnabled;
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [workerSubType, setWorkerSubType] = useState<string>('');
@@ -136,6 +144,11 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
     submitting.current = true;
     setIsLoading(true);
     try {
+      if (!registrationOtpEnabled) {
+        // OTP disabled by admin → create the account directly (no OTP step).
+        await registerDirectly(values);
+        return;
+      }
       await authService.requestOtp(values.phone, undefined);
       navigation.navigate(ROUTES.AUTH.REGISTER_OTP, {
         phone: values.phone, role,
@@ -160,6 +173,44 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
       submitting.current = false;
     }
   });
+
+  // Direct (no-OTP) registration. Mirrors the post-verify flow in RegisterOtpScreen
+  // so the experience is identical apart from the skipped OTP step.
+  const registerDirectly = async (values: RegisterStep2Values): Promise<void> => {
+    if (!role) return;
+    const selectedLang = i18n.language ?? 'hi';
+    await authService.register({
+      name: values.name, phone: values.phone, password: values.password,
+      role, language: selectedLang,
+      state: values.state, district: values.district, block: values.block,
+      pinCode: values.pinCode ?? undefined, email: values.email ?? undefined,
+      referredBy: values.referredBy ?? undefined,
+      gender: values.gender,
+      dob: values.dob ? Number(values.dob) : undefined,
+      address: values.address,
+      areasOfWork: selectedCategory ? [selectedCategory] : undefined,
+      categories: selectedSubcategories.length > 0 ? selectedSubcategories : undefined,
+      workExperience: values.workExperience ? Number(values.workExperience.split(' ')[0]) : undefined,
+      salaryType: values.salaryType,
+      fixedSalary: values.fixedSalary ? Number(values.fixedSalary) : undefined,
+      salaryFrom: values.salaryFrom ? Number(values.salaryFrom) : undefined,
+      salaryTo: values.salaryTo ? Number(values.salaryTo) : undefined,
+      workerSubType: workerSubType || undefined,
+      agentType: agentType || undefined,
+    });
+    toast.success(t('accountCreated'), t('registrationSuccessful'));
+
+    const roleHint = role === 'Employer' ? 'employer' : role === 'Agent' ? 'agent' : 'worker';
+    const session = await authService.loginWithPassword(values.phone, values.password, roleHint);
+    // Fresh registrations route through onboarding/KYC first (same as the OTP flow).
+    session.onboardingCompleted = false;
+    if (resumeUri && resumeName) {
+      try { await workerApi.uploadResume(resumeUri, resumeName); } catch { /* non-fatal */ }
+    }
+    if (i18n.language !== selectedLang) await i18n.changeLanguage(selectedLang);
+    await signIn(session);
+    toast.success(t('welcomeToApp'), t('registrationSuccessful'));
+  };
 
   const showResume = role === 'SelfWorker' && (workerSubType === 'ITI/Diploma' || workerSubType === 'Graduate');
 
@@ -494,7 +545,7 @@ const CategoryChips = ({
             borderColor: isSelected ? theme.colors.primary : theme.colors.border,
           }]}
         >
-          <AppText variant="caption" color={isSelected ? '#fff' : theme.colors.text} style={styles.chipText} numberOfLines={2}>
+          <AppText variant="caption" color={isSelected ? '#fff' : theme.colors.text} style={styles.chipText} numberOfLines={3}>
             {item.label}
           </AppText>
         </TouchableOpacity>

@@ -456,7 +456,7 @@ const cal = StyleSheet.create({
   monthNav:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   navBtn:         { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   navArrow:       { fontSize: 20, fontWeight: '800', lineHeight: 24 },
-  monthTitle:     { fontSize: 17, fontWeight: '900', letterSpacing: -0.3 },
+  monthTitle:     { fontSize: 17, fontWeight: '900', letterSpacing: -0.3, flexShrink: 1, textAlign: 'center', paddingHorizontal: 8 },
 
   weekRow:        { flexDirection: 'row', borderBottomWidth: 1 },
   weekCell:       { flex: 1, alignItems: 'center', paddingVertical: 8 },

@@ -29,6 +29,7 @@ import { LocationSelector } from '../../../shared/components/forms/LocationSelec
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useAppTheme } from '../../../core/theme';
 import { indianStates } from '../../../shared/data/stateDistrict';
+import { ageString } from '../../../shared/utils/ageUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 // Build a flat lookup: category/subcategory value → display label
@@ -130,7 +131,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
   // Worker-specific fields
   const [gender, setGender] = useState<string>(user?.gender ?? '');
-  const [age, setAge] = useState<string>(user?.dob ? String(user.dob) : '');
+  // dob is stored as a birth year — show the derived current age in the field.
+  const [age, setAge] = useState<string>(ageString(user?.dob));
   const [experience, setExperience] = useState<string>('');
   // Serviceable areas = districts where the worker WANTS to work → `serviceArea`
   // (the "Work categories" below map to areasOfWork; sub-skills to categories).
@@ -202,7 +204,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         if (u.district)    setDistrictVal(u.district);
         if (u.block)       setBlockVal(u.block);
         if (u.gender)      setGender(u.gender);
-        if (u.dob)         setAge(String(u.dob));
+        if (u.dob)         setAge(ageString(u.dob));
         if (u.serviceArea) setAreas(u.serviceArea);
         if (u.workExperience != null && u.workExperience !== '') setExperience(String(u.workExperience));
         if (isAgent ? u.agentType : u.workerSubType) setRoleType((isAgent ? u.agentType : u.workerSubType) ?? '');

@@ -19,7 +19,7 @@ export const RequirementCard = ({ requirement, onPress, actionSlot }: Requiremen
     <AppCard onPress={onPress} style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleWrap}>
-          <AppText variant="label" numberOfLines={1}>{requirement.title}</AppText>
+          <AppText variant="label" numberOfLines={2}>{requirement.title}</AppText>
           <AppText variant="caption" color={theme.colors.mutedText}>
             {requirement.category}{requirement.subCategory ? ` · ${requirement.subCategory}` : ''}
           </AppText>

@@ -141,7 +141,7 @@ function PickerSheet({
             <TouchableOpacity onPress={onCancel} hitSlop={8}>
               <AppText variant="body" color={theme.colors.mutedText}>Cancel</AppText>
             </TouchableOpacity>
-            <AppText variant="label">{title}</AppText>
+            <AppText variant="label" style={{ flexShrink: 1, marginHorizontal: 8, textAlign: 'center' }}>{title}</AppText>
             <TouchableOpacity onPress={onDone} hitSlop={8}>
               <AppText variant="body" color={theme.colors.primary}>Done</AppText>
             </TouchableOpacity>

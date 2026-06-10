@@ -130,7 +130,7 @@ function WorkerCard({
 
           <View style={{ flex: 1 }}>
             <View style={wc.nameRow}>
-              <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
+              <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={2}>
                 {entry.workerName.replace(/\b\w/g, (c) => c.toUpperCase())}
               </AppText>
               {Number(entry.dailyRate) > 0 && (
@@ -145,7 +145,7 @@ function WorkerCard({
             {(() => {
               const skills = formatSkillList(entry.workerSkills, 99);
               return skills ? (
-                <AppText style={[wc.skills, { color: theme.colors.mutedText }]} numberOfLines={1}>
+                <AppText style={[wc.skills, { color: theme.colors.mutedText }]} numberOfLines={2}>
                   🔧 {skills}
                 </AppText>
               ) : null;
@@ -181,10 +181,10 @@ const wc = StyleSheet.create({
   location:     { fontSize: 11.5, marginTop: 2 },
   skills:       { fontSize: 11.5, marginTop: 1 },
   bottomRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
   statusEmoji:  { fontSize: 12 },
-  statusTxt:    { fontSize: 11, fontWeight: '700' },
-  time:         { fontSize: 11, fontWeight: '600' },
+  statusTxt:    { fontSize: 11, fontWeight: '700', flexShrink: 1 },
+  time:         { fontSize: 11, fontWeight: '600', flexShrink: 0, marginLeft: 6 },
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────

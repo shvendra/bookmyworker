@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google দিয়ে চালিয়ে যেতে উপরে আপনার নিয়োগকর্তার ধরন নির্বাচন করুন",
+  orLabel: "অথবা",
+  continueWithGoogle: "Google দিয়ে চালিয়ে যান",
   lp_tapHint: 'পিন বসাতে যেকোনো জায়গায় ট্যাপ করুন',
   profile_pendingVerification: 'প্রোফাইল যাচাই মুলতুবি',
   // -- Map location picker --
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'পেমেন্ট ও বিলিং',
   profile_paymentHistory: 'পেমেন্ট ইতিহাস',
   profile_myActivity: 'আমার কার্যক্রম',
-  profile_viewedContacts: 'দেখা পরিচিতি',
+  profile_viewedContacts: 'দেখা কর্মী প্রোফাইল',
   profile_jobInvitations: 'চাকরির আমন্ত্রণ',
   profile_callHistory: 'কল ইতিহাস',
   profile_notificationSettings: 'বিজ্ঞপ্তি সেটিংস',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'খুঁজুন যেমন মিস্ত্রি, ড্রাইভার, রান্না…',
   wpc_subCatSelected: 'নির্বাচিত দক্ষতা',
   wpc_subCatRequired: 'এগিয়ে যেতে কমপক্ষে একটি দক্ষতা নির্বাচন করুন',
+  wpc_limitTitle: 'সীমা পূর্ণ হয়েছে',
+  wpc_workCatLimit: 'আপনি সর্বোচ্চ {{count}}টি কাজের বিভাগ নির্বাচন করতে পারবেন।',
+  wpc_subCatLimit: 'আপনি সর্বোচ্চ {{count}}টি দক্ষতা নির্বাচন করতে পারবেন।',
   wpc_locationQ: 'আপনি কোথায় আছেন?',
   wpc_locationHint: 'আপনার রাজ্য, জেলা এবং ব্লক নির্বাচন করুন',
   wpc_stateLabel: 'রাজ্য',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "উপ-বিভাগ নির্বাচন করুন",
   cs_selectCategoryFirst: "প্রথমে বিভাগ নির্বাচন করুন",
   cs_subTypes: "{{n}} উপ-প্রকার",
+  req_boostedBadge: "বুস্ট করা হয়েছে",
 } as const;

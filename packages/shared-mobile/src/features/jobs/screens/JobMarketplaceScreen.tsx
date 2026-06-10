@@ -159,6 +159,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const visual = getVisual(req.workType, req.subCategory);
   const isDark = theme.mode === 'dark';
+  const boosted = !!(req.isBoosted && req.boostedUntil && new Date(req.boostedUntil).getTime() > Date.now());
 
   const locationStr = getLocationStr(
     { tehsil: req.tehsil, district: req.district, state: req.state },
@@ -192,7 +193,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
   };
 
   const cardBg = isDark ? theme.colors.card : '#FFFFFF';
-  const borderCol = isDark ? theme.colors.border : '#E8EEF6';
+  const borderCol = boosted ? (isDark ? 'rgba(236,72,153,0.55)' : '#F9A8D4') : (isDark ? theme.colors.border : '#E8EEF6');
 
   const handleCardPress = (): void => {
     navigation.navigate('JobMarketplaceDetail', { requirementId: req._id });
@@ -202,8 +203,23 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
     <TouchableOpacity
       onPress={handleCardPress}
       activeOpacity={0.97}
-      style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }]}
+      style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }, boosted && { borderWidth: 1.5 }]}
     >
+
+      {/* ── Boosted ribbon ───────────────────────────────────── */}
+      {boosted && (
+        <View style={{
+          alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4,
+          backgroundColor: isDark ? 'rgba(236,72,153,0.18)' : '#FDF2F8',
+          borderWidth: 1, borderColor: isDark ? 'rgba(236,72,153,0.35)' : '#FBCFE8',
+          borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
+        }}>
+          <AppText style={{ fontSize: 11 }}>🚀</AppText>
+          <AppText style={{ fontSize: 10.5, fontWeight: '800', color: isDark ? '#F9A8D4' : '#BE185D', letterSpacing: 0.3 }}>
+            {t('req_boostedBadge')}
+          </AppText>
+        </View>
+      )}
 
       {/* ── Top: logo + title + like ─────────────────────────── */}
       <View style={styles.cardTop}>
@@ -212,10 +228,10 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         </View>
 
         <View style={styles.titleBlock}>
-          <AppText style={[styles.cardTitle, { color: theme.colors.text }]} numberOfLines={1}>
+          <AppText style={[styles.cardTitle, { color: theme.colors.text }]} numberOfLines={2}>
             {jobTitle}
           </AppText>
-          <AppText style={[styles.cardCategory, { color: theme.colors.mutedText }]} numberOfLines={1}>
+          <AppText style={[styles.cardCategory, { color: theme.colors.mutedText }]} numberOfLines={2}>
             {categoryLabel}
           </AppText>
         </View>
@@ -236,6 +252,16 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
           {locationStr}
         </AppText>
       </View>
+
+      {/* ── Contact person row (number stays behind the reveal/Call flow) ── */}
+      {req.contactPersonName ? (
+        <View style={styles.infoRow}>
+          <AppText style={styles.infoRowIcon}>👤</AppText>
+          <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]} numberOfLines={1}>
+            {req.contactPersonName}
+          </AppText>
+        </View>
+      ) : null}
 
       {/* ── Salary row ───────────────────────────────────────── */}
       <View style={styles.infoRow}>
@@ -333,7 +359,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
                   );
                   return;
                 }
-                onCallPress(req._id, req.employerName ?? '');
+                onCallPress(req._id, req.contactPersonName ?? req.employerName ?? '');
               }}
               activeOpacity={0.8}
               style={styles.viewContactBtn}
@@ -493,7 +519,7 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
               <View style={[styles.modalBanner, { backgroundColor: visual.bg }]}>
                 <AppText style={styles.modalBannerEmoji}>{visual.emoji}</AppText>
                 <View style={{ flex: 1 }}>
-                  <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={1}>
+                  <AppText style={[styles.modalBannerTitle, { color: visual.color }]} numberOfLines={2}>
                     {getJobTitle(req?.workType, req?.subCategory, i18n.language, t)}
                   </AppText>
                   <AppText variant="caption" style={{ color: visual.color + '99' }}>

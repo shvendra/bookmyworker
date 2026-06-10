@@ -77,7 +77,7 @@ const PlacementCard = React.memo(({
       <View style={styles.detailGrid}>
         <View style={styles.detailItem}>
           <AppText style={[styles.detailLabel, { color: theme.colors.mutedText }]}>{t('pl_labelEmployer')}</AppText>
-          <AppText style={[styles.detailValue, { color: theme.colors.text }]} numberOfLines={1}>
+          <AppText style={[styles.detailValue, { color: theme.colors.text }]}>
             {item.employerName ?? '—'}
           </AppText>
         </View>
@@ -94,7 +94,7 @@ const PlacementCard = React.memo(({
         {item.district ? (
           <View style={styles.detailItem}>
             <AppText style={[styles.detailLabel, { color: theme.colors.mutedText }]}>{t('pl_labelLocation')}</AppText>
-            <AppText style={[styles.detailValue, { color: theme.colors.text }]} numberOfLines={1}>
+            <AppText style={[styles.detailValue, { color: theme.colors.text }]}>
               {item.district}{item.state ? `, ${item.state}` : ''}
             </AppText>
           </View>

@@ -156,7 +156,7 @@ export const LocationSelector = ({
             <View style={[styles.grab, { backgroundColor: theme.colors.border }]} />
 
             <View style={styles.sheetHeader}>
-              <AppText variant="label" style={styles.sheetTitle}>{modalTitle}</AppText>
+              <AppText variant="label" style={[styles.sheetTitle, { flexShrink: 1, marginRight: 10 }]}>{modalTitle}</AppText>
               <TouchableOpacity onPress={() => setMode(null)} style={[styles.closeBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
                 <Ionicons name="close" size={17} color={theme.colors.mutedText} />
               </TouchableOpacity>
@@ -251,7 +251,7 @@ const PickerField = ({ label, value, placeholder, error, disabled, onPress, them
         variant="body"
         color={value ? theme.colors.text : theme.colors.mutedText}
         style={styles.selectorText}
-        numberOfLines={1}
+        numberOfLines={2}
       >
         {value || placeholder}
       </AppText>

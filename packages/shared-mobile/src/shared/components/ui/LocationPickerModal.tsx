@@ -285,7 +285,7 @@ export const LocationPickerModal = ({
 
         {/* ── Header ────────────────────────────────────────────────────── */}
         <View style={[styles.header, { backgroundColor: c.card, borderBottomColor: c.border }]}>
-          <AppText style={[styles.headerTitle, { color: c.text }]} numberOfLines={1}>{title ?? t('lp_title')}</AppText>
+          <AppText style={[styles.headerTitle, { color: c.text }]} numberOfLines={2}>{title ?? t('lp_title')}</AppText>
           <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={[styles.closeBtn, { backgroundColor: c.surface1 }]}>
             <AppText style={[styles.closeTxt, { color: c.text }]}>✕</AppText>
           </TouchableOpacity>
@@ -384,7 +384,7 @@ export const LocationPickerModal = ({
             <AppText style={{ fontSize: 18 }}>{picked ? '📌' : '🗺️'}</AppText>
             <View style={{ flex: 1 }}>
               {picked ? (
-                <AppText style={[styles.selAddress, { color: c.text }]} numberOfLines={2}>
+                <AppText style={[styles.selAddress, { color: c.text }]} numberOfLines={3}>
                   {resolving ? t('lp_locating') : picked.address}
                 </AppText>
               ) : (

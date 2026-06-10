@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
+import { PixelRatio, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 import { useAppTheme } from '../../../core/theme';
 
 // Extended variant system for a richer typographic hierarchy
@@ -109,12 +109,31 @@ export const AppText = ({
   const { theme } = useAppTheme();
 
   // ── Global text-overflow guards (employer + agent apps) ───────────────────
-  // 1. Cap OS font-scaling so large system fonts can't blow text out of its
-  //    container — the #1 cause of clipped labels on high-accessibility devices.
-  // 2. When a line limit is set, shrink-to-fit instead of ellipsizing — so long
-  //    translations (Hindi/Tamil/…) scale down to fit rather than getting cut off.
-  const hasLineLimit = numberOfLines != null;
-  const shrinkToFit = adjustsFontSizeToFit ?? hasLineLimit;
+  // Cap OS font-scaling so large system fonts can't blow text out of its
+  // container — the #1 cause of clipped labels on high-accessibility devices.
+  //
+  // Shrink-to-fit is applied ONLY when a caller explicitly opts in via
+  // adjustsFontSizeToFit. We do NOT auto-enable it for every numberOfLines:
+  // doing so made long Hindi/Indic labels shrink to a tiny, unreadable size in
+  // chips, rows and scrollable containers. Default behaviour now keeps text at
+  // its standard size and truncates with an ellipsis if a bounded line is too long.
+  const shrinkToFit = adjustsFontSizeToFit === true;
+  const cap = maxFontSizeMultiplier ?? 1.3;
+
+  // ── Scale lineHeight in lockstep with the (capped) OS font scale ───────────
+  // React Native scales fontSize by the device font-scale setting (clamped by
+  // maxFontSizeMultiplier) but leaves an explicit lineHeight UNTOUCHED. On
+  // large-font / high-accessibility devices that mismatch makes the line box too
+  // short for the now-bigger glyphs, vertically clipping tall scripts
+  // (Devanagari/Tamil/Telugu/… top & bottom matras and conjuncts) — most visible
+  // in tight chips, pills and badges. Recompute the effective lineHeight so the
+  // line box grows together with the rendered text. effScale is 1 at the default
+  // font scale, so this is a NO-OP on normal devices → zero layout regression.
+  const effScale = Math.min(PixelRatio.getFontScale(), cap);
+  const flat = (StyleSheet.flatten([variantStyles[variant], style]) ?? {}) as TextStyle;
+  const baseLineHeight = typeof flat.lineHeight === 'number' ? flat.lineHeight : undefined;
+  const scaledLineHeight =
+    baseLineHeight != null && effScale > 1 ? baseLineHeight * effScale : undefined;
 
   return (
     <Text
@@ -129,9 +148,12 @@ export const AppText = ({
           textAlign: center ? 'center' : undefined,
         },
         style,
+        // Applied LAST so it overrides any variant/style lineHeight with the
+        // font-scale-aware value (only when the OS is actually scaling fonts up).
+        scaledLineHeight != null ? { lineHeight: scaledLineHeight } : null,
       ]}
       allowFontScaling
-      maxFontSizeMultiplier={maxFontSizeMultiplier ?? 1.3}
+      maxFontSizeMultiplier={cap}
       numberOfLines={numberOfLines}
       adjustsFontSizeToFit={shrinkToFit}
       minimumFontScale={minimumFontScale ?? 0.75}

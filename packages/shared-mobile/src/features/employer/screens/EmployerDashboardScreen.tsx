@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -48,6 +49,11 @@ import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
+import { FestivalWishesModal } from '../../../shared/components/ui/FestivalWishesModal';
+
+// Festival wishes popup is shown at most once per app session (not on every
+// dashboard remount). SuperAdmin's festivalMode toggle still gates it entirely.
+let festivalShownThisSession = false;
 
 const EMPLOYER_SUB_MODAL_KEY = 'employer_sub_modal_shown';
 
@@ -104,6 +110,9 @@ const isCompleted = (r: RawRequirement): boolean => {
   return s === 'completed' || s === 'fulfilled';
 };
 const isAssigned = (r: RawRequirement): boolean => !!r.assignedAgentId;
+// A requirement is "actively boosted" only while its boostedUntil is in the future.
+const isActivelyBoosted = (r: RawRequirement): boolean =>
+  !!(r.isBoosted && r.boostedUntil && new Date(r.boostedUntil).getTime() > Date.now());
 
 const maskPhone = (id: string): string => {
   const code = id.slice(-2).split('').map((c) => c.charCodeAt(0) % 10).join('');
@@ -345,9 +354,13 @@ interface ReqSliderCardProps {
   closing: boolean;
   canInvite?: boolean;
   onInvite?: (req: RawRequirement) => void;
+  boostEnabled?: boolean;
+  boostRemaining?: number;
+  boosting?: boolean;
+  onBoost?: (req: RawRequirement) => void;
 }
 
-const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvite, onInvite }: ReqSliderCardProps): React.JSX.Element => {
+const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvite, onInvite, boostEnabled, boostRemaining, boosting, onBoost }: ReqSliderCardProps): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { t: tDefault } = useTranslation(); // cat_* keys live in the default namespace
   const { theme } = useAppTheme();
@@ -355,6 +368,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
   const completed = isCompleted(req);
   const closed    = isClosed(req);
   const assigned  = isAssigned(req);
+  const boosted   = isActivelyBoosted(req);
   const interested = req.intrestedAgents?.length ?? 0;
   const totalWorkers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
 
@@ -389,6 +403,11 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
         {/* ── Top row: ERN + date (left) · status pill (right), all one line ── */}
         <View style={rsc.topRow}>
           <View style={rsc.topLeft}>
+            {boosted ? (
+              <View style={[rsc.ernChip, { borderColor: 'rgba(244,114,182,0.55)', backgroundColor: 'rgba(236,72,153,0.28)' }]}>
+                <AppText style={[rsc.ernTxt, { color: '#FBCFE8' }]} numberOfLines={1}>{'🚀 '}{t('req_boostedBadge')}</AppText>
+              </View>
+            ) : null}
             {req.ERN_NUMBER ? (
               <View style={[rsc.ernChip, { borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.08)' }]}>
                 <AppText style={rsc.ernTxt} numberOfLines={1}>{'#'}{req.ERN_NUMBER}</AppText>
@@ -483,6 +502,26 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             </AppText>
           </TouchableOpacity>
         ) : null}
+
+        {/* ── Boost to top (plan-gated; only approved reqs are visible in search) ── */}
+        {boostEnabled && !closed && req.isApproved && !boosted && (boostRemaining ?? 0) > 0 ? (
+          <TouchableOpacity
+            onPress={() => onBoost?.(req)}
+            activeOpacity={0.85}
+            disabled={boosting}
+            style={rsc.boostBtn}
+          >
+            <AppText style={rsc.boostBtnTxt} numberOfLines={1}>
+              {boosting ? t('req_boosting') : `🚀 ${t('req_boostToTop')} (${boostRemaining})`}
+            </AppText>
+          </TouchableOpacity>
+        ) : boostEnabled && !closed && boosted ? (
+          <View style={[rsc.boostBtn, rsc.boostBtnDone]}>
+            <AppText style={[rsc.boostBtnTxt, { color: '#FBCFE8' }]} numberOfLines={1}>
+              {'🚀'} {t('req_boostedOnTop')}
+            </AppText>
+          </View>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -503,10 +542,15 @@ interface RequirementCarouselProps {
   themeColors: any;
   canInvite?: boolean;
   onInvite?: (req: RawRequirement) => void;
+  boostEnabled?: boolean;
+  boostRemaining?: number;
+  boostingId?: string | null;
+  onBoost?: (req: RawRequirement) => void;
 }
 
 const RequirementCarousel = React.memo(({
   requirements, onPress, onClose, closingId, isLoading, onPost, tab, allCount, t, themeColors, canInvite, onInvite,
+  boostEnabled, boostRemaining, boostingId, onBoost,
 }: RequirementCarouselProps): React.JSX.Element => {
   const scrollRef = useRef<ScrollView>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -581,6 +625,10 @@ const RequirementCarousel = React.memo(({
             closing={closingId === req._id}
             canInvite={canInvite}
             onInvite={onInvite}
+            boostEnabled={boostEnabled}
+            boostRemaining={boostRemaining}
+            boosting={boostingId === req._id}
+            onBoost={onBoost}
           />
         ))}
       </ScrollView>
@@ -611,6 +659,9 @@ const rsc = StyleSheet.create({
   inner:         { padding: 16, gap: 10 },
   inviteBtn:     { marginTop: 4, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
   inviteBtnTxt:  { fontSize: 14, fontWeight: '800', color: '#6D3FD6' },
+  boostBtn:      { marginTop: 8, backgroundColor: '#EC4899', borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  boostBtnDone:  { backgroundColor: 'rgba(236,72,153,0.22)', borderWidth: 1, borderColor: 'rgba(244,114,182,0.5)' },
+  boostBtnTxt:   { fontSize: 14, fontWeight: '800', color: '#fff' },
   deco1:         { position: 'absolute', width: 220, height: 220, borderRadius: 110, top: -80, right: -50 },
   deco2:         { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: -20 },
   // Top row
@@ -1249,6 +1300,18 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const { config } = useAppConfig();
   const { pricing } = usePricingConfig();
 
+  // ── Festival wishes popup (SuperAdmin-gated, once per app session) ──────────
+  const [showFestival, setShowFestival] = useState(false);
+  useEffect(() => {
+    const p = config.promotions;
+    if (!p?.festivalMode) return;
+    if (!(p.festivalName || p.festivalMessage || p.festivalImageUrl)) return;
+    if (festivalShownThisSession) return;
+    festivalShownThisSession = true;
+    const tmr = setTimeout(() => setShowFestival(true), 1200);
+    return () => clearTimeout(tmr);
+  }, [config.promotions]);
+
   const REQ_TABS: Array<{ label: string; value: ReqTab }> = [
     { label: t('tabAll'),    value: 'all' },
     { label: t('tabOpen'),   value: 'open' },
@@ -1354,6 +1417,47 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     enabled: !!user?.id,
   });
 
+  // ── Boost quota + handler ──────────────────────────────────────────────────
+  const boostQuotaQuery = useQuery({
+    queryKey: ['employer-boost-quota', user?.id],
+    queryFn: () => requirementsApi.getBoostQuota(),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    enabled: !!user?.id && isSubscribed,
+  });
+  const boostInfo = boostQuotaQuery.data;
+  const boostEnabled = !!boostInfo?.enabled && isSubscribed;
+  const boostRemaining = boostInfo?.remaining ?? 0;
+  const [boostingId, setBoostingId] = useState<string | null>(null);
+
+  const handleBoost = useCallback((req: RawRequirement) => {
+    Alert.alert(
+      t('req_boostConfirmTitle'),
+      t('req_boostConfirmBody', { days: boostInfo?.durationDays ?? 30, remaining: boostRemaining }),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('req_boostToTop'),
+          onPress: async () => {
+            setBoostingId(req._id);
+            try {
+              await requirementsApi.boostRequirement(req._id);
+              toast.success(t('req_boostSuccess'));
+              await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['employer-requirements', user?.id] }),
+                queryClient.invalidateQueries({ queryKey: ['employer-boost-quota', user?.id] }),
+              ]);
+            } catch (e: any) {
+              toast.error(e?.response?.data?.message || t('req_boostFailed'));
+            } finally {
+              setBoostingId(null);
+            }
+          },
+        },
+      ],
+    );
+  }, [boostInfo?.durationDays, boostRemaining, t, toast, queryClient, user?.id]);
+
   const nearbyQuery = useQuery({
     queryKey: ['nearby-agents', user?.state, user?.district],
     queryFn: () => workerApi.getAllAgents({
@@ -1424,9 +1528,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   // payment screen) — only if the cache was invalidated (isStale = true)
   useFocusEffect(
     useCallback(() => {
-      if (profileQuery.isStale) {
-        void profileQuery.refetch();
-      }
+      // Always refetch on focus so contact + free-contact counts reflect any
+      // unlock that just happened on another screen (real-time balance).
+      void profileQuery.refetch();
     }, [profileQuery]),
   );
 
@@ -1449,12 +1553,23 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   }, [profileQuery.isSuccess, isSubscribed]);
 
   // ── Callbacks ──────────────────────────────────────────────────────────────
-  const handleRefresh = useCallback(() => {
-    void reqQuery.refetch();
-    void profileQuery.refetch();
-    void nearbyQuery.refetch();
-    void dashQuery.refetch();
-    if (isSubscribed) void pipelineQuery.refetch();
+  // Pull-to-refresh spinner is driven ONLY by an explicit user pull — never by
+  // background/initial query fetching. Tying RefreshControl to `isFetching` left
+  // the spinner stuck on the dashboard hero whenever a query refetched on mount.
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setManualRefreshing(true);
+    try {
+      await Promise.all([
+        reqQuery.refetch(),
+        profileQuery.refetch(),
+        nearbyQuery.refetch(),
+        dashQuery.refetch(),
+        isSubscribed ? pipelineQuery.refetch() : Promise.resolve(),
+      ]);
+    } finally {
+      setManualRefreshing(false);
+    }
   }, [reqQuery, profileQuery, nearbyQuery, dashQuery, pipelineQuery, isSubscribed]);
 
   // Surface a retry affordance when primary data sources fail, instead of
@@ -1508,8 +1623,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         workerCountLabel={totalWorkersDisplay}
       />
 
-      {/* ── Free contacts banner (gifted unlocks remaining) ── */}
-      {freeContactsRemaining > 0 && (
+      {/* ── Free contacts banner (gifted unlocks remaining) ──
+          Hidden for subscribed employers: free contacts apply only when there's
+          no active subscription. */}
+      {!isSubscribed && freeContactsRemaining > 0 && (
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={handleWorkerSearchNavigate}
@@ -1651,7 +1768,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         {/* Card header */}
         <View style={reqCard.header}>
           <View style={reqCard.headerLeft}>
-            <AppText style={[reqCard.title, { color: theme.colors.text }]} numberOfLines={1}>{t('newRequirements')}</AppText>
+            <AppText style={[reqCard.title, { color: theme.colors.text }]} numberOfLines={2}>{t('newRequirements')}</AppText>
             {all.length > 0 && (
               <View style={[reqCard.countPill, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
                 <AppText style={[reqCard.countPillTxt, { color: theme.colors.primary }]}>{all.length}</AppText>
@@ -1703,6 +1820,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           themeColors={theme.colors}
           canInvite={plan.inviteEnabled}
           onInvite={handleInviteReq}
+          boostEnabled={boostEnabled}
+          boostRemaining={boostRemaining}
+          boostingId={boostingId}
+          onBoost={handleBoost}
         />
       </View>
       )}
@@ -1717,11 +1838,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           <View style={pip.header}>
             <View style={pip.titleRow}>
               <View style={pip.titleDot} />
-              <AppText style={[pip.title, { color: theme.colors.text }]}>{t('hiringPipeline')}</AppText>
+              <AppText style={[pip.title, { color: theme.colors.text }]} numberOfLines={2}>{t('hiringPipeline')}</AppText>
             </View>
             <View style={pip.viewAllRow}>
-              <AppText style={pip.viewAll}>{t('viewAll')}</AppText>
-              <AppText style={[pip.viewAll, { opacity: 0.7 }]}>{' ›'}</AppText>
+              <AppText style={pip.viewAll} numberOfLines={1}>{t('viewAll')}{' ›'}</AppText>
             </View>
           </View>
           <View style={pip.row}>
@@ -1760,8 +1880,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={calStrip.icon}>📅</AppText>
           </View>
           <View style={calStrip.text}>
-            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
-            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('calendarSubtitle')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('calendarSubtitle')}</AppText>
           </View>
         </View>
         <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
@@ -1778,8 +1898,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={calStrip.icon}>📊</AppText>
           </View>
           <View style={calStrip.text}>
-            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('pl_analyticsStripTitle')}</AppText>
-            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('pl_analyticsStripSub')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.title, { color: theme.colors.text }]}>{t('pl_analyticsStripTitle')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('pl_analyticsStripSub')}</AppText>
           </View>
         </View>
         <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
@@ -1796,15 +1916,15 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             <AppText style={calStrip.icon}>📝</AppText>
           </View>
           <View style={calStrip.text}>
-            <AppText numberOfLines={1} style={[calStrip.title, { color: theme.colors.text }]}>{t('ag_stripTitle')}</AppText>
-            <AppText numberOfLines={1} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('ag_stripSub')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.title, { color: theme.colors.text }]}>{t('ag_stripTitle')}</AppText>
+            <AppText numberOfLines={2} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('ag_stripSub')}</AppText>
           </View>
         </View>
         <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
 
     </View>
-  ), [theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining]);
+  ), [t, theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining, boostEnabled, boostRemaining, boostingId, handleBoost]);
 
   const renderFooter = useMemo(() => (
     <View>
@@ -1862,11 +1982,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         ))}
       </View>
     </View>
-  ), [theme, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation]);
+  ), [t, theme, profileQuery.isSuccess, isSubscribed, handleSubscriptionNavigate, navigation]);
 
   const refreshControlComponent = useMemo(() => (
-    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />
-  ), [isRefreshing, handleRefresh, theme.colors.primary]);
+    <RefreshControl refreshing={manualRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />
+  ), [manualRefreshing, handleRefresh, theme.colors.primary]);
 
   return (
     <>
@@ -2005,6 +2125,15 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           titleLabel={(inviteReq.workType || '').replace(/_/g, ' ')}
         />
       )}
+
+      {/* Festival wishes popup — renders only when SuperAdmin enables Festival Mode */}
+      <FestivalWishesModal
+        visible={showFestival}
+        festivalName={config.promotions.festivalName}
+        festivalMessage={config.promotions.festivalMessage}
+        festivalImageUrl={config.promotions.festivalImageUrl}
+        onClose={() => setShowFestival(false)}
+      />
 
       {/* Profile-completion popup disabled for now. */}
       {/* {user && <ProfileCompletionModal user={user} />} */}
@@ -2190,10 +2319,11 @@ const calStrip = StyleSheet.create({
 const pip = StyleSheet.create({
   card:       { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 14, marginBottom: 14, elevation: 2, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 12 },
   header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
   titleDot:   { width: 5, height: 16, borderRadius: 3, backgroundColor: '#7C3AED' },
-  title:      { fontSize: 15, fontWeight: '900', letterSpacing: 0.1, lineHeight: 18 },
-  viewAllRow: { flexDirection: 'row', alignItems: 'center' },
+  title:      { fontSize: 15, fontWeight: '900', letterSpacing: 0.1, lineHeight: 18, flexShrink: 1 },
+  // Never let the "View ›" link shrink or clip — title truncates instead.
+  viewAllRow: { flexDirection: 'row', alignItems: 'center', flexShrink: 0, paddingLeft: 8 },
   viewAll:    { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
   row:        { flexDirection: 'row', gap: 10 },
   cell:       { flex: 1, borderRadius: 16, borderWidth: 1.5, paddingVertical: 12, alignItems: 'center', gap: 3 },

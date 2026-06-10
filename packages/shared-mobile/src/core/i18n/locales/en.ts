@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Select your employer type above to continue with Google",
+  orLabel: "or",
+  continueWithGoogle: "Continue with Google",
   // -- Map location picker --
   lp_title: 'Pick Location',
   lp_useGps: 'Use Current Location (GPS)',
@@ -343,7 +346,7 @@ export const translation = {
   profile_paymentsBilling: 'Payments & Billing',
   profile_paymentHistory: 'Payment History',
   profile_myActivity: 'My Activity',
-  profile_viewedContacts: 'Viewed Contacts',
+  profile_viewedContacts: 'Viewed Worker Profiles',
   profile_jobInvitations: 'Job Invitations',
   profile_callHistory: 'Call History',
   profile_notificationSettings: 'Notification Settings',
@@ -826,6 +829,9 @@ export const translation = {
   wpc_subCatSearch: 'Search e.g. Mason, Driver, Cook…',
   wpc_subCatSelected: 'Selected skills',
   wpc_subCatRequired: 'Select at least one skill to continue',
+  wpc_limitTitle: 'Limit reached',
+  wpc_workCatLimit: 'You can select up to {{count}} work categories.',
+  wpc_subCatLimit: 'You can select up to {{count}} skills.',
   wpc_locationQ: 'Where are you based?',
   wpc_locationHint: 'Select your state, district and block',
   wpc_stateLabel: 'State',
@@ -926,4 +932,5 @@ export const translation = {
   cs_selectSubCategory: "Select Sub-Category",
   cs_selectCategoryFirst: "Select category first",
   cs_subTypes: "{{n}} sub-types",
+  req_boostedBadge: "Boosted",
 } as const;

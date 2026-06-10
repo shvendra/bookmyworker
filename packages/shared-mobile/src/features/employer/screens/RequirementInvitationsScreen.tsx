@@ -229,7 +229,7 @@ const InvitationCard = React.memo(({ item }: { item: WorkerInvitation }): React.
 
         {/* Name + phone */}
         <View style={ic.nameCol}>
-          <AppText style={[ic.name, { color: theme.colors.text }]} numberOfLines={1}>
+          <AppText style={[ic.name, { color: theme.colors.text }]} numberOfLines={2}>
             {item.workerName || 'Unknown Worker'}
           </AppText>
           {!!item.workerPhone && (

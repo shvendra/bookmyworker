@@ -234,7 +234,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                     ]}>
                       <AppText style={[s.tierDotTxt, { color: done ? WHITE : theme.colors.mutedText }]}>{passed ? '✓' : i + 1}</AppText>
                     </View>
-                    <AppText numberOfLines={1} style={[s.tierName, { color: active ? theme.colors.text : theme.colors.mutedText, fontWeight: active ? '800' : '500' }]}>
+                    <AppText numberOfLines={2} style={[s.tierName, { color: active ? theme.colors.text : theme.colors.mutedText, fontWeight: active ? '800' : '500' }]}>
                       {t(TYPE_NAME_KEY[pk])}
                     </AppText>
                   </View>
@@ -276,7 +276,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 </View>
                 <View style={{ flex: 1 }}>
                   <AppText style={[s.planName, { color: theme.colors.text }]}>{t(TYPE_NAME_KEY[pk])}</AppText>
-                  <AppText numberOfLines={1} style={[s.planTagline, { color: theme.colors.mutedText }]}>{t(meta.taglineKey)}</AppText>
+                  <AppText style={[s.planTagline, { color: theme.colors.mutedText }]}>{t(meta.taglineKey)}</AppText>
                 </View>
                 {isCurrent && (
                   <View style={s.currentBadge}><AppText style={s.currentBadgeTxt}>{t('eb_current')}</AppText></View>
@@ -381,6 +381,19 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               {isActive && (remainingContacts > 0 || remainingPosts > 0) && (
                 <View style={[s.carryNote, { backgroundColor: theme.colors.primaryLight }]}>
                   <AppText style={[s.carryTxt, { color: theme.colors.text }]}>🎁 {t('eb_carryover')}</AppText>
+                  {/* Show exactly what carries over (matches CRM upgrade view) */}
+                  <View style={s.carryChips}>
+                    {remainingContacts > 0 && (
+                      <View style={[s.carryChip, { borderColor: BRAND }]}>
+                        <AppText style={[s.carryChipTxt, { color: BRAND }]}>+{remainingContacts} {t('jp_contactsLabel')}</AppText>
+                      </View>
+                    )}
+                    {remainingPosts > 0 && (
+                      <View style={[s.carryChip, { borderColor: BRAND }]}>
+                        <AppText style={[s.carryChipTxt, { color: BRAND }]}>+{remainingPosts} {t('jp_postsLabel')}</AppText>
+                      </View>
+                    )}
+                  </View>
                 </View>
               )}
 
@@ -494,6 +507,9 @@ const s = StyleSheet.create({
   durDisc:       { fontSize: 10, fontWeight: '800', color: '#15803D' },
   carryNote:     { borderRadius: 12, padding: 12, marginTop: 4, marginBottom: 4 },
   carryTxt:      { fontSize: 12.5, fontWeight: '600', lineHeight: 18 },
+  carryChips:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  carryChip:     { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  carryChipTxt:  { fontSize: 12, fontWeight: '800' },
   totalRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, marginTop: 10, paddingTop: 14 },
   totalLabel:    { fontSize: 13, fontWeight: '600' },
   totalVal:      { fontSize: 20, fontWeight: '900' },

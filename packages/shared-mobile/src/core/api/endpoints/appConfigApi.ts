@@ -34,6 +34,20 @@ export interface AppConfig {
     employerCount:    number;
     requirementCount: number;
   };
+  // Festival wishes popup (SuperAdmin-controlled). festivalMode=false → off.
+  promotions: {
+    festivalMode:     boolean;
+    festivalName:     string;
+    festivalMessage:  string;
+    festivalImageUrl: string;
+  };
+  // SuperAdmin-controlled auth toggles. Both default ON.
+  //  registrationOtpEnabled=false → signup skips the WhatsApp OTP step.
+  //  loginOtpEnabled=false        → hide the "login with OTP" option.
+  authFlags: {
+    registrationOtpEnabled: boolean;
+    loginOtpEnabled:        boolean;
+  };
 }
 
 export function formatStat(n: number): string {
@@ -81,15 +95,19 @@ const DEFAULTS: AppConfig = {
     employerCount:    8000,
     requirementCount: 56000,
   },
+  promotions: { festivalMode: false, festivalName: '', festivalMessage: '', festivalImageUrl: '' },
+  authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
 };
 
-async function fetchAppConfig(): Promise<AppConfig> {
+export async function fetchAppConfig(): Promise<AppConfig> {
   const res = await apiClient.get<{ success: boolean; data: Record<string, unknown> }>('/api/v1/settings/public');
   const d = res.data?.data ?? {};
   const b = (d.brand   ?? {}) as Record<string, string>;
   const c = (d.contact ?? {}) as Record<string, string>;
   const l = (d.legal   ?? {}) as Record<string, string>;
   const ps = (d.platformStats ?? {}) as Record<string, number>;
+  const promo = (d.promotions ?? {}) as Record<string, unknown>;
+  const auth = (d.auth ?? {}) as Record<string, unknown>;
   return {
     brand: {
       appLogo:     b.appLogo     || '',
@@ -122,6 +140,17 @@ async function fetchAppConfig(): Promise<AppConfig> {
       agentCount:       ps.agents       ?? DEFAULTS.stats.agentCount,
       employerCount:    ps.employers    ?? DEFAULTS.stats.employerCount,
       requirementCount: ps.requirements ?? DEFAULTS.stats.requirementCount,
+    },
+    promotions: {
+      festivalMode:     Boolean(promo.festivalMode),
+      festivalName:     String(promo.festivalName     ?? ''),
+      festivalMessage:  String(promo.festivalMessage  ?? ''),
+      festivalImageUrl: String(promo.festivalImageUrl ?? ''),
+    },
+    authFlags: {
+      // Treat anything other than an explicit `false` as enabled (safe default).
+      registrationOtpEnabled: auth.registrationOtpEnabled !== false,
+      loginOtpEnabled:        auth.loginOtpEnabled !== false,
     },
   };
 }

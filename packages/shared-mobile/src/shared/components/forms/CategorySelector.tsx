@@ -205,6 +205,7 @@ export const CategorySelector = ({
                       <AppText
                         variant="body"
                         color={selected ? theme.colors.primary : theme.colors.text}
+                        style={{ flexShrink: 1 }}
                       >
                         {getSubCatLabel(item.value, i18n.language)}
                       </AppText>
@@ -254,7 +255,7 @@ const PickerField = ({ label, value, placeholder, error, disabled, onPress, them
         variant="body"
         color={value ? theme.colors.text : theme.colors.mutedText}
         style={styles.selectorText}
-        numberOfLines={1}
+        numberOfLines={2}
       >
         {value || placeholder}
       </AppText>

@@ -65,7 +65,7 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
             </AppText>
           )}
           {skills ? (
-            <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+            <AppText variant="caption" color={theme.colors.mutedText}>
               🔧 {skills}
             </AppText>
           ) : null}

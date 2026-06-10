@@ -183,8 +183,14 @@ export function getSubCatLabel(
         bestMatch = sub; bestScore = 2;
       }
 
-      // 4. Substring containment: "hotel housekeeping" contains "housekeeping"
-      if (bestScore < 1 && (stripped.includes(ssl) || ssl.includes(stripped) || stripped.includes(core) || core.includes(ssl))) {
+      // 4. Substring containment: "hotel housekeeping" contains "housekeeping".
+      // Only compare the INPUT against the sub-category label (ssl). Previously this
+      // also tested `stripped.includes(core)`, but `core` is derived from `stripped`
+      // (prefix removed) so that term is ALWAYS true — it made every otherwise-
+      // unmatched value fall through to the FIRST subcategory in the taxonomy
+      // ("Mason / Rajmistri"), e.g. "nanny" / "elder care" / "dishwasher" all showed
+      // as Mason. Guard against an empty ssl too.
+      if (bestScore < 1 && !!ssl && (stripped.includes(ssl) || ssl.includes(stripped))) {
         bestMatch = sub; bestScore = 1;
       }
     }

@@ -9,13 +9,13 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
+import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
 import type { EmployerStackParamList } from '../../navigation/types';
 
@@ -90,11 +90,11 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.brandName}>BookMyWorker</Text>
+            <AppText style={styles.brandName}>BookMyWorker</AppText>
           </View>
 
-          <Text style={styles.heroTitle}>{t('langSelectTitle')}</Text>
-          <Text style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</Text>
+          <AppText style={styles.heroTitle}>{t('langSelectTitle')}</AppText>
+          <AppText style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</AppText>
 
           <View style={styles.stepRow}>
             <View style={[styles.stepDot, styles.stepDotActive]} />
@@ -141,18 +141,18 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
               >
                 {isSelected && (
                   <View style={styles.checkBadge}>
-                    <Text style={styles.checkIcon}>✓</Text>
+                    <AppText style={styles.checkIcon}>✓</AppText>
                   </View>
                 )}
-                <Text
+                <AppText
                   style={[styles.nativeText, isSelected && styles.textWhite]}
                   numberOfLines={1}
                 >
                   {item.native}
-                </Text>
-                <Text style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
+                </AppText>
+                <AppText style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
                   {item.english}
-                </Text>
+                </AppText>
               </Pressable>
             );
           }}
@@ -161,14 +161,17 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
 
       {/* ── Continue CTA ─────────────────────────────────────── */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-        {selected ? (
-          <Text style={styles.selectedHint}>
-            {t('langSelectSelected')}{' '}
-            <Text style={styles.selectedHintBold}>
-              {LANGUAGES.find((l) => l.code === selected)?.native}
-            </Text>
-          </Text>
-        ) : null}
+        {
+          /* istanbul ignore next -- `selected` always holds a value, so the null arm is dead */
+          selected ? (
+            <AppText style={styles.selectedHint}>
+              {t('langSelectSelected')}{' '}
+              <AppText style={styles.selectedHintBold}>
+                {LANGUAGES.find((l) => l.code === selected)?.native}
+              </AppText>
+            </AppText>
+          ) : null
+        }
         <AppButton
           title={saving ? t('langSelectWait') : t('langSelectContinue')}
           onPress={handleContinue}
@@ -249,6 +252,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: '#fff',
     fontSize: 24,
+    lineHeight: 33,
     fontWeight: '800',
     marginBottom: 6,
   },
@@ -342,6 +346,7 @@ const styles = StyleSheet.create({
   },
   nativeText: {
     fontSize: 20,
+    lineHeight: 28,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 3,

@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   icon: { fontSize: 20, lineHeight: 24 },
   textBlock: { flex: 1, gap: 2 },
-  title: { lineHeight: 17 },
-  message: { lineHeight: 17 },
+  title: { lineHeight: 19 },
+  message: { lineHeight: 18 },
   close: { fontSize: 14, fontWeight: '700', opacity: 0.6 },
 });

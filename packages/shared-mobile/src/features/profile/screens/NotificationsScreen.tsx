@@ -189,7 +189,7 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
               <AppText
                 variant="label"
                 color={theme.colors.text}
-                numberOfLines={1}
+                numberOfLines={2}
                 style={[styles.titleText, isUnread && { fontWeight: '700' }]}
               >
                 {cleanText(item.title)}
@@ -198,7 +198,7 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
                 {formatTime(item.createdAt, t)}
               </AppText>
             </View>
-            <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={2}>
+            <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={3}>
               {cleanText(item.body)}
             </AppText>
           </View>

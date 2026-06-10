@@ -45,7 +45,7 @@ export const WorkerCard = ({ worker, onPress, actionSlot, compact = false }: Wor
         <View style={styles.info}>
           {/* Name + verified */}
           <View style={styles.nameRow}>
-            <AppText variant="label" color={theme.colors.text} numberOfLines={1} style={styles.name}>
+            <AppText variant="label" color={theme.colors.text} numberOfLines={2} style={styles.name}>
               {worker.fullName}
             </AppText>
             {worker.verified && (
@@ -56,7 +56,7 @@ export const WorkerCard = ({ worker, onPress, actionSlot, compact = false }: Wor
           </View>
 
           {/* Category */}
-          <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+          <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
             {worker.category}
             {worker.subCategory ? ` · ${worker.subCategory}` : ''}
             {worker.experienceYears ? ` · ${worker.experienceYears}y exp` : ''}
@@ -147,10 +147,10 @@ export const WorkerCardMini = ({ worker, onPress }: WorkerCardMiniProps): React.
       ]}
     >
       <Avatar name={worker.fullName} uri={worker.profileImage} size={48} online={worker.available} />
-      <AppText variant="labelSm" color={theme.colors.text} numberOfLines={1} style={miniStyles.name}>
+      <AppText variant="labelSm" color={theme.colors.text} numberOfLines={2} style={miniStyles.name}>
         {worker.fullName}
       </AppText>
-      <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={1}>
+      <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={2}>
         {worker.category}
       </AppText>
       {worker.dailyRate ? (

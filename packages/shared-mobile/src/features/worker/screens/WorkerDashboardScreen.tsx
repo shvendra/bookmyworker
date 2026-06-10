@@ -206,8 +206,8 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
             <AppText style={sliderCard.emojiTxt}>{visual.emoji}</AppText>
           </View>
           <View style={sliderCard.infoWrap}>
-            <AppText style={[sliderCard.title, { color: isDark ? theme.colors.text : visual.color }]} numberOfLines={1}>{jobTitle}</AppText>
-            <AppText style={[sliderCard.catLabel, { color: isDark ? theme.colors.mutedText : visual.color + 'AA' }]} numberOfLines={1}>{catLabel}</AppText>
+            <AppText style={[sliderCard.title, { color: isDark ? theme.colors.text : visual.color }]} numberOfLines={2}>{jobTitle}</AppText>
+            <AppText style={[sliderCard.catLabel, { color: isDark ? theme.colors.mutedText : visual.color + 'AA' }]} numberOfLines={2}>{catLabel}</AppText>
             <View style={sliderCard.salaryRow}>
               <AppText style={[sliderCard.salaryTxt, { color: visual.accent }]}>
                 ₹{salaryMin.toLocaleString('en-IN')}–{salaryMax.toLocaleString('en-IN')}
@@ -330,7 +330,7 @@ const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageMod
             <View style={[modal.banner, { backgroundColor: visual.bg }]}>
               <AppText style={modal.bannerEmoji}>{visual.emoji}</AppText>
               <View style={{ flex: 1 }}>
-                <AppText style={[modal.bannerTitle, { color: visual.color }]} numberOfLines={1}>{jobTitle}</AppText>
+                <AppText style={[modal.bannerTitle, { color: visual.color }]} numberOfLines={2}>{jobTitle}</AppText>
                 <AppText style={[modal.bannerSub, { color: visual.color + '99' }]} numberOfLines={2}>
                   {getLocationStr({ district: req?.district, state: req?.state }, i18n.language, '')} · {t('wageMinBanner', { minWage, period })}
                 </AppText>
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   statWidgetGrad: { ...StyleSheet.absoluteFillObject, opacity: 0.42, borderRadius: 20 },
   statWidgetInner: { gap: 6, zIndex: 1 },
   statEmoji: { fontSize: 26, lineHeight: 30 },
-  statLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16 },
+  statLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 18 },
   statSub: { color: 'rgba(255,255,255,0.80)', fontSize: 11, fontWeight: '500' },
   statSubSkeleton: { width: '60%', height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 2 },
 

@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Googleతో కొనసాగించడానికి పైన మీ యజమాని రకాన్ని ఎంచుకోండి",
+  orLabel: "లేదా",
+  continueWithGoogle: "Googleతో కొనసాగించండి",
   lp_tapHint: 'పిన్ ఉంచడానికి ఎక్కడైనా నొక్కండి',
   profile_pendingVerification: 'ప్రొఫైల్ ధృవీకరణ పెండింగ్‌లో ఉంది',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'పోస్ట్',
   tab_payments: 'చెల్లింపులు',
   tab_chat: 'చాట్',
-  tab_liked: 'Liked',
+  tab_liked: 'ఇష్టమైనవి',
   tab_placements: 'ప్లేస్‌మెంట్',
   tab_saved: 'సేవ్ చేసినవి',
   tab_applications: 'దరఖాస్తులు',
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'చెల్లింపులు & బిల్లింగ్',
   profile_paymentHistory: 'చెల్లింపు చరిత్ర',
   profile_myActivity: 'నా కార్యకలాపం',
-  profile_viewedContacts: 'చూసిన పరిచయాలు',
+  profile_viewedContacts: 'చూసిన కార్మికుడి ప్రొఫైల్‌లు',
   profile_jobInvitations: 'ఉద్యోగ ఆహ్వానాలు',
   profile_callHistory: 'కాల్ చరిత్ర',
   profile_notificationSettings: 'నోటిఫికేషన్ సెట్టింగ్‌లు',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'వెతకండి ఉదా. మేస్త్రి, డ్రైవర్, వంట…',
   wpc_subCatSelected: 'ఎంచుకున్న నైపుణ్యాలు',
   wpc_subCatRequired: 'కొనసాగించడానికి కనీసం ఒక నైపుణ్యాన్ని ఎంచుకోండి',
+  wpc_limitTitle: 'పరిమితి చేరింది',
+  wpc_workCatLimit: 'మీరు గరిష్టంగా {{count}} పని వర్గాలను ఎంచుకోవచ్చు.',
+  wpc_subCatLimit: 'మీరు గరిష్టంగా {{count}} నైపుణ్యాలను ఎంచుకోవచ్చు.',
   wpc_locationQ: 'మీరు ఎక్కడ ఉన్నారు?',
   wpc_locationHint: 'మీ రాష్ట్రం, జిల్లా మరియు బ్లాక్ ఎంచుకోండి',
   wpc_stateLabel: 'రాష్ట్రం',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "ఉప-వర్గాన్ని ఎంచుకోండి",
   cs_selectCategoryFirst: "ముందుగా వర్గాన్ని ఎంచుకోండి",
   cs_subTypes: "{{n}} ఉప-రకాలు",
+  req_boostedBadge: "బూస్ట్ చేయబడింది",
 } as const;

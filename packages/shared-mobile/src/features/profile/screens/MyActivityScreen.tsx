@@ -74,7 +74,7 @@ const ActivityRow = React.memo(({ item }: { item: ActivityItem }): React.JSX.Ele
           </View>
           <AppText style={[s.entity, { color: theme.colors.text }]}>{item.entity}</AppText>
         </View>
-        <AppText style={[s.desc, { color: theme.colors.mutedText }]} numberOfLines={2}>{fmtDesc(item.description) || item.action}</AppText>
+        <AppText style={[s.desc, { color: theme.colors.mutedText }]} numberOfLines={3}>{fmtDesc(item.description) || item.action}</AppText>
         <AppText style={[s.time, { color: theme.colors.mutedText }]}>{timeAgo(item.createdAt, t)}</AppText>
       </View>
     </View>

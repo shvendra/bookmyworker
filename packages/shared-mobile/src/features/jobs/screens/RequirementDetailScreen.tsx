@@ -967,7 +967,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 };
                 return (
                   <View key={field} style={pg.perkChip}>
-                    <AppText style={pg.perkTxt} numberOfLines={1}>{emoji} {perkLabel[field] ?? field}</AppText>
+                    <AppText style={pg.perkTxt}>{emoji} {perkLabel[field] ?? field}</AppText>
                   </View>
                 );
               })}
@@ -1216,7 +1216,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     <View style={{ flex: 1, gap: 3 }}>
                       <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
                       {m.workerSkill ? (
-                        <AppText style={pl.skillTxt} numberOfLines={1}>{getSubCatLabel(m.workerSkill, i18n.language)}</AppText>
+                        <AppText style={pl.skillTxt}>{getSubCatLabel(m.workerSkill, i18n.language)}</AppText>
                       ) : null}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
@@ -1257,7 +1257,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           style={pl.removeBtn}
                           activeOpacity={0.7}
                         >
-                          <AppText style={pl.removeTxt} numberOfLines={1}>{t('rd_removeBtn')}</AppText>
+                          <AppText style={pl.removeTxt}>{t('rd_removeBtn')}</AppText>
                         </TouchableOpacity>
                       </>
                     )}

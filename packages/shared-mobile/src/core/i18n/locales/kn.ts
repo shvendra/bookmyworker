@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google ಮೂಲಕ ಮುಂದುವರಿಯಲು ಮೇಲೆ ನಿಮ್ಮ ಉದ್ಯೋಗದಾತ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  orLabel: "ಅಥವಾ",
+  continueWithGoogle: "Google ಮೂಲಕ ಮುಂದುವರಿಯಿರಿ",
   lp_tapHint: 'ಪಿನ್ ಇರಿಸಲು ಎಲ್ಲಿಯಾದರೂ ಟ್ಯಾಪ್ ಮಾಡಿ',
   profile_pendingVerification: 'ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'ಪೋಸ್ಟ್',
   tab_payments: 'ಪಾವತಿಗಳು',
   tab_chat: 'ಚಾಟ್',
-  tab_liked: 'Liked',
+  tab_liked: 'ಇಷ್ಟಪಟ್ಟವು',
   tab_placements: 'ಪ್ಲೇಸ್‌ಮೆಂಟ್',
   tab_saved: 'ಉಳಿಸಿದ',
   tab_applications: 'ಅರ್ಜಿಗಳು',
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'ಪಾವತಿ & ಬಿಲ್ಲಿಂಗ್',
   profile_paymentHistory: 'ಪಾವತಿ ಇತಿಹಾಸ',
   profile_myActivity: 'ನನ್ನ ಚಟುವಟಿಕೆ',
-  profile_viewedContacts: 'ನೋಡಿದ ಸಂಪರ್ಕಗಳು',
+  profile_viewedContacts: 'ನೋಡಿದ ಕಾರ್ಮಿಕ ಪ್ರೊಫೈಲ್‌ಗಳು',
   profile_jobInvitations: 'ಕೆಲಸದ ಆಹ್ವಾನಗಳು',
   profile_callHistory: 'ಕರೆ ಇತಿಹಾಸ',
   profile_notificationSettings: 'ಅಧಿಸೂಚನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'ಹುಡುಕಿ ಉದಾ. ಗಾರೆ ಕೆಲಸ, ಡ್ರೈವರ್, ಅಡಿಗೆ…',
   wpc_subCatSelected: 'ಆಯ್ಕೆ ಮಾಡಿದ ಕೌಶಲ್ಯಗಳು',
   wpc_subCatRequired: 'ಮುಂದುವರಿಯಲು ಕನಿಷ್ಠ ಒಂದು ಕೌಶಲ್ಯ ಆಯ್ಕೆ ಮಾಡಿ',
+  wpc_limitTitle: 'ಮಿತಿ ತಲುಪಿದೆ',
+  wpc_workCatLimit: 'ನೀವು ಗರಿಷ್ಠ {{count}} ಕೆಲಸದ ವರ್ಗಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
+  wpc_subCatLimit: 'ನೀವು ಗರಿಷ್ಠ {{count}} ಕೌಶಲ್ಯಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
   wpc_locationQ: 'ನೀವು ಎಲ್ಲಿ ಇದ್ದೀರಿ?',
   wpc_locationHint: 'ನಿಮ್ಮ ರಾಜ್ಯ, ಜಿಲ್ಲೆ ಮತ್ತು ಬ್ಲಾಕ್ ಆಯ್ಕೆ ಮಾಡಿ',
   wpc_stateLabel: 'ರಾಜ್ಯ',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "ಉಪ-ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   cs_selectCategoryFirst: "ಮೊದಲು ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   cs_subTypes: "{{n}} ಉಪ-ಪ್ರಕಾರಗಳು",
+  req_boostedBadge: "ಬೂಸ್ಟ್ ಮಾಡಲಾಗಿದೆ",
 } as const;

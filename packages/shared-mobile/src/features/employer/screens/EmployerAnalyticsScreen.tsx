@@ -51,7 +51,7 @@ const KpiCard = ({ value, label, icon, bg }: Kpi): React.JSX.Element => (
       <AppText style={kp.icon}>{icon}</AppText>
     </View>
     <AppText style={kp.value} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{value}</AppText>
-    <AppText style={kp.label} numberOfLines={2} maxFontSizeMultiplier={1.2}>{label}</AppText>
+    <AppText style={kp.label} numberOfLines={3} maxFontSizeMultiplier={1.2}>{label}</AppText>
   </View>
 );
 const kp = StyleSheet.create({
@@ -62,7 +62,7 @@ const kp = StyleSheet.create({
   iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   icon:    { fontSize: 20 },
   value:   { fontSize: 30, fontWeight: '900', color: '#fff', letterSpacing: -0.6, lineHeight: 34 },
-  label:   { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)', marginTop: 2 },
+  label:   { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)', marginTop: 2, lineHeight: 17 },
 });
 
 // ─── Section card ─────────────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }): React.JSX.Eleme
         return (
           <View key={i} style={{ gap: 6 }}>
             <View style={tt.head}>
-              <AppText style={[tt.cat, { color: theme.colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>{d.category}</AppText>
+              <AppText style={[tt.cat, { color: theme.colors.text }]} numberOfLines={2} maxFontSizeMultiplier={1.3}>{d.category}</AppText>
               <AppText style={[tt.days, { color }]} maxFontSizeMultiplier={1.2}>{d.avgDays}d</AppText>
             </View>
             <View style={[tt.track, { backgroundColor: theme.colors.surface2 }]}>
@@ -234,7 +234,7 @@ const TimeToHireChart = ({ data }: { data: TimeToHirePoint[] }): React.JSX.Eleme
 };
 const tt = StyleSheet.create({
   head:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  cat:   { flex: 1, fontSize: 12.5, fontWeight: '700' },
+  cat:   { flex: 1, fontSize: 12.5, fontWeight: '700', lineHeight: 17 },
   days:  { fontSize: 13, fontWeight: '800' },
   track: { height: 10, borderRadius: 99, overflow: 'hidden' },
   fill:  { height: '100%', borderRadius: 99 },

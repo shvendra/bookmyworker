@@ -327,7 +327,7 @@ const HCatSlider = ({
 
               {/* BOTTOM BLOCK: name, job-types chip, CTA */}
               <View style={hStyles.bottomBlock}>
-                <AppText style={hStyles.catName} numberOfLines={1}>
+                <AppText style={hStyles.catName} numberOfLines={2}>
                   {t(cat.translationKey as TranslationKeys).replace(/\n/g, ' ')}
                 </AppText>
 
@@ -573,7 +573,7 @@ const hStyles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '900',
-    lineHeight: 27,
+    lineHeight: 30,
     letterSpacing: -0.3,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },

@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google ਨਾਲ ਜਾਰੀ ਰੱਖਣ ਲਈ ਉੱਪਰ ਆਪਣੀ ਰੁਜ਼ਗਾਰਦਾਤਾ ਕਿਸਮ ਚੁਣੋ",
+  orLabel: "ਜਾਂ",
+  continueWithGoogle: "Google ਨਾਲ ਜਾਰੀ ਰੱਖੋ",
   lp_tapHint: 'ਪਿੰਨ ਲਗਾਉਣ ਲਈ ਕਿਤੇ ਵੀ ਟੈਪ ਕਰੋ',
   profile_pendingVerification: 'ਪ੍ਰੋਫਾਈਲ ਤਸਦੀਕ ਬਾਕੀ',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'ਪੋਸਟ',
   tab_payments: 'ਭੁਗਤਾਨ',
   tab_chat: 'ਚੈਟ',
-  tab_liked: 'Liked',
+  tab_liked: 'ਪਸੰਦ ਕੀਤੇ',
   tab_placements: 'ਪਲੇਸਮੈਂਟ',
   tab_saved: 'ਸੇਵ ਕੀਤੇ',
   tab_applications: 'ਅਰਜ਼ੀਆਂ',
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'ਭੁਗਤਾਨ ਅਤੇ ਬਿਲਿੰਗ',
   profile_paymentHistory: 'ਭੁਗਤਾਨ ਇਤਿਹਾਸ',
   profile_myActivity: 'ਮੇਰੀ ਗਤੀਵਿਧੀ',
-  profile_viewedContacts: 'ਵੇਖੇ ਗਏ ਸੰਪਰਕ',
+  profile_viewedContacts: 'ਵੇਖੇ ਗਏ ਕਾਮਾ ਪ੍ਰੋਫਾਈਲ',
   profile_jobInvitations: 'ਨੌਕਰੀ ਦੇ ਸੱਦੇ',
   profile_callHistory: 'ਕਾਲ ਇਤਿਹਾਸ',
   profile_notificationSettings: 'ਸੂਚਨਾ ਸੈਟਿੰਗਾਂ',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'ਲੱਭੋ ਜਿਵੇਂ ਰਾਜ ਮਿਸਤਰੀ, ਡਰਾਈਵਰ, ਰਸੋਈਆ…',
   wpc_subCatSelected: 'ਚੁਣੀਆਂ ਹੁਨਰ',
   wpc_subCatRequired: 'ਅੱਗੇ ਵਧਣ ਲਈ ਘੱਟੋ ਘੱਟ ਇੱਕ ਹੁਨਰ ਚੁਣੋ',
+  wpc_limitTitle: 'ਹੱਦ ਪੂਰੀ ਹੋ ਗਈ',
+  wpc_workCatLimit: 'ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ {{count}} ਕੰਮ ਸ਼੍ਰੇਣੀਆਂ ਚੁਣ ਸਕਦੇ ਹੋ।',
+  wpc_subCatLimit: 'ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ {{count}} ਹੁਨਰ ਚੁਣ ਸਕਦੇ ਹੋ।',
   wpc_locationQ: 'ਤੁਸੀਂ ਕਿੱਥੇ ਹੋ?',
   wpc_locationHint: 'ਆਪਣਾ ਰਾਜ, ਜ਼ਿਲ੍ਹਾ ਅਤੇ ਬਲਾਕ ਚੁਣੋ',
   wpc_stateLabel: 'ਰਾਜ',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "ਉਪ-ਸ਼੍ਰੇਣੀ ਚੁਣੋ",
   cs_selectCategoryFirst: "ਪਹਿਲਾਂ ਸ਼੍ਰੇਣੀ ਚੁਣੋ",
   cs_subTypes: "{{n}} ਉਪ-ਕਿਸਮਾਂ",
+  req_boostedBadge: "ਬੂਸਟ ਕੀਤਾ ਗਿਆ",
 } as const;

@@ -35,7 +35,7 @@ export const TransactionItem = ({ transaction }: TransactionItemProps): React.JS
           </AppText>
         </View>
         <View style={styles.info}>
-          <AppText variant="label" numberOfLines={1}>{transaction.description}</AppText>
+          <AppText variant="label">{transaction.description}</AppText>
           <AppText variant="caption" color={theme.colors.mutedText}>
             {formatDate(transaction.createdAt)}
           </AppText>

@@ -9,12 +9,12 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
+import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
 import type { AgentStackParamList } from '../../navigation/types';
 
@@ -90,15 +90,15 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
       >
         {isSelected && (
           <View style={styles.checkBadge}>
-            <Text style={styles.checkIcon}>✓</Text>
+            <AppText style={styles.checkIcon}>✓</AppText>
           </View>
         )}
-        <Text style={[styles.nativeText, isSelected && styles.textWhite]} numberOfLines={1}>
+        <AppText style={[styles.nativeText, isSelected && styles.textWhite]} numberOfLines={1}>
           {item.native}
-        </Text>
-        <Text style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
+        </AppText>
+        <AppText style={[styles.englishLabel, isSelected && styles.textWhiteFaded]}>
           {item.english}
-        </Text>
+        </AppText>
       </Pressable>
     );
   };
@@ -122,11 +122,11 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.brandName}>BookMyWorker</Text>
+            <AppText style={styles.brandName}>BookMyWorker</AppText>
           </View>
 
-          <Text style={styles.heroTitle}>Choose Your Language</Text>
-          <Text style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</Text>
+          <AppText style={styles.heroTitle}>Choose Your Language</AppText>
+          <AppText style={styles.heroSub}>अपनी भाषा चुनें  •  Select your language</AppText>
 
           <View style={styles.stepRow}>
             <View style={[styles.stepDot, styles.stepDotActive]} />
@@ -162,12 +162,12 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
       {/* ── Continue CTA ──────────────────────────────────────── */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         {selected ? (
-          <Text style={styles.selectedHint}>
+          <AppText style={styles.selectedHint}>
             Selected:{' '}
-            <Text style={styles.selectedHintBold}>
+            <AppText style={styles.selectedHintBold}>
               {LANGUAGES.find((l) => l.code === selected)?.native}
-            </Text>
-          </Text>
+            </AppText>
+          </AppText>
         ) : null}
         <AppButton
           title={saving ? 'Please wait…' : 'Continue'}
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   checkIcon: { color: '#fff', fontSize: 11, fontWeight: '900' },
   nativeText: {
-    fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 3,
+    fontSize: 20, lineHeight: 28, fontWeight: '700', color: '#111827', marginBottom: 3,
   },
   englishLabel: {
     fontSize: 12, fontWeight: '500', color: '#9CA3AF',

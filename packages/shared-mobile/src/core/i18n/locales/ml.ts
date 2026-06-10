@@ -1,4 +1,7 @@
 export const translation = {
+  selectTypeBeforeGoogle: "Google ഉപയോഗിച്ച് തുടരാൻ മുകളിൽ നിങ്ങളുടെ തൊഴിലുടമ തരം തിരഞ്ഞെടുക്കുക",
+  orLabel: "അല്ലെങ്കിൽ",
+  continueWithGoogle: "Google ഉപയോഗിച്ച് തുടരുക",
   lp_tapHint: 'പിൻ ഇടാൻ എവിടെയും ടാപ്പ് ചെയ്യുക',
   profile_pendingVerification: 'പ്രൊഫൈൽ പരിശോധന തീർച്ചപ്പെടുത്തിയിട്ടില്ല',
   // -- Map location picker --
@@ -134,7 +137,7 @@ export const translation = {
   tab_post: 'പോസ്റ്റ്',
   tab_payments: 'പേമെന്റുകൾ',
   tab_chat: 'ചാറ്റ്',
-  tab_liked: 'Liked',
+  tab_liked: 'ഇഷ്ടപ്പെട്ടവ',
   tab_placements: 'പ്ലേസ്‌മെന്റ്',
   tab_saved: 'സേവ് ചെയ്തത്',
   tab_applications: 'അപേക്ഷകൾ',
@@ -154,7 +157,7 @@ export const translation = {
   profile_paymentsBilling: 'പേയ്‌മെന്റ് & ബില്ലിംഗ്',
   profile_paymentHistory: 'പേയ്‌മെന്റ് ചരിത്രം',
   profile_myActivity: 'എന്റെ പ്രവർത്തനം',
-  profile_viewedContacts: 'കണ്ട കോൺടാക്റ്റുകൾ',
+  profile_viewedContacts: 'കണ്ട തൊഴിലാളി പ്രൊഫൈലുകൾ',
   profile_jobInvitations: 'ജോലി ക്ഷണങ്ങൾ',
   profile_callHistory: 'കോൾ ചരിത്രം',
   profile_notificationSettings: 'അറിയിപ്പ് ക്രമീകരണങ്ങൾ',
@@ -818,6 +821,9 @@ export const translation = {
   wpc_subCatSearch: 'തിരയുക ഉദാ. മേസ്ത്രി, ഡ്രൈവർ, പാചകം…',
   wpc_subCatSelected: 'തിരഞ്ഞെടുത്ത കഴിവുകൾ',
   wpc_subCatRequired: 'തുടരാൻ കുറഞ്ഞത് ഒരു കഴിവ് തിരഞ്ഞെടുക്കുക',
+  wpc_limitTitle: 'പരിധി എത്തി',
+  wpc_workCatLimit: 'നിങ്ങൾക്ക് പരമാവധി {{count}} ജോലി വിഭാഗങ്ങൾ തിരഞ്ഞെടുക്കാം.',
+  wpc_subCatLimit: 'നിങ്ങൾക്ക് പരമാവധി {{count}} കഴിവുകൾ തിരഞ്ഞെടുക്കാം.',
   wpc_locationQ: 'നിങ്ങൾ എവിടെ ആണ്?',
   wpc_locationHint: 'നിങ്ങളുടെ സംസ്ഥാനം, ജില്ല, ബ്ലോക്ക് തിരഞ്ഞെടുക്കുക',
   wpc_stateLabel: 'സംസ്ഥാനം',
@@ -918,4 +924,5 @@ export const translation = {
   cs_selectSubCategory: "ഉപ-വിഭാഗം തിരഞ്ഞെടുക്കുക",
   cs_selectCategoryFirst: "ആദ്യം വിഭാഗം തിരഞ്ഞെടുക്കുക",
   cs_subTypes: "{{n}} ഉപ-തരങ്ങൾ",
+  req_boostedBadge: "ബൂസ്റ്റ് ചെയ്തു",
 } as const;

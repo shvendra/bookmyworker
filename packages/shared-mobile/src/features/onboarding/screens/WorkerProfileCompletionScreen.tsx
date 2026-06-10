@@ -24,7 +24,9 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { updateProfileFields } from '../../../core/api/endpoints/authApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { indianStates } from '../../../shared/data/stateDistrict';
+import { ageString } from '../../../shared/utils/ageUtils';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
@@ -41,6 +43,12 @@ interface CatRaw {
   }>;
 }
 const ALL_CATS: CatRaw[] = categoriesData as CatRaw[];
+
+// Selection caps for the work-type step. A self-worker may pick at most
+// MAX_AREAS_OF_WORK work categories (→ areasOfWork) and MAX_CATEGORIES
+// skills/sub-categories (→ categories). Removal is always allowed.
+const MAX_AREAS_OF_WORK = 3;
+const MAX_CATEGORIES = 5;
 
 function getCatLabel(cat: CatRaw, lang: string): string {
   if (lang === 'hi' && cat.hindilabel) return cat.hindilabel;
@@ -130,6 +138,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { state, updateProfile, completeOnboarding } = useAuth();
+  const toast = useToast();
   const isDark = theme.mode === 'dark';
   const lang = i18n.language;
 
@@ -140,8 +149,8 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   // Step 1 — Gender
   const [gender, setGender] = useState(user?.gender ?? '');
 
-  // Step 2 — Age
-  const [age, setAge] = useState(user?.dob ? String(user.dob) : '');
+  // Step 2 — Age (dob is stored as a birth year → show the derived current age)
+  const [age, setAge] = useState(ageString(user?.dob));
 
   // Step 3 — Work experience (in years; 0 = fresher)
   const [experience, setExperience] = useState(() => {
@@ -230,6 +239,11 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   }, []);
 
   const toggleCat = useCallback((val: string) => {
+    // Cap additions at MAX_AREAS_OF_WORK; removing an already-selected one is always fine.
+    if (!selectedCats.includes(val) && selectedCats.length >= MAX_AREAS_OF_WORK) {
+      toast.warning(t('wpc_workCatLimit', { count: MAX_AREAS_OF_WORK }), t('wpc_limitTitle'));
+      return;
+    }
     setSelectedCats((prev) => {
       const next = prev.includes(val) ? prev.filter((c) => c !== val) : [...prev, val];
       // Remove any selected subs that belong to a deselected category
@@ -242,12 +256,17 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       }
       return next;
     });
-  }, []);
+  }, [selectedCats, toast, t]);
 
   const toggleSub = useCallback((val: string) => {
+    // Cap additions at MAX_CATEGORIES; removing an already-selected one is always fine.
+    if (!selectedSubs.includes(val) && selectedSubs.length >= MAX_CATEGORIES) {
+      toast.warning(t('wpc_subCatLimit', { count: MAX_CATEGORIES }), t('wpc_limitTitle'));
+      return;
+    }
     setSubError(false);
     setSelectedSubs((prev) => prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]);
-  }, []);
+  }, [selectedSubs, toast, t]);
 
   const canNext = (): boolean => {
     switch (step) {
@@ -451,7 +470,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
               <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_workCatQ')}</AppText>
               <AppText style={[styles.hint, { color: theme.colors.mutedText, marginBottom: 14 }]}>
-                {t('wpc_workCatHint')} — {selectedCats.length > 0 ? `${selectedCats.length} ${t('wpc_selected')}` : ''}
+                {t('wpc_workCatHint')} — {selectedCats.length}/{MAX_AREAS_OF_WORK} {t('wpc_selected')}
               </AppText>
               <View style={styles.catGrid}>
                 {ALL_CATS.map((cat) => {
@@ -536,7 +555,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
               {selectedSubs.length > 0 && (
                 <View style={[styles.selectedBox, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '30' }]}>
                   <AppText style={[styles.selectedLabel, { color: theme.colors.primary }]}>
-                    {t('wpc_subCatSelected')} ({selectedSubs.length}):
+                    {t('wpc_subCatSelected')} ({selectedSubs.length}/{MAX_CATEGORIES}):
                   </AppText>
                   <View style={[styles.chipRow, { marginTop: 6 }]}>
                     {selectedSubs.map((val) => {
@@ -725,7 +744,7 @@ const styles = StyleSheet.create({
     width: '47%', borderWidth: 1.5, borderRadius: 14, padding: 12,
     alignItems: 'center', justifyContent: 'center', minHeight: 72,
   },
-  catLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center', lineHeight: 16 },
+  catLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center', lineHeight: 17 },
   catCheck: { fontSize: 14, color: '#fff', fontWeight: '800', marginTop: 4 },
 
   subGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

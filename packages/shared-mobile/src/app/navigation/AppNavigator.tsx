@@ -10,6 +10,8 @@ import { useAppTheme } from '../../core/theme';
 import { useAuth } from '../../state/auth/AuthContext';
 import { LoadingState } from '../../shared/components/feedback/LoadingState';
 import { navigationRef, resetToWelcome, resetToProfileCompletion } from '../../core/navigation/navigationRef';
+import { captureInstallReferrerOnce } from '../../core/deeplink/installReferrer';
+import { getPendingJob, clearPendingJob } from '../../core/deeplink/pendingJobLink';
 
 // Auth screens
 import { WelcomeScreen } from '../../features/auth/screens/WelcomeScreen';
@@ -64,6 +66,48 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export const AppNavigator = (): React.JSX.Element => {
   const { state } = useAuth();
   const { theme } = useAppTheme();
+
+  // Deferred deep link (fresh installs): read the Play install referrer once on
+  // first launch and stash any requirement id the user tapped on the web /apply
+  // page before installing. Best-effort, Android-only, no-op without the module.
+  useEffect(() => {
+    void captureInstallReferrerOnce();
+  }, []);
+
+  // Once authenticated AND past the profile gate, open the requirement the user
+  // came in for (from the install referrer), then clear it so it fires only once.
+  useEffect(() => {
+    if (state.status !== 'authenticated') return undefined;
+    const user = state.session?.user;
+    const role = (user?.role ?? '').toLowerCase();
+    const isWorkerOrAgent = role === 'worker' || role === 'selfworker' || role === 'agent';
+    const hasLocation = !!(user?.state && user?.district);
+    // Don't fight the profile-completion gate — only route once the profile is done.
+    if (isWorkerOrAgent && (!hasLocation || !isWorkerProfileComplete(user))) return undefined;
+
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      void (async () => {
+        const id = await getPendingJob();
+        if (cancelled || !id) return;
+        await clearPendingJob();
+        try {
+          navigationRef.navigate('JobMarketplaceDetail' as never, { requirementId: id } as never);
+        } catch { /* navigator not ready — pending was already cleared, safe to skip */ }
+      })();
+    }, 900);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [
+    state.status,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.state,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.district,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.gender,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    state.session?.user?.dob,
+  ]);
 
   // When auth state becomes unauthenticated, forcibly reset the navigation stack
   // to Welcome. We wait one frame (via setTimeout) so the conditional screen list
@@ -212,12 +256,27 @@ export const AppNavigator = (): React.JSX.Element => {
     [theme]
   );
 
+  // Deep links: a shared apply link (bookmyworker-agent://jobs/<id>, opened from
+  // the next-web /apply page via an Android intent) jumps straight to that job's
+  // detail when the app is installed & the user is signed in. Additive — does not
+  // affect existing notification-driven navigation. No-op in apps that don't
+  // register this scheme.
+  const linking = {
+    prefixes: ['bookmyworker-agent://'],
+    config: {
+      screens: {
+        JobMarketplaceDetail: 'jobs/:requirementId',
+        RequirementDetail: 'requirement/:requirementId',
+      },
+    },
+  };
+
   if (state.status === 'loading') {
     return <LoadingState fullscreen message="Preparing your workspace…" />;
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────

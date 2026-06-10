@@ -79,7 +79,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
           renderItem={({ item }) => (
             <AppCard style={styles.card}>
               <View style={styles.cardHeader}>
-                <AppText variant="label" style={styles.jobTitle} numberOfLines={2}>
+                <AppText variant="label" style={styles.jobTitle} numberOfLines={3}>
                   {item.requirementTitle}
                 </AppText>
                 <Badge
@@ -89,7 +89,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
               </View>
 
               {item.notes ? (
-                <AppText variant="caption" color={theme.colors.mutedText} style={styles.notes} numberOfLines={2}>
+                <AppText variant="caption" color={theme.colors.mutedText} style={styles.notes}>
                   {item.notes}
                 </AppText>
               ) : null}

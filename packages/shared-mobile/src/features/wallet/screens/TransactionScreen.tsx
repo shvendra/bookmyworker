@@ -275,8 +275,8 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
                 </View>
                 <View style={inv.col}>
                   <AppText style={inv.colHead}>{t('jp_invBillTo')}</AppText>
-                  <AppText style={inv.colName} numberOfLines={1}>{userName || t('jp_invNA')}</AppText>
-                  <AppText style={inv.colP} numberOfLines={1}>{firmLine}</AppText>
+                  <AppText style={inv.colName} numberOfLines={2}>{userName || t('jp_invNA')}</AppText>
+                  <AppText style={inv.colP} numberOfLines={2}>{firmLine}</AppText>
                   <AppText style={inv.colP} numberOfLines={2}>{userAddress || t('jp_invNA')}</AppText>
                   {!!userGst && <View style={inv.gstPill}><AppText style={inv.gstTxt}>GSTIN: {userGst}</AppText></View>}
                 </View>
@@ -308,7 +308,7 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
                 </View>
                 {gst > 0 && (
                   <View style={inv.totRow}>
-                    <AppText style={inv.totKey} numberOfLines={1}>{gstLabel}</AppText>
+                    <AppText style={inv.totKey} numberOfLines={2}>{gstLabel}</AppText>
                     <AppText style={inv.totVal}>{Money(gst)}</AppText>
                   </View>
                 )}
@@ -488,7 +488,7 @@ const PaymentsTab = (): React.JSX.Element => {
               <AppText style={[pay.td, { flex: 1, color: statusColor(txn.creditStatus), fontWeight: '700' }]}>
                 {txStatusLabel(txn.creditStatus, t)}
               </AppText>
-              <AppText style={[pay.td, { flex: 0.9 }]} numberOfLines={1}>
+              <AppText style={[pay.td, { flex: 0.9 }]}>
                 {txMethodLabel(txn.creditPaymentMethod || txn.paymentType, t)}
               </AppText>
               <AppText style={[pay.td, { flex: 1, textAlign: 'right', color: '#16a34a', fontWeight: '700' }]}>

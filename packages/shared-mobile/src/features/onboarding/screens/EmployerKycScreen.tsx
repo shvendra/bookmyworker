@@ -414,13 +414,13 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
   },
-  statusLabel: { fontSize: 13, fontWeight: '700', color: NAVY },
+  statusLabel: { fontSize: 13, fontWeight: '700', color: NAVY, flexShrink: 1, minWidth: 0 },
 
   card:        { borderRadius: 16, borderWidth: 1, padding: 16 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   iconBox:     { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   iconEmoji:   { fontSize: 16 },
-  sectionTitle:{ fontSize: 15, fontWeight: '800', color: NAVY },
+  sectionTitle:{ fontSize: 15, fontWeight: '800', color: NAVY, flexShrink: 1, minWidth: 0 },
 
   fieldLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, color: SLATE },
   input:      { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, fontWeight: '500' },

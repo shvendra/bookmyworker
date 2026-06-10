@@ -172,7 +172,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       onPress={() => handleButton(cancelBtn)}
                       activeOpacity={0.7}
                     >
-                      <AppText style={[styles.btnCancelText, { color: isDark ? '#CBD5E1' : '#475569' }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>
+                      <AppText style={[styles.btnCancelText, { color: isDark ? '#CBD5E1' : '#475569' }]} numberOfLines={2} maxFontSizeMultiplier={1.3}>
                         {cancelBtn.text}
                       </AppText>
                     </TouchableOpacity>
@@ -189,7 +189,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                       onPress={() => handleButton(btn)}
                       activeOpacity={0.82}
                     >
-                      <AppText style={styles.btnActionText} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}>{btn.text}</AppText>
+                      <AppText style={styles.btnActionText} numberOfLines={2} maxFontSizeMultiplier={1.3}>{btn.text}</AppText>
                     </TouchableOpacity>
                   ))}
                 </>
@@ -216,8 +216,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                           isCancel && { color: isDark ? '#CBD5E1' : '#475569' },
                           !isCancel && { color: '#FFFFFF' },
                         ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
+                        numberOfLines={2}
                         maxFontSizeMultiplier={1.3}
                       >
                         {btn.text}
@@ -315,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 25,
+    lineHeight: 27,
     letterSpacing: -0.3,
   },
   message: {
