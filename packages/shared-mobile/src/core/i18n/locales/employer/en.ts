@@ -701,6 +701,8 @@ export const employerTranslation = {
   sw_noMatch: 'No matching workers found',
   sw_invite: 'Invite',
   sw_viewContact: 'View Contact',
+  sub_boostBenefit: "{{n}} requirement boosts — top of search",
+  sub_boostsShort: "Boosts",
   wp_toastInviteFail: 'Failed to send invite',
   wp_inviteTitle: 'Invite to Requirement',
   wp_inviteHint: 'Select which requirement to invite this worker for:',

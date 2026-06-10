@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'जुळणारे कामगार आढळले नाहीत',
   sw_invite: 'आमंत्रित करा',
   sw_viewContact: 'संपर्क पाहा',
+  sub_boostBenefit: "{{n}} रिक्वायरमेंट बूस्ट — शोधात सर्वात वर",
+  sub_boostsShort: "बूस्ट",
   wp_toastInviteFail: 'निमंत्रण पाठवण्यात अयशस्वी',
   wp_inviteTitle: 'आवश्यकतेसाठी आमंत्रित करा',
   wp_inviteHint: 'या कामगाराला कोणत्या आवश्यकतेसाठी आमंत्रित करायचे ते निवडा:',

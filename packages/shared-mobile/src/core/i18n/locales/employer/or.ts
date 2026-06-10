@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'ମେଳ ଖାଉଥିବା କୌଣସି ଶ୍ରମିକ ମିଳିଲା ନାହିଁ',
   sw_invite: 'ଆମନ୍ତ୍ରଣ',
   sw_viewContact: 'ସମ୍ପର୍କ ଦେଖନ୍ତୁ',
+  sub_boostBenefit: "{{n}} ରିକ୍ୱାୟରମେଣ୍ଟ ବୁଷ୍ଟ — ସର୍ଚରେ ଶୀର୍ଷରେ",
+  sub_boostsShort: "ବୁଷ୍ଟ",
   wp_toastInviteFail: 'ନିମନ୍ତ୍ରଣ ପଠାଇବାରେ ବିଫଳ',
   wp_inviteTitle: 'ଆବଶ୍ୟକତା ପାଇଁ ନିମନ୍ତ୍ରଣ କରନ୍ତୁ',
   wp_inviteHint: 'ଏହି ଶ୍ରମିକଙ୍କୁ କେଉଁ ଆବଶ୍ୟକତା ପାଇଁ ନିମନ୍ତ୍ରଣ କରିବାକୁ ବାଛନ୍ତୁ:',

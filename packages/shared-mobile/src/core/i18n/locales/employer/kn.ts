@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'ಹೊಂದುವ ಕಾರ್ಮಿಕರು ಸಿಗಲಿಲ್ಲ',
   sw_invite: 'ಆಹ್ವಾನಿಸಿ',
   sw_viewContact: 'ಸಂಪರ್ಕ ನೋಡಿ',
+  sub_boostBenefit: "{{n}} ರಿಕ್ವೈರ್‌ಮೆಂಟ್ ಬೂಸ್ಟ್‌ಗಳು — ಹುಡುಕಾಟದಲ್ಲಿ ಮೇಲ್ಭಾಗ",
+  sub_boostsShort: "ಬೂಸ್ಟ್",
   wp_toastInviteFail: 'ಆಹ್ವಾನ ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ',
   wp_inviteTitle: 'ಅಗತ್ಯಕ್ಕಾಗಿ ಆಹ್ವಾನಿಸಿ',
   wp_inviteHint: 'ಈ ಕಾರ್ಮಿಕನನ್ನು ಯಾವ ಅಗತ್ಯಕ್ಕಾಗಿ ಆಹ್ವಾನಿಸಬೇಕು ಎಂದು ಆಯ್ಕೆಮಾಡಿ:',

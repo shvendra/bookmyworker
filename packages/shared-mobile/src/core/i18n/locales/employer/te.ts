@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'సరిపోలే కార్మికులు లేరు',
   sw_invite: 'ఆహ్వానించు',
   sw_viewContact: 'సంప్రదింపు చూడండి',
+  sub_boostBenefit: "{{n}} రిక్వైర్‌మెంట్ బూస్ట్‌లు — సెర్చ్‌లో పైన",
+  sub_boostsShort: "బూస్ట్",
   wp_toastInviteFail: 'ఆహ్వానం పంపడం విఫలమైంది',
   wp_inviteTitle: 'అవసరం కోసం ఆహ్వానించండి',
   wp_inviteHint: 'ఈ కార్మికుడిని ఏ అవసరం కోసం ఆహ్వానించాలో ఎంచుకోండి:',

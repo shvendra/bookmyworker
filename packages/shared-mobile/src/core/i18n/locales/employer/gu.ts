@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'કોઈ મેળ ખાતા કામદાર મળ્યા નથી',
   sw_invite: 'આમંત્રિત કરો',
   sw_viewContact: 'સંપર્ક જુઓ',
+  sub_boostBenefit: "{{n}} રિક્વાયરમેન્ટ બૂસ્ટ — સર્ચમાં ટોચ પર",
+  sub_boostsShort: "બૂસ્ટ",
   wp_toastInviteFail: 'આમંત્રણ મોકલવામાં નિષ્ફળ',
   wp_inviteTitle: 'જરૂરિયાત માટે આમંત્રિત કરો',
   wp_inviteHint: 'આ કામદારને કઈ જરૂરિયાત માટે આમંત્રિત કરવા તે પસંદ કરો:',

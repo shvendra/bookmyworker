@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'பொருந்தும் தொழிலாளர்கள் இல்லை',
   sw_invite: 'அழைக்க',
   sw_viewContact: 'தொடர்பைப் பார்க்க',
+  sub_boostBenefit: "{{n}} ரிக்வயர்மென்ட் பூஸ்ட் — தேடலில் மேலே",
+  sub_boostsShort: "பூஸ்ட்",
   wp_toastInviteFail: 'அழைப்பை அனுப்ப முடியவில்லை',
   wp_inviteTitle: 'தேவைக்கு அழைக்கவும்',
   wp_inviteHint: 'இந்தத் தொழிலாளரை எந்தத் தேவைக்கு அழைக்க வேண்டும் என்பதைத் தேர்ந்தெடுக்கவும்:',

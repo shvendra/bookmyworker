@@ -217,14 +217,51 @@ export function calcDiscount(mrp: number, price: number): number | null {
 }
 
 // ─── Fetch & React hook ────────────────────────────────────────────────────────
+// Requirement-boost allowance per employer type × duration (mirrors backend
+// Settings.boostConfig). Used to show "X boosts" on each plan.
+export type BoostTier = 'individual' | 'contractor' | 'agency' | 'industry';
+export interface BoostConfig {
+  enabled: boolean;
+  durationDays: number;
+  allowance: Record<BoostTier, { '1m': number; '6m': number; '12m': number }>;
+}
+
+export const BOOST_DEFAULTS: BoostConfig = {
+  enabled: true,
+  durationDays: 30,
+  allowance: {
+    individual: { '1m': 1, '6m': 6, '12m': 12 },
+    contractor: { '1m': 2, '6m': 12, '12m': 24 },
+    agency: { '1m': 3, '6m': 18, '12m': 36 },
+    industry: { '1m': 4, '6m': 24, '12m': 48 },
+  },
+};
+
+function mergeBoost(remote?: Partial<BoostConfig>): BoostConfig {
+  if (!remote) return BOOST_DEFAULTS;
+  const allow = (remote.allowance ?? {}) as Partial<BoostConfig['allowance']>;
+  return {
+    enabled: remote.enabled !== false,
+    durationDays: Number(remote.durationDays) || BOOST_DEFAULTS.durationDays,
+    allowance: {
+      individual: { ...BOOST_DEFAULTS.allowance.individual, ...(allow.individual ?? {}) },
+      contractor: { ...BOOST_DEFAULTS.allowance.contractor, ...(allow.contractor ?? {}) },
+      agency: { ...BOOST_DEFAULTS.allowance.agency, ...(allow.agency ?? {}) },
+      industry: { ...BOOST_DEFAULTS.allowance.industry, ...(allow.industry ?? {}) },
+    },
+  };
+}
+
 interface SettingsData {
   pricing?:       Partial<PricingConfig>;
   employerPlans?: Partial<EmployerPlansConfig>;
+  boostConfig?:   Partial<BoostConfig>;
 }
 
 interface FetchedConfig {
   pricing:       PricingConfig;
   employerPlans: EmployerPlansConfig;
+  boostConfig:   BoostConfig;
 }
 
 async function fetchConfig(): Promise<FetchedConfig> {
@@ -233,6 +270,7 @@ async function fetchConfig(): Promise<FetchedConfig> {
   return {
     pricing:       mergePricing(data.pricing),
     employerPlans: mergeEmployerPlans(data.employerPlans),
+    boostConfig:   mergeBoost(data.boostConfig),
   };
 }
 
@@ -244,12 +282,13 @@ export function usePricingConfig() {
     retry: 1,
   });
 
-  const data    = query.data ?? { pricing: PRICING_DEFAULTS, employerPlans: EMPLOYER_PLANS_DEFAULTS };
+  const data    = query.data ?? { pricing: PRICING_DEFAULTS, employerPlans: EMPLOYER_PLANS_DEFAULTS, boostConfig: BOOST_DEFAULTS };
   const gstRate = data.pricing.gstPercentage / 100;
 
   return {
     pricing:       data.pricing,
     employerPlans: data.employerPlans,
+    boostConfig:   data.boostConfig,
     gstRate,
     isLoading: query.isLoading,
   };

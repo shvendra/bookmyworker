@@ -765,6 +765,8 @@ export const employerTranslation = {
   sw_noMatch: 'মিলে যায় এমন কোনো কর্মী পাওয়া যায়নি',
   sw_invite: 'আমন্ত্রণ',
   sw_viewContact: 'যোগাযোগ দেখুন',
+  sub_boostBenefit: "{{n}}টি রিকোয়ারমেন্ট বুস্ট — সার্চে সবার উপরে",
+  sub_boostsShort: "বুস্ট",
   wp_toastInviteFail: 'আমন্ত্রণ পাঠানো যায়নি',
   wp_inviteTitle: 'প্রয়োজনীয়তার জন্য আমন্ত্রণ জানান',
   wp_inviteHint: 'এই কর্মীকে কোন প্রয়োজনীয়তার জন্য আমন্ত্রণ জানাতে হবে তা নির্বাচন করুন:',

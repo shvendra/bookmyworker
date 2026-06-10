@@ -42,6 +42,7 @@ interface Plan {
   duration: string;
   contacts: number;
   posts: number;           // 999 = unlimited
+  boosts: number;          // requirement boosts included this period (0 = none)
   badge?: string;
   benefits: string[];      // 2 static always-on + dynamic feature lines
 }
@@ -147,7 +148,7 @@ export const SubscriptionModal = ({
   const isDark = theme.mode === 'dark';
   const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('1m');
-  const { pricing: pricingConfig, employerPlans, gstRate } = usePricingConfig();
+  const { pricing: pricingConfig, employerPlans, boostConfig, gstRate } = usePricingConfig();
 
   const { data: agentsData } = useQuery({
     queryKey: ['subscription-agents-preview'],
@@ -163,23 +164,33 @@ export const SubscriptionModal = ({
   const featureBenefits = buildFeatureBenefits(typePlan.features, t);
   const sharedBenefits  = [...STATIC_BENEFITS, ...featureBenefits];
   const contacts1m      = typePlan.limits['1m'].contacts;
+  // Requirement-boost allowance for this employer type, per duration.
+  const boostAllow = boostConfig?.enabled !== false
+    ? (boostConfig?.allowance?.[employerType as keyof typeof boostConfig.allowance] ?? null)
+    : null;
+  const boostFor = (id: PlanId): number => Number(boostAllow?.[id]) || 0;
 
   const makePlanBenefits = (id: PlanId, contacts: number, posts: number): string[] => {
     const postsLabel = posts >= 999 ? 'unlimited' : String(posts);
+    const boosts = boostFor(id);
+    const boostLine = boosts > 0 ? [t('sub_boostBenefit', { n: boosts })] : [];
     if (id === '1m') return [
       `${contacts} contact unlocks — try risk-free, no commitment`,
       `Post up to ${postsLabel} job requirements this month`,
+      ...boostLine,
       ...sharedBenefits,
     ];
     const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : 'more';
     if (id === '6m') return [
       `${contacts} contacts — ${mul}× more reach than monthly`,
       'Better cost-per-contact vs paying month by month',
+      ...boostLine,
       ...sharedBenefits,
     ];
     return [
       `${contacts} contacts — ${mul}× more reach than monthly`,
       'Lowest cost-per-contact — best long-term value',
+      ...boostLine,
       ...sharedBenefits,
     ];
   };
@@ -189,12 +200,14 @@ export const SubscriptionModal = ({
       id: '1m',  label: 'Monthly Plan',     duration: '1 Month',
       contacts: typePlan.limits['1m'].contacts,
       posts:    typePlan.limits['1m'].posts,
+      boosts:   boostFor('1m'),
       benefits: makePlanBenefits('1m', typePlan.limits['1m'].contacts, typePlan.limits['1m'].posts),
     },
     {
       id: '6m',  label: 'Half-Yearly Plan', duration: '6 Months',
       contacts: typePlan.limits['6m'].contacts,
       posts:    typePlan.limits['6m'].posts,
+      boosts:   boostFor('6m'),
       badge: 'Popular',
       benefits: makePlanBenefits('6m', typePlan.limits['6m'].contacts, typePlan.limits['6m'].posts),
     },
@@ -202,6 +215,7 @@ export const SubscriptionModal = ({
       id: '12m', label: 'Yearly Plan',      duration: '12 Months',
       contacts: typePlan.limits['12m'].contacts,
       posts:    typePlan.limits['12m'].posts,
+      boosts:   boostFor('12m'),
       badge: 'Best Value',
       benefits: makePlanBenefits('12m', typePlan.limits['12m'].contacts, typePlan.limits['12m'].posts),
     },
@@ -308,6 +322,7 @@ export const SubscriptionModal = ({
                     </View>
                     <AppText variant="caption" color={theme.colors.mutedText}>
                       {p.duration} · {p.contacts} Contacts · {p.posts >= 999 ? '∞' : p.posts} Posts
+                      {p.boosts > 0 ? ` · ${p.boosts} ${t('sub_boostsShort')}` : ''}
                     </AppText>
                   </View>
                   <View style={styles.planRight}>

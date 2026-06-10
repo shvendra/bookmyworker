@@ -776,6 +776,8 @@ export const employerTranslation = {
   sw_noMatch: 'ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਕਾਮਾ ਨਹੀਂ ਮਿਲਿਆ',
   sw_invite: 'ਸੱਦਾ',
   sw_viewContact: 'ਸੰਪਰਕ ਵੇਖੋ',
+  sub_boostBenefit: "{{n}} ਰਿਕਵਾਇਰਮੈਂਟ ਬੂਸਟ — ਸਰਚ ਵਿੱਚ ਸਭ ਤੋਂ ਉੱਪਰ",
+  sub_boostsShort: "ਬੂਸਟ",
   wp_toastInviteFail: 'ਸੱਦਾ ਭੇਜਣ ਵਿੱਚ ਅਸਫਲ',
   wp_inviteTitle: 'ਲੋੜ ਲਈ ਸੱਦਾ ਦਿਓ',
   wp_inviteHint: 'ਇਸ ਕਾਮੇ ਨੂੰ ਕਿਸ ਲੋੜ ਲਈ ਸੱਦਾ ਦੇਣਾ ਹੈ ਚੁਣੋ:',
