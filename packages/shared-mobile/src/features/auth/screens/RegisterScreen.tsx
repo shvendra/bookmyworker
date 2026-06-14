@@ -12,7 +12,9 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { useTranslation } from 'react-i18next';
-import { getSubCatLabel } from '../../../shared/utils/labelUtils';
+import { getSubCatLabel, getWorkTypeLabel } from '../../../shared/utils/labelUtils';
+import { DIPLOMA_GRADUATE_SUBTYPE, categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCategories';
+import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
 import { authService } from '../services/authService';
 import { registerStep2Schema, type RegisterStep2Values } from '../validation/authSchemas';
 import { ROUTES } from '../../../shared/constants/routes';
@@ -31,12 +33,9 @@ const ROLES: Array<{ value: Role; label: string; description: string; icon: stri
   { value: 'SelfWorker', label: 'Job Seeker', description: 'Find work & earn daily wages', icon: '👷' },
 ];
 
-const WORKER_SUB_TYPES = [
-  { value: 'Skilled', label: 'Skilled', description: 'Experienced in a specific trade or craft', icon: '🔧' },
-  { value: 'Unskilled', label: 'Unskilled', description: 'General labour, no specific skill required', icon: '🏗️' },
-  { value: 'ITI/Diploma', label: 'ITI / Diploma', description: 'ITI or Diploma certificate holder', icon: '🎓' },
-  { value: 'Graduate', label: 'Graduate', description: "Bachelor's degree or above", icon: '📜' },
-];
+// Qualification boxes come from the shared WORKER_QUALIFICATION_TIERS source of
+// truth (imported above as WORKER_SUB_TYPES) so register / onboarding / edit never
+// diverge. DIPLOMA_GRADUATE_SUBTYPE is the tier that maps to Support Staff categories.
 
 const AGENT_TYPES = [
   { value: 'Group worker supplier', label: 'Group Worker Supplier', description: 'Supply groups / teams of workers', icon: '👥' },
@@ -93,6 +92,15 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
 
   const handleCategorySelect = (value: string): void => {
     setSelectedCategory(value);
+    setSelectedSubcategories([]);
+  };
+
+  // Switching qualification tier changes which work categories are offered
+  // (Diploma/Graduate → Support Staff; others → regular worker categories), so
+  // any previously-picked category/subcategory must be cleared to stay valid.
+  const selectWorkerSubType = (value: string): void => {
+    setWorkerSubType(value);
+    setSelectedCategory('');
     setSelectedSubcategories([]);
   };
 
@@ -212,13 +220,24 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
     toast.success(t('welcomeToApp'), t('registrationSuccessful'));
   };
 
-  const showResume = role === 'SelfWorker' && (workerSubType === 'ITI/Diploma' || workerSubType === 'Graduate');
+  const showResume = role === 'SelfWorker' && (workerSubType === '10th/12th/ITI' || workerSubType === DIPLOMA_GRADUATE_SUBTYPE);
+
+  // Work categories offered for the chosen qualification tier (Diploma/Graduate →
+  // Support Staff taxonomy; everyone else → regular worker categories). Logic lives
+  // in categoryValuesForWorkerTier so it is unit-tested without React Native.
+  const allowedCatValues = new Set(categoryValuesForWorkerTier(workerSubType, ALL_CATS.map((c) => c.value)));
+  const availableCats = ALL_CATS.filter((c) => allowedCatValues.has(c.value));
 
   // ── Step 1: Role Selection + Sub-type ──
   if (step === 1) {
-    const subTypes = role === 'SelfWorker' ? WORKER_SUB_TYPES : role === 'Agent' ? AGENT_TYPES : [];
+    const subTypes: Array<{ value: string; icon: string; label: string; description: string }> =
+      role === 'SelfWorker'
+        ? WORKER_SUB_TYPES.map((s) => ({ value: s.value, icon: s.icon, label: t(s.labelKey), description: t(s.descKey) }))
+        : role === 'Agent'
+          ? AGENT_TYPES
+          : [];
     const selectedSubTypeVal = role === 'SelfWorker' ? workerSubType : role === 'Agent' ? agentType : '';
-    const setSubType = role === 'SelfWorker' ? setWorkerSubType : setAgentType;
+    const setSubType = role === 'SelfWorker' ? selectWorkerSubType : setAgentType;
 
     return (
       <Screen scrollable>
@@ -325,7 +344,10 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
       {(workerSubType || agentType) && (
         <View style={[styles.subTypeBadge, { backgroundColor: theme.colors.primary + '15', borderColor: theme.colors.primary + '40' }]}>
           <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>
-            {workerSubType || agentType}
+            {(() => {
+              const wt = WORKER_SUB_TYPES.find((s) => s.value === workerSubType);
+              return wt ? t(wt.labelKey) : (workerSubType || agentType);
+            })()}
           </AppText>
         </View>
       )}
@@ -397,12 +419,12 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
             )}
           />
 
-          {/* Category — single select */}
+          {/* Category — single select. List depends on qualification tier. */}
           <AppText variant="caption" style={[styles.sectionLabel, { color: theme.colors.mutedText }]}>
-            WORK CATEGORY {selectedCategory ? `— ${ALL_CATS.find(c => c.value === selectedCategory)?.label ?? ''}` : '(select one)'}
+            WORK CATEGORY {selectedCategory ? `— ${getWorkTypeLabel(selectedCategory, t)}` : '(select one)'}
           </AppText>
           <CategoryChips
-            items={ALL_CATS.map(c => ({ label: c.label, value: c.value }))}
+            items={availableCats.map(c => ({ label: getWorkTypeLabel(c.value, t), value: c.value }))}
             selected={selectedCategory ? [selectedCategory] : []}
             onToggle={handleCategorySelect}
             theme={theme}
@@ -410,7 +432,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
 
           {/* Subcategory */}
           {selectedCategory !== '' && (() => {
-            const cat = ALL_CATS.find(c => c.value === selectedCategory);
+            const cat = availableCats.find(c => c.value === selectedCategory);
             if (!cat || cat.subcategories.length === 0) return null;
             return (
               <>
@@ -457,7 +479,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
             </View>
           )}
 
-          {/* Resume upload — ITI/Diploma & Graduate only */}
+          {/* Resume upload — 10th/12th/ITI & Diploma/Graduate tiers only */}
           {showResume && (
             <>
               <SectionLabel label="RESUME / CV" theme={theme} />

@@ -6,6 +6,7 @@
 import type { TFunction } from 'i18next';
 import { WORK_CATEGORIES } from '../components/ui/WorkerCategoryGrid';
 import categoriesData from '../data/categories.json';
+import { SUPPORT_STAFF_CATEGORY_VALUES } from '../data/supportStaffCategories';
 import type { TranslationKeys } from '../../core/i18n/translations';
 import type { UserProfile } from '../types/domain';
 import { getLocationDisplayName } from '../data/locationTranslations';
@@ -174,8 +175,13 @@ function findParentCategoryValue(subCategory: string | null | undefined): string
 // still need a translated label via their own cat_* i18n key — the "Support Staff"
 // categories (Permanent / Contract) under the Office_Staff requirement type.
 const EXTRA_CATEGORY_KEYS: Record<string, string> = {
+  // Legacy Permanent/Contract — kept so historical requirements still translate.
   support_staff_permanent: 'cat_support_staff_permanent',
   support_staff_contract:  'cat_support_staff_contract',
+  // Current support-staff taxonomy: every value maps to its own cat_<value> key.
+  ...Object.fromEntries(
+    SUPPORT_STAFF_CATEGORY_VALUES.map((v) => [v, `cat_${v}`]),
+  ),
 };
 
 /**

@@ -30,6 +30,7 @@ import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useAppTheme } from '../../../core/theme';
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { ageString } from '../../../shared/utils/ageUtils';
+import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 // Build a flat lookup: category/subcategory value → display label
@@ -58,14 +59,9 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 
-// Role-type options. `labelKey` is an i18n key resolved at render time so these
-// chips are localized in all 11 languages (keys already exist in every locale).
-const WORKER_SUB_TYPES = [
-  { value: 'Skilled',     labelKey: 'workerTypeSkilled',   icon: '🔧' },
-  { value: 'Unskilled',   labelKey: 'workerTypeUnskilled', icon: '🏗️' },
-  { value: 'ITI/Diploma', labelKey: 'workerTypeITI',       icon: '🎓' },
-  { value: 'Graduate',    labelKey: 'workerTypeGraduate',  icon: '📜' },
-];
+// WORKER_SUB_TYPES is imported from the shared WORKER_QUALIFICATION_TIERS source of
+// truth (localized via labelKey in all 11 languages) so it stays in sync with the
+// registration + onboarding flows.
 const AGENT_TYPES = [
   { value: 'Group worker supplier',     labelKey: 'agentTypeGroupSupplier',     icon: '👥' },
   { value: 'Skilled worker supplier',   labelKey: 'agentTypeSkilledSupplier',   icon: '🔧' },

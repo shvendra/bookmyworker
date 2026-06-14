@@ -30,6 +30,7 @@ import { ageString } from '../../../shared/utils/ageUtils';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
+import { categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCategories';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfileCompletion'>;
@@ -212,6 +213,15 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
     });
     return () => handler.remove();
   }, [step, user?.state, user?.district]);
+
+  // Categories offered for this worker's qualification tier: Diploma/Graduate →
+  // Support Staff (white-collar) taxonomy; every other tier → regular worker
+  // categories (support staff + legacy hidden). Falls back to regular categories
+  // when workerSubType isn't yet on the session.
+  const displayCats = useMemo(() => {
+    const allowed = new Set(categoryValuesForWorkerTier(user?.workerSubType ?? '', ALL_CATS.map((c) => c.value)));
+    return ALL_CATS.filter((c) => allowed.has(c.value));
+  }, [user?.workerSubType]);
 
   // All subcategories from all selected categories combined.
   // Deduped by `value` — the same sub (e.g. "welder") can appear under more than
@@ -479,7 +489,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
                 {t('wpc_workCatHint')} — {selectedCats.length}/{MAX_AREAS_OF_WORK} {t('wpc_selected')}
               </AppText>
               <View style={styles.catGrid}>
-                {ALL_CATS.map((cat) => {
+                {displayCats.map((cat) => {
                   const sel = selectedCats.includes(cat.value);
                   return (
                     <TouchableOpacity

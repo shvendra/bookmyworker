@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -16,7 +16,21 @@ import { WORK_CATEGORIES } from '../../../../packages/shared-mobile/src/shared/c
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
 import { ENV } from '../../../../packages/shared-mobile/src/core/config/env';
 import { getAccessToken } from '../../../../packages/shared-mobile/src/core/storage/authStorage';
+import categoriesData from '../../../../packages/shared-mobile/src/shared/data/categories.json';
+import { SUPPORT_STAFF_CATEGORY_VALUES, DIPLOMA_GRADUATE_SUBTYPE } from '../../../../packages/shared-mobile/src/shared/data/supportStaffCategories';
+import { getWorkTypeLabel, getSubCatLabel } from '../../../../packages/shared-mobile/src/shared/utils/labelUtils';
 import type { AgentStackParamList } from '../../navigation/types';
+
+// Accent palette for the Support Staff category cards (which have no preset colour).
+const SUPPORT_ACCENTS = ['#6366F1', '#F97316', '#14B8A6', '#8B5CF6', '#EC4899', '#0EA5E9', '#F59E0B', '#10B981', '#EF4444', '#3B82F6'];
+
+interface OnbCat {
+  value: string;
+  label: string;
+  emoji: string;
+  accent: string;
+  subcategories?: Array<{ value: string; label: string }>;
+}
 
 const { width: SW } = Dimensions.get('window');
 
@@ -34,13 +48,50 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'WorkCategorySelect'>;
 
 export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Element => {
   const insets       = useSafeAreaInsets();
-  const { t } = useTranslation();
-  const { updateProfile } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { updateProfile, state } = useAuth();
   const [selected, setSelected]     = useState<Set<string>>(new Set());
+  const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving]     = useState(false);
+
+  // Diploma/Graduate job-seekers pick from the Support Staff (white-collar) taxonomy
+  // — categories WITH sub-roles — instead of the regular blue-collar grid.
+  const isSupportTier = state.session?.user?.workerSubType === DIPLOMA_GRADUATE_SUBTYPE;
+
+  const categoryList: OnbCat[] = useMemo(() => {
+    if (isSupportTier) {
+      const supportSet = new Set<string>(SUPPORT_STAFF_CATEGORY_VALUES);
+      return (categoriesData as Array<{ value: string; subcategories?: Array<{ value: string }> }>)
+        .filter((c) => supportSet.has(c.value))
+        .map((c, i) => ({
+          value: c.value,
+          label: getWorkTypeLabel(c.value, t),
+          emoji: '💼',
+          accent: SUPPORT_ACCENTS[i % SUPPORT_ACCENTS.length],
+          subcategories: (c.subcategories ?? []).map((sc) => ({
+            value: sc.value,
+            label: getSubCatLabel(sc.value, i18n.language),
+          })),
+        }));
+    }
+    return WORK_CATEGORIES.map((c) => ({
+      value: c.value,
+      label: t(c.translationKey),
+      emoji: c.emoji,
+      accent: c.accent,
+    }));
+  }, [isSupportTier, t, i18n.language]);
 
   const toggle = useCallback((value: string) => {
     setSelected(prev => {
+      const next = new Set(prev);
+      next.has(value) ? next.delete(value) : next.add(value);
+      return next;
+    });
+  }, []);
+
+  const toggleSub = useCallback((value: string) => {
+    setSelectedSubs(prev => {
       const next = new Set(prev);
       next.has(value) ? next.delete(value) : next.add(value);
       return next;
@@ -52,15 +103,19 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
     setIsSaving(true);
     try {
       const token = await getAccessToken();
+      const payload = {
+        areasOfWork: Array.from(selected),
+        ...(isSupportTier ? { categories: Array.from(selectedSubs) } : {}),
+      };
       await fetch(`${ENV.API_BASE_URL}/api/v1/user/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ areasOfWork: Array.from(selected) }),
+        body: JSON.stringify(payload),
       });
-      await updateProfile({ areasOfWork: Array.from(selected) });
+      await updateProfile(payload);
     } catch {
       // non-fatal — proceed to Kyc regardless
     } finally {
@@ -142,7 +197,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
 
         {/* Category grid */}
         <View style={s.grid}>
-          {WORK_CATEGORIES.map((cat) => {
+          {categoryList.map((cat) => {
             const isOn = selected.has(cat.value);
             return (
               <Pressable
@@ -163,7 +218,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
                   style={[s.cardLabel, isOn && { color: cat.accent }]}
                   numberOfLines={3}
                 >
-                  {t(cat.translationKey)}
+                  {cat.label}
                 </AppText>
 
                 {/* Selected tick */}
@@ -179,6 +234,37 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
             );
           })}
         </View>
+
+        {/* Support Staff sub-roles — shown per selected category (Diploma/Graduate tier) */}
+        {isSupportTier && categoryList
+          .filter((cat) => selected.has(cat.value) && (cat.subcategories?.length ?? 0) > 0)
+          .map((cat) => (
+            <View key={`subs-${cat.value}`} style={s.subBlock}>
+              <View style={s.sectionLabelRow}>
+                <View style={[s.sectionLine, { backgroundColor: cat.accent + '55' }]} />
+                <AppText style={[s.sectionLabel, { color: cat.accent }]} numberOfLines={2}>{cat.label}</AppText>
+                <View style={[s.sectionLine, { backgroundColor: cat.accent + '55' }]} />
+              </View>
+              <View style={s.subChipWrap}>
+                {cat.subcategories!.map((sub) => {
+                  const subOn = selectedSubs.has(sub.value);
+                  return (
+                    <TouchableOpacity
+                      key={sub.value}
+                      onPress={() => toggleSub(sub.value)}
+                      activeOpacity={0.8}
+                      style={[
+                        s.subChip,
+                        { borderColor: subOn ? cat.accent : BORDER, backgroundColor: subOn ? cat.accent + '14' : WHITE },
+                      ]}
+                    >
+                      <AppText style={[s.subChipTxt, { color: subOn ? cat.accent : NAVY }]}>{sub.label}</AppText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -278,6 +364,12 @@ const s = StyleSheet.create({
   sectionLabel:    { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: SLATE, textTransform: 'uppercase' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+
+  // Support Staff sub-role chips
+  subBlock:    { marginTop: 18 },
+  subChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  subChip:     { borderRadius: 18, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8 },
+  subChipTxt:  { fontSize: 12.5, fontWeight: '700' },
 
   card: {
     width: CARD_W,

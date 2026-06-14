@@ -11,6 +11,8 @@ export interface WorkerSearchParams {
   block?: string;
   category?: string;
   workerType?: string;
+  /** One or more sub-category values (comma-joined) to narrow within a category. */
+  subCategory?: string;
   workerGroup?: string;
   gender?: string;
   minAge?: number;
@@ -122,6 +124,7 @@ export const workerApi = {
         city: params.city || params.district || undefined,
         block: params.block || undefined,
         workerType: params.workerType || undefined,
+        subCategory: params.subCategory || undefined,
         workerGroup: params.workerGroup || undefined,
         role: params.role || undefined,
         gender: params.gender || undefined,

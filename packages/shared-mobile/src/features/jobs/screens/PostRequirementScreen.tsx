@@ -34,6 +34,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesRaw from '../../../shared/data/categories.json';
+import { SUPPORT_STAFF_CATEGORY_VALUES, HIDDEN_FROM_NON_SUPPORT } from '../../../shared/data/supportStaffCategories';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type RouteParams = NativeStackScreenProps<MainStackParamList, 'PostRequirement'>['route'];
@@ -81,13 +82,11 @@ const REQ_TYPES: ReqTypeOption[] = [
 // Categories surfaced ONLY under the "Support Staff" (Office_Staff) requirement
 // type. They carry the office-support sub-categories (Telecaller, etc.) and are
 // hidden from the other requirement types, which in turn never show these two.
-const SUPPORT_STAFF_CATEGORY_VALUES = ['support_staff_permanent', 'support_staff_contract'];
 const NON_SUPPORT_CATEGORY_VALUES = (categoriesRaw as Array<{ value: string }>)
   .map((c) => c.value)
-  .filter((v) => !SUPPORT_STAFF_CATEGORY_VALUES.includes(v));
+  .filter((v) => !HIDDEN_FROM_NON_SUPPORT.has(v));
 
 // ─── Form Schema ──────────────────────────────────────────────────────────────
-const AGE_GROUP_OPTIONS = ['18-25', '25-35', '35-45', '45+', 'Any'];
 const ESTIMATED_DAYS_OPTIONS = ['1-3 days', '1 week', '2 weeks', '1 month', '2-3 months', '3-6 months', '6+ months'];
 // Canonical duration value → i18n key. The stored/sent value stays English; only
 // the on-screen label is translated (all 11 languages).
@@ -115,7 +114,6 @@ const requirementSchema = z.object({
   inTime: z.string().optional(),
   outTime: z.string().optional(),
   remarks: z.string().min(5, 'Please describe the work (min 5 chars)'),
-  salaryType: z.enum(['Daily', 'Weekly', 'Monthly']),
   minBudgetPerWorker: z.string().regex(/^\d+$/, 'Enter min budget'),
   maxBudgetPerWorker: z.string().regex(/^\d+$/, 'Enter max budget'),
   estimated_days: z.string().optional(),
@@ -159,6 +157,43 @@ const BOOLEAN_FLAGS = [
 ] as const;
 
 type BooleanFlagKey = (typeof BOOLEAN_FLAGS)[number]['key'];
+
+// Daily-wage casual labour doesn't carry statutory perks (PF/ESIC/Bonus/Insurance/
+// Weekly Off), so it shows a reduced set; the other three types show all 10. Kept
+// in sync with the CRM posting form so both flows stay consistent.
+const DAILY_WAGES_FLAG_KEYS: readonly BooleanFlagKey[] = [
+  'accommodationAvailable', 'foodAvailable', 'transportProvided', 'overtimeAvailable',
+];
+const flagsForType = (reqType: RequirementType): (typeof BOOLEAN_FLAGS)[number][] =>
+  reqType === 'Daily_Wages'
+    ? BOOLEAN_FLAGS.filter((f) => DAILY_WAGES_FLAG_KEYS.includes(f.key))
+    : [...BOOLEAN_FLAGS];
+
+// Build the perk payload for a type, forcing any flag NOT visible for that type to
+// false. Prevents a perk toggled on one type from leaking into a submission of a
+// type that hides it (boolFlags state persists across in-screen type changes).
+const flagPayloadFor = (
+  reqType: RequirementType,
+  flags: Record<BooleanFlagKey, boolean>,
+): Record<BooleanFlagKey, boolean> => {
+  const visible = new Set(flagsForType(reqType).map((f) => f.key));
+  return Object.fromEntries(
+    BOOLEAN_FLAGS.map((f) => [f.key, visible.has(f.key) ? flags[f.key] : false]),
+  ) as Record<BooleanFlagKey, boolean>;
+};
+
+// Budget basis per requirement type. The unit is fixed by the type (no user-facing
+// selector); salaryType is derived from it so stored data stays meaningful. Labels
+// are translated in all 11 employer locales and mirror the CRM's per-type wording.
+const BUDGET_BY_TYPE: Record<
+  RequirementType,
+  { salaryType: 'Daily' | 'Monthly'; minKey: string; maxKey: string; minPh: string; maxPh: string }
+> = {
+  Daily_Wages:    { salaryType: 'Daily',   minKey: 'budget_min_Daily_Wages',    maxKey: 'budget_max_Daily_Wages',    minPh: '400',   maxPh: '700' },
+  Supply_Based:   { salaryType: 'Daily',   minKey: 'budget_min_Supply_Based',   maxKey: 'budget_max_Supply_Based',   minPh: '400',   maxPh: '700' },
+  Contract_Based: { salaryType: 'Monthly', minKey: 'budget_min_Contract_Based', maxKey: 'budget_max_Contract_Based', minPh: '10000', maxPh: '20000' },
+  Office_Staff:   { salaryType: 'Monthly', minKey: 'budget_min_Office_Staff',   maxKey: 'budget_max_Office_Staff',   minPh: '8000',  maxPh: '15000' },
+};
 
 // ─── Step 1: Type Selection ────────────────────────────────────────────────────
 interface TypeSelectionProps {
@@ -415,10 +450,10 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
 
   const typeInfo = REQ_TYPES.find((r) => r.value === reqType)!;
   const isDailyWages = reqType === 'Daily_Wages';
-  // "Support Staff" type → only the 2 support-staff categories; all other types →
-  // every category except those two.
+  // "Support Staff" type → only the support-staff taxonomy categories; all other
+  // types → every category except the support-staff + legacy ones.
   const allowedCategoryValues = reqType === 'Office_Staff'
-    ? SUPPORT_STAFF_CATEGORY_VALUES
+    ? [...SUPPORT_STAFF_CATEGORY_VALUES]
     : NON_SUPPORT_CATEGORY_VALUES;
 
   const {
@@ -443,7 +478,6 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       inTime: '',
       outTime: '',
       remarks: '',
-      salaryType: 'Daily' as const,
       minBudgetPerWorker: '',
       maxBudgetPerWorker: '',
       estimated_days: '',
@@ -480,7 +514,6 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
     if (prefill.district)              setValue('district', prefill.district, { shouldValidate: false });
     if (prefill.tehsil)                setValue('tehsil', prefill.tehsil, { shouldValidate: false });
     if (prefill.workerQuantitySkilled) setValue('workerQuantitySkilled', String(prefill.workerQuantitySkilled), { shouldValidate: false });
-    if (prefill.salaryType)            setValue('salaryType', prefill.salaryType as 'Daily' | 'Weekly' | 'Monthly', { shouldValidate: false });
     if (prefill.minBudgetPerWorker)    setValue('minBudgetPerWorker', String(prefill.minBudgetPerWorker), { shouldValidate: false });
     if (prefill.maxBudgetPerWorker)    setValue('maxBudgetPerWorker', String(prefill.maxBudgetPerWorker), { shouldValidate: false });
     if (prefill.remarks)               setValue('remarks', prefill.remarks, { shouldValidate: false });
@@ -502,8 +535,6 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         workType: values.workType,
         subCategory: values.subCategory,
         workerQuantitySkilled: Number(values.workerQuantitySkilled),
-        workerQuantityUnskilled: values.workerQuantityUnskilled ? Number(values.workerQuantityUnskilled) : 0,
-        ageGroup: values.ageGroup,
         state: values.state,
         district: values.district,
         tehsil: values.tehsil,
@@ -520,7 +551,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         inTime: isDailyWages ? values.inTime : undefined,
         outTime: isDailyWages ? values.outTime : undefined,
         remarks: values.remarks,
-        salaryType: values.salaryType,
+        salaryType: BUDGET_BY_TYPE[reqType].salaryType,
         minBudgetPerWorker: Number(values.minBudgetPerWorker),
         maxBudgetPerWorker: Number(values.maxBudgetPerWorker),
         estimated_days: values.estimated_days,
@@ -532,7 +563,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         employerPhone: (userProfile as { phone?: string } | null)?.phone ?? user?.phone,
         contactPersonName: showContactPerson ? (values.contactPersonName || undefined) : undefined,
         contactPersonPhone: showContactPerson ? (values.contactPersonPhone || undefined) : undefined,
-        ...boolFlags,
+        ...flagPayloadFor(reqType, boolFlags),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
@@ -612,36 +643,11 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             name="workerQuantitySkilled"
             render={({ field: { value, onChange } }) => (
               <Stepper
-                label={t('post_skilledWorkers').replace(/\s*\*\s*$/, '')}
+                label={t('post_workerCount')}
                 required
                 value={value ?? '1'}
                 onChange={onChange}
                 min={1}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="workerQuantityUnskilled"
-            render={({ field: { value, onChange } }) => (
-              <Stepper
-                label={t('post_helperWorkers').replace(/\s*\*\s*$/, '')}
-                value={value ?? '0'}
-                onChange={onChange}
-                min={0}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="ageGroup"
-            render={({ field, fieldState }) => (
-              <FormSelect
-                label={t('jp_ageGroup')}
-                value={field.value ?? ''}
-                options={AGE_GROUP_OPTIONS}
-                onChange={field.onChange}
-                errorText={fieldState.error?.message}
               />
             )}
           />
@@ -824,46 +830,17 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           <View style={[ps.sectionIconBox, { backgroundColor: '#EBF8F0' }]}>
             <AppText style={ps.sectionIcon}>💲</AppText>
           </View>
-          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPayment')}{'  '}<AppText style={[ps.sectionSub, { color: theme.colors.mutedText }]}>{t('post_perWorker')}</AppText></AppText>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secPayment')}</AppText>
         </View>
         <View style={ps.sectionBody}>
-          {/* Salary type chips */}
-          <AppText style={[ps.fieldLabel, { color: theme.colors.mutedText }]}>{t('post_paymentFreq')}</AppText>
-          <Controller
-            control={control}
-            name="salaryType"
-            render={({ field: { value, onChange } }) => (
-              <View style={[styles.salaryTypeRow, { marginBottom: 14 }]}>
-                {(['Daily', 'Weekly', 'Monthly'] as const).map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    onPress={() => onChange(type)}
-                    activeOpacity={0.8}
-                    style={[
-                      styles.salaryTypeChip,
-                      {
-                        backgroundColor: value === type ? theme.colors.primary : theme.colors.surface1,
-                        borderColor: value === type ? theme.colors.primary : theme.colors.border,
-                      },
-                    ]}
-                  >
-                    <AppText style={[styles.salaryTypeChipTxt, { color: value === type ? '#fff' : theme.colors.mutedText }]}>
-                      {type === 'Daily' ? `📅 ${t('salaryDaily')}` : type === 'Weekly' ? `📆 ${t('salaryWeekly')}` : `🗓 ${t('salaryMonthly')}`}
-                    </AppText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          />
-          {/* Budget range */}
-          <AppText style={[ps.fieldLabel, { color: theme.colors.mutedText }]}>{t('post_budgetRange')} · {watch('salaryType')?.toLowerCase() ?? 'daily'}</AppText>
+          {/* Budget range — unit is fixed by requirement type (see BUDGET_BY_TYPE) */}
           <View style={styles.row}>
             <View style={styles.rowHalf}>
               <FormInput
                 control={control}
                 name="minBudgetPerWorker"
-                label={t('post_minAmount')}
-                placeholder={watch('salaryType') === 'Monthly' ? '8000' : watch('salaryType') === 'Weekly' ? '2000' : '400'}
+                label={t(BUDGET_BY_TYPE[reqType].minKey)}
+                placeholder={BUDGET_BY_TYPE[reqType].minPh}
                 keyboardType="numeric"
               />
             </View>
@@ -871,8 +848,8 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
               <FormInput
                 control={control}
                 name="maxBudgetPerWorker"
-                label={t('post_maxAmount')}
-                placeholder={watch('salaryType') === 'Monthly' ? '15000' : watch('salaryType') === 'Weekly' ? '4000' : '700'}
+                label={t(BUDGET_BY_TYPE[reqType].maxKey)}
+                placeholder={BUDGET_BY_TYPE[reqType].maxPh}
                 keyboardType="numeric"
               />
             </View>
@@ -891,7 +868,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
         <View style={[ps.sectionBody, { paddingBottom: 6 }]}>
           <View style={styles.flagsGrid}>
-            {BOOLEAN_FLAGS.map((flag) => (
+            {flagsForType(reqType).map((flag) => (
               <TouchableOpacity
                 key={flag.key}
                 onPress={() => toggleFlag(flag.key)}
@@ -1307,13 +1284,6 @@ const styles = StyleSheet.create({
   card: { marginBottom: 4 },
   row: { flexDirection: 'row', gap: 10 },
   rowHalf: { flex: 1 },
-  // Salary type radio buttons
-  salaryTypeRow: { flexDirection: 'row', gap: 10 },
-  salaryTypeChip: {
-    flex: 1, alignItems: 'center', paddingVertical: 10,
-    borderRadius: 12, borderWidth: 1.5,
-  },
-  salaryTypeChipTxt: { fontSize: 13, fontWeight: '700' },
   // Perks grid
   flagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   flagChip: {

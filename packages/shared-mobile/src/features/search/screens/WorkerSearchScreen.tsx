@@ -41,6 +41,7 @@ import { useContactQuotaNudge } from '../../../core/hooks/useContactQuotaNudge';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import WORKER_CATEGORIES from '../../../shared/data/categories.json';
+import { categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCategories';
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { buildPhotoUrl } from '../../../core/config/env';
 import i18n from '../../../core/i18n';
@@ -191,6 +192,7 @@ const subcatDisplay = (label: string): string => {
 const META_KEY_BY_VALUE: Record<string, string> = {
   Male: 'ws_male', Female: 'ws_female', Other: 'ws_other',
   'ITI/Diploma': 'ws_iti_diploma', Graduate: 'ws_graduate',
+  '10th/12th/ITI': 'ws_school_iti', 'Diploma/Graduate': 'ws_diploma_graduate',
   Skilled: 'ws_skilled', 'Semi-Skilled': 'ws_semiSkilled', 'Semi Skilled': 'ws_semiSkilled', Unskilled: 'ws_unskilled',
   'Group worker supplier':     'ws_agentType_group',
   'Skilled worker supplier':   'ws_agentType_skilled',
@@ -628,6 +630,9 @@ const FilterSheet = ({
       if (k === 'state') { next.district = ''; next.tehsil = ''; }
       if (k === 'district') { next.tehsil = ''; }
       if (k === 'workerType') { next.subCategory = ''; }
+      // Switching qualification tier flips the category source (Diploma/Graduate →
+      // Support Staff), so any prior category/sub-category pick must be cleared.
+      if (k === 'qualification') { next.workerType = ''; next.subCategory = ''; }
       return next;
     });
   };
@@ -644,17 +649,25 @@ const FilterSheet = ({
         : [],
     [f.state, f.district],
   );
-  const catLabels    = useMemo(() => CATEGORIES.map((c) => c.label), []);
-  // Sub-category filter is hidden for now (see commented UI below); keep the
-  // computation but mark it used to avoid an unused-var error.
-  const subCatLabels = useMemo(
+  // Tier-aware category list: Diploma/Graduate → Support Staff taxonomy; every
+  // other qualification (and none) → regular worker categories. Mirrors the CRM
+  // worker filter + the register screen.
+  const availableCats = useMemo(() => {
+    const allowed = new Set(
+      categoryValuesForWorkerTier(f.qualification, CATEGORIES.map((c) => c.value)),
+    );
+    return CATEGORIES.filter((c) => allowed.has(c.value));
+  }, [f.qualification]);
+  const catLabels = useMemo(() => availableCats.map((c) => c.label), [availableCats]);
+  // Sub-category options are VALUES (not labels) — the backend matches workers by
+  // value; subcatDisplay() renders the per-language label for display.
+  const subCatValues = useMemo(
     () =>
-      CATEGORIES.find((c) => c.label === f.workerType)?.subcategories?.map(
-        (s) => s.label,
+      availableCats.find((c) => c.label === f.workerType)?.subcategories?.map(
+        (s) => s.value,
       ) ?? [],
-    [f.workerType],
+    [availableCats, f.workerType],
   );
-  void subCatLabels;
 
   // Locked location is a plan constraint, not a user-chosen filter — exclude it
   // from the "active filters" count so Reset visibly clears to zero.
@@ -763,10 +776,9 @@ const FilterSheet = ({
               placeholder={t('ws_all_categories')}
               onPress={() => setPicker('cat')}
             />
-            {/* Sub-category filter hidden for now — filtering by main category
-                already covers its sub-skills on the backend. Re-enable by
-                un-commenting (the subcat picker modal below is also commented).
-            {f.workerType && subCatLabels.length > 0 && (
+            {/* Sub-category — appears once a category is chosen; lists that
+                category's sub-skills (Support Staff sub-roles for Diploma/Graduate). */}
+            {f.workerType && subCatValues.length > 0 && (
               <DropField
                 label={t('ws_sub_category')}
                 value={f.subCategory ? subcatDisplay(f.subCategory) : ''}
@@ -774,7 +786,6 @@ const FilterSheet = ({
                 onPress={() => setPicker('subcat')}
               />
             )}
-            */}
           </View>
 
           {/* ── Professional Type ─────────────────────────────────────── */}
@@ -909,8 +920,10 @@ const FilterSheet = ({
             </View>
             <View style={fsh.typeGrid}>
               {[
-                { label: t('ws_iti_diploma'), sub: t('ws_certificate_holders'), val: 'ITI/Diploma', icon: '🎓' },
-                { label: t('ws_graduate'),    sub: t('ws_bachelors_above'),     val: 'Graduate',    icon: '📜' },
+                { label: t('ws_school_iti'),       sub: t('ws_certificate_holders'), val: '10th/12th/ITI',   icon: '🎓' },
+                { label: t('ws_diploma_graduate'), sub: t('ws_bachelors_above'),     val: 'Diploma/Graduate', icon: '📜' },
+                { label: t('ws_iti_diploma'),      sub: t('ws_certificate_holders'), val: 'ITI/Diploma',      icon: '🎓' },
+                { label: t('ws_graduate'),         sub: t('ws_bachelors_above'),     val: 'Graduate',         icon: '📜' },
               ].map((opt) => {
                 const active = f.qualification === opt.val;
                 return (
@@ -986,18 +999,16 @@ const FilterSheet = ({
           allLabel={t('ws_all_categories_opt')}
           labelFor={catDisplay}
         />
-        {/* Sub-category picker hidden for now — see the commented DropField above.
         <PickerModal
           visible={picker === 'subcat'}
           title={t('ws_sub_category')}
-          options={subCatLabels}
+          options={subCatValues}
           selected={f.subCategory}
           onSelect={(v) => set('subCategory', v)}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_sub_categories_opt')}
           labelFor={subcatDisplay}
         />
-        */}
         <PickerModal
           visible={picker === 'state'}
           title={t('ws_state')}
@@ -1764,7 +1775,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     queryKey: ['workers-infinite', appliedFilters],
     queryFn: ({ pageParam = 1 }: { pageParam: number }) =>
       workerApi.getAllAgents({
-        workerType:    (appliedFilters.subCategory || appliedFilters.workerType) || undefined,
+        workerType:    appliedFilters.workerType    || undefined,
+        subCategory:   appliedFilters.subCategory    || undefined,
         state:         appliedFilters.state         || undefined,
         district:      appliedFilters.district      || undefined,
         block:         appliedFilters.tehsil        || undefined,

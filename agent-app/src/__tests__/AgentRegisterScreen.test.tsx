@@ -67,7 +67,7 @@ describe('AgentRegisterScreen — step 1 (role + sub-type)', () => {
     selectSelfWorker();
     expect(screen.getByText('myWorkType')).toBeTruthy();
     expect(screen.getByText('workerTypeSkilled')).toBeTruthy();
-    expect(screen.getByText('workerTypeITI')).toBeTruthy();
+    expect(screen.getByText('workerTypeSchoolIti')).toBeTruthy();
   });
 
   it('shows the agent-type list when Agent is selected', () => {
@@ -123,11 +123,11 @@ describe('AgentRegisterScreen — step 1 (role + sub-type)', () => {
   });
 });
 
-describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
-  it('shows the resume row for an ITI/Diploma worker and uploads a file', async () => {
+describe('AgentRegisterScreen — resume upload (10th-12th-ITI / Diploma-Graduate)', () => {
+  it('shows the resume row for a 10th/12th/ITI worker and uploads a file', async () => {
     renderScreen();
     selectSelfWorker();
-    fireEvent.press(screen.getByText('workerTypeITI'));
+    fireEvent.press(screen.getByText('workerTypeSchoolIti'));
     expect(screen.getByText('regUploadResume')).toBeTruthy();
 
     fireEvent.press(screen.getByText('regUploadResume'));
@@ -140,7 +140,7 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
   it('clears an uploaded resume', async () => {
     renderScreen();
     selectSelfWorker();
-    fireEvent.press(screen.getByText('workerTypeGraduate'));
+    fireEvent.press(screen.getByText('workerTypeDiplomaGrad'));
     fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => expect(screen.getByText('regResumeUploaded')).toBeTruthy());
 
@@ -152,7 +152,7 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     (getDocumentAsync as jest.Mock).mockResolvedValueOnce({ canceled: true, assets: [] });
     renderScreen();
     selectSelfWorker();
-    fireEvent.press(screen.getByText('workerTypeITI'));
+    fireEvent.press(screen.getByText('workerTypeSchoolIti'));
     fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => expect(getDocumentAsync).toHaveBeenCalled());
     expect(screen.getByText('regUploadResume')).toBeTruthy();
@@ -162,7 +162,7 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     (getDocumentAsync as jest.Mock).mockRejectedValueOnce(new Error('picker boom'));
     renderScreen();
     selectSelfWorker();
-    fireEvent.press(screen.getByText('workerTypeITI'));
+    fireEvent.press(screen.getByText('workerTypeSchoolIti'));
     fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => {
       expect(showAlert).toHaveBeenCalledWith('alertError', 'regPickFileError');

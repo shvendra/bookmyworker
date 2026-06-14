@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSubCatLabel } from '../../../shared/utils/labelUtils';
+import { WORKER_QUALIFICATION_TIERS, WORKER_TIER_COLOR } from '../../../shared/data/workerQualificationTiers';
 import {
   Animated,
   Dimensions,
@@ -109,13 +110,6 @@ const AGENT_TYPES = [
   { value: 'Skilled worker supplier',   label: 'Skilled Work Supplier',   icon: '🔧', color: '#F97316', desc: 'Place skilled tradespeople for projects' },
   { value: 'Unskilled worker supplier', label: 'Unskilled Work Supplier', icon: '🏗️', color: '#14B8A6', desc: 'General labour and unskilled workforce' },
   { value: 'Contract worker supplier',  label: 'Contract Work Supplier',  icon: '📋', color: '#8B5CF6', desc: 'Short & long-term contract placements' },
-];
-
-const WORKER_SUB_TYPES = [
-  { value: 'Skilled',     label: 'Skilled Worker',  icon: '🔧', color: '#F97316', desc: 'Trained in a trade — plumber, electrician, welder' },
-  { value: 'Unskilled',   label: 'Unskilled',       icon: '🏗️', color: '#14B8A6', desc: 'General construction, loading, helpers' },
-  { value: 'ITI/Diploma', label: 'ITI / Diploma',   icon: '🎓', color: '#6366F1', desc: 'Certificate holder for technical roles' },
-  { value: 'Graduate',    label: 'Graduate',        icon: '📚', color: '#8B5CF6', desc: 'Degree holder for professional roles' },
 ];
 
 const EMPLOYER_TYPE_LIST = [
@@ -685,11 +679,11 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               {/* Worker sub-type */}
               {step.id === 'workerSubType' && (
                 <View style={s.optList}>
-                  {WORKER_SUB_TYPES.map(opt => (
+                  {WORKER_QUALIFICATION_TIERS.map(opt => (
                     <OptionCard
                       key={opt.value}
-                      icon={opt.icon} label={opt.label} desc={opt.desc}
-                      color={opt.color}
+                      icon={opt.icon} label={t(opt.labelKey)} desc={t(opt.descKey)}
+                      color={WORKER_TIER_COLOR[opt.value] ?? '#6366F1'}
                       selected={workerSub === opt.value}
                       onPress={() => setWorkerSub(opt.value)}
                     />

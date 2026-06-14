@@ -43,7 +43,10 @@ type Step = 1 | 2 | 3;
 
 const { height: H } = Dimensions.get('window');
 const RESEND_COOLDOWN = 60;
-const ROLE_OPTIONS = ['Employer', 'SelfWorker', 'Agent'];
+// The employer app locks the role via `roleHint` (this picker is hidden there), so
+// this account-type picker only ever renders in the agent app — which serves Job
+// Seekers and Agents, never Employers. Hence Employer is intentionally excluded.
+const ROLE_OPTIONS = ['SelfWorker', 'Agent'];
 
 function toBackendRole(hint?: string): 'Employer' | 'Agent' | 'SelfWorker' | '' {
   switch (hint) {
@@ -521,8 +524,8 @@ const s = StyleSheet.create({
   },
   backArrow: { fontSize: 20, color: '#fff', fontWeight: '700', lineHeight: 24 },
   brandCenter:   { alignItems: 'center', gap: 2 },
-  brandIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  brandLogoImg:  { width: 28, height: 28 },
+  brandIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFFFFF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  brandLogoImg:  { width: 40, height: 40 },
   brandName:   { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
 
   // ── Step indicator ────────────────────────────────────────────────

@@ -23,13 +23,14 @@ import { AGENT_LANG_KEY } from '../language/LanguageSelectScreen';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
-import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
 import {
   registerStep2Schema,
   type RegisterStep2Values,
 } from '../../../../packages/shared-mobile/src/features/auth/validation/authSchemas';
+import { WORKER_QUALIFICATION_TIERS } from '../../../../packages/shared-mobile/src/shared/data/workerQualificationTiers';
+import { DIPLOMA_GRADUATE_SUBTYPE } from '../../../../packages/shared-mobile/src/shared/data/supportStaffCategories';
 import type { AgentStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'Register'>;
@@ -46,12 +47,10 @@ const ROLE_OPTIONS: Array<{ value: Role; labelKey: string; descKey: string; icon
   { value: 'Agent',      labelKey: 'roleAgentSupplier', descKey: 'roleAgentSupplierDesc', icon: '🤝', color: BRAND,  bg: '#EBF1FF' },
 ];
 
-const WORKER_SUB_TYPES: Array<{ value: string; labelKey: string; descKey: string; icon: string }> = [
-  { value: 'Skilled',     labelKey: 'workerTypeSkilled',   descKey: 'workerTypeSkilledDesc',   icon: '🔧' },
-  { value: 'Unskilled',   labelKey: 'workerTypeUnskilled', descKey: 'workerTypeUnskilledDesc', icon: '🏗️' },
-  { value: 'ITI/Diploma', labelKey: 'workerTypeITI',       descKey: 'workerTypeITIDesc',       icon: '🎓' },
-  { value: 'Graduate',    labelKey: 'workerTypeGraduate',  descKey: 'workerTypeGraduateDesc',  icon: '📜' },
-];
+// Qualification boxes come from the shared WORKER_QUALIFICATION_TIERS source of
+// truth so the agent app's register screen stays in sync with onboarding / edit
+// (Skilled, Unskilled, 10th/12th/ITI, Diploma/Graduate — all 11 languages).
+const WORKER_SUB_TYPES = WORKER_QUALIFICATION_TIERS;
 
 const AGENT_TYPES: Array<{ value: string; labelKey: string; descKey: string; icon: string }> = [
   { value: 'Group worker supplier',     labelKey: 'agentTypeGroupSupplier',     descKey: 'agentTypeGroupSupplierDesc',     icon: '👥' },
@@ -86,7 +85,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
     setResumeName(null);
   };
 
-  const showResume = role === 'SelfWorker' && (workerSubType === 'ITI/Diploma' || workerSubType === 'Graduate');
+  const showResume = role === 'SelfWorker' && (workerSubType === '10th/12th/ITI' || workerSubType === DIPLOMA_GRADUATE_SUBTYPE);
 
   const canContinue = (): boolean => {
     if (!role) return false;
@@ -170,10 +169,6 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                 style={styles.logoImg}
                 resizeMode="contain"
               />
-            </View>
-            <View style={styles.brandTextBlock}>
-              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={18} /></AppText>
-              <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
             </View>
           </View>
 
@@ -343,7 +338,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                       {resumeUri ? t('regResumeUploaded') : t('regUploadResume')}
                     </AppText>
                     <AppText style={[styles.resumeSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
-                      {resumeName ?? 'PDF or Word document (optional but recommended)'}
+                      {resumeName ?? t('regResumeHint')}
                     </AppText>
                   </View>
                   {resumeUri && (
@@ -408,10 +403,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               resizeMode="contain"
             />
           </View>
-          <View style={[styles.brandTextBlock, { flex: 1 }]}>
-            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={18} /></AppText>
-            <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
-          </View>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn} activeOpacity={0.7}>
             <AppText style={styles.backArrow}>←</AppText>
           </TouchableOpacity>
@@ -518,9 +510,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 5,
   },
   logoImg:       { width: 48, height: 48 },
-  brandTextBlock:{ gap: 1 },
-  brandName:     { fontSize: 18, fontWeight: '800', lineHeight: 23, letterSpacing: -0.3 },
-  brandSub:      { fontSize: 11.5 },
 
   heroTitle: { fontSize: 22, fontWeight: '900', lineHeight: 30, letterSpacing: -0.4 },
   heroSub:   { fontSize: 12.5, lineHeight: 19, marginTop: 4 },
