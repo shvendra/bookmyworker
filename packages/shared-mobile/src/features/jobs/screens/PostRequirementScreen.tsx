@@ -126,7 +126,22 @@ const requirementSchema = z.object({
     .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number')
     .optional()
     .or(z.literal('')),
-});
+})
+  // Wage rules: each wage must be at least ₹250, and max must not be below min.
+  // Issues are attached to the specific field so the inline error shows correctly.
+  .superRefine((val, ctx) => {
+    const MIN_WAGE = 250;
+    const min = Number(val.minBudgetPerWorker);
+    const max = Number(val.maxBudgetPerWorker);
+    if (Number.isFinite(min) && min < MIN_WAGE) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['minBudgetPerWorker'], message: `Wage must be at least ₹${MIN_WAGE}` });
+    }
+    if (Number.isFinite(max) && max < MIN_WAGE) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['maxBudgetPerWorker'], message: `Wage must be at least ₹${MIN_WAGE}` });
+    } else if (Number.isFinite(min) && Number.isFinite(max) && max < min) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['maxBudgetPerWorker'], message: 'Max wage cannot be less than min wage' });
+    }
+  });
 
 type FormValues = z.infer<typeof requirementSchema>;
 
