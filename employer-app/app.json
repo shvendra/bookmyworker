@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker Employer",
     "slug": "bookmyworker-employer",
-    "version": "1.0.3",
+    "version": "1.0.16",
     "orientation": "portrait",
     "scheme": "bookmyworker-employer",
     "icon": "./assets/icon.png",
@@ -26,8 +26,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
-          "color": "#7C3AED",
+          "icon": "./assets/notification-icon.png",
+          "color": "#1137A4",
           "defaultChannel": "default",
           "sounds": []
         }

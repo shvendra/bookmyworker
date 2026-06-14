@@ -373,11 +373,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
   };
 
   // ── Submit for the day ────────────────────────────────────────────────────
-  const handleSubmit = async () => {
-    if (joinedWorkers.length === 0) {
-      toast.error(t('att_noWorkersMsg'), t('att_noWorkersTitle'));
-      return;
-    }
+  const doSubmit = async () => {
     setSubmitting(true);
     try {
       const records = joinedWorkers.map((w) => ({
@@ -394,6 +390,36 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Show a confirmation summary (present / half-day / absent breakdown) before
+  // saving — mirrors the CRM's confirm dialog so accidental saves are avoided.
+  const handleSubmit = () => {
+    if (joinedWorkers.length === 0) {
+      toast.error(t('att_noWorkersMsg'), t('att_noWorkersTitle'));
+      return;
+    }
+    let present = 0, halfDay = 0, absent = 0;
+    for (const w of joinedWorkers) {
+      const st = (dayAttendance[w._id] ?? seeded[w._id])?.status ?? 'present';
+      if (st === 'half_day') halfDay += 1;
+      else if (st === 'absent') absent += 1;
+      else present += 1;
+    }
+    Alert.alert(
+      t('att_confirmTitle'),
+      t('att_confirmBody', {
+        date: formatDisplayDate(selectedDate),
+        present,
+        halfDay,
+        absent,
+        total: joinedWorkers.length,
+      }),
+      [
+        { text: t('att_confirmCancel'), style: 'cancel' },
+        { text: t('att_confirmSave'), onPress: () => { void doSubmit(); } },
+      ],
+    );
   };
 
   // ── Mark-all shortcuts ────────────────────────────────────────────────────
@@ -714,7 +740,7 @@ const hm = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%' },
   header:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1 },
-  title:   { fontSize: 17, fontWeight: '900' },
+  title:   { fontSize: 17, fontWeight: '900', flexShrink: 1 },
   closeBtn:{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   dayRow:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 12, borderWidth: 1 },
   dayDate: { fontSize: 14, fontWeight: '800' },

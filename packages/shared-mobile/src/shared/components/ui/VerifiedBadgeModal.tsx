@@ -28,14 +28,15 @@ interface VerifiedBadgeModalProps {
   userPhone: string;
 }
 
-const BENEFITS = [
-  'Employers will trust you.',
-  'Get more work calls.',
-  'Trust lasts for long time.',
-  'Better opportunities come quickly.',
-  'Easy to contact employers.',
-  'Your profile looks professional and reliable.',
-];
+// Translation keys for the benefit rows — resolved at render time via t().
+const BENEFIT_KEYS = [
+  'vbBenefit1',
+  'vbBenefit2',
+  'vbBenefit3',
+  'vbBenefit4',
+  'vbBenefit5',
+  'vbBenefit6',
+] as const;
 
 const BenefitRow = ({ text, isLast }: { text: string; isLast: boolean }): React.JSX.Element => (
   <View
@@ -79,7 +80,7 @@ export const VerifiedBadgeModal = ({
   const isAgent = userRole === 'agent';
   const price = isAgent ? pricing.verifiedBadge.agent : pricing.verifiedBadge.worker;
   const originalPrice = isAgent ? price * 5 : price * 10;
-  const discount = isAgent ? '80% OFF' : '90% OFF';
+  const discount = t('vbOff', { percent: isAgent ? 80 : 90 });
 
   const handleGetVerified = async (): Promise<void> => {
     try {
@@ -130,19 +131,17 @@ export const VerifiedBadgeModal = ({
             <View style={styles.avatarWrap}>
               <Avatar name={userName} size={72} ring ringColor="rgba(255,255,255,0.55)" />
               <View style={styles.verifiedTag}>
-                <AppText style={styles.verifiedTagText}>VERIFIED</AppText>
+                <AppText style={styles.verifiedTagText}>{t('vbVerifiedTag')}</AppText>
               </View>
             </View>
 
-            <AppText style={styles.heroTitle}>Get Verified Now</AppText>
-            <AppText style={styles.heroSub}>
-              Stand out from others & get more{'\n'}work opportunities
-            </AppText>
+            <AppText style={styles.heroTitle}>{t('vbTitle')}</AppText>
+            <AppText style={styles.heroSub}>{t('vbSubtitle')}</AppText>
 
             {/* "Why get Verified?" pill */}
             <View style={styles.whyPill}>
               <View style={styles.whyDot} />
-              <AppText style={styles.whyText}>Why get Verified?</AppText>
+              <AppText style={styles.whyText}>{t('vbWhy')}</AppText>
             </View>
           </View>
 
@@ -153,18 +152,16 @@ export const VerifiedBadgeModal = ({
           >
             {/* ── Benefits ─────────────────────────────────────── */}
             <View style={[styles.benefitsCard, { borderColor: theme.colors.border }]}>
-              {BENEFITS.map((b, i) => (
-                <BenefitRow key={i} text={b} isLast={i === BENEFITS.length - 1} />
+              {BENEFIT_KEYS.map((key, i) => (
+                <BenefitRow key={key} text={t(key)} isLast={i === BENEFIT_KEYS.length - 1} />
               ))}
             </View>
 
             {/* ── Price card ───────────────────────────────────── */}
             <View style={[styles.priceCard, { borderColor: '#DBEAFE' }]}>
               <View style={[styles.priceCardHeader, { backgroundColor: '#EFF6FF', borderBottomColor: '#DBEAFE' }]}>
-                <AppText style={styles.priceCardTitle}>Verified Badge Fee only:</AppText>
-                <AppText style={styles.priceCardSub}>
-                  Unlock premium trust and better response from employers.
-                </AppText>
+                <AppText style={styles.priceCardTitle}>{t('vbFeeTitle')}</AppText>
+                <AppText style={styles.priceCardSub}>{t('vbFeeSub')}</AppText>
               </View>
               <View style={styles.priceCardBody}>
                 <View style={styles.priceRow}>
@@ -180,9 +177,7 @@ export const VerifiedBadgeModal = ({
                     </>
                   )}
                 </View>
-                <AppText style={styles.priceNote}>
-                  One-time verification · No hidden charges
-                </AppText>
+                <AppText style={styles.priceNote}>{t('vbPriceNote')}</AppText>
               </View>
             </View>
           </ScrollView>
@@ -194,7 +189,7 @@ export const VerifiedBadgeModal = ({
               style={[styles.laterBtn, { borderColor: theme.colors.border }]}
               activeOpacity={0.75}
             >
-              <AppText style={[styles.laterBtnText, { color: theme.colors.mutedText }]}>Maybe Later</AppText>
+              <AppText style={[styles.laterBtnText, { color: theme.colors.mutedText }]}>{t('vbMaybeLater')}</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => void handleGetVerified()}
@@ -205,7 +200,7 @@ export const VerifiedBadgeModal = ({
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <AppText style={styles.verifyBtnText}>Get Verified Now</AppText>
+                <AppText style={styles.verifyBtnText}>{t('vbGetVerified')}</AppText>
               )}
             </TouchableOpacity>
           </View>

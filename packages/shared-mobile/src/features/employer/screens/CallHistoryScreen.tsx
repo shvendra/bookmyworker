@@ -337,7 +337,7 @@ const sc = StyleSheet.create({
   listContent:   { padding: 14 },
 
   emptyBox:      { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 32, gap: 12 },
-  emptyEmoji:    { fontSize: 48 },
+  emptyEmoji:    { fontSize: 48, lineHeight: 58, textAlign: 'center' },
   emptyTitle:    { fontSize: 18, fontWeight: '900', textAlign: 'center' },
   emptySub:      { fontSize: 13, textAlign: 'center', lineHeight: 20 },
   browseBtn:     { backgroundColor: BRAND, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },

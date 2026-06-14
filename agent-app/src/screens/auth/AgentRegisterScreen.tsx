@@ -23,6 +23,7 @@ import { AGENT_LANG_KEY } from '../language/LanguageSelectScreen';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
+import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
 import {
@@ -105,14 +106,14 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
         setResumeName(result.assets[0].name);
       }
     } catch {
-      showAlert('Error', 'Could not pick file. Try again.');
+      showAlert(t('alertError'), t('regPickFileError'));
     }
   };
 
   const goToStep2 = (): void => {
-    if (!role) { showAlert('Required', 'Please select your role to continue.'); return; }
-    if (role === 'Agent' && !agentType) { showAlert('Required', 'Please select your agent type.'); return; }
-    if (role === 'SelfWorker' && !workerSubType) { showAlert('Required', 'Please select your worker type.'); return; }
+    if (!role) { showAlert(t('alertRequired'), t('regSelectRole')); return; }
+    if (role === 'Agent' && !agentType) { showAlert(t('alertRequired'), t('regSelectAgentType')); return; }
+    if (role === 'SelfWorker' && !workerSubType) { showAlert(t('alertRequired'), t('regSelectWorkerType')); return; }
     setStep(2);
   };
 
@@ -134,7 +135,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
         resumeName: resumeName ?? undefined,
       });
     } catch (error) {
-      showAlert('Error', error instanceof Error ? error.message : 'Failed to send OTP');
+      showAlert(t('alertError'), error instanceof Error ? error.message : t('regOtpFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +172,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               />
             </View>
             <View style={styles.brandTextBlock}>
-              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={18} /></AppText>
               <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
             </View>
           </View>
@@ -339,7 +340,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                   <AppText style={styles.resumeEmoji}>{resumeUri ? '📄' : '⬆️'}</AppText>
                   <View style={styles.resumeTexts}>
                     <AppText style={[styles.resumeTitle, { color: resumeUri ? '#d97706' : theme.colors.text }]}>
-                      {resumeUri ? 'Resume Uploaded ✓' : 'Upload Resume / CV'}
+                      {resumeUri ? t('regResumeUploaded') : t('regUploadResume')}
                     </AppText>
                     <AppText style={[styles.resumeSub, { color: theme.colors.mutedText }]} numberOfLines={1}>
                       {resumeName ?? 'PDF or Word document (optional but recommended)'}
@@ -408,7 +409,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
             />
           </View>
           <View style={[styles.brandTextBlock, { flex: 1 }]}>
-            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={18} /></AppText>
             <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
           </View>
           <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn} activeOpacity={0.7}>

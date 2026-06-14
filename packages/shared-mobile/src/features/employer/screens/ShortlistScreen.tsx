@@ -95,7 +95,7 @@ function WorkerCard({
           )}
         </View>
 
-        <View style={{ flex: 1, gap: 3 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
           <AppText style={[wc.name, { color: theme.colors.text }]} numberOfLines={1}>
             {name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
           </AppText>

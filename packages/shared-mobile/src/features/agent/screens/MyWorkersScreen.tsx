@@ -24,8 +24,10 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { useTranslation } from 'react-i18next';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { parseAreasOfWork, subcatDisplay } from '../../../shared/data/categoryLabels';
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -76,6 +78,7 @@ const workerWork = (worker) => {
 
 export const MyWorkersScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const { state } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const user = state.session?.user;
@@ -184,28 +187,15 @@ export const MyWorkersScreen = (): React.JSX.Element => {
                   </AppText>
                  {workerWork(w) !== '—' && (
   <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
-    {(() => {
-      const rawValue = workerWork(w);
-      try {
-        // If it's a JSON string representation of an array, parse it
-        const parsed = JSON.parse(rawValue);
-        if (Array.isArray(parsed)) {
-          return parsed.map(item => String(item).trim()).join(', ');
-        }
-      } catch (e) {
-        // Fallback if it's already a standard comma-separated string or plain text
-      }
-      
-      // Clean up loose brackets or quotes just in case parsing was skipped
-      return String(rawValue)
-        .replace(/[\[\]"']/g, '')
-        .trim();
-    })()}
+    {/* Translate each stored skill/area to the active language (all 11 langs) */}
+    {parseAreasOfWork(w.areasOfWork ?? (w as { skills?: unknown }).skills)
+      .map(subcatDisplay)
+      .join(', ')}
   </AppText>
 )}
                 </View>
                 <Badge
-                  label={status === 'verified' ? 'Verified' : 'Pending'}
+                  label={status === 'verified' ? t('verified') : t('statusPending')}
                   variant={status === 'verified' ? 'success' : 'warning'}
                 />
               </AppCard>

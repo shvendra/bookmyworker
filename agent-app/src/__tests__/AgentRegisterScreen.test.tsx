@@ -128,11 +128,11 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     renderScreen();
     selectSelfWorker();
     fireEvent.press(screen.getByText('workerTypeITI'));
-    expect(screen.getByText('Upload Resume / CV')).toBeTruthy();
+    expect(screen.getByText('regUploadResume')).toBeTruthy();
 
-    fireEvent.press(screen.getByText('Upload Resume / CV'));
+    fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => {
-      expect(screen.getByText('Resume Uploaded ✓')).toBeTruthy();
+      expect(screen.getByText('regResumeUploaded')).toBeTruthy();
     });
     expect(screen.getByText('resume.pdf')).toBeTruthy();
   });
@@ -141,11 +141,11 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     renderScreen();
     selectSelfWorker();
     fireEvent.press(screen.getByText('workerTypeGraduate'));
-    fireEvent.press(screen.getByText('Upload Resume / CV'));
-    await waitFor(() => expect(screen.getByText('Resume Uploaded ✓')).toBeTruthy());
+    fireEvent.press(screen.getByText('regUploadResume'));
+    await waitFor(() => expect(screen.getByText('regResumeUploaded')).toBeTruthy());
 
     fireEvent.press(screen.getByText('✕'));
-    expect(screen.getByText('Upload Resume / CV')).toBeTruthy();
+    expect(screen.getByText('regUploadResume')).toBeTruthy();
   });
 
   it('ignores a cancelled document pick', async () => {
@@ -153,9 +153,9 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     renderScreen();
     selectSelfWorker();
     fireEvent.press(screen.getByText('workerTypeITI'));
-    fireEvent.press(screen.getByText('Upload Resume / CV'));
+    fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => expect(getDocumentAsync).toHaveBeenCalled());
-    expect(screen.getByText('Upload Resume / CV')).toBeTruthy();
+    expect(screen.getByText('regUploadResume')).toBeTruthy();
   });
 
   it('alerts when the document picker throws', async () => {
@@ -163,9 +163,9 @@ describe('AgentRegisterScreen — resume upload (ITI / Graduate)', () => {
     renderScreen();
     selectSelfWorker();
     fireEvent.press(screen.getByText('workerTypeITI'));
-    fireEvent.press(screen.getByText('Upload Resume / CV'));
+    fireEvent.press(screen.getByText('regUploadResume'));
     await waitFor(() => {
-      expect(showAlert).toHaveBeenCalledWith('Error', 'Could not pick file. Try again.');
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'regPickFileError');
     });
   });
 });
@@ -243,7 +243,7 @@ describe('AgentRegisterScreen — step 2 (details form)', () => {
     fillForm();
     fireEvent.press(screen.getByText('sendOtpRegister'));
     await waitFor(() => {
-      expect(showAlert).toHaveBeenCalledWith('Error', 'network down');
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'network down');
     });
   });
 
@@ -254,7 +254,7 @@ describe('AgentRegisterScreen — step 2 (details form)', () => {
     fillForm();
     fireEvent.press(screen.getByText('sendOtpRegister'));
     await waitFor(() => {
-      expect(showAlert).toHaveBeenCalledWith('Error', 'Failed to send OTP');
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'regOtpFailed');
     });
   });
 

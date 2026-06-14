@@ -58,38 +58,47 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 
-// Role-type options (shown in English, matching the registration screen).
+// Role-type options. `labelKey` is an i18n key resolved at render time so these
+// chips are localized in all 11 languages (keys already exist in every locale).
 const WORKER_SUB_TYPES = [
-  { value: 'Skilled',     label: 'Skilled',      icon: '🔧' },
-  { value: 'Unskilled',   label: 'Unskilled',    icon: '🏗️' },
-  { value: 'ITI/Diploma', label: 'ITI / Diploma', icon: '🎓' },
-  { value: 'Graduate',    label: 'Graduate',      icon: '📜' },
+  { value: 'Skilled',     labelKey: 'workerTypeSkilled',   icon: '🔧' },
+  { value: 'Unskilled',   labelKey: 'workerTypeUnskilled', icon: '🏗️' },
+  { value: 'ITI/Diploma', labelKey: 'workerTypeITI',       icon: '🎓' },
+  { value: 'Graduate',    labelKey: 'workerTypeGraduate',  icon: '📜' },
 ];
 const AGENT_TYPES = [
-  { value: 'Group worker supplier',     label: 'Group Worker Supplier',     icon: '👥' },
-  { value: 'Skilled worker supplier',   label: 'Skilled Worker Supplier',   icon: '🔧' },
-  { value: 'Unskilled worker supplier', label: 'Unskilled Worker Supplier', icon: '🏗️' },
-  { value: 'Contract worker supplier',  label: 'Contract Worker Supplier',  icon: '📋' },
+  { value: 'Group worker supplier',     labelKey: 'agentTypeGroupSupplier',     icon: '👥' },
+  { value: 'Skilled worker supplier',   labelKey: 'agentTypeSkilledSupplier',   icon: '🔧' },
+  { value: 'Unskilled worker supplier', labelKey: 'agentTypeUnskilledSupplier', icon: '🏗️' },
+  { value: 'Contract worker supplier',  labelKey: 'agentTypeContractSupplier',  icon: '📋' },
 ];
 
 // Category data with multilingual labels (mirrors WorkerProfileCompletionScreen).
+// categories.json ships a label field for all 11 languages; index it dynamically
+// so every language resolves (previously only hi/mr/gu were handled, leaving the
+// other 8 languages showing English).
 interface CatRaw {
-  label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string;
-  value: string;
-  subcategories: Array<{ label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string; value: string }>;
+  label: string; value: string;
+  subcategories: Array<{ label: string; value: string; [field: string]: string | undefined }>;
+  [field: string]: unknown;
 }
-const ALL_CATS = categoriesData as CatRaw[];
+const ALL_CATS = categoriesData as unknown as CatRaw[];
+// Active i18n language → categories.json label field. Region suffixes (e.g.
+// 'hi-IN') are stripped before lookup so the device locale still resolves.
+const CAT_LANG_FIELD: Record<string, string> = {
+  hi: 'hindilabel', mr: 'marathilabel', gu: 'gujaratilabel', ta: 'tamillabel',
+  te: 'telugulabel', kn: 'kannadalabel', ml: 'malayalamlabel', bn: 'banglalabel',
+  or: 'odialabel', pa: 'punjabilabel',
+};
+const catLabelField = (lang: string): string | undefined =>
+  CAT_LANG_FIELD[(lang || 'en').toLowerCase().split(/[-_]/)[0]];
 function getCatLabel(cat: CatRaw, lang: string): string {
-  if (lang === 'hi' && cat.hindilabel) return cat.hindilabel;
-  if (lang === 'mr' && cat.marathilabel) return cat.marathilabel;
-  if (lang === 'gu' && cat.gujaratilabel) return cat.gujaratilabel;
-  return cat.label;
+  const f = catLabelField(lang);
+  return (f && (cat[f] as string)) || cat.label;
 }
 function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
-  if (lang === 'hi' && sub.hindilabel) return sub.hindilabel;
-  if (lang === 'mr' && sub.marathilabel) return sub.marathilabel;
-  if (lang === 'gu' && sub.gujaratilabel) return sub.gujaratilabel;
-  return sub.label;
+  const f = catLabelField(lang);
+  return (f && (sub[f] as string)) || sub.label;
 }
 
 const editProfileSchema = z.object({
@@ -313,6 +322,10 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       if (values.oldPassword && values.newPassword) {
         formData.append('oldPassword', values.oldPassword);
         formData.append('newPassword', values.newPassword);
+        // Backend `updateUser` requires all three fields and rejects with
+        // "Fill all password fields" otherwise. The form's zod refine already
+        // guarantees confirmPassword === newPassword at submit time.
+        formData.append('confirmPassword', values.confirmPassword ?? values.newPassword);
       }
       if (photoUri) {
         const filename = photoUri.split('/').pop() ?? 'photo.jpg';
@@ -520,7 +533,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                   ]}
                 >
                   <AppText style={[styles.genderChipText, { color: roleType === opt.value ? '#fff' : theme.colors.text }]}>
-                    {opt.icon} {opt.label}
+                    {opt.icon} {t(opt.labelKey)}
                   </AppText>
                 </TouchableOpacity>
               ))}
@@ -672,7 +685,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                       style={[styles.areaTag, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]}
                       activeOpacity={0.7}
                     >
-                      <AppText style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.primary, marginRight: 4 }}>{formatAreaLabel(a)}</AppText>
+                      <AppText style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.primary, marginRight: 4, flexShrink: 1 }}>{formatAreaLabel(a)}</AppText>
                       <AppText style={{ fontSize: 15, fontWeight: '700', color: theme.colors.primary }}>×</AppText>
                     </TouchableOpacity>
                   ))}
@@ -740,7 +753,7 @@ const styles = StyleSheet.create({
   fieldLabel:    { fontSize: 13.5, fontWeight: '700', letterSpacing: 0, marginBottom: 9 },
   genderRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   genderChip:    { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 9 },
-  genderChipText:{ fontSize: 13.5, fontWeight: '600' },
+  genderChipText:{ fontSize: 13.5, fontWeight: '600', flexShrink: 1 },
 
   // Age
   ageInput: { fontSize: 20, fontWeight: '800', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, textAlign: 'center' },

@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
@@ -35,6 +36,7 @@ const fmtDate = (iso: string): string => {
 
 const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const isVerified = worker.status === 'Verified';
   const skills = worker.areasOfWork?.slice(0, 2).map(s => s.replace(/_/g, ' ')).join(', ');
 
@@ -52,7 +54,7 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
               {worker.name}
             </AppText>
             <Badge
-              label={isVerified ? 'Verified' : 'Pending'}
+              label={isVerified ? t('verified') : t('statusPending')}
               variant={isVerified ? 'success' : 'warning'}
             />
           </View>
@@ -70,7 +72,7 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
             </AppText>
           ) : null}
           <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardDate}>
-            Added {fmtDate(worker.createdAt)}
+            {t('addedOn')} {fmtDate(worker.createdAt)}
           </AppText>
         </View>
       </View>
@@ -80,6 +82,7 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
 
 export const AgentWorkersScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
 
@@ -112,12 +115,12 @@ export const AgentWorkersScreen = (): React.JSX.Element => {
 
   const isRefreshing = isLoading || isFetchingNextPage;
 
-  if (isLoading) return <LoadingState message="Loading your workers…" />;
+  if (isLoading) return <LoadingState message={t('loadingWorkers')} />;
   if (isError) {
     return (
       <ErrorState
-        title="Could not load workers"
-        description="Check your connection and try again."
+        title={t('couldNotLoadWorkers')}
+        description={t('checkConnectionRetry')}
         onRetry={() => void refetch()}
       />
     );
@@ -127,7 +130,7 @@ export const AgentWorkersScreen = (): React.JSX.Element => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
-        title="My Workers"
+        title={t('myWorkers')}
         onBack={() => navigation.goBack()}
         rightIcon="➕"
         onRightPress={() => navigation.navigate('AddWorker')}
@@ -135,26 +138,26 @@ export const AgentWorkersScreen = (): React.JSX.Element => {
 
       {/* Count bar */}
       <View style={[styles.countBar, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        <AppText variant="caption" color={theme.colors.mutedText}>
-          {total} worker{total !== 1 ? 's' : ''} registered
+        <AppText variant="caption" color={theme.colors.mutedText} style={styles.countText} numberOfLines={1}>
+          {t('workersRegistered', { count: total })}
         </AppText>
         <TouchableOpacity
           onPress={() => navigation.navigate('AddWorker')}
           style={[styles.addBtn, { backgroundColor: theme.colors.primary }]}
           activeOpacity={0.8}
         >
-          <AppText variant="caption" color="#FFFFFF" style={styles.addBtnText}>+ Add Worker</AppText>
+          <AppText variant="caption" color="#FFFFFF" style={styles.addBtnText} numberOfLines={1}>{t('addWorkerBtn')}</AppText>
         </TouchableOpacity>
       </View>
 
       {workers.length === 0 ? (
         <EmptyState
           icon="👷"
-          title="No workers yet"
-          message="Add workers to your team and track them here."
+          title={t('noWorkersYet')}
+          message={t('addWorkersTeamMsg')}
           action={
             <AppButton
-              title="Add First Worker"
+              title={t('addFirstWorker')}
               onPress={() => navigation.navigate('AddWorker')}
               variant="primary"
               size="md"
@@ -188,10 +191,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  countText: { flexShrink: 1, marginRight: 12 },
   addBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
+    flexShrink: 0,
   },
   addBtnText: { fontWeight: '700' },
   list: { padding: 12, gap: 10 },

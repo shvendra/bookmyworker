@@ -35,7 +35,7 @@ describe('AgentLoginScreen', () => {
     expect(screen.getAllByText('welcomeBack').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('🔒  passwordLoginTab')).toBeTruthy();
     expect(screen.getByText('📱  otpLoginTab')).toBeTruthy();
-    expect(screen.getByText('Instant OTP Login')).toBeTruthy();
+    expect(screen.getByText('loginTrustOtp')).toBeTruthy();
   });
 
   it('defaults to the password login form', () => {
@@ -66,7 +66,7 @@ describe('AgentLoginScreen', () => {
   it('renders correctly in dark mode', () => {
     __themeState.mode = 'dark';
     renderScreen();
-    expect(screen.getByText('Why BookMyWorker?')).toBeTruthy();
+    expect(screen.getByText('loginWhyBmw')).toBeTruthy();
   });
 
   it('uses the ios keyboard behavior', () => {

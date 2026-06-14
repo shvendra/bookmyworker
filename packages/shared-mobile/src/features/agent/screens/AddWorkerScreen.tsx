@@ -15,6 +15,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { agentApi } from '../../../core/api/endpoints/agentApi';
@@ -27,6 +29,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
+import { getWorkTypeLabel } from '../../../shared/utils/labelUtils';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { indianStates } from '../../../shared/data/stateDistrict';
 
@@ -46,29 +49,34 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 const BRAND  = '#1037A4';
 const ORANGE = '#F97316';
 
-const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
+// Canonical option values — stored in form state and sent to the backend as-is.
+// Only their *display* labels are translated (see option-mapping helpers below),
+// so the data layer is unchanged regardless of the user's language.
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
+const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'] as const;
 const EXPERIENCE_OPTIONS = ['Fresher', ...Array.from({ length: 20 }, (_, i) => `${i + 1} year${i !== 0 ? 's' : ''}`)];
 
-const addWorkerSchema = z.object({
-  name: z.string().min(3, 'Name is required'),
-  mobile: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
-  dob: z.string().optional(),
-  address: z.string().optional(),
-  pinCode: z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit PIN code').optional().or(z.literal('')),
-  salaryType: z.string().optional(),
-  fixedSalary: z.string().optional(),
-  salaryFrom: z.string().optional(),
-  salaryTo: z.string().optional(),
-  workExperience: z.string().optional(),
-  bankAccount: z.string().optional(),
-  ifscCode: z.string().optional(),
-  bankName: z.string().optional(),
-  description: z.string().optional(),
-});
+// Schema is built per-render so validation messages follow the active language.
+const buildAddWorkerSchema = (t: TFunction) =>
+  z.object({
+    name: z.string().min(3, t('awValName')),
+    mobile: z.string().regex(/^[6-9]\d{9}$/, t('awValMobile')),
+    gender: z.enum(['Male', 'Female', 'Other']).optional(),
+    dob: z.string().optional(),
+    address: z.string().optional(),
+    pinCode: z.string().regex(/^\d{6}$/, t('awValPin')).optional().or(z.literal('')),
+    salaryType: z.string().optional(),
+    fixedSalary: z.string().optional(),
+    salaryFrom: z.string().optional(),
+    salaryTo: z.string().optional(),
+    workExperience: z.string().optional(),
+    bankAccount: z.string().optional(),
+    ifscCode: z.string().optional(),
+    bankName: z.string().optional(),
+    description: z.string().optional(),
+  });
 
-type FormValues = z.infer<typeof addWorkerSchema>;
+type FormValues = z.infer<ReturnType<typeof buildAddWorkerSchema>>;
 
 const SectionCard = ({ icon, title, children, theme }: {
   icon: string; title: string; children: React.ReactNode;
@@ -109,6 +117,7 @@ const cardStyles = StyleSheet.create({
 
 export const AddWorkerScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -138,8 +147,32 @@ export const AddWorkerScreen = (): React.JSX.Element => {
     );
   };
 
+  // ── Option display helpers ──────────────────────────────────────────────
+  // Translate only what the user sees; map back to the canonical English value
+  // before it ever reaches form state / the API.
+  const genderLabel = (v: string): string =>
+    v === 'Male' ? t('genderMale') : v === 'Female' ? t('genderFemale') : v === 'Other' ? t('genderOther') : '';
+  const genderOptions = React.useMemo(() => GENDER_OPTIONS.map(genderLabel), [t]);
+  const genderFromLabel = (label: string): 'Male' | 'Female' | 'Other' | undefined =>
+    GENDER_OPTIONS.find((v) => genderLabel(v) === label);
+
+  const salaryTypeLabelOf = (v: string): string =>
+    v === 'Fixed' ? t('salaryFixedOpt') : v === 'Ranged' ? t('salaryRangedOpt') : '';
+  const salaryTypeOptions = React.useMemo(() => SALARY_TYPE_OPTIONS.map(salaryTypeLabelOf), [t]);
+  const salaryTypeFromLabel = (label: string): string =>
+    SALARY_TYPE_OPTIONS.find((v) => salaryTypeLabelOf(v) === label) ?? '';
+
+  const experienceLabelOf = (v: string): string => {
+    if (v === 'Fresher') return t('expFresher');
+    const n = parseInt(v, 10);
+    return `${n} ${n === 1 ? t('awYear') : t('awYears')}`;
+  };
+  const experienceOptions = React.useMemo(() => EXPERIENCE_OPTIONS.map(experienceLabelOf), [t]);
+  const experienceFromLabel = (label: string): string =>
+    EXPERIENCE_OPTIONS.find((v) => experienceLabelOf(v) === label) ?? '';
+
   const { control, handleSubmit, watch } = useForm<FormValues>({
-    resolver: zodResolver(addWorkerSchema),
+    resolver: zodResolver(buildAddWorkerSchema(t)),
     defaultValues: {
       name: '', mobile: '', gender: undefined, dob: '',
       address: '', pinCode: '', salaryType: '', fixedSalary: '', salaryFrom: '', salaryTo: '',
@@ -185,21 +218,21 @@ export const AddWorkerScreen = (): React.JSX.Element => {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['agent-stats'] });
-      toast.success('Worker registered successfully.', 'Worker Added!');
+      toast.success(t('awSuccessMsg'), t('awSuccessTitle'));
       if (canGoBack) navigation.goBack();
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Could not register worker', 'Registration Failed');
+      toast.error(err instanceof Error ? err.message : t('awErrorMsg'), t('awErrorTitle'));
     },
   });
 
   const onSubmit = handleSubmit((values) => {
     if (!stateVal || !districtVal) {
-      toast.warning('Please select state and district.', 'Required Fields');
+      toast.warning(t('awSelectStateDistrict'), t('awRequiredFields'));
       return;
     }
     if (selectedCategories.length === 0) {
-      toast.warning('Please select at least one area of work.', 'Required Fields');
+      toast.warning(t('awSelectAreaWork'), t('awRequiredFields'));
       return;
     }
     mutation.mutate(values);
@@ -209,7 +242,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
     <View style={styles.root}>
 
       {canGoBack && (
-        <ScreenHeader title="Add Worker" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('awAddWorkerTitle')} onBack={() => navigation.goBack()} />
       )}
 
       {/* ── Form body ────────────────────────────────────────── */}
@@ -224,28 +257,29 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Basic Info */}
-          <SectionCard icon="👤" title="Basic Information" theme={theme}>
-            <FormInput control={control} name="name" label="Full Name *" placeholder="Worker's full name" />
-            <FormInput control={control} name="mobile" label="Mobile Number *" placeholder="10-digit number" keyboardType="phone-pad" maxLength={10} />
+          <SectionCard icon="👤" title={t('awBasicInfo')} theme={theme}>
+            <FormInput control={control} name="name" label={t('fullNameRequired')} placeholder={t('awFullNamePh')} />
+            <FormInput control={control} name="mobile" label={t('mobileNumberRequired')} placeholder={t('tenDigitMobile')} keyboardType="phone-pad" maxLength={10} />
             <Controller
               control={control}
               name="gender"
               render={({ field, fieldState }) => (
                 <FormSelect
-                  label="Gender"
-                  value={field.value ?? ''}
-                  options={GENDER_OPTIONS}
-                  onChange={(v) => field.onChange(v as 'Male' | 'Female' | 'Other')}
+                  label={t('genderLabel')}
+                  placeholder={t('awSelectPlaceholder')}
+                  value={genderLabel(field.value ?? '')}
+                  options={genderOptions}
+                  onChange={(label) => field.onChange(genderFromLabel(label))}
                   errorText={fieldState.error?.message}
                 />
               )}
             />
-            <FormInput control={control} name="dob" label="Age" placeholder="e.g. 25" keyboardType="number-pad" maxLength={2} />
-            <FormInput control={control} name="address" label="Village / Town / Address" placeholder="Local address" />
+            <FormInput control={control} name="dob" label={t('ageLabel')} placeholder={t('awAgePh')} keyboardType="number-pad" maxLength={2} />
+            <FormInput control={control} name="address" label={t('villageTownAddress')} placeholder={t('awAddressPh')} />
           </SectionCard>
 
           {/* Location */}
-          <SectionCard icon="📍" title="Location" theme={theme}>
+          <SectionCard icon="📍" title={t('awLocation')} theme={theme}>
             <LocationSelector
               state={stateVal}
               district={districtVal}
@@ -253,13 +287,12 @@ export const AddWorkerScreen = (): React.JSX.Element => {
               onStateChange={(v) => { setStateVal(v); setDistrictVal(''); setTehsilVal(''); }}
               onDistrictChange={(v) => { setDistrictVal(v); setTehsilVal(''); }}
               onBlockChange={setTehsilVal}
-              blockLabel="Block / Tehsil"
             />
             <FormInput
               control={control}
               name="pinCode"
-              label="PIN Code"
-              placeholder="6-digit area PIN code"
+              label={t('pinCodeLabel')}
+              placeholder={t('sixDigitPinCode')}
               keyboardType="number-pad"
               maxLength={6}
             />
@@ -268,11 +301,11 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           {/* Serviceable Areas — where the worker will work (drives employer search) */}
           <SectionCard
             icon="🗺️"
-            title={`Serviceable Areas${serviceAreas.length > 0 ? `  ·  ${serviceAreas.length} selected` : ''}`}
+            title={`${t('awServiceAreas')}${serviceAreas.length > 0 ? `  ·  ${t('awSelectedCount', { count: serviceAreas.length })}` : ''}`}
             theme={theme}
           >
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.areaHint}>
-              Cities / districts where this worker will travel for work. Employers searching a city are matched against these areas.
+              {t('awServiceHint')}
             </AppText>
 
             <View style={[styles.searchBox, {
@@ -284,7 +317,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
                 style={[styles.searchInput, { color: theme.colors.text }]}
                 value={areaSearch}
                 onChangeText={setAreaSearch}
-                placeholder="Search city or district…"
+                placeholder={t('awSearchCity')}
                 placeholderTextColor={theme.colors.mutedText}
                 autoCorrect={false}
               />
@@ -322,7 +355,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
             )}
 
             {areaSearch.trim().length > 0 && filteredAreas.length === 0 && (
-              <AppText variant="caption" color={theme.colors.mutedText} style={styles.areaHint}>No districts found</AppText>
+              <AppText variant="caption" color={theme.colors.mutedText} style={styles.areaHint}>{t('awNoDistricts')}</AppText>
             )}
 
             {serviceAreas.length > 0 && (
@@ -334,7 +367,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
                     activeOpacity={0.75}
                     style={[styles.chip, { backgroundColor: BRAND, borderColor: BRAND }]}
                   >
-                    <AppText variant="caption" color="#FFFFFF" style={styles.chipText} numberOfLines={1}>{a}</AppText>
+                    <AppText variant="caption" color="#FFFFFF" style={styles.chipText} numberOfLines={2}>{a}</AppText>
                     <AppText style={styles.chipCheck}>✕</AppText>
                   </TouchableOpacity>
                 ))}
@@ -345,7 +378,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           {/* Areas of Work */}
           <SectionCard
             icon="💼"
-            title={`Areas of Work${selectedCategories.length > 0 ? `  ·  ${selectedCategories.length} selected` : ''}`}
+            title={`${t('awAreasOfWork')}${selectedCategories.length > 0 ? `  ·  ${t('awSelectedCount', { count: selectedCategories.length })}` : ''}`}
             theme={theme}
           >
             <View style={styles.chipGrid}>
@@ -370,7 +403,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
                       style={styles.chipText}
                       numberOfLines={3}
                     >
-                      {cat.label}
+                      {getWorkTypeLabel(cat.value, t)}
                     </AppText>
                   </TouchableOpacity>
                 );
@@ -378,22 +411,23 @@ export const AddWorkerScreen = (): React.JSX.Element => {
             </View>
             {selectedCategories.length === 0 && (
               <AppText variant="caption" color={theme.colors.mutedText} style={styles.chipHint}>
-                Tap to select work categories
+                {t('awTapCategories')}
               </AppText>
             )}
           </SectionCard>
 
           {/* Experience */}
-          <SectionCard icon="⭐" title="Experience & Skills" theme={theme}>
+          <SectionCard icon="⭐" title={t('awExperienceSkills')} theme={theme}>
             <Controller
               control={control}
               name="workExperience"
               render={({ field, fieldState }) => (
                 <FormSelect
-                  label="Work Experience"
-                  value={field.value ?? ''}
-                  options={EXPERIENCE_OPTIONS}
-                  onChange={field.onChange}
+                  label={t('workExperienceLabel')}
+                  placeholder={t('selectExperience')}
+                  value={field.value ? experienceLabelOf(field.value) : ''}
+                  options={experienceOptions}
+                  onChange={(label) => field.onChange(experienceFromLabel(label))}
                   errorText={fieldState.error?.message}
                 />
               )}
@@ -401,48 +435,49 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           </SectionCard>
 
           {/* Salary */}
-          <SectionCard icon="💰" title="Salary Preference" theme={theme}>
+          <SectionCard icon="💰" title={t('awSalaryPref')} theme={theme}>
             <Controller
               control={control}
               name="salaryType"
               render={({ field }) => (
                 <FormSelect
-                  label="Salary Type"
-                  value={field.value ?? ''}
-                  options={SALARY_TYPE_OPTIONS}
-                  onChange={field.onChange}
+                  label={t('salaryTypeLabel')}
+                  placeholder={t('selectSalaryType')}
+                  value={field.value ? salaryTypeLabelOf(field.value) : ''}
+                  options={salaryTypeOptions}
+                  onChange={(label) => field.onChange(salaryTypeFromLabel(label))}
                 />
               )}
             />
             {salaryType === 'Fixed' && (
-              <FormInput control={control} name="fixedSalary" label="Fixed Daily Rate (₹)" placeholder="500" keyboardType="numeric" />
+              <FormInput control={control} name="fixedSalary" label={t('fixedDailyRate')} placeholder="500" keyboardType="numeric" />
             )}
             {salaryType === 'Ranged' && (
               <View style={styles.rangeRow}>
                 <View style={styles.rangeField}>
-                  <FormInput control={control} name="salaryFrom" label="From (₹/day)" placeholder="400" keyboardType="numeric" />
+                  <FormInput control={control} name="salaryFrom" label={t('fromPerDay')} placeholder="400" keyboardType="numeric" />
                 </View>
                 <View style={styles.rangeField}>
-                  <FormInput control={control} name="salaryTo" label="To (₹/day)" placeholder="700" keyboardType="numeric" />
+                  <FormInput control={control} name="salaryTo" label={t('toPerDay')} placeholder="700" keyboardType="numeric" />
                 </View>
               </View>
             )}
           </SectionCard>
 
           {/* Bank Details */}
-          <SectionCard icon="🏦" title="Bank Details  ·  Optional" theme={theme}>
-            <FormInput control={control} name="bankAccount" label="Account Number" placeholder="123456789012" keyboardType="number-pad" />
-            <FormInput control={control} name="ifscCode" label="IFSC Code" placeholder="SBIN0001234" />
-            <FormInput control={control} name="bankName" label="Bank Name" placeholder="State Bank of India" />
+          <SectionCard icon="🏦" title={`${t('awBankDetails')}  ·  ${t('awOptional')}`} theme={theme}>
+            <FormInput control={control} name="bankAccount" label={t('accountNumberLabel')} placeholder="123456789012" keyboardType="number-pad" />
+            <FormInput control={control} name="ifscCode" label={t('ifscCodeLabel')} placeholder="SBIN0001234" />
+            <FormInput control={control} name="bankName" label={t('bankNameLabel')} placeholder="State Bank of India" />
           </SectionCard>
 
           {/* Notes */}
-          <SectionCard icon="📝" title="Notes" theme={theme}>
+          <SectionCard icon="📝" title={t('awNotes')} theme={theme}>
             <FormInput
               control={control}
               name="description"
-              label="Additional Details"
-              placeholder="Any notes about this worker…"
+              label={t('additionalDetailsLabel')}
+              placeholder={t('awNotesPh')}
               multiline
               numberOfLines={3}
               style={styles.textarea}
@@ -456,12 +491,12 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           }]}>
             <AppText style={styles.infoIcon}>🔑</AppText>
             <AppText variant="caption" color={isDark ? theme.colors.mutedText : '#92400E'} style={styles.infoText}>
-              The worker's initial login password will be their mobile number. They can change it after first login.
+              {t('awPasswordInfo')}
             </AppText>
           </View>
 
           <AppButton
-            title="Register Worker"
+            title={t('registerWorkerBtn')}
             onPress={onSubmit}
             loading={mutation.isPending}
             size="lg"
@@ -535,7 +570,7 @@ const styles = StyleSheet.create({
     maxWidth: '48%',
   },
   chipCheck: { fontSize: 11, color: '#FFFFFF', fontWeight: '800' },
-  chipText:  { fontWeight: '600' },
+  chipText:  { fontWeight: '600', flexShrink: 1 },
   chipHint:  { marginTop: 8, fontStyle: 'italic' },
 
   areaHint:   { marginBottom: 10, lineHeight: 17 },

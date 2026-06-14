@@ -32,9 +32,21 @@ interface ActivityPage {
   totalPages: number;
 }
 
+// This feed only ever shows the signed-in user's OWN activity, so a description
+// that opens with their role ("Employer updated their profile", "Agent logged in")
+// should read in the first person — "You updated your profile".
+const SELF_ACTOR_PREFIX = /^(employer|self[\s-]?worker|agent|worker|supplier)\b/i;
+
 const fmtDesc = (s?: string): string => {
   if (!s) return '';
-  return s.replace(/_/g, ' ');
+  let out = s.replace(/_/g, ' ');
+  if (SELF_ACTOR_PREFIX.test(out)) {
+    out = out
+      .replace(SELF_ACTOR_PREFIX, 'You')
+      .replace(/\btheir\b/g, 'your')
+      .replace(/\bthemselves\b/g, 'yourself');
+  }
+  return out;
 };
 
 const timeAgo = (date: string, t: TFunction): string => {

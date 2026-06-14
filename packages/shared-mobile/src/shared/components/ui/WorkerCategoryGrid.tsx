@@ -229,7 +229,6 @@ const HCatSlider = ({
   activeCategory?: string;
 }): React.JSX.Element => {
   const { t } = useTranslation();
-  const { theme } = useAppTheme();
   const step = CAT_CARD_W + CAT_CARD_GAP;
 
   const scrollRef = useRef<ScrollView>(null);
@@ -355,19 +354,6 @@ const HCatSlider = ({
           );
         })}
       </ScrollView>
-
-      {/* Dot indicators */}
-      <View style={hStyles.dots}>
-        {WORK_CATEGORIES.map((_, i) => {
-          const w = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [5, 18] });
-          const op = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
-          return (
-            <TouchableOpacity key={i} onPress={() => { scrollToIndex(i); resetTimer(); }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-              <Animated.View style={[hStyles.dot, { width: w, opacity: op, backgroundColor: theme.colors.primary }]} />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
     </View>
   );
 };
@@ -583,12 +569,14 @@ const hStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   jobPill: {
     borderRadius: 20,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    flexShrink: 0,
   },
   jobPillTxt: {
     fontSize: 11,

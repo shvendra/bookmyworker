@@ -41,9 +41,13 @@ const AGENT_PREF_ROWS: PrefRow[] = [
   { key: 'promotions',       labelKey: 'notifPrefPromoLabel',      descKey: 'notifPrefPromoDesc' },
 ];
 
+// Employer notification categories — kept in sync with the CRM
+// (NotificationSettings.jsx → Employer set). `callOutcome` is intentionally
+// excluded: it is a WORKER-facing notification (sent to the worker when an
+// employer logs a call outcome), so it is meaningless in an employer's own prefs.
 const EMPLOYER_PREF_ROWS: PrefRow[] = [
-  { key: 'callOutcome',      labelKey: 'notifPrefCallOutcomeLabel',descKey: 'notifPrefCallOutcomeDesc' },
   { key: 'expressedInterest',labelKey: 'notifPrefInterestLabel',   descKey: 'notifPrefInterestDesc' },
+  { key: 'paymentSuccess',   labelKey: 'notifPrefPaymentLabel',    descKey: 'notifPrefPaymentDesc' },
   { key: 'kycUpdate',        labelKey: 'notifPrefKycLabel',        descKey: 'notifPrefKycDesc' },
   { key: 'chat',             labelKey: 'notifPrefChatLabel',       descKey: 'notifPrefChatDesc' },
   { key: 'promotions',       labelKey: 'notifPrefPromoLabel',      descKey: 'notifPrefPromoDesc' },

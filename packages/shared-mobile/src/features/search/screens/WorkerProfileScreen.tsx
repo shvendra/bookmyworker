@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -503,7 +504,7 @@ const RequirementPickerModal = ({
                           {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <AppText style={pm.reqTitle} numberOfLines={2} maxFontSizeMultiplier={1.3}>
+                          <AppText style={pm.reqTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.2}>
                             {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                           </AppText>
                           <AppText style={pm.reqSub}>
@@ -675,7 +676,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
                       {isChk && <View style={inv.radioDot} />}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText style={inv.reqTitle} numberOfLines={2} maxFontSizeMultiplier={1.3}>
+                      <AppText style={inv.reqTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.2}>
                         {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                       </AppText>
                       <AppText style={inv.reqSub}>ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}</AppText>
@@ -742,6 +743,11 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const queryClient = useQueryClient();
   const user = authState.session?.user;
   const isEmployer = user?.role === 'employer';
+  // Invite gating: read from the canonical plan-features hook (plan defaults +
+  // live SuperAdmin overrides), NOT the raw profile blob — older accounts may be
+  // missing the inviteEnabled subdoc flag. usePlanFeatures is optimistic (true)
+  // while the profile loads, preserving the previous permissive-while-loading UX.
+  const planFeat = usePlanFeatures();
   const insets = useSafeAreaInsets();
 
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
@@ -1125,7 +1131,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
           )}
 
           {/* Invite to Requirement button — employer only, requires inviteEnabled plan feature */}
-          {isEmployer && (!empProfileLoaded || empProfile?.planFeatures?.inviteEnabled === true) && (
+          {isEmployer && planFeat.inviteEnabled && (
             <TouchableOpacity
               onPress={() => setInviteVisible(true)}
               style={s.inviteBtn}

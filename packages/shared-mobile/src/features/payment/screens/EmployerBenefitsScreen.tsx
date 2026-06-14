@@ -83,7 +83,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const user = authState.session?.user;
   const isDark = theme.mode === 'dark';
 
-  const { pricing, employerPlans, gstRate } = usePricingConfig();
+  const { pricing, employerPlans, gstRate, boostConfig } = usePricingConfig();
   const plansCfg: EmployerPlansConfig = employerPlans ?? EMPLOYER_PLANS_DEFAULTS;
 
   const [modalType, setModalType] = useState<EmployerTypeKey | null>(null);
@@ -259,7 +259,15 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
           const isLower = idx < currentIdx;
           const meta = PLAN_META[pk];
           const planData = plansCfg[pk] ?? EMPLOYER_PLANS_DEFAULTS[pk];
-          const benefits = buildFeatureBenefits(planData.features, t as TFn);
+          const featureBenefits = buildFeatureBenefits(planData.features, t as TFn);
+          // Requirement-boost allowance for this tier (1-month, matching the 1m
+          // stats shown on this card). enabled=false / 0 → no boost line.
+          const boost1m = boostConfig?.enabled !== false
+            ? (Number(boostConfig?.allowance?.[pk]?.['1m']) || 0)
+            : 0;
+          const benefits = boost1m > 0
+            ? [t('jp_benefitBoosts', { count: boost1m }), ...featureBenefits]
+            : featureBenefits;
           const lim1m = planData.limits['1m'];
           const fromPrice = priceFor(pk, '1m');
 
@@ -295,7 +303,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               </View>
 
               <View style={s.planBenefits}>
-                {benefits.slice(0, 5).map((b) => (
+                {benefits.slice(0, 6).map((b) => (
                   <View key={b} style={s.benefitRow}>
                     <AppText style={[s.benefitTick, { color: BRAND }]}>✓</AppText>
                     <AppText style={[s.benefitTxt, { color: theme.colors.textSecondary }]}>{b}</AppText>
@@ -447,7 +455,7 @@ const s = StyleSheet.create({
   heroStatLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: '600', marginTop: 2 },
   usageWrap:   { marginTop: 16 },
   usageHeadRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  usageLabel:  { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '600' },
+  usageLabel:  { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '600', flexShrink: 1 },
   usageTrack:  { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' },
   usageFill:   { height: 6, borderRadius: 3 },
 
@@ -511,7 +519,7 @@ const s = StyleSheet.create({
   carryChip:     { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   carryChipTxt:  { fontSize: 12, fontWeight: '800' },
   totalRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, marginTop: 10, paddingTop: 14 },
-  totalLabel:    { fontSize: 13, fontWeight: '600' },
+  totalLabel:    { fontSize: 13, fontWeight: '600', flexShrink: 1 },
   totalVal:      { fontSize: 20, fontWeight: '900' },
   payBtn:        { borderRadius: 14, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   payBtnTxt:     { color: WHITE, fontSize: 15, fontWeight: '800' },

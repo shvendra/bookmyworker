@@ -139,17 +139,22 @@ const InfoTile = ({ emoji, label, value, accent }: {
       <View style={[tile.iconBox, { backgroundColor: a + '14' }]}>
         <AppText style={tile.emoji}>{emoji}</AppText>
       </View>
-      <AppText style={[tile.label, { color: theme.colors.mutedText }]}>{label}</AppText>
-      <AppText style={[tile.value, { color: accent ? a : theme.colors.text }]} numberOfLines={2}>{value}</AppText>
+      <View style={tile.textCol}>
+        <AppText style={[tile.label, { color: theme.colors.mutedText }]} numberOfLines={1}>{label}</AppText>
+        <AppText style={[tile.value, { color: accent ? a : theme.colors.text }]} numberOfLines={2}>{value}</AppText>
+      </View>
     </View>
   );
 };
 const tile = StyleSheet.create({
-  wrap:    { width: '48%', borderRadius: 18, borderWidth: 1, padding: 14, gap: 8, ...CARD_SHADOW },
-  iconBox: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  emoji:   { fontSize: 20 },
-  label:   { fontSize: 9, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: SLATE },
-  value:   { fontSize: 14, fontWeight: '800', lineHeight: 19, letterSpacing: -0.1 },
+  // Horizontal layout: icon on the left, label + value stacked on the right.
+  // Rows in the wrap-grid stretch to equal height, so 2 tiles side-by-side stay aligned.
+  wrap:    { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, borderWidth: 1, paddingVertical: 11, paddingHorizontal: 12, ...CARD_SHADOW },
+  iconBox: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  emoji:   { fontSize: 18 },
+  textCol: { flex: 1, minWidth: 0, gap: 2 },
+  label:   { fontSize: 9, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: SLATE },
+  value:   { fontSize: 13, fontWeight: '800', lineHeight: 17, letterSpacing: -0.1 },
 });
 
 // ─── Section header ────────────────────────────────────────────────────────────
@@ -183,7 +188,6 @@ const AgentCard = ({
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
   const [unlocking,     setUnlocking]     = useState(false);
   const [unlockError,   setUnlockError]   = useState<string | null>(null);
-  const [alreadyHired,  setAlreadyHired]  = useState(false);
 
   const initials = (agent.name || `A${idx + 1}`).slice(0, 2).toUpperCase();
   const location = getLocationStr({ district: agent.district, state: agent.state }, i18n.language, '');
@@ -203,17 +207,16 @@ const AgentCard = ({
     setUnlocking(true);
     setUnlockError(null);
     try {
-      const res = await workerApi.unlockNumber(agent._id);
+      // Revealing an interested agent's number on the employer's OWN requirement
+      // is subscription-gated but quota-FREE (matches CRM `reveal-contact`). It
+      // must NOT decrement the contact quota like the search/profile unlock flow.
+      const res = await requirementsApi.revealAgentContact(agent._id);
       if (res.phone) {
         setUnlockedPhone(res.phone);
-        setAlreadyHired(res.alreadyHired === true);
       } else {
-        const msg = res.message ?? t('rd_unlockFailDefault');
+        const msg = t('rd_unlockFailDefault');
         setUnlockError(msg);
         toast.error(msg, t('rd_accessDenied'));
-        if (msg.toLowerCase().includes('subscri') || msg.toLowerCase().includes('expired')) {
-          navigation.navigate('Subscription');
-        }
       }
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
@@ -221,7 +224,12 @@ const AgentCard = ({
       const code   = data?.code;
       const msg    = data?.message ?? errObj?.message ?? t('rd_unlockFailShort');
       setUnlockError(msg);
-      if (code === 'SUBSCRIPTION_EXPIRED' || code === 'SUBSCRIPTION_REQUIRED' || code === 'CONTACT_LIMIT') {
+      // reveal-contact returns a 403 (no `code`) when the subscription is
+      // inactive/expired; route the employer to renew either way.
+      if (
+        code === 'SUBSCRIPTION_EXPIRED' || code === 'SUBSCRIPTION_REQUIRED' || code === 'CONTACT_LIMIT' ||
+        msg.toLowerCase().includes('subscri') || msg.toLowerCase().includes('expired')
+      ) {
         navigation.navigate('Subscription');
       }
     } finally {
@@ -229,8 +237,9 @@ const AgentCard = ({
     }
   };
 
-  // Contact is blocked only when subscription is expired AND worker is not already hired
-  const isContactBlocked = !isSubscribed && !alreadyHired && !unlockedPhone;
+  // Interested-agent reveal is subscription-gated (mirrors CRM reveal-contact),
+  // so it's blocked whenever there's no active subscription and no revealed phone.
+  const isContactBlocked = !isSubscribed && !unlockedPhone;
 
   return (
     <View style={ac.cardWrap}>
@@ -242,10 +251,10 @@ const AgentCard = ({
         </View>
 
         {/* Info */}
-        <View style={{ flex: 1 }}>
-          <AppText style={ac.name} numberOfLines={1}>{agent.name || t('rd_agentN', { n: idx + 1 })}</AppText>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <AppText style={ac.name} numberOfLines={2}>{agent.name || t('rd_agentN', { n: idx + 1 })}</AppText>
           {!!location && (
-            <AppText style={ac.location} numberOfLines={1}>📍 {location}</AppText>
+            <AppText style={ac.location} numberOfLines={2}>📍 {location}</AppText>
           )}
           {agent.agentRequiredWage != null && (
             <View style={ac.wagePill}>
@@ -282,10 +291,7 @@ const AgentCard = ({
 
       {/* Revealed phone — full-width row below the card */}
       {!!unlockedPhone && (
-        <View style={[ac.phoneRevealedRow, alreadyHired && { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' }]}>
-          {alreadyHired && (
-            <AppText style={ac.hiredBadge}>{t('rd_alreadyHiredFree')}</AppText>
-          )}
+        <View style={ac.phoneRevealedRow}>
           <View style={ac.phoneRevealedLeft}>
             <AppText style={ac.phoneRevealedLabel}>{t('rd_contactNumber')}</AppText>
             <AppText style={ac.phoneRevealedNum}>📞 {unlockedPhone}</AppText>
@@ -859,6 +865,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {req.req_type ? (
               <AppText style={hero.jobType}>{translateReqType(req.req_type, t)}</AppText>
             ) : null}
+            {req.workLocation ? (
+              <View style={hero.locRow}>
+                <AppText style={hero.locIcon}>📍</AppText>
+                <AppText style={hero.locTxt} numberOfLines={2}>
+                  {translateLocationString(req.workLocation, i18n.language)}
+                </AppText>
+              </View>
+            ) : null}
           </View>
           <View style={[hero.statusBadge, { backgroundColor: sMeta.bg, borderColor: sMeta.border }]}>
             <View style={[hero.statusDot, { backgroundColor: sMeta.color }]} />
@@ -930,9 +944,6 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 value={`₹${req.minBudgetPerWorker} – ₹${req.maxBudgetPerWorker ?? req.minBudgetPerWorker}/${t(getSalaryTypeKey(req))}`}
                 accent={GREEN}
               />
-            ) : null}
-            {req.workLocation ? (
-              <InfoTile emoji="🗺️" label={t('rd_workSite')} value={translateLocationString(req.workLocation, i18n.language)} />
             ) : null}
             {(req.inTime || req.outTime) ? (
               <InfoTile
@@ -1177,7 +1188,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             </View>
 
             {/* Worker rows */}
-            {(pipelineFilter === 'All' ? mappingData!.mappings : (mappingData!.grouped[pipelineFilter] ?? [])).map((m, idx) => {
+            {(pipelineFilter === 'All' ? mappingData!.mappings : (mappingData!.grouped[pipelineFilter] ?? [])).map((m) => {
               const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
                 Shortlisted: { bg: '#EFF6FF', text: '#2563EB', dot: '#2563EB' },
                 Selected:    { bg: '#F5F3FF', text: '#7C3AED', dot: '#7C3AED' },
@@ -1190,111 +1201,130 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 Joined:      t('rd_status_Joined'),
               };
               const initials = (m.workerName || 'W').slice(0, 2).toUpperCase();
-              const palBg = ['#EBF1FF','#F5F3FF','#ECFDF5','#FFF7ED'][idx % 4]!;
-              const palText = [BRAND_MID,'#7C3AED',GREEN,'#EA580C'][idx % 4]!;
-
               const canOpenProfile = !!m.workerId;
               const openProfile = () => {
                 if (m.workerId) navigation.navigate('WorkerProfile', { workerId: m.workerId });
               };
 
               return (
-                <View key={m._id} style={[pl.workerRow, { borderBottomColor: theme.colors.divider }]}>
-                  {/* Avatar + Info — tap to open the worker's profile */}
-                  <TouchableOpacity
-                    style={pl.rowMain}
-                    onPress={openProfile}
-                    disabled={!canOpenProfile}
-                    activeOpacity={canOpenProfile ? 0.7 : 1}
-                  >
-                    {/* Avatar */}
-                    <View style={[pl.avatar, { backgroundColor: palBg }]}>
-                      <AppText style={[pl.initials, { color: palText }]}>{initials}</AppText>
+                <View
+                  key={m._id}
+                  style={[pl.workerCard, { backgroundColor: theme.colors.card, borderColor: sc.dot + '33' }]}
+                >
+                  {/* Status accent bar */}
+                  <View style={[pl.accent, { backgroundColor: sc.dot }]} />
+
+                  <View style={pl.cardBody}>
+                    {/* Top: avatar + name/skill (tap → profile) + status pill */}
+                    <View style={pl.topRow}>
+                      <TouchableOpacity
+                        style={pl.identity}
+                        onPress={openProfile}
+                        disabled={!canOpenProfile}
+                        activeOpacity={canOpenProfile ? 0.7 : 1}
+                      >
+                        <View style={[pl.avatar, { backgroundColor: sc.bg, borderColor: sc.dot + '40' }]}>
+                          <AppText style={[pl.initials, { color: sc.text }]}>{initials}</AppText>
+                        </View>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
+                          {m.workerSkill ? (
+                            <AppText style={pl.skillTxt} numberOfLines={1}>{getSubCatLabel(m.workerSkill, i18n.language)}</AppText>
+                          ) : null}
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
+                        <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
+                        <AppText style={[pl.statusTxt, { color: sc.text }]}>{statusLabelMap[m.status] ?? m.status}</AppText>
+                      </View>
                     </View>
 
-                    {/* Info */}
-                    <View style={{ flex: 1, gap: 3 }}>
-                      <AppText style={[pl.workerName, { color: theme.colors.text }]} numberOfLines={1}>{m.workerName || '—'}</AppText>
-                      {m.workerSkill ? (
-                        <AppText style={pl.skillTxt}>{getSubCatLabel(m.workerSkill, i18n.language)}</AppText>
-                      ) : null}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <View style={[pl.statusPill, { backgroundColor: sc.bg, borderColor: sc.dot + '55' }]}>
-                          <View style={[pl.statusDot, { backgroundColor: sc.dot }]} />
-                          <AppText style={[pl.statusTxt, { color: sc.text }]}>{statusLabelMap[m.status] ?? m.status}</AppText>
-                        </View>
+                    {/* Meta: agreed rate + contact */}
+                    {(m.agreedRate != null || m.workerPhone) ? (
+                      <View style={pl.metaRow}>
                         {m.agreedRate != null && (
-                          <AppText style={pl.rateTxt}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>
+                          <View style={[pl.metaChip, { backgroundColor: GREEN_SOFT, borderColor: GREEN_BDR }]}>
+                            <AppText style={pl.metaRate}>{'₹'}{m.agreedRate}/{m.rateType ?? t('rd_unitDay')}</AppText>
+                          </View>
+                        )}
+                        {m.workerPhone
+                          ? isSubscribed
+                            ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
+                            : <AppText style={pl.phoneLocked}>{'🔒'} {t('rd_contactHidden')}</AppText>
+                          : null}
+                      </View>
+                    ) : null}
+
+                    {/* Action bar: view profile (left) + status action (right) */}
+                    <View style={[pl.actionBar, { borderTopColor: theme.colors.divider }]}>
+                      {canOpenProfile ? (
+                        <TouchableOpacity
+                          style={[pl.viewProfileBtn, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
+                          onPress={openProfile}
+                          activeOpacity={0.75}
+                        >
+                          <AppText style={pl.viewProfileTxt}>{t('rd_viewProfile')} {'›'}</AppText>
+                        </TouchableOpacity>
+                      ) : <View />}
+
+                      <View style={pl.actionsRight}>
+                        {m.status === 'Shortlisted' && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => handleRemoveFromPipeline(m._id, m.workerName)}
+                              disabled={removeShortlistMutation.isPending}
+                              style={pl.secondaryBtn}
+                              activeOpacity={0.7}
+                            >
+                              <AppText style={pl.secondaryTxt}>{t('rd_removeBtn')}</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[pl.primaryBtn, { backgroundColor: '#7C3AED' }]}
+                              onPress={() => handleAdvanceToSelected(m._id, m.workerName)}
+                              disabled={advanceStatusMutation.isPending}
+                              activeOpacity={0.85}
+                            >
+                              <AppText style={pl.primaryTxt}>{i18n.t('selected', { ns: 'employer' })} {'→'}</AppText>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                        {m.status === 'Selected' && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => handleRevertToShortlisted(m._id, m.workerName)}
+                              disabled={revertStatusMutation.isPending}
+                              style={pl.secondaryBtn}
+                              activeOpacity={0.7}
+                            >
+                              <AppText style={[pl.secondaryTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnselect', { ns: 'employer' })}</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[pl.primaryBtn, { backgroundColor: GREEN }]}
+                              onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
+                              activeOpacity={0.85}
+                            >
+                              <AppText style={pl.primaryTxt}>{i18n.t('joined', { ns: 'employer' })} {'→'}</AppText>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                        {m.status === 'Joined' && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => handleRevertToSelected(m._id, m.workerName)}
+                              disabled={revertStatusMutation.isPending}
+                              style={pl.secondaryBtn}
+                              activeOpacity={0.7}
+                            >
+                              <AppText style={[pl.secondaryTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnjoin', { ns: 'employer' })}</AppText>
+                            </TouchableOpacity>
+                            <View style={pl.joinedBadge}>
+                              <AppText style={pl.joinedTxt}>{'✓'} {i18n.t('joined', { ns: 'employer' })}</AppText>
+                            </View>
+                          </>
                         )}
                       </View>
-                      {m.workerPhone
-                        ? isSubscribed
-                          ? <AppText style={pl.phoneTxt}>{'📞'} {m.workerPhone}</AppText>
-                          : <AppText style={pl.phoneLocked}>{'🔒'} {t('rd_contactHidden')}</AppText>
-                        : null
-                      }
-                      {canOpenProfile ? (
-                        <AppText style={pl.viewProfileTxt}>{t('rd_viewProfile')} {'›'}</AppText>
-                      ) : null}
                     </View>
-                  </TouchableOpacity>
-
-                  {/* Actions */}
-                  <View style={{ gap: 6, alignItems: 'flex-end' }}>
-                    {m.status === 'Shortlisted' && (
-                      <>
-                        <TouchableOpacity
-                          style={[pl.advanceBtn, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}
-                          onPress={() => handleAdvanceToSelected(m._id, m.workerName)}
-                          disabled={advanceStatusMutation.isPending}
-                          activeOpacity={0.8}
-                        >
-                          <AppText style={[pl.advanceTxt, { color: '#7C3AED' }]}>{'→'} {i18n.t('selected', { ns: 'employer' })}</AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleRemoveFromPipeline(m._id, m.workerName)}
-                          disabled={removeShortlistMutation.isPending}
-                          style={pl.removeBtn}
-                          activeOpacity={0.7}
-                        >
-                          <AppText style={pl.removeTxt}>{t('rd_removeBtn')}</AppText>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    {m.status === 'Selected' && (
-                      <>
-                        <TouchableOpacity
-                          style={[pl.advanceBtn, { backgroundColor: '#ECFDF5', borderColor: GREEN_BDR }]}
-                          onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
-                          activeOpacity={0.8}
-                        >
-                          <AppText style={[pl.advanceTxt, { color: GREEN }]}>{'→'} {i18n.t('joined', { ns: 'employer' })}</AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[pl.advanceBtn, { backgroundColor: '#FFF7ED', borderColor: '#FDE68A' }]}
-                          onPress={() => handleRevertToShortlisted(m._id, m.workerName)}
-                          disabled={revertStatusMutation.isPending}
-                          activeOpacity={0.8}
-                        >
-                          <AppText style={[pl.advanceTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnselect', { ns: 'employer' })}</AppText>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    {m.status === 'Joined' && (
-                      <>
-                        <View style={[pl.joinedBadge]}>
-                          <AppText style={pl.joinedTxt}>{'✓'} {i18n.t('joined', { ns: 'employer' })}</AppText>
-                        </View>
-                        <TouchableOpacity
-                          style={[pl.advanceBtn, { backgroundColor: '#FFF7ED', borderColor: '#FDE68A' }]}
-                          onPress={() => handleRevertToSelected(m._id, m.workerName)}
-                          disabled={revertStatusMutation.isPending}
-                          activeOpacity={0.8}
-                        >
-                          <AppText style={[pl.advanceTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnjoin', { ns: 'employer' })}</AppText>
-                        </TouchableOpacity>
-                      </>
-                    )}
                   </View>
                 </View>
               );
@@ -1889,6 +1919,9 @@ const hero = StyleSheet.create({
   jobTitle:    { color: WHITE, fontSize: 24, fontWeight: '900', lineHeight: 30, letterSpacing: -0.5 },
   jobSubTitle: { color: 'rgba(255,255,255,0.78)', fontSize: 14, fontWeight: '600', marginTop: 5, lineHeight: 19 },
   jobType:     { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  locRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 8 },
+  locIcon:     { fontSize: 12, lineHeight: 18 },
+  locTxt:      { flex: 1, color: 'rgba(255,255,255,0.88)', fontSize: 12, fontWeight: '600', lineHeight: 17 },
   statusBadge: { borderRadius: 999, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   statusDot:   { width: 7, height: 7, borderRadius: 4 },
   statusLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 0.3 },
@@ -2075,30 +2108,40 @@ const pl = StyleSheet.create({
   // Filter chips
   filterRow:    { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginBottom: 14 },
   chip:         { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 11, paddingVertical: 6 },
-  chipTxt:      { fontSize: 11, fontWeight: '800' },
+  chipTxt:      { fontSize: 11, fontWeight: '800', flexShrink: 1 },
   chipBadge:    { borderRadius: 99, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   chipBadgeTxt: { fontSize: 9, fontWeight: '900' },
 
-  // Worker row
-  workerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  rowMain:      { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar:       { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  // Candidate card
+  workerCard:   { flexDirection: 'row', borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 10 },
+  accent:       { width: 4 },
+  cardBody:     { flex: 1, padding: 12, gap: 10 },
+  topRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+  identity:     { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  avatar:       { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: 2 },
   initials:     { fontSize: 15, fontWeight: '900' },
-  workerName:   { fontSize: 14, fontWeight: '800', letterSpacing: -0.1 },
-  skillTxt:     { fontSize: 11, fontWeight: '600', color: SLATE },
-  viewProfileTxt: { fontSize: 11, fontWeight: '700', color: BRAND_MID, marginTop: 1 },
-  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  workerName:   { fontSize: 15, fontWeight: '800', letterSpacing: -0.1 },
+  skillTxt:     { fontSize: 11.5, fontWeight: '600', color: SLATE },
+  statusPill:   { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4 },
   statusDot:    { width: 6, height: 6, borderRadius: 3 },
   statusTxt:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.2 },
-  rateTxt:      { fontSize: 11, fontWeight: '700', color: GREEN },
-  phoneTxt:     { fontSize: 11, color: SLATE },
-  phoneLocked:  { fontSize: 11, color: '#9CA3AF' },
 
-  // Action buttons on each row
-  advanceBtn:   { borderRadius: 9, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
-  advanceTxt:   { fontSize: 11, fontWeight: '800' },
-  joinedBadge:  { borderRadius: 9, backgroundColor: GREEN_SOFT, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 10, paddingVertical: 5 },
-  joinedTxt:    { fontSize: 11, fontWeight: '800', color: GREEN },
-  removeBtn:    { paddingHorizontal: 8, paddingVertical: 4 },
-  removeTxt:    { fontSize: 10, fontWeight: '700', color: SLATE },
+  // Meta row
+  metaRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  metaChip:     { borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  metaRate:     { fontSize: 11, fontWeight: '800', color: GREEN },
+  phoneTxt:     { fontSize: 11.5, fontWeight: '600', color: SLATE },
+  phoneLocked:  { fontSize: 11.5, fontWeight: '600', color: '#9CA3AF' },
+
+  // Action bar
+  actionBar:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
+  viewProfileBtn: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 7 },
+  viewProfileTxt: { fontSize: 11.5, fontWeight: '800', color: BRAND_MID },
+  actionsRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, justifyContent: 'flex-end' },
+  primaryBtn:   { borderRadius: 10, paddingHorizontal: 13, paddingVertical: 8 },
+  primaryTxt:   { fontSize: 12, fontWeight: '800', color: WHITE },
+  secondaryBtn: { paddingHorizontal: 8, paddingVertical: 7 },
+  secondaryTxt: { fontSize: 11, fontWeight: '700', color: SLATE },
+  joinedBadge:  { flexDirection: 'row', alignItems: 'center', borderRadius: 10, backgroundColor: GREEN_SOFT, borderWidth: 1, borderColor: GREEN_BDR, paddingHorizontal: 11, paddingVertical: 7 },
+  joinedTxt:    { fontSize: 12, fontWeight: '800', color: GREEN },
 });

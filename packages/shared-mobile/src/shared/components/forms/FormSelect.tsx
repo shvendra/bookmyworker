@@ -9,6 +9,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
 
@@ -21,6 +22,9 @@ interface FormSelectProps {
   errorText?: string;
   style?: StyleProp<ViewStyle>;
   searchable?: boolean;
+  // Map a canonical option value to a localized display label. The stored value
+  // (passed to onChange / sent to the backend) is always the untranslated option.
+  renderLabel?: (value: string) => string;
 }
 
 export const FormSelect = ({
@@ -28,17 +32,25 @@ export const FormSelect = ({
   value,
   options,
   onChange,
-  placeholder = 'Select…',
+  placeholder,
   errorText,
   style,
   searchable = false,
+  renderLabel,
 }: FormSelectProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
+  const display = (v: string): string => (renderLabel ? renderLabel(v) : v);
+  const ph = placeholder ?? t('selectEllipsis');
+
   const filtered = searchable
-    ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+    ? options.filter((o) => {
+        const q = query.toLowerCase();
+        return o.toLowerCase().includes(q) || display(o).toLowerCase().includes(q);
+      })
     : options;
 
   return (
@@ -63,7 +75,7 @@ export const FormSelect = ({
           color={value ? theme.colors.text : theme.colors.mutedText}
           style={styles.selectorText}
         >
-          {value || placeholder}
+          {value ? display(value) : ph}
         </AppText>
         <AppText variant="caption" color={theme.colors.mutedText}>▼</AppText>
       </TouchableOpacity>
@@ -80,7 +92,7 @@ export const FormSelect = ({
             <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.border }]}>
               <AppText variant="label">{label}</AppText>
               <TouchableOpacity onPress={() => setOpen(false)}>
-                <AppText variant="body" color={theme.colors.primary}>Done</AppText>
+                <AppText variant="body" color={theme.colors.primary}>{t('done')}</AppText>
               </TouchableOpacity>
             </View>
 
@@ -88,7 +100,7 @@ export const FormSelect = ({
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Search…"
+                placeholder={t('searchEllipsis')}
                 placeholderTextColor={theme.colors.mutedText}
                 style={[styles.search, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
                 autoFocus
@@ -112,7 +124,7 @@ export const FormSelect = ({
                     color={item === value ? theme.colors.primary : theme.colors.text}
                     style={styles.optionText}
                   >
-                    {item}
+                    {display(item)}
                   </AppText>
                   {item === value && (
                     <AppText variant="caption" color={theme.colors.primary}>✓</AppText>

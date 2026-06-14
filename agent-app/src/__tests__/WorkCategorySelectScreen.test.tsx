@@ -17,9 +17,9 @@ const renderScreen = (navigation = makeNav()) => {
   return navigation;
 };
 
-// A label from the workerCategoryGrid mock.
-const CAT = 'Construction & Project';
-const CAT_FORMATTED = 'Construction\n& Project'; // after the screen's label.replace()
+// The screen renders categories via t(cat.translationKey); the i18n mock
+// echoes the key back, so the rendered text is the translationKey itself.
+const CAT_FORMATTED = 'cat_construction';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -33,30 +33,30 @@ beforeEach(() => {
 describe('WorkCategorySelectScreen', () => {
   it('renders the hero, the section label and the category grid', () => {
     renderScreen();
-    expect(screen.getByText('What work do you do?')).toBeTruthy();
-    expect(screen.getByText('Select all that apply')).toBeTruthy();
+    expect(screen.getByText('acsTitle')).toBeTruthy();
+    expect(screen.getByText('acsSelectApply')).toBeTruthy();
     expect(screen.getByText(CAT_FORMATTED)).toBeTruthy();
   });
 
   it('toggles a category on and off and updates the counter', () => {
     renderScreen();
-    expect(screen.queryByText('1 category selected')).toBeNull();
+    expect(screen.queryByText('acsCountOne')).toBeNull();
     fireEvent.press(screen.getByText(CAT_FORMATTED));
-    expect(screen.getByText('1 category selected')).toBeTruthy();
+    expect(screen.getByText('acsCountOne')).toBeTruthy();
     fireEvent.press(screen.getByText(CAT_FORMATTED)); // toggle off
-    expect(screen.queryByText('1 category selected')).toBeNull();
+    expect(screen.queryByText('acsCountOne')).toBeNull();
   });
 
   it('pluralises the counter for multiple selections', () => {
     renderScreen();
     fireEvent.press(screen.getByText(CAT_FORMATTED));
-    fireEvent.press(screen.getByText('Transport & Logistics'));
-    expect(screen.getByText('2 categories selected')).toBeTruthy();
+    fireEvent.press(screen.getByText('cat_transport'));
+    expect(screen.getByText('acsCountOther')).toBeTruthy();
   });
 
   it('does nothing when Complete is pressed with no selection', async () => {
     renderScreen();
-    fireEvent.press(screen.getByText('Complete Profile  ✓'));
+    fireEvent.press(screen.getByText('acsCompleteProfile'));
     // Guard: selected.size === 0 → no network, no profile update.
     expect((globalThis as { fetch: jest.Mock }).fetch).not.toHaveBeenCalled();
     expect(__auth.updateProfile).not.toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe('WorkCategorySelectScreen', () => {
   it('saves the selection and navigates to Kyc on complete', async () => {
     const nav = renderScreen();
     fireEvent.press(screen.getByText(CAT_FORMATTED));
-    fireEvent.press(screen.getByText('Complete Profile  ✓'));
+    fireEvent.press(screen.getByText('acsCompleteProfile'));
 
     await waitFor(() => {
       expect((globalThis as { fetch: jest.Mock }).fetch).toHaveBeenCalledWith(
@@ -87,7 +87,7 @@ describe('WorkCategorySelectScreen', () => {
     (getAccessToken as jest.Mock).mockResolvedValueOnce(null);
     const nav = renderScreen();
     fireEvent.press(screen.getByText(CAT_FORMATTED));
-    fireEvent.press(screen.getByText('Complete Profile  ✓'));
+    fireEvent.press(screen.getByText('acsCompleteProfile'));
 
     await waitFor(() => {
       expect((globalThis as { fetch: jest.Mock }).fetch).toHaveBeenCalled();
@@ -103,19 +103,19 @@ describe('WorkCategorySelectScreen', () => {
       .mockRejectedValue(new Error('offline'));
     const nav = renderScreen();
     fireEvent.press(screen.getByText(CAT_FORMATTED));
-    fireEvent.press(screen.getByText('Complete Profile  ✓'));
+    fireEvent.press(screen.getByText('acsCompleteProfile'));
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('Kyc'));
   });
 
   it('skips straight to Kyc from the header skip button', () => {
     const nav = renderScreen();
-    fireEvent.press(screen.getByText('Skip'));
+    fireEvent.press(screen.getByText('acsSkip'));
     expect(nav.replace).toHaveBeenCalledWith('Kyc');
   });
 
   it('skips straight to Kyc from the footer skip row', () => {
     const nav = renderScreen();
-    fireEvent.press(screen.getByText('Skip this step'));
+    fireEvent.press(screen.getByText('acsSkipStep'));
     expect(nav.replace).toHaveBeenCalledWith('Kyc');
   });
 

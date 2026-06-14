@@ -125,7 +125,9 @@ const TabItem = ({ tabCfg, isFocused, badgeCount, onPress, accessibilityLabel }:
 
   const icons = tabCfg.icon;
   const label = t(tabCfg.labelKey, tabCfg.labelKey);
-  const iconColor = isFocused ? theme.colors.primary : (isDark ? theme.colors.mutedText : '#94A3B8');
+  // Darker inactive tint (#64748B) so inactive labels/icons stay clearly legible
+  // on the light tab bar — the previous #94A3B8 read as washed-out/faded.
+  const iconColor = isFocused ? theme.colors.primary : (isDark ? theme.colors.mutedText : '#64748B');
 
   return (
     <Pressable
@@ -176,6 +178,8 @@ const TabItem = ({ tabCfg, isFocused, badgeCount, onPress, accessibilityLabel }:
           color={iconColor}
           style={[tabStyles.label, isFocused && { fontWeight: '700', color: theme.colors.primary }]}
           numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
         >
           {label}
         </AppText>

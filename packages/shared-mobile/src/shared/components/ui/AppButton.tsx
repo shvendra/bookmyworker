@@ -196,12 +196,16 @@ export const AppButton = ({
               <AppText style={[styles.icon, { fontSize: fontSize + 1 }]}>{icon}</AppText>
             ) : null}
             <AppText
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
               style={[
                 styles.label,
                 {
                   color: text,
                   fontSize,
                   fontWeight: size === 'xs' || size === 'sm' ? '600' : '700',
+                  flexShrink: 1,
                 },
               ]}
             >

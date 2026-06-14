@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { WORK_CATEGORIES } from '../../../../packages/shared-mobile/src/shared/components/ui/WorkerCategoryGrid';
@@ -33,6 +34,7 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'WorkCategorySelect'>;
 
 export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Element => {
   const insets       = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { updateProfile } = useAuth();
   const [selected, setSelected]     = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving]     = useState(false);
@@ -98,7 +100,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
           </View>
 
           <TouchableOpacity onPress={handleSkip} activeOpacity={0.75} style={s.skipBtn}>
-            <AppText style={s.skipTxt}>Skip</AppText>
+            <AppText style={s.skipTxt}>{t('acsSkip')}</AppText>
           </TouchableOpacity>
         </View>
 
@@ -114,9 +116,9 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
           )}
         </View>
 
-        <AppText style={s.heroTitle}>What work do you do?</AppText>
+        <AppText style={s.heroTitle}>{t('acsTitle')}</AppText>
         <AppText style={s.heroSub}>
-          Choose the categories that best describe your skills
+          {t('acsSubtitle')}
         </AppText>
 
         {/* Progress bar */}
@@ -134,7 +136,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
         {/* Section label */}
         <View style={s.sectionLabelRow}>
           <View style={s.sectionLine} />
-          <AppText style={s.sectionLabel}>Select all that apply</AppText>
+          <AppText style={s.sectionLabel}>{t('acsSelectApply')}</AppText>
           <View style={s.sectionLine} />
         </View>
 
@@ -161,7 +163,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
                   style={[s.cardLabel, isOn && { color: cat.accent }]}
                   numberOfLines={3}
                 >
-                  {cat.label.replace(' Workers', '').replace(' & ', '\n& ')}
+                  {t(cat.translationKey)}
                 </AppText>
 
                 {/* Selected tick */}
@@ -188,7 +190,7 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
           <View style={s.countChip}>
             <View style={s.countDot} />
             <AppText style={s.countTxt}>
-              {selCount} {selCount === 1 ? 'category' : 'categories'} selected
+              {selCount === 1 ? t('acsCountOne', { count: selCount }) : t('acsCountOther', { count: selCount })}
             </AppText>
           </View>
         )}
@@ -206,16 +208,16 @@ export const WorkCategorySelectScreen = ({ navigation }: Props): React.JSX.Eleme
           ]}
         >
           {isSaving ? (
-            <AppText style={s.ctaTxt}>Saving…</AppText>
+            <AppText style={s.ctaTxt}>{t('acsSaving')}</AppText>
           ) : (
             <AppText style={s.ctaTxt}>
-              {selCount === 0 ? 'Complete Profile  ✓' : `Complete Profile  ✓`}
+              {t('acsCompleteProfile')}
             </AppText>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSkip} activeOpacity={0.7} style={s.skipRow}>
-          <AppText style={s.skipRowTxt}>Skip this step</AppText>
+          <AppText style={s.skipRowTxt}>{t('acsSkipStep')}</AppText>
         </TouchableOpacity>
       </View>
     </View>
@@ -334,7 +336,7 @@ const s = StyleSheet.create({
     alignSelf: 'center', marginBottom: 12,
   },
   countDot:  { width: 7, height: 7, borderRadius: 4, backgroundColor: BRAND },
-  countTxt:  { fontSize: 13, fontWeight: '700', color: BRAND },
+  countTxt:  { fontSize: 13, fontWeight: '700', color: BRAND, flexShrink: 1 },
 
   ctaBtn: {
     borderRadius: 16, paddingVertical: 16,

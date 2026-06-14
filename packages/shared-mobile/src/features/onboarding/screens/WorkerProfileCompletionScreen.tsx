@@ -35,14 +35,15 @@ import { LocationSelector } from '../../../shared/components/forms/LocationSelec
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfileCompletion'>;
 
 // ── Category data ─────────────────────────────────────────────────────────────
+// categories.json ships a label field for all 11 languages; index it dynamically
+// so every language resolves (previously only hi/mr/gu were handled, leaving the
+// other 8 languages showing English).
 interface CatRaw {
-  label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string;
-  value: string;
-  subcategories: Array<{
-    label: string; hindilabel?: string; marathilabel?: string; gujaratilabel?: string; value: string;
-  }>;
+  label: string; value: string;
+  subcategories: Array<{ label: string; value: string; [field: string]: string | undefined }>;
+  [field: string]: unknown;
 }
-const ALL_CATS: CatRaw[] = categoriesData as CatRaw[];
+const ALL_CATS: CatRaw[] = categoriesData as unknown as CatRaw[];
 
 // Selection caps for the work-type step. A self-worker may pick at most
 // MAX_AREAS_OF_WORK work categories (→ areasOfWork) and MAX_CATEGORIES
@@ -50,17 +51,22 @@ const ALL_CATS: CatRaw[] = categoriesData as CatRaw[];
 const MAX_AREAS_OF_WORK = 3;
 const MAX_CATEGORIES = 5;
 
+// Active i18n language → categories.json label field. Region suffixes (e.g.
+// 'hi-IN') are stripped before lookup so the device locale still resolves.
+const CAT_LANG_FIELD: Record<string, string> = {
+  hi: 'hindilabel', mr: 'marathilabel', gu: 'gujaratilabel', ta: 'tamillabel',
+  te: 'telugulabel', kn: 'kannadalabel', ml: 'malayalamlabel', bn: 'banglalabel',
+  or: 'odialabel', pa: 'punjabilabel',
+};
+const catLabelField = (lang: string): string | undefined =>
+  CAT_LANG_FIELD[(lang || 'en').toLowerCase().split(/[-_]/)[0]];
 function getCatLabel(cat: CatRaw, lang: string): string {
-  if (lang === 'hi' && cat.hindilabel) return cat.hindilabel;
-  if (lang === 'mr' && cat.marathilabel) return cat.marathilabel;
-  if (lang === 'gu' && cat.gujaratilabel) return cat.gujaratilabel;
-  return cat.label;
+  const f = catLabelField(lang);
+  return (f && (cat[f] as string)) || cat.label;
 }
 function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
-  if (lang === 'hi' && sub.hindilabel) return sub.hindilabel;
-  if (lang === 'mr' && sub.marathilabel) return sub.marathilabel;
-  if (lang === 'gu' && sub.gujaratilabel) return sub.gujaratilabel;
-  return sub.label;
+  const f = catLabelField(lang);
+  return (f && (sub[f] as string)) || sub.label;
 }
 
 // ── Location data ─────────────────────────────────────────────────────────────
@@ -119,7 +125,7 @@ const Tag = ({ label, onRemove }: { label: string; onRemove: () => void }) => {
 };
 const tagS = StyleSheet.create({
   tag:  { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, marginRight: 6, marginBottom: 6 },
-  text: { fontSize: 12.5, fontWeight: '600', marginRight: 4 },
+  text: { fontSize: 12.5, fontWeight: '600', marginRight: 4, flexShrink: 1 },
   x:    { fontSize: 16, fontWeight: '700', lineHeight: 18 },
 });
 

@@ -33,6 +33,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import categoriesRaw from '../../../shared/data/categories.json';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type RouteParams = NativeStackScreenProps<MainStackParamList, 'PostRequirement'>['route'];
@@ -70,16 +71,35 @@ const REQ_TYPES: ReqTypeOption[] = [
   },
   {
     value: 'Office_Staff',
-    label: 'Office Staff',
+    label: 'Support Staff',
     description: 'Hire office administrators, data entry and support personnel',
     icon: '💼',
     color: '#10B981',
   },
 ];
 
+// Categories surfaced ONLY under the "Support Staff" (Office_Staff) requirement
+// type. They carry the office-support sub-categories (Telecaller, etc.) and are
+// hidden from the other requirement types, which in turn never show these two.
+const SUPPORT_STAFF_CATEGORY_VALUES = ['support_staff_permanent', 'support_staff_contract'];
+const NON_SUPPORT_CATEGORY_VALUES = (categoriesRaw as Array<{ value: string }>)
+  .map((c) => c.value)
+  .filter((v) => !SUPPORT_STAFF_CATEGORY_VALUES.includes(v));
+
 // ─── Form Schema ──────────────────────────────────────────────────────────────
 const AGE_GROUP_OPTIONS = ['18-25', '25-35', '35-45', '45+', 'Any'];
 const ESTIMATED_DAYS_OPTIONS = ['1-3 days', '1 week', '2 weeks', '1 month', '2-3 months', '3-6 months', '6+ months'];
+// Canonical duration value → i18n key. The stored/sent value stays English; only
+// the on-screen label is translated (all 11 languages).
+const ESTIMATED_DAYS_LABEL_KEYS: Record<string, string> = {
+  '1-3 days':   'post_dur_1_3days',
+  '1 week':     'post_dur_1week',
+  '2 weeks':    'post_dur_2weeks',
+  '1 month':    'post_dur_1month',
+  '2-3 months': 'post_dur_2_3months',
+  '3-6 months': 'post_dur_3_6months',
+  '6+ months':  'post_dur_6monthsPlus',
+};
 
 const requirementSchema = z.object({
   workType: z.string().min(1, 'Work type is required'),
@@ -211,7 +231,13 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
             {/* Body */}
             <View style={styles.typeCardBody}>
               <View style={styles.cardTitleRow}>
-                <AppText style={[styles.typeCardTitle, { color: theme.colors.text, flexShrink: 1 }]} maxFontSizeMultiplier={1.2}>
+                <AppText
+                  style={[styles.typeCardTitle, { color: theme.colors.text, flexShrink: 1 }]}
+                  maxFontSizeMultiplier={1.2}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
                   {t(`type_${rt.value}_label` as any)}
                 </AppText>
                 {idx === 0 && (
@@ -374,6 +400,11 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
 
   const typeInfo = REQ_TYPES.find((r) => r.value === reqType)!;
   const isDailyWages = reqType === 'Daily_Wages';
+  // "Support Staff" type → only the 2 support-staff categories; all other types →
+  // every category except those two.
+  const allowedCategoryValues = reqType === 'Office_Staff'
+    ? SUPPORT_STAFF_CATEGORY_VALUES
+    : NON_SUPPORT_CATEGORY_VALUES;
 
   const {
     control,
@@ -546,6 +577,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             onSubCategoryChange={(v) => setValue('subCategory', v, { shouldValidate: true })}
             categoryError={errors.workType?.message}
             subCategoryError={errors.subCategory?.message}
+            allowedCategoryValues={allowedCategoryValues}
             required
           />
         </View>
@@ -659,25 +691,25 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             <View style={[ps.sectionIconBox, { backgroundColor: '#EAF2FF' }]}>
               <AppText style={ps.sectionIcon}>👤</AppText>
             </View>
-            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>Contact Person</AppText>
+            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_contactPerson')}</AppText>
           </View>
           <View style={ps.sectionBody}>
             <FormInput
               control={control}
               name="contactPersonName"
-              label="Contact Person Name"
-              placeholder="e.g. Site supervisor name"
+              label={t('post_contactPersonName')}
+              placeholder={t('post_contactPersonNamePh')}
             />
             <FormInput
               control={control}
               name="contactPersonPhone"
-              label="Contact Person Mobile Number"
-              placeholder="10-digit mobile number"
+              label={t('post_contactPersonPhone')}
+              placeholder={t('post_contactPersonPhonePh')}
               keyboardType="number-pad"
               maxLength={10}
             />
             <AppText style={[ps.sectionSub, { color: theme.colors.mutedText, marginTop: 4 }]}>
-              Shown to agents on this requirement. Leave blank to use your own number.
+              {t('post_contactPersonHint')}
             </AppText>
           </View>
         </View>
@@ -761,6 +793,10 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
                 value={field.value ?? ''}
                 options={ESTIMATED_DAYS_OPTIONS}
                 onChange={field.onChange}
+                renderLabel={(v) => {
+                  const key = ESTIMATED_DAYS_LABEL_KEYS[v];
+                  return key ? t(key) : v;
+                }}
               />
             )}
           />

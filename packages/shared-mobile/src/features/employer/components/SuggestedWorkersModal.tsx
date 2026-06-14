@@ -155,8 +155,8 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
       <View style={s.overlay}>
         <View style={s.sheet}>
           <View style={s.header}>
-            <View style={{ flex: 1 }}>
-              <AppText style={s.headerTitle}>{t('wp_inviteTitle')}</AppText>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText style={s.headerTitle} numberOfLines={2}>{t('wp_inviteTitle')}</AppText>
               {!!headerLabel && <AppText style={s.headerSub} numberOfLines={2}>{headerLabel}</AppText>}
             </View>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
@@ -196,13 +196,13 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                     )}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <AppText style={s.name} numberOfLines={1}>{w.name || 'Worker'}</AppText>
-                      {!!skillText(w) && <AppText style={s.skills} numberOfLines={2}>{skillText(w)}</AppText>}
+                      {!!skillText(w) && <AppText style={s.skills} numberOfLines={3}>{skillText(w)}</AppText>}
                       {!![age ? `${age} ${t('wp_yrs')}` : '', w.gender].filter(Boolean).length && (
                         <AppText style={s.meta} numberOfLines={1}>
                           {[age ? `${age} ${t('wp_yrs')}` : '', w.gender].filter(Boolean).join(' • ')}
                         </AppText>
                       )}
-                      {!!loc && <AppText style={s.loc} numberOfLines={1}>📍 {loc}</AppText>}
+                      {!!loc && <AppText style={s.loc} numberOfLines={2}>📍 {loc}</AppText>}
                     </View>
                     <View style={s.actions}>
                       {unlockedPhones[w._id] ? (
@@ -218,7 +218,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {unlockingId === w._id
                             ? <ActivityIndicator color="#2243BC" size="small" />
-                            : <AppText style={s.contactTxt}>{t('sw_viewContact')}</AppText>}
+                            : <AppText style={s.contactTxt} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('sw_viewContact')}</AppText>}
                         </TouchableOpacity>
                       )}
                       {invited ? (
@@ -232,7 +232,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {inviting
                             ? <ActivityIndicator color="#FFFFFF" size="small" />
-                            : <AppText style={s.inviteTxt}>{t('sw_invite')}</AppText>}
+                            : <AppText style={s.inviteTxt} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('sw_invite')}</AppText>}
                         </TouchableOpacity>
                       )}
                     </View>
@@ -266,14 +266,17 @@ const s = StyleSheet.create({
   skills:        { fontSize: 12, fontWeight: '600', color: '#475569', marginTop: 2, lineHeight: 17 },
   meta:          { fontSize: 11.5, color: '#64748b', marginTop: 2 },
   loc:           { fontSize: 11.5, color: '#94a3b8', marginTop: 2 },
+  // alignSelf 'stretch' makes every action button share the column's widest
+  // width, so the wider Hindi/Indic "View Contact" label sets the size and both
+  // buttons stay aligned and fully readable across languages.
   actions:       { alignItems: 'flex-end', gap: 6, flexShrink: 0 },
-  invitedChip:   { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 112, alignItems: 'center' },
+  invitedChip:   { alignSelf: 'stretch', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 112, alignItems: 'center' },
   invitedTxt:    { fontSize: 12, fontWeight: '800', color: '#15803D' },
-  inviteBtn:     { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', minWidth: 112, alignItems: 'center' },
+  inviteBtn:     { alignSelf: 'stretch', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', minWidth: 112, alignItems: 'center' },
   inviteTxt:     { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
-  contactBtn:    { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', minWidth: 112, alignItems: 'center' },
+  contactBtn:    { alignSelf: 'stretch', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', minWidth: 112, alignItems: 'center' },
   contactTxt:    { fontSize: 13, fontWeight: '800', color: '#2243BC' },
-  phoneBtn:      { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 108, alignItems: 'center' },
+  phoneBtn:      { alignSelf: 'stretch', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 108, alignItems: 'center' },
   phoneTxt:      { fontSize: 12, fontWeight: '800', color: '#15803D' },
 });
 

@@ -1086,7 +1086,7 @@ const s = StyleSheet.create({
     borderRadius: 24,
     shadowColor: '#1037A4', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
-  subChipTxt:  { fontSize: 12.5, lineHeight: 17 },
+  subChipTxt:  { fontSize: 12.5, lineHeight: 17, flexShrink: 1 },
 
   // Footer
   footer: {
@@ -1211,7 +1211,7 @@ const sp = StyleSheet.create({
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   groupIconBadge: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   groupIcon:  { fontSize: 20 },
-  groupLabel: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  groupLabel: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, flexShrink: 1 },
 
   subChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   subChip: {
@@ -1222,7 +1222,7 @@ const sp = StyleSheet.create({
   },
   checkDot: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkTxt: { fontSize: 9, color: '#fff', fontWeight: '900', lineHeight: 12 },
-  subChipTxt: { fontSize: 12.5, lineHeight: 17 },
+  subChipTxt: { fontSize: 12.5, lineHeight: 17, flexShrink: 1 },
 
   footer: {
     paddingHorizontal: 20, paddingTop: 14,
@@ -1302,6 +1302,6 @@ const pd = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: 20, borderWidth: 1.5,
   },
-  chipTxt:   { fontSize: 13, fontWeight: '700' },
+  chipTxt:   { fontSize: 13, fontWeight: '700', flexShrink: 1 },
   chipClose: { fontSize: 18, lineHeight: 20, fontWeight: '700', marginTop: -1 },
 });

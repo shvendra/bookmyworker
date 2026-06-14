@@ -60,8 +60,14 @@ function toKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function reqDateKey(req: RawRequirement): string | null {
-  if (!req.workerNeedDate) return null;
-  return toKey(new Date(req.workerNeedDate));
+  // Fall back to createdAt when no explicit need-date is set, so date-less
+  // requirements still appear on the calendar (matches CRM behaviour). Guard
+  // against unparseable dates so a bad value never crashes the bucketing.
+  const raw = req.workerNeedDate || req.createdAt;
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  return toKey(d);
 }
 
 // ── Calendar grid helpers ─────────────────────────────────────────────────────

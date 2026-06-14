@@ -4,6 +4,7 @@ import {
   FlatList,
   Linking,
   RefreshControl,
+  ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
@@ -84,7 +85,7 @@ const InvitationCard = React.memo(({
       <View style={card.inner}>
         {/* Header: title + status pill */}
         <View style={card.topRow}>
-          <View style={{ flex: 1, gap: 3 }}>
+          <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
             <AppText style={[card.title, { color: theme.colors.text }]} numberOfLines={3}>
               {workTypeLabel}{subCatLabel ? ` · ${subCatLabel}` : ''}
             </AppText>
@@ -337,31 +338,40 @@ export const InvitationsScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title={t('jobInvitationsTitle')} onBack={() => navigation.goBack()} />
 
-      {/* Filter chips */}
+      {/* Filter chips — horizontally scrollable so labels never clip in any language */}
       <View style={[s.filterRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-        {FILTERS.map((f) => {
-          const active = filter === f;
-          const count = f === 'all'
-            ? allInvitations.length
-            : allInvitations.filter((i) => i.invitation?.status === f).length;
-          return (
-            <TouchableOpacity
-              key={f}
-              onPress={() => setFilter(f)}
-              style={[
-                s.chip,
-                active
-                  ? { backgroundColor: '#7C3AED', borderColor: '#7C3AED' }
-                  : { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-              ]}
-              activeOpacity={0.8}
-            >
-              <AppText style={[s.chipTxt, { color: active ? '#fff' : theme.colors.mutedText }]}>
-                {t(FILTER_KEY[f])}{count > 0 ? ` (${count})` : ''}
-              </AppText>
-            </TouchableOpacity>
-          );
-        })}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.filterScroll}
+        >
+          {FILTERS.map((f) => {
+            const active = filter === f;
+            const count = f === 'all'
+              ? allInvitations.length
+              : allInvitations.filter((i) => i.invitation?.status === f).length;
+            return (
+              <TouchableOpacity
+                key={f}
+                onPress={() => setFilter(f)}
+                style={[
+                  s.chip,
+                  active
+                    ? { backgroundColor: '#7C3AED', borderColor: '#7C3AED' }
+                    : { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                ]}
+                activeOpacity={0.8}
+              >
+                <AppText
+                  style={[s.chipTxt, { color: active ? '#fff' : theme.colors.mutedText }]}
+                  numberOfLines={1}
+                >
+                  {t(FILTER_KEY[f])}{count > 0 ? ` (${count})` : ''}
+                </AppText>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {isLoading && !data ? (
@@ -409,8 +419,9 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
 const s = StyleSheet.create({
   container:  { flex: 1 },
-  filterRow:  { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, paddingVertical: 10, gap: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  chip:       { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 6 },
+  filterRow:  { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  filterScroll: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },
+  chip:       { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 6, flexShrink: 0 },
   chipTxt:    { fontSize: 12, fontWeight: '700' },
   list:       { padding: 14, paddingTop: 10, paddingBottom: 40 },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },

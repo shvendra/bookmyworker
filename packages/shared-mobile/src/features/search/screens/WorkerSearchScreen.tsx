@@ -11,6 +11,7 @@ import {
   Animated,
   FlatList,
   Image,
+  Keyboard,
   Linking,
   Modal,
   Platform,
@@ -19,6 +20,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -212,6 +214,7 @@ interface WorkerFilters {
   ageMin: string;
   ageMax: string;
   qualification: string;
+  hasResume: boolean;
 }
 const EMPTY_FILTERS: WorkerFilters = {
   workerType: '',
@@ -224,6 +227,7 @@ const EMPTY_FILTERS: WorkerFilters = {
   ageMin: '',
   ageMax: '',
   qualification: '',
+  hasResume: false,
 };
 
 // Figma outcome palette — map each status to a semantic colour (dot + text)
@@ -371,6 +375,7 @@ function countActive(f: WorkerFilters): number {
     f.ageMin,
     f.ageMax,
     f.qualification,
+    f.hasResume,
   ].filter(Boolean).length;
 }
 
@@ -399,20 +404,45 @@ const PickerModal = ({
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
   const [q, setQ] = useState('');
+
+  // Lift the bottom sheet above the soft keyboard so the options list stays
+  // visible while the user types (Modal renders in its own window and does not
+  // auto-resize for the keyboard on Android).
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    if (!visible) { setKbHeight(0); return undefined; }
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => setKbHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, [visible]);
+
   const display = (o: string): string => (labelFor ? labelFor(o) : o);
-  const shown = options.filter((o) => display(o).toLowerCase().includes(q.toLowerCase()));
+  // Match against both the displayed label (e.g. Hindi) AND the raw stored value
+  // (English) so users can search in either script — e.g. "Madhya Pradesh" or
+  // "मध्य प्रदेश", "Construction" or "निर्माण".
+  const needle = q.trim().toLowerCase();
+  const shown = needle
+    ? options.filter(
+        (o) =>
+          o.toLowerCase().includes(needle) ||
+          display(o).toLowerCase().includes(needle),
+      )
+    : options;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity activeOpacity={1} onPress={onClose} style={pm.scrim}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[pm.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 18 }]}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[pm.sheet, { backgroundColor: theme.colors.card, paddingBottom: (kbHeight > 0 ? 18 : insets.bottom + 18), marginBottom: kbHeight, maxHeight: screenH * 0.85 - kbHeight }]}>
           <View style={[pm.grab, { backgroundColor: theme.colors.border }]} />
 
           {/* Header */}
           <View style={pm.oh}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <AppText style={[pm.ot, { color: theme.colors.text }]} numberOfLines={1}>{title}</AppText>
-              <AppText style={[pm.os, { color: theme.colors.mutedText }]} numberOfLines={1}>
+              <AppText style={[pm.ot, { color: theme.colors.text }]} numberOfLines={2}>{title}</AppText>
+              <AppText style={[pm.os, { color: theme.colors.mutedText }]} numberOfLines={2}>
                 {t('ws_options_available', { count: options.length })}
               </AppText>
             </View>
@@ -455,7 +485,7 @@ const PickerModal = ({
                   activeOpacity={0.8}
                   style={[pm.oopt, { borderColor: active ? BRAND : theme.colors.border, backgroundColor: active ? BRAND + '0F' : theme.colors.card }]}
                 >
-                  <AppText style={[pm.ol, { color: active ? BRAND : theme.colors.text }]} numberOfLines={1}>
+                  <AppText style={[pm.ol, { color: active ? BRAND : theme.colors.text }]} numberOfLines={2}>
                     {item === allLabel ? item : display(item)}
                   </AppText>
                   {active && <Ionicons name="checkmark" size={18} color={BRAND} style={pm.ock} />}
@@ -494,38 +524,44 @@ const DropField = ({
   placeholder,
   onPress,
   disabled,
+  locked = false,
 }: {
   label: string;
   value: string;
   placeholder: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Plan-locked: stays tappable (to surface the upgrade message) but shows a lock. */
+  locked?: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const active = !!value;
+  // A locked field must remain pressable so tapping it can explain the plan limit;
+  // only a genuinely-disabled (e.g. "pick a state first") field is non-interactive.
+  const isDisabled = !!disabled && !locked;
   return (
     <View style={{ marginBottom: 12 }}>
       <AppText style={[df.label, { color: theme.colors.mutedText }]}>{label}</AppText>
       <TouchableOpacity
         onPress={onPress}
-        disabled={disabled}
+        disabled={isDisabled}
         activeOpacity={0.75}
         style={[
           df.field,
           {
             borderColor: active ? BRAND : theme.colors.border,
             backgroundColor: active ? theme.colors.primaryLight : theme.colors.card,
-            opacity: disabled ? 0.45 : 1,
+            opacity: isDisabled ? 0.45 : locked ? 0.7 : 1,
           },
         ]}
       >
         <AppText
           style={[df.text, { color: active ? BRAND : theme.colors.mutedText }]}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {value || placeholder}
         </AppText>
-        <AppText style={[df.chevron, { color: active ? BRAND : theme.colors.mutedText }]}>›</AppText>
+        <AppText style={[df.chevron, { color: active ? BRAND : theme.colors.mutedText }]}>{locked ? '🔒' : '›'}</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -561,8 +597,24 @@ const FilterSheet = ({
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
+  const toast = useToast();
   const insets = useSafeAreaInsets();
   const [f, setF] = useState<WorkerFilters>(initial);
+
+  // Tapping a plan-locked location field explains the limit + nudges an upgrade,
+  // instead of silently doing nothing. District-plan shows the district message;
+  // state-plan shows the state message. Fully translated (employer namespace).
+  const handleLockedAttempt = (): void => {
+    if (lockDistrict) {
+      toast.error(t('pl_scopeDistrict', {
+        district: userDistrict ? getLocationDisplayName(userDistrict, 'district', i18n.language) : '',
+      }));
+    } else {
+      toast.error(t('pl_scopeState', {
+        state: userState ? getLocationDisplayName(userState, 'state', i18n.language) : '',
+      }));
+    }
+  };
   const [picker, setPicker] = useState<
     'cat' | 'subcat' | 'state' | 'district' | 'tehsil' | null
   >(null);
@@ -672,15 +724,19 @@ const FilterSheet = ({
               label={t('ws_state')}
               value={f.state ? getLocationDisplayName(f.state, 'state', i18n.language) : ''}
               placeholder={t('ws_all_states')}
-              onPress={() => setPicker('state')}
-              disabled={lockState}
+              onPress={() => (lockState ? handleLockedAttempt() : setPicker('state'))}
+              locked={lockState}
             />
             <DropField
               label={t('ws_district')}
               value={f.district ? getLocationDisplayName(f.district, 'district', i18n.language) : ''}
               placeholder={f.state ? t('ws_select_district') : t('ws_select_state_first')}
-              onPress={() => f.state && setPicker('district')}
-              disabled={!f.state || lockDistrict}
+              onPress={() => {
+                if (lockDistrict) { handleLockedAttempt(); return; }
+                if (f.state) setPicker('district');
+              }}
+              disabled={!f.state}
+              locked={lockDistrict}
             />
             {(districtList.length > 0 || f.tehsil) && (
               <DropField
@@ -881,6 +937,31 @@ const FilterSheet = ({
             </View>
           </View>
 
+          {/* ── Has Resume ────────────────────────────────────────────────── */}
+          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity
+              onPress={() => set('hasResume', !f.hasResume)}
+              activeOpacity={0.8}
+              style={fsh.cardHeader}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: f.hasResume }}
+            >
+              <View style={[fsh.cardIcon, { backgroundColor: '#EAF7EF' }]}>
+                <AppText style={{ fontSize: 14 }}>📄</AppText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_has_resume')}</AppText>
+                <AppText style={[fsh.typeSub, { color: theme.colors.mutedText }]}>{t('ws_has_resume_sub')}</AppText>
+              </View>
+              <View style={[
+                fsh.resumeToggle,
+                { borderColor: f.hasResume ? '#16A34A' : theme.colors.border, backgroundColor: f.hasResume ? '#16A34A' : 'transparent' },
+              ]}>
+                {f.hasResume && <AppText style={{ color: WHITE, fontSize: 11, fontWeight: '900' }}>✓</AppText>}
+              </View>
+            </TouchableOpacity>
+          </View>
+
         </ScrollView>
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
@@ -971,6 +1052,7 @@ const fsh = StyleSheet.create({
   cardHeader:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   cardIcon:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   cardTitle:     { fontSize: 14, fontWeight: '800', letterSpacing: 0.1 },
+  resumeToggle:  { width: 26, height: 26, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   lockHint:      { fontSize: 11, fontWeight: '600', lineHeight: 15, marginTop: -8, marginBottom: 12 },
 
   // Professional Type grid
@@ -1043,7 +1125,7 @@ const CallOutcomePicker = ({
         style={[co.btn, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.card }]}
       >
         <View style={[co.dot, { backgroundColor: hasOutcome ? oc.dot : theme.colors.mutedText }]} />
-        <AppText style={[co.btnText, { color: hasOutcome ? oc.color : theme.colors.mutedText }]} numberOfLines={1}>
+        <AppText style={[co.btnText, { color: hasOutcome ? oc.color : theme.colors.mutedText }]} numberOfLines={2}>
           {saving ? t('ws_saving') : (label ?? t('ws_log_call_outcome'))}
         </AppText>
         {hasOutcome && remarkTime && (
@@ -1068,8 +1150,8 @@ const CallOutcomePicker = ({
                 <AppText style={co.oavTxt}>{initials ?? '?'}</AppText>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <AppText style={[co.ot, { color: theme.colors.text }]} numberOfLines={1}>{name ?? t('ws_call_outcome')}</AppText>
-                <AppText style={[co.os, { color: theme.colors.mutedText }]} numberOfLines={1}>{t('ws_log_this_call')}</AppText>
+                <AppText style={[co.ot, { color: theme.colors.text }]} numberOfLines={2}>{name ?? t('ws_call_outcome')}</AppText>
+                <AppText style={[co.os, { color: theme.colors.mutedText }]} numberOfLines={2}>{t('ws_log_this_call')}</AppText>
               </View>
               <TouchableOpacity onPress={() => setShow(false)} style={[co.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
                 <Ionicons name="close" size={17} color={theme.colors.mutedText} />
@@ -1089,7 +1171,7 @@ const CallOutcomePicker = ({
                     style={[co.oopt, { borderColor: active ? c.dot : theme.colors.border, backgroundColor: active ? c.dot + '0F' : theme.colors.card }]}
                   >
                     <View style={[co.od, { backgroundColor: c.dot }]} />
-                    <AppText style={[co.ol, { color: theme.colors.text }]} numberOfLines={1}>{t(item.labelKey)}</AppText>
+                    <AppText style={[co.ol, { color: theme.colors.text }]} numberOfLines={2}>{t(item.labelKey)}</AppText>
                     {active && <Ionicons name="checkmark" size={18} color={c.dot} style={co.ock} />}
                   </TouchableOpacity>
                 );
@@ -1238,14 +1320,14 @@ const AgentCard = ({
           </View>
 
           {!!locationStr && (
-            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={1}>📍 {locationStr}</AppText>
+            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={2}>📍 {locationStr}</AppText>
           )}
 
           <View style={wc.metaRow}>
-            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
-            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
-            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
-            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText numberOfLines={1} adjustsFontSizeToFit={false} style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
+            {!!age && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_age', { age })}</AppText></View>}
+            {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
+            {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
+            {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
           </View>
 
           {!!(agent.workerSubType || agent.agentType) && (
@@ -1277,7 +1359,10 @@ const AgentCard = ({
           {matchedAreas.map((area, idx) => (
             <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: '#F6F8FE', borderColor: '#E1E8FD' }]}>
               <AppText style={wc.skillChipIcon}>📎</AppText>
-              <AppText style={[wc.skillChipTxt, { color: '#2243BC' }]} numberOfLines={1} adjustsFontSizeToFit={false}>
+              {/* No numberOfLines: chips live in a horizontal ScrollView, so the
+                  full work-type label must render on one line (Android ellipsizes
+                  numberOfLines text against the viewport width otherwise). */}
+              <AppText style={[wc.skillChipTxt, { color: '#2243BC' }]}>
                 {subcatDisplay(area)}
               </AppText>
             </View>
@@ -1415,7 +1500,7 @@ const wc = StyleSheet.create({
   // Skills
   skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },
   skillsContent:  { paddingHorizontal: 12, paddingVertical: 9, gap: 7, flexDirection: 'row' },
-  skillChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1 },
+  skillChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1, flexShrink: 0 },
   skillChipIcon:  { fontSize: 12, lineHeight: 18 },
   skillChipTxt:   { fontSize: 13, lineHeight: 18, fontWeight: '700' },
 
@@ -1539,9 +1624,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
   // ── Plan worker-search scope gate ──────────────────────────────────────────
   const plan = usePlanFeatures();
-  // Non-subscriber: default to their own STATE only (state pre-selected, district
-  // left open). Subscribers get their plan's scope. 'india' = unrestricted.
-  const scope = plan.isSubscribed ? plan.workerSearchScope : 'state'; // 'district' | 'state' | 'india'
+  // Non-subscriber: unrestricted ALL-INDIA search (no location lock). Once the
+  // employer subscribes, their plan tier's scope applies (district/state/india).
+  // 'india' = unrestricted ⇒ isScoped is false ⇒ no auto-lock and no scope banner.
+  const scope = plan.isSubscribed ? plan.workerSearchScope : 'india'; // 'district' | 'state' | 'india'
   // Only constrain when we actually know the user's location (graceful fallback).
   const districtScoped = scope === 'district' && !!userState && !!userDistrict;
   const stateScoped    = scope === 'state'    && !!userState;
@@ -1553,7 +1639,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const [appliedFilters, setAppliedFilters] = useState<WorkerFilters>({
     ...EMPTY_FILTERS,
     workerType: initialCat,
-    state: userState,
+    // Only pre-seed the location when the plan actually scopes the search.
+    // Non-subscribers (and 'india'-tier subscribers) start unrestricted = all-India.
+    state: isScoped ? userState : '',
     district: '',
   });
 
@@ -1685,6 +1773,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         qualification: appliedFilters.qualification || undefined,
         minAge:        appliedFilters.ageMin ? Number(appliedFilters.ageMin) : undefined,
         maxAge:        appliedFilters.ageMax ? Number(appliedFilters.ageMax) : undefined,
+        hasResume:     appliedFilters.hasResume || undefined,
         page:          pageParam,
         limit:         PAGE_LIMIT,
       }),
@@ -1867,8 +1956,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             </TouchableOpacity>
           )}
           <View style={sc.headerTitleBlock}>
-            <AppText style={sc.headerTitle} numberOfLines={1}>{t('ws_header_title')}</AppText>
-            <AppText style={sc.headerSub} numberOfLines={1}>
+            <AppText style={sc.headerTitle} numberOfLines={2}>{t('ws_header_title')}</AppText>
+            <AppText style={sc.headerSub} numberOfLines={2}>
               📍 {appliedFilters.state
                 ? t('ws_results_in', { state: getLocationDisplayName(appliedFilters.state, 'state', i18n.language) })
                 : t('ws_all_india')}
@@ -2102,7 +2191,7 @@ const sc = StyleSheet.create({
   pillsBar:        { flexGrow: 0, marginTop: 6 },
   pillsContent:    { gap: 7, flexDirection: 'row' },
   pill:            { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },
-  pillTxt:         { fontSize: 13, lineHeight: 19, fontWeight: '600', color: BRAND, maxWidth: 130 },
+  pillTxt:         { fontSize: 13, lineHeight: 19, fontWeight: '600', color: BRAND, flexShrink: 0 },
   pillClose:       { fontSize: 16, fontWeight: '700', color: BRAND, lineHeight: 18 },
   pillClear:       { borderRadius: 20, borderWidth: 1, borderColor: '#fca5a5', backgroundColor: '#fee2e2', paddingHorizontal: 12, paddingVertical: 7, justifyContent: 'center' },
   pillClearTxt:    { fontSize: 13, lineHeight: 19, fontWeight: '700', color: '#dc2626' },

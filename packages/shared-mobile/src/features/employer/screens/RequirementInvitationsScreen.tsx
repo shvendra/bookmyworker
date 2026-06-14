@@ -17,6 +17,8 @@ import { useAppTheme } from '../../../core/theme';
 import { useTranslation } from 'react-i18next';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { WorkerInvitation } from '../../../core/api/endpoints/requirementsApi';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { SuggestedWorkersModal } from '../components/SuggestedWorkersModal';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { apiClient } from '../../../core/api/client';
@@ -289,7 +291,7 @@ const ic = StyleSheet.create({
   avatar:      { width: 52, height: 52, borderRadius: 26, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   avatarTxt:   { fontSize: 18, fontWeight: '900', lineHeight: 22 },
 
-  nameCol:     { flex: 1, gap: 3 },
+  nameCol:     { flex: 1, minWidth: 0, gap: 3 },
   name:        { fontSize: 15, fontWeight: '800', lineHeight: 19, letterSpacing: -0.2 },
   phoneRow:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
   phoneTxt:    { fontSize: 12, fontWeight: '600' },
@@ -379,7 +381,7 @@ const lk = StyleSheet.create({
   benefitRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   check:       { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1A56DB', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
   checkTxt:    { fontSize: 11, fontWeight: '900', color: '#fff', lineHeight: 14 },
-  benefitTxt:  { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 20 },
+  benefitTxt:  { flex: 1, minWidth: 0, fontSize: 13, fontWeight: '600', lineHeight: 20 },
   btn:         { alignSelf: 'stretch', borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4, elevation: 2, shadowColor: '#1037A4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8 },
   btnTxt:      { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.4 },
 });
@@ -391,6 +393,17 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
   const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = React.useState<'all' | 'invited' | 'accepted' | 'declined'>('all');
+  const [inviteVisible, setInviteVisible] = React.useState(false);
+  const planFeat = usePlanFeatures();
+
+  // Requirement details — shares RequirementHeader's cache (same query key), used
+  // to seed the invite modal with the requirement's work type for suggestions.
+  const reqQuery = useQuery({
+    queryKey: ['requirement', requirementId],
+    queryFn: () => requirementsApi.getById(requirementId),
+    staleTime: 60 * 1000,
+  });
+  const reqWorkType = reqQuery.data?.workType;
 
   // ── Subscription check ───────────────────────────────────────────────────
   const profileQuery = useQuery({
@@ -450,9 +463,21 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
         <AppText style={[sc.sectionTitle, { color: theme.colors.text }]}>
           {t('workerInvitations')}
         </AppText>
-        <AppText style={[sc.sectionCount, { color: theme.colors.mutedText }]}>
-          {allInvitations.length}
-        </AppText>
+        <View style={sc.sectionRight}>
+          <AppText style={[sc.sectionCount, { color: theme.colors.mutedText }]}>
+            {allInvitations.length}
+          </AppText>
+          {planFeat.inviteEnabled && (
+            <TouchableOpacity
+              onPress={() => setInviteVisible(true)}
+              style={sc.inviteBtn}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <AppText style={sc.inviteBtnTxt}>＋ {t('inv_sendInvite')}</AppText>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={sc.chipScroll} contentContainerStyle={sc.chipScrollContent}>
@@ -486,7 +511,7 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
         })}
       </ScrollView>
     </View>
-  ), [allInvitations, filter, theme, requirementId]);
+  ), [allInvitations, filter, theme, requirementId, planFeat.inviteEnabled]);
 
   const ListEmpty = useCallback(() => {
     if (isLoading) return null;
@@ -553,6 +578,16 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
           style={{ backgroundColor: theme.colors.background }}
         />
       )}
+
+      {/* Send-invite modal — reuses the dashboard's suggested-workers picker.
+          On close, refetch so freshly-sent invites appear in the list. */}
+      <SuggestedWorkersModal
+        visible={inviteVisible}
+        onClose={() => { setInviteVisible(false); void refetch(); }}
+        requirementId={requirementId}
+        workType={reqWorkType}
+        titleLabel={(reqWorkType || '').replace(/_/g, ' ')}
+      />
     </View>
   );
 };
@@ -572,6 +607,9 @@ const sc = StyleSheet.create({
   sectionRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
   sectionTitle:    { fontSize: 15, fontWeight: '900', letterSpacing: -0.2 },
   sectionCount:    { fontSize: 13, fontWeight: '700' },
+  sectionRight:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginLeft: 'auto' },
+  inviteBtn:       { backgroundColor: '#1037A4', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  inviteBtnTxt:    { color: '#fff', fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
 
   chipScroll:      { marginBottom: 14 },
   chipScrollContent:{ paddingHorizontal: 16, gap: 8, flexDirection: 'row' },

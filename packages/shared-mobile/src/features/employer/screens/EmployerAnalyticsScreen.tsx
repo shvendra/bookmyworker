@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -297,8 +297,19 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
   // ── Plan gate (mirror PipelineScreen lock/upgrade UX) ──────────────────────
   const plan = usePlanFeatures();
   const analyticsLocked = plan.loaded && !plan.analyticsEnabled;
-  // Respect the plan's analytics window (Individual = 3 months, others = 12).
-  const months = plan.analyticsMonths;
+  // The plan tier caps how far back analytics can look (Individual = 3 months,
+  // others = 12). Within that cap the employer can pick a window (3/6/12M).
+  const monthsCap = plan.analyticsMonths;
+  const rangeOptions = useMemo(
+    () => [3, 6, 12].filter((m) => m <= monthsCap),
+    [monthsCap],
+  );
+  const [months, setMonths] = useState<number>(() => Math.min(6, monthsCap));
+  // Keep the selection valid if the cap resolves to a smaller value after the
+  // plan profile finishes loading.
+  useEffect(() => {
+    setMonths((m) => Math.min(m, monthsCap));
+  }, [monthsCap]);
 
   const { data, isLoading, isError, refetch } = useQuery<AnalyticsData>({
     queryKey: ['employer-analytics', months],
@@ -399,6 +410,29 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} tintColor={BRAND} />}
       >
+        {/* ── Time-window range toggle (capped at the plan tier) ── */}
+        {rangeOptions.length > 1 && (
+          <View style={[a.rangeBar, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+            {rangeOptions.map((m) => {
+              const active = months === m;
+              return (
+                <TouchableOpacity
+                  key={m}
+                  onPress={() => setMonths(m)}
+                  activeOpacity={0.8}
+                  style={[a.rangeChip, active && { backgroundColor: BRAND }]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <AppText style={[a.rangeChipTxt, { color: active ? '#FFFFFF' : theme.colors.mutedText }]}>
+                    {t('an_rangeMonths', { months: m })}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {/* ── KPI cards (2×2, responsive) ── */}
         <View style={a.kpiGrid}>
           <KpiCard value={summary?.totalPosted ?? 0}      label={t('totalPosted')} icon="📋" bg="#1E40AF" />
@@ -451,6 +485,9 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
 };
 
 const a = StyleSheet.create({
+  rangeBar:     { flexDirection: 'row', alignSelf: 'center', padding: 4, borderRadius: 12, borderWidth: 1, gap: 4 },
+  rangeChip:    { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 9 },
+  rangeChipTxt: { fontSize: 13, fontWeight: '800', letterSpacing: 0.2 },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
 });
 

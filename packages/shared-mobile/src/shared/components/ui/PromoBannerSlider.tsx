@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 import { WORK_CATEGORIES, type WorkCategory } from './WorkerCategoryGrid';
 import type { TranslationKeys } from '../../../core/i18n/translations';
@@ -27,7 +26,6 @@ interface PromoBannerSliderProps {
 }
 
 export const PromoBannerSlider = ({ onCategoryPress, onPress }: PromoBannerSliderProps): React.JSX.Element => {
-  const { theme } = useAppTheme();
   const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
   const dotAnim = useRef(WORK_CATEGORIES.map(() => new Animated.Value(0))).current;
@@ -144,19 +142,6 @@ export const PromoBannerSlider = ({ onCategoryPress, onPress }: PromoBannerSlide
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      {/* Dot indicators */}
-      <View style={styles.dots}>
-        {WORK_CATEGORIES.map((_, i) => {
-          const width = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [6, 20] });
-          const opacity = dotAnim[i].interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
-          return (
-            <TouchableOpacity key={i} onPress={() => { scrollToIndex(i); resetTimer(); }} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }}>
-              <Animated.View style={[styles.dot, { width, opacity, backgroundColor: theme.colors.primary }]} />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
     </View>
   );
 };
@@ -227,10 +212,4 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   slideEmoji: { fontSize: 38, lineHeight: 46 },
-
-  dots: {
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    gap: 4, marginTop: 7, paddingHorizontal: 16,
-  },
-  dot: { height: 6, borderRadius: 3 },
 });

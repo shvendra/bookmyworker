@@ -283,7 +283,7 @@ const ReqSection = ({
     <View style={[rs.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       {/* Header row */}
       <TouchableOpacity onPress={onToggle} activeOpacity={0.82} style={rs.headerRow}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <AppText style={[rs.title, { color: theme.colors.text }]} numberOfLines={2}>
             {title || t('calRequirement')}
           </AppText>
@@ -380,17 +380,19 @@ const rs = StyleSheet.create({
   sub:          { fontSize: 11.5, marginTop: 3 },
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
   statusDot:    { width: 6, height: 6, borderRadius: 3 },
-  statusTxt:    { fontSize: 10, fontWeight: '700' },
+  statusTxt:    { fontSize: 10, fontWeight: '700', flexShrink: 1 },
   pipeCount:    { fontSize: 10, fontWeight: '600' },
   pillsRow:     { flexDirection: 'row', gap: 6 },
   pill:         { flex: 1, borderRadius: 10, alignItems: 'center', paddingVertical: 7, gap: 1 },
   pillNum:      { fontSize: 15, fontWeight: '900', lineHeight: 19 },
   pillLabel:    { fontSize: 7.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
   toggleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  toggleTxt:    { fontSize: 11, fontWeight: '700' },
+  // flexShrink:1 so the label (e.g. "वर्कर छिपाएं") isn't clipped by the trailing
+  // ▲/▼ icon — RN <Text> defaults to flexShrink:0 in a row.
+  toggleTxt:    { fontSize: 11, fontWeight: '700', flexShrink: 1 },
   workersList:  { gap: 0, paddingTop: 4 },
-  emptyWorkers: { alignItems: 'center', paddingVertical: 14, gap: 8 },
-  emptyTxt:     { fontSize: 12, fontWeight: '500', textAlign: 'center' },
+  emptyWorkers: { alignItems: 'center', paddingVertical: 14, gap: 8, alignSelf: 'stretch' },
+  emptyTxt:     { fontSize: 12, fontWeight: '500', textAlign: 'center', flexShrink: 1 },
   viewInterestedBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: BRAND },
   viewInterestedTxt: { fontSize: 11, fontWeight: '700', color: '#fff' },
   viewMoreBtn:  { paddingVertical: 10, alignItems: 'center' },

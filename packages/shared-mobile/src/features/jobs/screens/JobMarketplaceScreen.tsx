@@ -171,7 +171,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
   const salaryType = getSalaryType(req);
   const salaryPeriod = t(`salaryPeriod_${salaryType}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
   const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
-  const categoryLabel = getCategoryLabel(req.workType, t);
+  const categoryLabel = getCategoryLabel(req.workType, t, req.subCategory);
 
   const APP_STORE_URL = 'https://play.google.com/store/apps/details?id=com.app.myworker';
 
@@ -228,7 +228,10 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         </View>
 
         <View style={styles.titleBlock}>
-          <AppText style={[styles.cardTitle, { color: theme.colors.text }]} numberOfLines={2}>
+          <AppText
+            style={[styles.cardTitle, { color: theme.colors.text }]}
+            numberOfLines={2}
+          >
             {jobTitle}
           </AppText>
           <AppText style={[styles.cardCategory, { color: theme.colors.mutedText }]} numberOfLines={2}>
@@ -248,7 +251,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
       {/* ── Location row ─────────────────────────────────────── */}
       <View style={styles.infoRow}>
         <AppText style={styles.infoRowIcon}>📍</AppText>
-        <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]} numberOfLines={1}>
+        <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flex: 1, minWidth: 0 }]} numberOfLines={2}>
           {locationStr}
         </AppText>
       </View>
@@ -257,7 +260,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
       {req.contactPersonName ? (
         <View style={styles.infoRow}>
           <AppText style={styles.infoRowIcon}>👤</AppText>
-          <AppText style={[styles.infoRowText, { color: theme.colors.mutedText }]} numberOfLines={1}>
+          <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flex: 1, minWidth: 0 }]} numberOfLines={2}>
             {req.contactPersonName}
           </AppText>
         </View>
@@ -674,6 +677,14 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const isFetching = showLikedOnly ? likedQuery.isFetching : allFetching;
   const refetch = showLikedOnly ? likedQuery.refetch : allRefetch;
 
+  // Distinguish a user-initiated pull-to-refresh from background refetches
+  // (search/filter changes) so we never show two spinners at once.
+  const [isManualRefresh, setIsManualRefresh] = useState(false);
+  const handleRefresh = useCallback(() => {
+    setIsManualRefresh(true);
+    void Promise.resolve(refetch()).finally(() => setIsManualRefresh(false));
+  }, [refetch]);
+
   const requirements: RawRequirement[] = useMemo(() => {
     const src = showLikedOnly ? likedQuery.data : data;
     return src?.pages.flatMap((p) => p.requirements) ?? [];
@@ -795,7 +806,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               {t('jobsFoundNearYou', { count: totalCount > 0 ? totalCount : requirements.length })}
             </AppText>
           </View>
-          {isFetching && !isFetchingNextPage && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
+          {isFetching && !isFetchingNextPage && !isManualRefresh && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
         </View>
 
         {/* Search bar */}
@@ -864,7 +875,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           {selectedSubCat && (
             <View style={[styles.activeChip, { backgroundColor: '#EDE9FE', borderColor: '#6366F1' }]}>
               <AppText style={[styles.activeChipText, { color: '#6366F1' }]}>
-                {subCategories.find(s => s.value === selectedSubCat)?.label ?? selectedSubCat}
+                {getSubCatLabel(selectedSubCat, i18n.language)}
               </AppText>
               <TouchableOpacity onPress={() => setSelectedSubCat('')} hitSlop={8}>
                 <AppText style={[styles.activeChipX, { color: '#6366F1' }]}>✕</AppText>
@@ -894,7 +905,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           keyExtractor={(item, i) => item._id || String(i)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isFetching && !isLoading && !isFetchingNextPage} onRefresh={() => void refetch()} />}
+          refreshControl={<RefreshControl refreshing={isManualRefresh} onRefresh={handleRefresh} />}
           onEndReached={() => {
             if (showLikedOnly) {
               if (likedQuery.hasNextPage && !likedQuery.isFetchingNextPage) void likedQuery.fetchNextPage();
@@ -1104,9 +1115,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderRadius: 999, borderWidth: 1.5,
     paddingHorizontal: 12, paddingVertical: 5,
+    maxWidth: '100%',
   },
-  activeChipText: { fontSize: 12, fontWeight: '700' },
-  activeChipX: { fontSize: 11, fontWeight: '800' },
+  // flexShrink:1 lets a long label wrap/use the available width instead of being
+  // clipped by the trailing ✕ (RN <Text> defaults to flexShrink:0 in a row).
+  activeChipText: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
+  activeChipX: { fontSize: 11, fontWeight: '800', flexShrink: 0 },
 
   // ── Filter bottom sheet ──────────────────────────────────────────────────────
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
@@ -1122,7 +1136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,
   },
-  sheetTitle: { fontSize: 17, fontWeight: '800' },
+  sheetTitle: { fontSize: 17, fontWeight: '800', flexShrink: 1 },
   sheetClear: { fontSize: 13, fontWeight: '700', color: '#EF4444' },
   sheetBody: { paddingHorizontal: 0 },
   sheetSection: {
@@ -1158,7 +1172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   logoEmoji: { fontSize: 26, lineHeight: 32 },
-  titleBlock: { flex: 1 },
+  titleBlock: { flex: 1, minWidth: 0 },
   cardTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20, letterSpacing: -0.2 },
   cardCategory: { fontSize: 12, fontWeight: '500', marginTop: 2 },
   likeBtn: {

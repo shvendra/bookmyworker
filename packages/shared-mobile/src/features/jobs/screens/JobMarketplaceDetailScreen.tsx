@@ -312,7 +312,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
 
   const visual        = getVisual(req.workType, req.subCategory);
   const jobTitle      = getJobTitle(req.workType, req.subCategory, i18n.language, t);
-  const categoryLabel = getCategoryLabel(req.workType, t);
+  const categoryLabel = getCategoryLabel(req.workType, t, req.subCategory);
   const locationStr   = getLocationStr({ tehsil: req.tehsil, district: req.district, state: req.state }, i18n.language, t('panIndia'));
   const period        = inferPeriod(req.minBudgetPerWorker ?? 0);
   const periodLabel   = t(`salaryPeriod_${period}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
@@ -342,7 +342,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
   type InfoRow = { icon: string; label: string; value: string };
   const INFO: InfoRow[] = [
     req.employerName   ? { icon: '🏢', label: t('detailEmployer'),     value: req.employerName } : null,
-    req.contactPersonName ? { icon: '👤', label: 'Contact Person', value: req.contactPersonName } : null,
+    req.contactPersonName ? { icon: '👤', label: t('contactPerson'), value: req.contactPersonName } : null,
     { icon: '📍', label: t('locationLabel'), value: locationStr },
     req.workerNeedDate ? { icon: '📅', label: t('detailStartDate'),    value: fmtDate(req.workerNeedDate, i18n.language) } : null,
     (req.inTime && req.outTime) ? { icon: '⏰', label: t('detailTiming'), value: `${fmtTime(req.inTime, i18n.language)} – ${fmtTime(req.outTime, i18n.language)}` } : null,
@@ -383,12 +383,12 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
             <View style={S.heroTextCol}>
               <AppText style={S.heroTitle} numberOfLines={2}>{jobTitle}</AppText>
               <View style={S.heroCategoryChip}>
-                <AppText style={S.heroCategoryText} numberOfLines={1}>{categoryLabel}</AppText>
+                <AppText style={S.heroCategoryText} numberOfLines={2}>{categoryLabel}</AppText>
               </View>
             </View>
           </View>
           <View style={S.heroMeta}>
-            <AppText style={S.heroMetaText} numberOfLines={1}>📍 {locationStr}</AppText>
+            <AppText style={[S.heroMetaText, { flex: 1, minWidth: 0 }]} numberOfLines={2}>📍 {locationStr}</AppText>
           </View>
 
           {/* Salary strip */}
@@ -407,30 +407,6 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
         <View style={S.body}>
-        {/* ── Worker breakdown ──────────────────────────────────────────────── */}
-        {(skilledCount > 0 || unskilledCount > 0) && (
-          <View style={[S.card, { backgroundColor: cardBg, borderColor: border }]}>
-            <View style={S.workerRow}>
-              {skilledCount > 0 && (
-                <View style={[S.workerTile, { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' }]}>
-                  <AppText style={S.workerTileNum}>{skilledCount}</AppText>
-                  <AppText style={[S.workerTileLabel, { color: '#059669' }]}>{t('reqDetailSkilledCount')}</AppText>
-                </View>
-              )}
-              {unskilledCount > 0 && (
-                <View style={[S.workerTile, { backgroundColor: '#EFF6FF', borderColor: '#93C5FD' }]}>
-                  <AppText style={S.workerTileNum}>{unskilledCount}</AppText>
-                  <AppText style={[S.workerTileLabel, { color: '#2563EB' }]}>{t('reqDetailUnskilledCount')}</AppText>
-                </View>
-              )}
-              <View style={[S.workerTile, { backgroundColor: isDark ? theme.colors.surface : '#F8FAFC', borderColor: border }]}>
-                <AppText style={[S.workerTileNum, { color: visual.color }]}>{fmtDate(req.createdAt, i18n.language)}</AppText>
-                <AppText style={[S.workerTileLabel, { color: isDark ? '#64748B' : '#94A3B8' }]}>{t('reqDetailPostedOn')}</AppText>
-              </View>
-            </View>
-          </View>
-        )}
-
         {/* ── Job Info ──────────────────────────────────────────────────────── */}
         <View style={[S.card, { backgroundColor: cardBg, borderColor: border }]}>
           <AppText style={[S.cardTitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>

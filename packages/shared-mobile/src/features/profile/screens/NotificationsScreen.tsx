@@ -102,7 +102,7 @@ const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element =>
       {/* Info */}
       <View style={wp.info}>
         {data.workerName ? (
-          <AppText style={wp.name} numberOfLines={1}>{data.workerName}</AppText>
+          <AppText style={wp.name} numberOfLines={2}>{data.workerName}</AppText>
         ) : null}
         <View style={wp.chips}>
           {data.workerAge ? (

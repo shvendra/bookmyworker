@@ -37,6 +37,8 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { type CompletenessField } from '../../../shared/components/ui/ProfileCompletenessCard';
+import { NeedsAttentionCard, type AttentionItem } from '../../../shared/components/ui/NeedsAttentionCard';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
@@ -439,7 +441,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             style={[rsc.agentStrip, { backgroundColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.4)' }]}
           >
             <AppText style={rsc.agentStripIcon}>{'👷'}</AppText>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <AppText style={rsc.agentName} numberOfLines={1}>
                 {req.assignedAgentName ?? t('agentAssigned')}
               </AppText>
@@ -632,20 +634,6 @@ const RequirementCarousel = React.memo(({
           />
         ))}
       </ScrollView>
-      {/* Dot indicators */}
-      {requirements.length > 1 && (
-        <View style={rsc.dots}>
-          {requirements.map((_, i) => (
-            <View
-              key={i}
-              style={[rsc.dot, {
-                width: activeIdx === i ? 22 : 6,
-                backgroundColor: activeIdx === i ? '#7C3AED' : '#CBD5E1',
-              }]}
-            />
-          ))}
-        </View>
-      )}
     </View>
   );
 });
@@ -666,7 +654,7 @@ const rsc = StyleSheet.create({
   deco2:         { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -30, left: -20 },
   // Top row
   topRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  topLeft:       { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  topLeft:       { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 },
   ernChip:       { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
   ernTxt:        { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
   statusPill:    { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 4, gap: 5 },
@@ -696,9 +684,6 @@ const rsc = StyleSheet.create({
   viewBtnTxt:    { fontSize: 12, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
   closeBtn:      { borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 8, flexShrink: 0 },
   closeTxt:      { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
-  // Dots
-  dots:          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 10, marginBottom: 14 },
-  dot:           { height: 6, borderRadius: 3 },
   // Empty / loading states
   loadWrap:      { paddingVertical: 40, alignItems: 'center' },
   emptyWrap:     { padding: 28, alignItems: 'center', gap: 8 },
@@ -836,7 +821,7 @@ const WorkerSliderCard = React.memo(({
       {/* Role chip */}
       {workType !== null && (
         <View style={wsc.workTypeChip}>
-          <AppText style={wsc.workTypeTxt} numberOfLines={1}>{workType}</AppText>
+          <AppText style={wsc.workTypeTxt} numberOfLines={2}>{workType}</AppText>
         </View>
       )}
 
@@ -976,7 +961,6 @@ const SubscriptionStatusWidget = React.memo(({
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const [now, setNow] = useState(() => Date.now());
-  const [active, setActive] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const idxRef = useRef(0);
 
@@ -997,7 +981,6 @@ const SubscriptionStatusWidget = React.memo(({
       const next = (idxRef.current + 1) % slideCount;
       idxRef.current = next;
       scrollRef.current?.scrollTo({ x: next * SSW_SLIDE_W, animated: true });
-      setActive(next);
     }, SSW_AUTO_MS);
     return () => clearInterval(id);
   }, [showSlider, slideCount]);
@@ -1131,7 +1114,6 @@ const SubscriptionStatusWidget = React.memo(({
         onMomentumScrollEnd={(e) => {
           const i = Math.round(e.nativeEvent.contentOffset.x / SSW_SLIDE_W);
           idxRef.current = i;
-          setActive(i);
         }}
       >
         {/* Slide 1 — subscription status */}
@@ -1170,19 +1152,6 @@ const SubscriptionStatusWidget = React.memo(({
           </View>
         ))}
       </ScrollView>
-
-      {/* Dots */}
-      <View style={ssw.dots}>
-        {Array.from({ length: slideCount }).map((_, i) => (
-          <View
-            key={i}
-            style={[ssw.dot, {
-              width: active === i ? 20 : 6,
-              backgroundColor: active === i ? theme.colors.primary : theme.colors.border,
-            }]}
-          />
-        ))}
-      </View>
     </View>
   );
 });
@@ -1217,8 +1186,6 @@ const ssw = StyleSheet.create({
   sliderWrap:   { marginBottom: 14 },
   slide:        { width: SSW_SLIDE_W, minHeight: SSW_SLIDE_H },   // grows with content; height is just a floor
   cardInSlide:  { flex: 1, marginBottom: 0 },          // subscription card stretches to the row height
-  dots:         { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 8 },
-  dot:          { height: 6, borderRadius: 3 },
 
   // ── Promo card ──
   promoCard:    { alignSelf: 'stretch', borderRadius: 22, overflow: 'hidden', position: 'relative', elevation: 3, shadowColor: '#0f2f8c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10 },
@@ -1604,6 +1571,54 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const [inviteReq, setInviteReq] = useState<RawRequirement | null>(null);
   const handleInviteReq = useCallback((req: RawRequirement) => setInviteReq(req), []);
 
+  // ── Profile completeness fields (employer) — chips on the Profile Strength card.
+  // KYC counts as done when GST or firm details exist (Industry employers verify via
+  // GST, not Aadhaar). Labels come from the default namespace (shared pf_* keys).
+  const completenessFields = useMemo<CompletenessField[]>(() => {
+    const kyc = (profile?.kyc ?? {}) as { gstNumber?: string; firmName?: string };
+    const hasKyc = !!(kyc.gstNumber || kyc.firmName || profile?.status === 'approved' || profile?.status === 'verified');
+    return [
+      { key: 'name',     label: tDefault('pf_name'),         done: !!user?.fullName?.trim() },
+      { key: 'phone',    label: tDefault('pf_phone'),        done: !!user?.phone },
+      { key: 'email',    label: tDefault('pf_email'),        done: !!user?.email?.trim() },
+      { key: 'state',    label: tDefault('pf_state'),        done: !!user?.state?.trim() },
+      { key: 'district', label: tDefault('pf_district'),     done: !!user?.district?.trim() },
+      { key: 'etype',    label: tDefault('pf_employerType'), done: !!resolvedEmployerType },
+      { key: 'photo',    label: tDefault('pf_photo'),        done: !!(user?.profileImage || profile?.profilePhoto) },
+      { key: 'kyc',      label: tDefault('pf_kyc'),          done: hasKyc },
+      { key: 'sub',      label: tDefault('pf_subscription'), done: isSubscribed },
+    ];
+  }, [tDefault, user?.fullName, user?.phone, user?.email, user?.state, user?.district, user?.profileImage, profile?.profilePhoto, profile?.kyc, profile?.status, resolvedEmployerType, isSubscribed]);
+
+  // ── Needs-attention items (employer) — prioritized pending actions.
+  // Only surfaces actionable BUSINESS alerts (subscribe, expiry, low contacts,
+  // responses). Profile-completion nags (KYC / photo / email) are intentionally
+  // NOT shown here — they cluttered the dashboard; profile completeness lives on
+  // the My Profile page (header avatar still shows the %). The card auto-hides
+  // when there are no items, keeping the dashboard clean.
+  const attentionItems = useMemo<AttentionItem[]>(() => {
+    const items: AttentionItem[] = [];
+    if (!isSubscribed) {
+      items.push({ key: 'sub', emoji: '🔒', title: t('na_emp_subscribe_t'), desc: t('na_emp_subscribe_d'), priority: 'high', onPress: () => navigation.navigate('Subscription') });
+    } else {
+      const exp = profile?.subscriptionExpery ? new Date(profile.subscriptionExpery).getTime() : null;
+      if (exp != null && !Number.isNaN(exp)) {
+        const days = Math.ceil((exp - Date.now()) / 86400000);
+        if (days <= 7) items.push({ key: 'exp', emoji: '⏳', title: t('na_emp_subExpiry_t'), desc: t('na_emp_subExpiry_d'), priority: days <= 3 ? 'high' : 'medium', onPress: () => navigation.navigate('Subscription') });
+      }
+      if (remainingContacts <= 3) items.push({ key: 'contacts', emoji: '📉', title: t('na_emp_lowContacts_t'), desc: t('na_emp_lowContacts_d'), priority: remainingContacts <= 0 ? 'high' : 'medium', onPress: () => navigation.navigate('Subscription') });
+    }
+    if (interestedCount > 0) items.push({ key: 'resp', emoji: '🙋', title: t('na_emp_responses_t'), desc: t('na_emp_responses_d'), priority: 'high', onPress: () => navigation.navigate('EmployerPipeline') });
+    const rank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    return items.sort((a, b) => rank[a.priority] - rank[b.priority]);
+  }, [t, isSubscribed, profile?.subscriptionExpery, remainingContacts, interestedCount, navigation]);
+
+  // Profile completeness % shown as a badge on the header avatar.
+  const profilePct = useMemo(() => {
+    const d = completenessFields.filter((f) => f.done).length;
+    return completenessFields.length ? Math.round((d / completenessFields.length) * 100) : 0;
+  }, [completenessFields]);
+
   // ── Render Sub-blocks for FlatList ──────────────────────────────────────────
   const renderHeader = useMemo(() => (
     <View>
@@ -1702,13 +1717,18 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </TouchableOpacity>
       </View>
 
+      {/* ── Needs Attention ──
+          (Profile Strength card lives on the My Profile page; the header avatar
+          still shows the completeness %.) */}
+      <NeedsAttentionCard items={attentionItems} />
+
       {/* ── Nearby Workers — hidden when the employer has an active (open) requirement ── */}
       {openCount === 0 && (
       <View style={[nws.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {/* Header */}
         <View style={nws.header}>
           <View style={nws.headerLeft}>
-            <AppText style={[nws.title, { color: theme.colors.text }]}>{t('workersNearYou')}</AppText>
+            <AppText style={[nws.title, { color: theme.colors.text }]} numberOfLines={1}>{t('workersNearYou')}</AppText>
             {nearbyQuery.isSuccess && nearbyTotal > 0 && (
               <View style={nws.countPill}>
                 <AppText style={nws.countPillTxt}>
@@ -1924,7 +1944,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       </TouchableOpacity>
 
     </View>
-  ), [t, theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining, boostEnabled, boostRemaining, boostingId, handleBoost]);
+  ), [t, theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining, boostEnabled, boostRemaining, boostingId, handleBoost, attentionItems, completenessFields, profilePct, navigation]);
 
   const renderFooter = useMemo(() => (
     <View>
@@ -2004,8 +2024,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </AppText>
           </View>
           <View style={fh.headerActions}>
-            {/* Wave kept outside the name text so it stays visible even for long names */}
-            <AppText style={fh.greetWave}>👋</AppText>
+            {/* Notification bell — opens the notifications page */}
+            <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={fh.shortlistBtn} activeOpacity={0.8}>
+              <AppText style={fh.shortlistIcon}>🔔</AppText>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('ChatRoom', {
                 roomId: `support_${user?.id ?? ''}`,
@@ -2017,19 +2039,15 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <AppText style={fh.shortlistIcon}>💬</AppText>
               <View style={fh.shortlistDot} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8} style={fh.avatarBtn}>
               <Avatar name={user?.fullName ?? 'E'} size={38} uri={buildPhotoUrl(profile?.profilePhoto)} ring ringColor="rgba(255,255,255,0.55)" />
+              <View style={[fh.pctBadge, { backgroundColor: profilePct >= 90 ? '#10B981' : profilePct >= 70 ? '#3B82F6' : profilePct >= 40 ? '#F59E0B' : '#EF4444' }]}>
+                <AppText style={fh.pctBadgeTxt}>{profilePct}%</AppText>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
-        {/* Status pill — welcome / premium subtitle (profile-verification notice intentionally not shown) */}
-        <View style={fh.statusPill}>
-          <AppText style={fh.statusPillTxt} numberOfLines={1}>
-            {isSubscribed
-              ? t('dashGreetSub_premium', { count: remainingContacts })
-              : t('dashGreetSub_welcome')}
-          </AppText>
-        </View>
+        {/* Status pill intentionally removed — header kept clean & premium (greeting only) */}
       </View>
 
       {/* ── Subscription Upsell Modal ──────────────────────────────────── */}
@@ -2209,7 +2227,7 @@ const styles = StyleSheet.create({
 const nws = StyleSheet.create({
   card:         { borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 14, elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
   header:       { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' },
+  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   // lineHeight is required so Devanagari/Indic top matras aren't clipped.
   title:        { fontSize: 15, fontWeight: '800', color: '#0f172a', lineHeight: 22, flexShrink: 1 },
   countPill:    { backgroundColor: '#fff7ed', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: '#fed7aa', flexShrink: 0 },
@@ -2333,7 +2351,7 @@ const pip = StyleSheet.create({
 });
 
 const fh = StyleSheet.create({
-  wrap:          { backgroundColor: '#1037A4', paddingHorizontal: 20, paddingBottom: 32, overflow: 'hidden' },
+  wrap:          { backgroundColor: '#1037A4', paddingHorizontal: 20, paddingBottom: 40, overflow: 'hidden' },
   circle1:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 220, height: 220, top: -80, right: -60 },
   circle2:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 140, height: 140, bottom: -45, left: -30 },
   // Brand bar: logo + actions + avatar
@@ -2348,6 +2366,9 @@ const fh = StyleSheet.create({
   shortlistIcon:     { fontSize: 19, lineHeight: 22 },
   // Static red notification dot on the chat bubble
   shortlistDot:      { position: 'absolute', top: 1, right: 1, width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', borderWidth: 1.5, borderColor: '#1037A4' },
+  avatarBtn:         { position: 'relative', alignItems: 'center' },
+  pctBadge:          { position: 'absolute', bottom: -7, paddingHorizontal: 5, paddingVertical: 0.5, borderRadius: 999, borderWidth: 1.5, borderColor: '#1037A4' },
+  pctBadgeTxt:       { fontSize: 9, fontWeight: '800', color: '#fff', lineHeight: 12 },
   shortlistBadge:    { position: 'absolute', top: -3, right: -3, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#1037A4' },
   shortlistBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900', lineHeight: 12 },
   // User + verification status

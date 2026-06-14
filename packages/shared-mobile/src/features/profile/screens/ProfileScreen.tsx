@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -21,6 +21,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { apiClient } from '../../../core/api/client';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
+import { ProfileCompletenessCard, type CompletenessField } from '../../../shared/components/ui/ProfileCompletenessCard';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
@@ -142,6 +143,70 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
   const isDark = theme.mode === 'dark';
   const currentBackendRole = FRONTEND_TO_BACKEND[user?.role ?? ''] ?? (user?.role?.toUpperCase() ?? 'USER');
   const kycColors = kycStatusColor(user?.kycStatus ?? 'pending', theme);
+
+  // ── Profile-strength card ───────────────────────────────────────────────────
+  // Lives here, just below the profile photo. The field set differs by role:
+  //   • employer → name/phone/email/state/district/employer-type/photo/KYC/subscription
+  //     (matches the CRM + dashboard badge exactly; KYC counts via GST/firm for
+  //      Industry employers, so no Aadhaar is required)
+  //   • agent / worker / selfworker → leaner set (no email/employer-type/sub)
+  const roleLower = (user?.role ?? '').toLowerCase();
+  const isEmployer = roleLower === 'employer';
+  const showCompleteness =
+    isEmployer || roleLower === 'agent' || roleLower === 'worker' || roleLower === 'selfworker';
+
+  // Employer-only: pull the full profile (subscription, KYC, employer-type) so the
+  // completeness % matches the dashboard avatar badge exactly. Shares the same
+  // query key as the dashboard, so the cache is reused (no extra round-trip).
+  const empProfileQuery = useQuery({
+    queryKey: ['employer-full-profile'],
+    queryFn: async () => {
+      const res = await apiClient.get<{
+        user?: {
+          isSubscribed?: boolean;
+          subscriptionExpery?: string;
+          status?: string;
+          employerType?: string;
+          profilePhoto?: string;
+          kyc?: { firmName?: string; gstNumber?: string };
+        };
+      }>('/api/v1/user/getuser');
+      return res.data.user ?? null;
+    },
+    staleTime: 60 * 1000,
+    enabled: isEmployer,
+  });
+  const empProfile = empProfileQuery.data;
+  const empIsSubscribed =
+    !!empProfile?.isSubscribed &&
+    (!empProfile.subscriptionExpery || new Date(empProfile.subscriptionExpery).getTime() > Date.now());
+
+  const completenessFields = useMemo<CompletenessField[]>(() => {
+    if (isEmployer) {
+      const kyc = (empProfile?.kyc ?? {}) as { gstNumber?: string; firmName?: string };
+      const hasKyc = !!(
+        kyc.gstNumber || kyc.firmName || empProfile?.status === 'approved' || empProfile?.status === 'verified'
+      );
+      return [
+        { key: 'name',     label: t('pf_name'),         done: !!user?.fullName?.trim() },
+        { key: 'phone',    label: t('pf_phone'),        done: !!user?.phone },
+        { key: 'email',    label: t('pf_email'),        done: !!user?.email?.trim() },
+        { key: 'state',    label: t('pf_state'),        done: !!user?.state?.trim() },
+        { key: 'district', label: t('pf_district'),     done: !!user?.district?.trim() },
+        { key: 'photo',    label: t('pf_photo'),        done: !!(user?.profileImage || empProfile?.profilePhoto) },
+        { key: 'kyc',      label: t('pf_kyc'),          done: hasKyc, onPress: () => navigation.navigate('KycVerification') },
+        { key: 'sub',      label: t('pf_subscription'), done: empIsSubscribed },
+      ];
+    }
+    return [
+      { key: 'name',     label: t('pf_name'),     done: !!user?.fullName?.trim() },
+      { key: 'phone',    label: t('pf_phone'),    done: !!user?.phone },
+      { key: 'state',    label: t('pf_state'),    done: !!user?.state?.trim() },
+      { key: 'district', label: t('pf_district'), done: !!user?.district?.trim() },
+      { key: 'photo',    label: t('pf_photo'),    done: !!user?.profileImage },
+      { key: 'kyc',      label: t('pf_kyc'),      done: user?.kycStatus === 'verified', onPress: () => navigation.navigate('KycVerification') },
+    ];
+  }, [isEmployer, t, navigation, user?.fullName, user?.phone, user?.email, user?.state, user?.district, user?.profileImage, user?.kycStatus, empProfile?.kyc, empProfile?.status, empProfile?.profilePhoto, empIsSubscribed]);
 
   const handleSelectLanguage = async (lang: AppLanguage): Promise<void> => {
     setSavingLang(true);
@@ -268,6 +333,16 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       </View>
 
       <View style={styles.body}>
+        {/* Profile strength — sits directly under the profile photo hero.
+            Tapping it opens Edit Profile to fill the remaining fields. */}
+        {showCompleteness && (
+          <ProfileCompletenessCard
+            fields={completenessFields}
+            onPress={() => navigation.navigate('EditProfile')}
+            style={{ marginBottom: 0 }}
+          />
+        )}
+
         {/* Switch Account — only admin / superadmin have multiple roles */}
         {(user?.role === 'admin' || user?.role === 'superadmin') && (
           <TouchableOpacity
@@ -335,7 +410,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           <View style={[certStyles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             {/* Header row */}
             <View style={certStyles.headerRow}>
-              <AppText style={[certStyles.title, { color: theme.colors.text }]}>
+              <AppText style={[certStyles.title, { color: theme.colors.text }]} numberOfLines={1}>
                 {user?.role === 'agent' ? t('cert_licencePageTitle') : t('cert_pageTitle')}
               </AppText>
               <TouchableOpacity onPress={() => navigation.navigate('Certificates')} activeOpacity={0.7}>

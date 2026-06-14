@@ -19,6 +19,8 @@ export interface WorkerSearchParams {
   page?: number;
   limit?: number;
   qualification?: string;
+  /** When true, only return workers who have uploaded a resume (backend `hasResume`). */
+  hasResume?: boolean;
 }
 
 export interface RawAgent {
@@ -127,6 +129,7 @@ export const workerApi = {
         maxAge: params.maxAge || undefined,
         status: params.status || undefined,
         qualification: params.qualification || undefined,
+        hasResume: params.hasResume ? 'true' : undefined,
         page: params.page ?? 1,
         limit: params.limit ?? 25,
       },

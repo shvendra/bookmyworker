@@ -8,6 +8,7 @@ import { WORK_CATEGORIES } from '../components/ui/WorkerCategoryGrid';
 import categoriesData from '../data/categories.json';
 import type { TranslationKeys } from '../../core/i18n/translations';
 import type { UserProfile } from '../types/domain';
+import { getLocationDisplayName } from '../data/locationTranslations';
 
 interface CatEntry {
   label: string;
@@ -49,6 +50,21 @@ const LANG_FIELD: Record<string, keyof SubEntry> = {
   or: 'odialabel',
   pa: 'punjabilabel',
 };
+
+/**
+ * Normalizes an i18n language code to its base subtag (e.g. 'hi-IN' → 'hi',
+ * 'en-US' → 'en'). The manual lookup maps in this file (LANG_FIELD,
+ * EXTRA_SUBCAT_LABELS, STATE_TRANSLATIONS, DISTRICT_TRANSLATIONS) are keyed by
+ * the bare two-letter code, but `i18n.language` can carry a region suffix
+ * depending on the device locale. i18next's own `t()` resolves region-qualified
+ * codes via its fallback chain — so category labels (which go through `t()`)
+ * stay translated while these manual maps would miss and fall back to English,
+ * leaving the UI half-translated. Normalizing here keeps both paths in sync.
+ */
+function normLang(language: string | null | undefined): string {
+  if (!language) return 'en';
+  return language.toLowerCase().split(/[-_]/)[0];
+}
 
 // ── Work-type translation ─────────────────────────────────────────────────────
 
@@ -98,19 +114,19 @@ const LEGACY_WORK_TYPE_MAP: Record<string, string> = {
   'healthcare support workers':           'Healthcare Support Workers',
 };
 
+type WorkCategory = (typeof WORK_CATEGORIES)[number];
+
 /**
- * Translates a work-type value using cat_* i18n keys (all 11 languages).
- * Handles legacy DB values stored as full label strings or partial names.
+ * Resolves a stored work-type value to a known WORK_CATEGORIES entry (exact,
+ * legacy-alias, then fuzzy). Returns null when the value matches no category —
+ * e.g. freeform employer-entered strings like "Driving And Delivery".
  */
-export function getWorkTypeLabel(
-  value: string | null | undefined,
-  t: TFunction,
-): string {
-  if (!value) return '—';
+function resolveWorkCategory(value: string | null | undefined): WorkCategory | null {
+  if (!value) return null;
 
   // 1. Exact match on value (current format: "manufacturing_industrial_workers")
   const exact = WORK_CATEGORIES.find((c) => c.value === value);
-  if (exact) return t(exact.translationKey as TranslationKeys);
+  if (exact) return exact;
 
   const lower = value.toLowerCase().replace(/[\s_&/-]+/g, ' ').trim();
 
@@ -118,7 +134,7 @@ export function getWorkTypeLabel(
   const legacyCatValue = LEGACY_WORK_TYPE_MAP[lower];
   if (legacyCatValue) {
     const legacyCat = WORK_CATEGORIES.find((c) => c.value === legacyCatValue);
-    if (legacyCat) return t(legacyCat.translationKey as TranslationKeys);
+    if (legacyCat) return legacyCat;
   }
 
   // 2. Fuzzy match — check if the value contains a keyword from the category label
@@ -132,9 +148,54 @@ export function getWorkTypeLabel(
       valLower.includes(catLower.split(' ')[0])
     );
   });
-  if (fuzzy) return t(fuzzy.translationKey as TranslationKeys);
+  return fuzzy ?? null;
+}
 
-  // 3. Final fallback: readable English (trimmed to avoid trailing spaces)
+/**
+ * Finds the parent work-type category for a stored sub-category value or label,
+ * so a card whose `workType` is freeform/unmapped can still show a translated
+ * category derived from its (taxonomy-backed) sub-category.
+ */
+function findParentCategoryValue(subCategory: string | null | undefined): string | null {
+  if (!subCategory) return null;
+  const lower = subCategory.toLowerCase().trim();
+  for (const cat of ALL_CATS) {
+    for (const sub of cat.subcategories) {
+      if ((sub.value ?? '').toLowerCase() === lower || (sub.label ?? '').toLowerCase() === lower) {
+        return cat.value;
+      }
+    }
+  }
+  return null;
+}
+
+// Categories that live in categories.json but are intentionally NOT in the
+// WORK_CATEGORIES promo grid (so they don't appear as worker browse tiles), yet
+// still need a translated label via their own cat_* i18n key — the "Support Staff"
+// categories (Permanent / Contract) under the Office_Staff requirement type.
+const EXTRA_CATEGORY_KEYS: Record<string, string> = {
+  support_staff_permanent: 'cat_support_staff_permanent',
+  support_staff_contract:  'cat_support_staff_contract',
+};
+
+/**
+ * Translates a work-type value using cat_* i18n keys (all 11 languages).
+ * Handles legacy DB values stored as full label strings or partial names.
+ */
+export function getWorkTypeLabel(
+  value: string | null | undefined,
+  t: TFunction,
+): string {
+  if (!value) return '—';
+
+  const cat = resolveWorkCategory(value);
+  if (cat) return t(cat.translationKey as TranslationKeys);
+
+  // Extra (non-grid) categories with their own cat_* key (e.g. Support Staff)
+  const extraKey = EXTRA_CATEGORY_KEYS[value];
+  if (extraKey) return t(extraKey as TranslationKeys);
+
+  // Final fallback: readable English (trimmed to avoid trailing spaces)
   return value
     .replace(/_/g, ' ')
     .replace(/ workers?$/i, '')
@@ -144,17 +205,56 @@ export function getWorkTypeLabel(
 
 // ── Sub-category translation ──────────────────────────────────────────────────
 
+// British → American spelling normalization. Employers type "Loading Labor"
+// while the taxonomy stores "Loading Labour"; normalizing BOTH sides before
+// comparison lets such near-misses match instead of falling back to English.
+const SPELLING_NORMALIZE: Array<[RegExp, string]> = [
+  [/labour/g, 'labor'],
+  [/centre/g, 'center'],
+  [/colour/g, 'color'],
+  [/metre/g, 'meter'],
+  [/litre/g, 'liter'],
+  [/licence/g, 'license'],
+  [/moulding/g, 'molding'],
+  [/mould/g, 'mold'],
+  [/jewellery/g, 'jewelry'],
+  [/\btyre\b/g, 'tire'],
+  [/\bgrey\b/g, 'gray'],
+];
+const normSpelling = (s: string): string =>
+  SPELLING_NORMALIZE.reduce((acc, [re, rep]) => acc.replace(re, rep), s);
+
+// Common freeform sub-category titles that appear in production requirement data
+// but are NOT in the taxonomy (categories.json). Employers type these manually,
+// so there's no taxonomy entry to translate from — we translate them here.
+// Keyed by lowercase English. Extend this list as new freeform titles surface.
+const EXTRA_SUBCAT_LABELS: Record<string, Record<string, string>> = {
+  'telephone operator': {
+    en: 'Telephone Operator',
+    hi: 'टेलीफोन ऑपरेटर', mr: 'टेलिफोन ऑपरेटर', gu: 'ટેલિફોન ઓપરેટર',
+    ta: 'தொலைபேசி ஆபரேட்டர்', te: 'టెలిఫోన్ ఆపరేటర్', kn: 'ಟೆಲಿಫೋನ್ ಆಪರೇಟರ್',
+    ml: 'ടെലിഫോൺ ഓപ്പറേറ്റർ', bn: 'টেলিফোন অপারেটর', or: 'ଟେଲିଫୋନ ଅପରେଟର', pa: 'ਟੈਲੀਫੋਨ ਆਪਰੇਟਰ',
+  },
+};
+
 /**
  * Returns a language-specific label for a sub-category value.
- * Supports hi/mr/gu from categories.json; others fall back to English.
+ * Covers all 11 languages via categories.json, with spelling-tolerant fuzzy
+ * matching and a fallback dictionary for freeform titles not in the taxonomy.
  */
 export function getSubCatLabel(
   value: string | null | undefined,
   language: string,
 ): string {
   if (!value) return '—';
-  const fieldKey = LANG_FIELD[language];
-  const lower   = value.toLowerCase().trim();
+  const lang     = normLang(language);
+  const fieldKey = LANG_FIELD[lang];
+  const lower    = normSpelling(value.toLowerCase().trim());
+
+  // 0. Freeform titles not present in the taxonomy (translated dictionary).
+  const extra = EXTRA_SUBCAT_LABELS[lower];
+  if (extra) return extra[lang] ?? extra.en;
+
   // Strip trailing role words for fuzzy matching: "Room Service" ↔ "Room Service Staff"
   const SUFFIX  = /\s+(staff|worker|workers|helper|operator|executive|assistant|person)$/i;
   const stripped = lower.replace(SUFFIX, '').trim();
@@ -168,8 +268,8 @@ export function getSubCatLabel(
 
   for (const cat of ALL_CATS) {
     for (const sub of cat.subcategories) {
-      const svl = (sub.value ?? '').toLowerCase();
-      const sll = (sub.label ?? '').toLowerCase();
+      const svl = normSpelling((sub.value ?? '').toLowerCase());
+      const sll = normSpelling((sub.label ?? '').toLowerCase());
       const ssl = sll.replace(SUFFIX, '').replace(PREFIX, '').trim();
 
       // 1. Exact match (highest priority)
@@ -192,6 +292,23 @@ export function getSubCatLabel(
       // as Mason. Guard against an empty ssl too.
       if (bestScore < 1 && !!ssl && (stripped.includes(ssl) || ssl.includes(stripped))) {
         bestMatch = sub; bestScore = 1;
+      }
+
+      // 5. Token-subset: every significant word of one label is contained in the
+      //    other, anchored on a shared first word. Handles taxonomy drift where a
+      //    worker's stored skill drops/adds a middle word, e.g. "Biomedical
+      //    Technician" ↔ "Biomedical Equipment Technician". Requires ≥2 words on
+      //    both sides + a matching first word so single-word values ("Driver")
+      //    can't latch onto an unrelated multi-word entry.
+      if (bestScore < 1) {
+        const inTok = stripped.split(' ').filter((w) => w.length > 2);
+        const cdTok = ssl.split(' ').filter((w) => w.length > 2);
+        if (
+          inTok.length >= 2 && cdTok.length >= 2 && inTok[0] === cdTok[0] &&
+          (inTok.every((w) => cdTok.includes(w)) || cdTok.every((w) => inTok.includes(w)))
+        ) {
+          bestMatch = sub; bestScore = 1;
+        }
       }
     }
     if (bestScore === 4) break;
@@ -245,11 +362,26 @@ export function getJobTitle(
 
 /**
  * Category label for the sub-title line in cards (newlines → " & ").
+ *
+ * When `workType` is freeform/unmapped (e.g. "Driving And Delivery") it would
+ * otherwise show raw English. Passing the requirement's `subCategory` lets us
+ * fall back to that sub-category's real parent category, which IS translated.
  */
 export function getCategoryLabel(
   workType: string | null | undefined,
   t: TFunction,
+  subCategory?: string | null,
 ): string {
+  // 1. Work-type resolves to a known category → translate it directly.
+  const direct = resolveWorkCategory(workType);
+  if (direct) return t(direct.translationKey as TranslationKeys).replace(/\n/g, ' & ');
+
+  // 2. Freeform/legacy work-type → derive the category from the sub-category.
+  const parentValue = findParentCategoryValue(subCategory);
+  const parent = parentValue ? resolveWorkCategory(parentValue) : null;
+  if (parent) return t(parent.translationKey as TranslationKeys).replace(/\n/g, ' & ');
+
+  // 3. Best-effort readable English.
   return getWorkTypeLabel(workType, t).replace(/\n/g, ' & ');
 }
 
@@ -321,17 +453,20 @@ const STATE_ALIASES: Record<string, string> = {
  * Returns the original string if no translation is found.
  */
 export function translateStateName(name: string, language: string): string {
-  if (!name || language === 'en') return name;
+  const lang = normLang(language);
+  if (!name || lang === 'en') return name;
   // Check direct match
   const direct = STATE_TRANSLATIONS[name];
-  if (direct?.[language]) return direct[language];
+  if (direct?.[lang]) return direct[lang];
   // Check alias
   const alias = STATE_ALIASES[name.toLowerCase()];
   if (alias) {
     const aliased = STATE_TRANSLATIONS[alias];
-    if (aliased?.[language]) return aliased[language];
+    if (aliased?.[lang]) return aliased[lang];
   }
-  return name;
+  // Fall back to the shared location dictionary (richer key coverage + script
+  // transliteration), so a state missing from the map above is still localized.
+  return getLocationDisplayName(name, 'state', lang);
 }
 
 // ── Indian district / block name translation ──────────────────────────────────
@@ -656,10 +791,16 @@ const DISTRICT_INDEX: Record<string, Record<string, string>> = (() => {
 })();
 
 export function translateLocationName(name: string, language: string): string {
-  if (!name || language === 'en') return name;
+  const lang = normLang(language);
+  if (!name || lang === 'en') return name;
   const translation = DISTRICT_TRANSLATIONS[name] ?? DISTRICT_INDEX[name.trim().toLowerCase()];
-  if (translation?.[language]) return translation[language];
-  return name;
+  if (translation?.[lang]) return translation[lang];
+  // Fall back to the shared location dictionary (765+ districts / blocks with
+  // Hindi spellings + on-the-fly script transliteration). Try district first,
+  // then block, before giving up to the original English string.
+  const asDistrict = getLocationDisplayName(name, 'district', lang);
+  if (asDistrict !== name) return asDistrict;
+  return getLocationDisplayName(name, 'block', lang);
 }
 
 /**
@@ -687,7 +828,7 @@ export function getLocationStr(
  * places) are left untouched. Safe to call on any address string.
  */
 export function translateLocationString(value: string, language: string): string {
-  if (!value || language === 'en') return value;
+  if (!value || normLang(language) === 'en') return value;
   return value
     .split(',')
     .map((part) => {

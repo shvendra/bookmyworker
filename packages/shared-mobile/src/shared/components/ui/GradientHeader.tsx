@@ -39,6 +39,9 @@ interface GradientHeaderProps {
   notifCount?: number;
   /** Custom gradient start color */
   gradientColor?: string;
+  /** Small badge overlaid on the avatar (e.g. profile completeness "60%"). */
+  avatarBadge?: string;
+  avatarBadgeColor?: string;
 }
 
 export const GradientHeader = ({
@@ -61,6 +64,8 @@ export const GradientHeader = ({
   compact = false,
   notifCount,
   gradientColor,
+  avatarBadge,
+  avatarBadgeColor,
 }: GradientHeaderProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -183,6 +188,11 @@ export const GradientHeader = ({
                 ring
                 ringColor="rgba(255,255,255,0.55)"
               />
+              {avatarBadge ? (
+                <View style={[styles.avatarBadge, { backgroundColor: avatarBadgeColor ?? '#10B981' }]}>
+                  <AppText style={styles.avatarBadgeTxt}>{avatarBadge}</AppText>
+                </View>
+              ) : null}
             </TouchableOpacity>
           )}
         </View>
@@ -310,7 +320,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 12,
   },
-  avatarWrap: {},
+  avatarWrap: { position: 'relative', alignItems: 'center' },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: -7,
+    paddingHorizontal: 5,
+    paddingVertical: 0.5,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: '#1037A4',
+  },
+  avatarBadgeTxt: { color: '#FFFFFF', fontSize: 9, fontWeight: '800', lineHeight: 12 },
   childrenWrap: {
     marginTop: 14,
     marginBottom: -6,

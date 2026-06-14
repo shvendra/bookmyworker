@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -30,6 +30,7 @@ import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi
 import { agentApi } from '../../../core/api/endpoints/agentApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { type CompletenessField } from '../../../shared/components/ui/ProfileCompletenessCard';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
 import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { Skeleton, SkeletonCard } from '../../../shared/components/ui/Skeleton';
@@ -251,13 +252,8 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
         </View>
       </View>
 
-      {/* ── Meta: location + workers + perks (single scroll row) */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[sliderCard.metaScroll, { borderTopColor: isDark ? theme.colors.border : '#EEF2F8' }]}
-        contentContainerStyle={sliderCard.metaContent}
-      >
+      {/* ── Meta: location + workers + perks (wraps so nothing is clipped) */}
+      <View style={[sliderCard.metaWrap, { borderTopColor: isDark ? theme.colors.border : '#EEF2F8' }]}>
         <AppText style={sliderCard.metaIcon}>📍</AppText>
         <AppText style={[sliderCard.metaTxt, { color: theme.colors.mutedText }]}>{location}</AppText>
         {workers > 0 && (
@@ -278,7 +274,7 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
         {req.insuranceAvailable     && <AppText style={[sliderCard.perkTxt, { color: '#1D4ED8' }]}>🛡 {t('perkInsurance')}  </AppText>}
         {req.pfAvailable            && <AppText style={[sliderCard.perkTxt, { color: '#7C3AED' }]}>🏦 {t('perkPf')}  </AppText>}
         {req.esicAvailable          && <AppText style={[sliderCard.perkTxt, { color: '#0E7490' }]}>🏥 {t('perkEsic')}</AppText>}
-      </ScrollView>
+      </View>
 
       {/* ── Apply button ───────────────────────────────────── */}
       <View style={[sliderCard.applyWrap, { borderTopColor: isDark ? theme.colors.border : '#EEF2F8' }]}>
@@ -638,6 +634,25 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
     ]),
   ];
 
+  // ── Profile completeness fields (agent) — agent-specific info ──
+  // Email & work-areas are intentionally excluded: the agent app does not
+  // collect them, so they should neither count toward the % nor appear as
+  // pending chips on the profile-strength card.
+  const completenessFields = useMemo<CompletenessField[]>(() => [
+    { key: 'name',      label: t('pf_name'),      done: !!user?.fullName?.trim() },
+    { key: 'phone',     label: t('pf_phone'),     done: !!user?.phone },
+    { key: 'state',     label: t('pf_state'),     done: !!user?.state?.trim() },
+    { key: 'district',  label: t('pf_district'),  done: !!user?.district?.trim() },
+    { key: 'photo',     label: t('pf_photo'),     done: !!user?.profileImage },
+    { key: 'kyc',       label: t('pf_kyc'),       done: user?.kycStatus === 'verified' },
+  ], [t, user?.fullName, user?.phone, user?.state, user?.district, user?.profileImage, user?.kycStatus]);
+
+  // ── Profile completeness % for the header avatar badge ──
+  const profilePct = useMemo(() => {
+    const d = completenessFields.filter((f) => f.done).length;
+    return completenessFields.length ? Math.round((d / completenessFields.length) * 100) : 0;
+  }, [completenessFields]);
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
@@ -658,7 +673,9 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         caption={kycPending ? `⚠️ ${t('verificationPending')}` : `✓ ${t('verified')}`}
         avatarName={user?.fullName ?? 'U'}
         avatarUri={user?.profileImage}
-        onAvatarPress={() => navigation.navigate('Profile')}
+        onAvatarPress={() => navigation.navigate('EditProfile')}
+        avatarBadge={`${profilePct}%`}
+        avatarBadgeColor={profilePct >= 90 ? '#10B981' : profilePct >= 70 ? '#3B82F6' : profilePct >= 40 ? '#F59E0B' : '#EF4444'}
         rightIcon="📬"
         onRightPress={() => navigation.navigate('Invitations')}
         notifCount={unseenCount > 0 ? unseenCount : undefined}
@@ -752,6 +769,10 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
               <AppText style={styles.verifyBannerArrow}>→</AppText>
             </Pressable>
           )}
+
+          {/* ── Profile Strength card moved to the Profile tab (below the
+                profile photo). The avatar % badge in the header still reflects
+                completeness. ── */}
 
           {/* ── 4 Stat Widgets (2×2 grid) ─────────────────────── */}
           <View style={styles.widgetGrid}>
@@ -1091,8 +1112,7 @@ const sliderCard = StyleSheet.create({
   iconTxt: { fontSize: 14, lineHeight: 18 },
 
   // Meta + perks single scrollable row
-  metaScroll: { borderTopWidth: StyleSheet.hairlineWidth },
-  metaContent: { paddingHorizontal: 16, paddingVertical: 11, flexDirection: 'row', alignItems: 'center' },
+  metaWrap: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 11, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', rowGap: 4 },
   metaIcon: { fontSize: 12, lineHeight: 16 },
   metaTxt: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
   metaDot: { fontSize: 12, lineHeight: 16 },

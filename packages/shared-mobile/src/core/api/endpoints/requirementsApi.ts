@@ -373,6 +373,17 @@ export const requirementsApi = {
       )
       .then((r) => ({ phone: r.data.phone, name: r.data.name })),
 
+  // Reveals an INTERESTED agent's phone on the employer's own requirement.
+  // Subscription-gated but quota-FREE — mirrors the CRM `reveal-contact` flow
+  // (GET /application/reveal-contact/:agentId). It must NOT be confused with the
+  // search/profile `unlock-number` flow, which decrements the contact quota.
+  revealAgentContact: (agentId: string) =>
+    apiClient
+      .get<{ success: boolean; phone: string; name: string; role: string }>(
+        `/api/v1/application/reveal-contact/${agentId}`
+      )
+      .then((r) => r.data),
+
   // Employer invites a specific worker to a requirement
   inviteWorker: (requirementId: string, payload: { workerId?: string | null; workerName: string; workerPhone?: string }) =>
     apiClient

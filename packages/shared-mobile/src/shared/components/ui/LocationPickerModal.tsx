@@ -324,9 +324,9 @@ export const LocationPickerModal = ({
                   <View style={[styles.resultPin, { backgroundColor: c.primary + '18' }]}>
                     <AppText style={{ fontSize: 15 }}>📍</AppText>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <AppText style={[styles.resultMain, { color: c.text }]} numberOfLines={1}>{shortAddress(item)}</AppText>
-                    {!!subAddress(item) && <AppText style={[styles.resultSub, { color: c.mutedText }]} numberOfLines={1}>{subAddress(item)}</AppText>}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <AppText style={[styles.resultMain, { color: c.text }]} numberOfLines={2}>{shortAddress(item)}</AppText>
+                    {!!subAddress(item) && <AppText style={[styles.resultSub, { color: c.mutedText }]} numberOfLines={2}>{subAddress(item)}</AppText>}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 14,
     shadowColor: '#0F172A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 5,
   },
-  gpsPillTxt: { fontSize: 12.5, fontWeight: '800' },
+  gpsPillTxt: { fontSize: 12.5, fontWeight: '800', flexShrink: 1 },
 
   confirmCard: {
     paddingHorizontal: 18, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth,

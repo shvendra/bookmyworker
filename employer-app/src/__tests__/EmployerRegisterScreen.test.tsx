@@ -251,10 +251,8 @@ describe('EmployerRegisterScreen — Google sign-in', () => {
     await waitFor(() => {
       expect(screen.getByText('yourDetails')).toBeTruthy();
     });
-    // Greeting includes the returned name.
-    expect(
-      screen.getByText('✓ Signed in with Google as Ravi — add your mobile number to finish.'),
-    ).toBeTruthy();
+    // Greeting uses the named-variant translation key (i18n mock echoes the key).
+    expect(screen.getByText('empGoogleSignedInNamed')).toBeTruthy();
   });
 
   it('does nothing when the Google sign-in is cancelled', async () => {
@@ -362,10 +360,8 @@ describe('EmployerRegisterScreen — Google phone step', () => {
   it('defaults name to "Employer" and forces individual when type was lost', async () => {
     // No name returned → googleName '' → falls back to 'Employer'.
     const nav = await enterGoogleMode({ name: undefined });
-    // Greeting without the "as <name>" suffix (googleName is empty).
-    expect(
-      screen.getByText('✓ Signed in with Google — add your mobile number to finish.'),
-    ).toBeTruthy();
+    // Greeting without the "as <name>" suffix (googleName is empty) → base key.
+    expect(screen.getByText('empGoogleSignedIn')).toBeTruthy();
     fireEvent.changeText(screen.getByPlaceholderText('9876543210'), '9000000000');
     fireEvent.press(screen.getByText('sendOtpRegister'));
     await waitFor(() => {

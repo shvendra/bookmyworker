@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
+import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
 import { isGoogleSignInAvailable, signInWithGoogle } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
@@ -169,7 +170,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
               <Image source={require('../../../../packages/shared-mobile/assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
               <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
             </View>
             <TouchableOpacity onPress={() => setGoogleMode(false)} style={styles.backBtn} activeOpacity={0.7}>
@@ -187,7 +188,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             <View style={[styles.card, { backgroundColor: theme.colors.card }, !isDark && styles.cardShadow]}>
               <View style={{ marginBottom: 14, padding: 12, borderRadius: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }}>
                 <AppText variant="body" color="#16A34A" style={{ fontWeight: '600' }}>
-                  ✓ Signed in with Google{googleName ? ` as ${googleName}` : ''} — add your mobile number to finish.
+                  {googleName ? t('empGoogleSignedInNamed', { name: googleName }) : t('empGoogleSignedIn')}
                 </AppText>
               </View>
               <View style={styles.field}>
@@ -231,7 +232,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
               />
             </View>
             <View style={{ flex: 1 }}>
-              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+              <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
               <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
             </View>
           </View>
@@ -361,7 +362,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
             <AppText style={styles.brandSub} color="rgba(255,255,255,0.65)">{t('platformTagline')}</AppText>
           </View>
           <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn} activeOpacity={0.7}>

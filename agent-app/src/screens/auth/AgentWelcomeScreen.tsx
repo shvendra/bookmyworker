@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
+import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import {
   useAppConfig,
@@ -93,7 +94,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
   {/* Headline */}
   <View style={styles.headlineBlock}>
     <AppText style={styles.brandName} color="#FFFFFF">
-      BookMyWorker
+      BookMyWorker<Trademark onDark size={19} />
     </AppText>
 
     <AppText style={styles.headline} color="#FFFFFF">

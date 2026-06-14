@@ -311,7 +311,7 @@ export const SubscriptionModal = ({
                 <View style={styles.planTop}>
                   <View style={styles.planLeft}>
                     <View style={styles.planLabelRow}>
-                      <AppText variant="label" color={isActive ? theme.colors.primary : theme.colors.text}>
+                      <AppText variant="label" color={isActive ? theme.colors.primary : theme.colors.text} style={{ flexShrink: 1 }}>
                         {p.label}
                       </AppText>
                       {p.badge && (

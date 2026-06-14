@@ -33,6 +33,9 @@ interface CategorySelectorProps {
   categoryError?: string;
   subCategoryError?: string;
   required?: boolean;
+  // When provided, restrict the selectable categories to these values (e.g. driven
+  // by the chosen requirement type). Undefined = show every category (default).
+  allowedCategoryValues?: string[];
 }
 
 type PickerMode = 'category' | 'subCategory' | null;
@@ -45,11 +48,20 @@ export const CategorySelector = ({
   categoryError,
   subCategoryError,
   required = false,
+  allowedCategoryValues,
 }: CategorySelectorProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<PickerMode>(null);
   const [query, setQuery] = useState('');
+
+  // Categories the user may pick from (optionally restricted by requirement type).
+  const visibleCategories = useMemo(
+    () => (allowedCategoryValues
+      ? CATEGORIES.filter((c) => allowedCategoryValues.includes(c.value))
+      : CATEGORIES),
+    [allowedCategoryValues],
+  );
 
   const selectedCat = CATEGORIES.find((c) => c.value === category);
   const subList = selectedCat?.subcategories ?? [];
@@ -62,13 +74,13 @@ export const CategorySelector = ({
   const subLabel = subCategory ? getSubCatLabel(subCategory, i18n.language) : '';
 
   const filteredCats = useMemo(
-    () => CATEGORIES.filter((c) => {
+    () => visibleCategories.filter((c) => {
       const translated = catLabelFor(c.value);
       return translated.toLowerCase().includes(query.toLowerCase()) ||
         c.label.toLowerCase().includes(query.toLowerCase());
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query, i18n.language]
+    [query, i18n.language, visibleCategories]
   );
   const filteredSubs = useMemo(
     () => subList.filter((s) => {

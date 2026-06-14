@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
+import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
 import type { EmployerStackParamList } from '../../navigation/types';
 
@@ -90,7 +91,7 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
                 resizeMode="contain"
               />
             </View>
-            <AppText style={styles.brandName}>BookMyWorker</AppText>
+            <AppText style={styles.brandName}>BookMyWorker<Trademark onDark size={22} /></AppText>
           </View>
 
           <AppText style={styles.heroTitle}>{t('langSelectTitle')}</AppText>

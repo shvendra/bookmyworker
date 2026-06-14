@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
+import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { OtpLoginForm } from '../../../../packages/shared-mobile/src/features/auth/screens/OtpLoginForm';
 import { PasswordLoginForm } from '../../../../packages/shared-mobile/src/features/auth/screens/PasswordLoginForm';
@@ -47,10 +48,10 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
   const isDark = theme.mode === 'dark';
 
   const trustItems = [
-    { icon: '👷', text: `${formatStat(config.stats.workerCount)} Workers` },
-    { icon: '⚡', text: 'Instant OTP Login' },
-    { icon: '✅', text: 'Verified Jobs' },
-    { icon: '💰', text: 'Daily Wages' },
+    { icon: '👷', text: t('loginWorkersStat', { count: formatStat(config.stats.workerCount) }) },
+    { icon: '⚡', text: t('loginTrustOtp') },
+    { icon: '✅', text: t('loginTrustVerifiedJobs') },
+    { icon: '💰', text: t('loginTrustDailyWages') },
   ];
 
   /* ─────────────────────────────────────────────────────────── */
@@ -81,7 +82,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
         {/* welcome headline */}
         <View style={styles.welcomeBlock}>
            <View style={styles.brandTextWrap}>
-            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker</AppText>
+            <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
             <AppText style={styles.brandSub}  color="rgba(255,255,255,0.65)">
               Kaam Dhundo · Paise Kamao
             </AppText>
@@ -167,7 +168,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
           <View style={styles.dividerRow}>
             <View style={[styles.dividerLine, { backgroundColor: isDark ? theme.colors.border : '#E2E8F0' }]} />
             <AppText variant="micro" color={theme.colors.mutedText} style={styles.dividerLabel}>
-              Why BookMyWorker?
+              {t('loginWhyBmw')}
             </AppText>
             <View style={[styles.dividerLine, { backgroundColor: isDark ? theme.colors.border : '#E2E8F0' }]} />
           </View>

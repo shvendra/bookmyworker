@@ -24,7 +24,7 @@ import {
   buildFeatureBenefits,
   EMPLOYER_PLANS_DEFAULTS,
 } from '../../../core/api/endpoints/pricingApi';
-import type { EmployerPlansConfig, PlanFeatures } from '../../../core/api/endpoints/pricingApi';
+import type { EmployerPlansConfig, PlanFeatures, BoostConfig } from '../../../core/api/endpoints/pricingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
 
@@ -143,6 +143,7 @@ function buildPlans(
   subscriptionPricing?: Record<string, Record<string, number>>,
   subscriptionMrp?: Record<string, Record<string, number>>,
   employerPlans: EmployerPlansConfig = EMPLOYER_PLANS_DEFAULTS,
+  boostConfig?: BoostConfig,
 ): Plan[] {
   const p       = (subscriptionPricing?.[employerType] ?? FALLBACK_PRICING[employerType]) as Record<string, number>;
   const m       = (subscriptionMrp?.[employerType] ?? {}) as Record<string, number>;
@@ -150,9 +151,13 @@ function buildPlans(
   const featureBenefits = buildFeatureBenefits(typePlan.features, t);
   const sharedBenefits  = [t('jp_benefitVerifiedProfiles'), t('jp_benefitUnlockContacts'), ...featureBenefits];
   const contacts1m      = typePlan.limits['1m'].contacts;
+  // Requirement-boost allowance for this employer type, per duration (mirrors CRM
+  // PricingPage: boostConfig.allowance[type][id]). enabled=false / 0 → no line.
+  const boostAllow = boostConfig?.enabled !== false ? boostConfig?.allowance?.[employerType] : undefined;
 
   const makePlan = (id: PlanId, tier: Plan['tier']) => {
     const lim = typePlan.limits[id];
+    const boosts = boostAllow ? (Number(boostAllow[id]) || 0) : 0;
     return {
       id, tier,
       labelKey:  id === '1m' ? 'pricingPlanMonthly' : id === '6m' ? 'pricingPlanHalfYearly' : 'pricingPlanYearly',
@@ -162,9 +167,11 @@ function buildPlans(
       discount: calcDiscount(m[id] ?? 0, p[id]!),
       contacts: lim.contacts,
       posts:    lim.posts,
-      // Duration-specific lines first so each card looks distinct
+      // Duration-specific lines first so each card looks distinct, then the boost
+      // line (CRM parity), then the shared static + feature lines.
       benefits: [
         ...buildDurationBenefits(id, lim.contacts, lim.posts, contacts1m, t),
+        ...(boosts > 0 ? [t('jp_benefitBoosts', { count: boosts })] : []),
         ...sharedBenefits,
       ],
     };
@@ -434,7 +441,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const user        = authState.session?.user;
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const { pricing, employerPlans, gstRate } = usePricingConfig();
+  const { pricing, employerPlans, gstRate, boostConfig } = usePricingConfig();
   const isAgent = user?.role === 'agent';
 
   const profileQuery = useQuery({
@@ -465,7 +472,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
 
   const plans = isAgent
     ? buildAgentPlans(t as TFn, sub?.['agent'], mrp?.['agent'])
-    : buildPlans(employerType, t as TFn, sub, mrp, employerPlans);
+    : buildPlans(employerType, t as TFn, sub, mrp, employerPlans, boostConfig);
 
   // ── Upgrade banner (employer-only) — features derived from the next tier's config ──
   const nextType = !isAgent ? NEXT_TYPE[employerType] : null;

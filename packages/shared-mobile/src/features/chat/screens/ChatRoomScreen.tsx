@@ -88,6 +88,10 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
   const insets = useSafeAreaInsets();
   const userId = state.session?.user.id ?? '';
   const token  = state.session?.tokens.accessToken ?? '';
+  // Support rooms get a translated title regardless of the (English) roomName param
+  // passed by callers; person-to-person rooms keep the other party's name as-is.
+  const isSupportRoom = roomId.startsWith('support_');
+  const headerTitle = isSupportRoom ? t('supportChat') : roomName;
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
@@ -310,7 +314,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     >
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader
-        title={roomName}
+        title={headerTitle}
         onBack={hideBack && !onBack ? undefined : (onBack ?? (() => navigation.goBack()))}
       />
 
@@ -324,8 +328,21 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         ref={flatRef}
         data={messages}
         keyExtractor={(item) => item.id}
-        inverted
-        contentContainerStyle={styles.messageList}
+        inverted={messages.length > 0}
+        contentContainerStyle={[styles.messageList, messages.length === 0 && styles.messageListEmpty]}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: theme.colors.primaryLight }]}>
+              <AppText style={styles.emptyIcon}>{isSupportRoom ? '🎧' : '💬'}</AppText>
+            </View>
+            <AppText variant="subtitle" color={theme.colors.text} center style={styles.emptyTitle}>
+              {isSupportRoom ? t('supportEmptyTitle') : t('chatEmptyTitle')}
+            </AppText>
+            <AppText variant="body" color={theme.colors.mutedText} center style={styles.emptySubtitle}>
+              {isSupportRoom ? t('supportEmptySubtitle') : t('chatEmptySubtitle')}
+            </AppText>
+          </View>
+        }
         ListFooterComponent={
           hasOlderMessages ? (
             <TouchableOpacity
@@ -402,6 +419,13 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
 const styles = StyleSheet.create({
   container:   { flex: 1 },
   messageList: { padding: 16, paddingBottom: 8 },
+  messageListEmpty: { flexGrow: 1, justifyContent: 'center' },
+
+  emptyWrap:       { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, gap: 10 },
+  emptyIconCircle: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  emptyIcon:       { fontSize: 38, lineHeight: 46 },
+  emptyTitle:      { fontSize: 18, lineHeight: 24 },
+  emptySubtitle:   { lineHeight: 22, maxWidth: 300 },
 
   reconnectBar: { backgroundColor: '#FEF3C7', paddingVertical: 6, alignItems: 'center', justifyContent: 'center' },
   reconnectTxt: { fontSize: 12, fontWeight: '700', color: '#92400E' },
