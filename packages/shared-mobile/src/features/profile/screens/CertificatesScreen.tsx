@@ -20,6 +20,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { certificateApi } from '../../../core/api/endpoints/certificateApi';
+import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { useNavigation } from '@react-navigation/native';
 import type { Certificate } from '../../types/domain';
 
@@ -252,6 +253,31 @@ export const CertificatesScreen = (): React.JSX.Element => {
     ]);
   };
 
+  // ── Resume / CV (worker) ────────────────────────────────────────────────────
+  // Resume could previously be added ONLY during registration; this lets a worker
+  // add / replace it any time from their profile. Source of truth is the profile's
+  // resumeUrl (also what the "Has Resume" worker-search filter checks).
+  const resumeUrl = (state.session?.user as { resumeUrl?: string } | undefined)?.resumeUrl ?? null;
+
+  // Resume section is shown only for the education tiers that use a resume — the
+  // same ones as registration (10th/12th/ITI & Diploma/Graduate). The legacy values
+  // (ITI/Diploma, Graduate) are included so workers not yet migrated still see it.
+  const resumeWorkerSubType = (state.session?.user as { workerSubType?: string } | undefined)?.workerSubType ?? '';
+  const RESUME_TIERS = ['10th/12th/ITI', 'Diploma/Graduate', 'ITI/Diploma', 'Graduate'];
+  const showResumeSection = isWorker && RESUME_TIERS.includes(resumeWorkerSubType);
+
+  const uploadResumeMutation = useMutation({
+    mutationFn: async () => {
+      const file = await pickDocument();
+      if (!file) return;
+      const url = await workerApi.uploadResume(file.uri, file.name);
+      await updateProfile({ resumeUrl: url });
+    },
+    onError: (err: unknown) => {
+      showAlert(t('alertError'), err instanceof Error ? err.message : t('cert_uploadFailed'));
+    },
+  });
+
   const isDark = theme.mode === 'dark';
 
   return (
@@ -378,6 +404,43 @@ export const CertificatesScreen = (): React.JSX.Element => {
         )}
 
         {/* ── Agent: labour licence ────────────────────────────── */}
+        {showResumeSection && (
+          <View style={s.section}>
+            <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('cert_resumeSection')}</AppText>
+            <AppText style={[s.optionalTag, { color: ORANGE }]}>({t('cert_optional')})</AppText>
+
+            {resumeUrl ? (
+              <View style={[s.licenceCard, { backgroundColor: theme.colors.card, borderColor: GREEN + '60' }]}>
+                <View style={s.licenceRow}>
+                  <AppText style={s.licenceIcon}>📄</AppText>
+                  <View style={{ flex: 1 }}>
+                    <AppText style={[s.licenceName, { color: theme.colors.text }]}>{t('regResumeUploaded')}</AppText>
+                    <TouchableOpacity onPress={() => void Linking.openURL(resumeUrl)} activeOpacity={0.8}>
+                      <AppText style={[s.licenceView, { color: BRAND }]}>{t('cert_view')} →</AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View style={[s.emptyBox, { backgroundColor: theme.colors.card, borderColor: BORDER }]}>
+                <AppText style={s.emptyEmoji}>📋</AppText>
+                <AppText style={[s.emptyText, { color: SLATE }]}>{t('regResumeHint')}</AppText>
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => { if (!uploadResumeMutation.isPending) uploadResumeMutation.mutate(); }}
+              disabled={uploadResumeMutation.isPending}
+              style={[s.emptyBox, { backgroundColor: theme.colors.card, borderColor: BRAND + '60', marginTop: 12, flexDirection: 'row', justifyContent: 'center', gap: 8 }]}
+              activeOpacity={0.8}
+            >
+              {uploadResumeMutation.isPending
+                ? <ActivityIndicator size="small" color={BRAND} />
+                : <AppText style={[s.licenceView, { color: BRAND }]}>⬆️  {t('regUploadResume')}</AppText>}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {isAgent && (
           <View style={s.section}>
             <AppText style={[s.sectionTitle, { color: theme.colors.text }]}>{t('cert_licenceSection')}</AppText>

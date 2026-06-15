@@ -94,3 +94,6 @@ export const LoadingState = ({
 // resolvable.
 export const ScreenHeader = (): React.JSX.Element | null => null;
 export const Badge = (): React.JSX.Element | null => null;
+// Trademark renders the ™ glyph; inert stub so transitively-imported screens
+// (e.g. LanguageSelectScreen) load without resolving the real shared-mobile file.
+export const Trademark = (): React.JSX.Element | null => null;

@@ -50,8 +50,15 @@ type Props = NativeStackScreenProps<EmployerStackParamList, 'LanguageSelect'>;
 export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation('employer');
-  const [selected, setSelected] = useState<AppLanguage>('hi');
+  // English is the default-selected language on this picker.
+  const [selected, setSelected] = useState<AppLanguage>('en');
   const [saving, setSaving] = useState(false);
+
+  // Render this language picker in English by default (this is the first-launch
+  // language screen — shown only when no language has been chosen yet).
+  useEffect(() => {
+    void i18n.changeLanguage('en');
+  }, []);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;

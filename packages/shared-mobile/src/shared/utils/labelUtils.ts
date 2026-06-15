@@ -8,7 +8,6 @@ import { WORK_CATEGORIES } from '../components/ui/WorkerCategoryGrid';
 import categoriesData from '../data/categories.json';
 import { SUPPORT_STAFF_CATEGORY_VALUES } from '../data/supportStaffCategories';
 import type { TranslationKeys } from '../../core/i18n/translations';
-import type { UserProfile } from '../types/domain';
 import { getLocationDisplayName } from '../data/locationTranslations';
 
 interface CatEntry {
@@ -848,9 +847,12 @@ export function translateLocationString(value: string, language: string): string
 }
 
 // ── Worker/Agent profile completeness ────────────────────────────────────────
-export function isWorkerProfileComplete(user: UserProfile | null | undefined): boolean {
-  if (!user) return true;
-  const role = (user.role ?? '').toLowerCase();
-  if (!['selfworker', 'worker', 'agent'].includes(role)) return true;
-  return !!(user.gender && user.dob);
-}
+// Single source of truth lives in workerProfileUtils (gender + dob + education
+// document for 10th/12th/ITI & Diploma/Graduate tiers). Re-exported here so the
+// many existing `labelUtils` importers keep working.
+export {
+  isWorkerProfileComplete,
+  workerNeedsEducationDoc,
+  hasEducationDoc,
+  EDUCATION_DOC_SUBTYPES,
+} from './workerProfileUtils';

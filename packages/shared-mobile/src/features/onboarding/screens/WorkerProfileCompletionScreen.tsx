@@ -18,10 +18,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Math.max ensures we never clip content behind the status bar.
 const getStatusBarHeight = (insetsTop: number): number =>
   Math.max(insetsTop, Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0);
+import * as DocumentPicker from 'expo-document-picker';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { updateProfileFields } from '../../../core/api/endpoints/authApi';
+import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { workerNeedsEducationDoc } from '../../../shared/utils/workerProfileUtils';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { useToast } from '../../../shared/state/toast/ToastContext';
@@ -80,9 +83,11 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 });
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
-const TOTAL_STEPS = 7;
 // Step 1: Gender  Step 2: Age  Step 3: Experience  Step 4: Category (multi)
 // Step 5: SubCategory (multi)  Step 6: Location  Step 7: AreasOfWork (mandatory)
+// Step 8: Education document upload — only for 10th/12th/ITI & Diploma/Graduate
+// tiers (workerNeedsEducationDoc). TOTAL_STEPS is computed per-user below.
+const DOC_STEP = 8;
 
 // ── Chip ─────────────────────────────────────────────────────────────────────
 const Chip = ({ label, selected, onPress, color }: {
@@ -151,7 +156,17 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
 
   const user = state.session?.user;
 
+  // 10th/12th/ITI & Diploma/Graduate candidates get one extra mandatory step at
+  // the end to upload their education document, so TOTAL_STEPS grows to 8.
+  const needsDoc = workerNeedsEducationDoc(user);
+  const TOTAL_STEPS = needsDoc ? DOC_STEP : 7;
+
   const [step, setStep] = useState(1);
+
+  // Step 8 — Education document (resume/certificate). Pre-seeded from any
+  // already-uploaded document so existing users aren't asked to re-upload.
+  const [docUploaded, setDocUploaded] = useState(!!user?.resumeUrl);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Step 1 — Gender
   const [gender, setGender] = useState(user?.gender ?? '');
@@ -293,8 +308,40 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       case 5: return selectedSubs.length > 0;
       case 6: return selectedState !== '' && selectedDistrict !== '';
       case 7: return areas.length > 0; // areasOfWork is now mandatory
+      case 8: return docUploaded;      // education document is mandatory for these tiers
       default: return true;
     }
+  };
+
+  // Step 8 — pick & upload the education document. Mirrors the dashboard resume
+  // banner: uploads immediately, then patches `resumeUrl` into the session so the
+  // profile gate (isWorkerProfileComplete) clears and Finish can proceed.
+  const handlePickDoc = async (): Promise<void> => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      setUploadingDoc(true);
+      const resumeUrl = await workerApi.uploadResume(asset.uri, asset.name ?? 'document.pdf');
+      await updateProfile({ resumeUrl });
+      setDocUploaded(true);
+      toast.success(t('alertResumeUploadedMsg'), t('alertResumeUploadedTitle'));
+    } catch {
+      toast.error(t('alertUploadFailedMsg'), t('alertUploadFailedTitle'));
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const handleViewDoc = (): void => {
+    if (user?.resumeUrl) navigation.navigate('PdfViewer', { url: user.resumeUrl, title: t('wpc_docQ') });
   };
 
   // Persist the data entered in a given step to the backend the moment the user
@@ -392,7 +439,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
 
         {/* ── Header ── */}
-        <View style={[styles.header, { paddingTop: getStatusBarHeight(insets.top) + 14, backgroundColor: theme.colors.primaryDark }]}>
+        <View style={[styles.header, { paddingTop: getStatusBarHeight(insets.top) + 18, backgroundColor: theme.colors.primaryDark }]}>
           <View style={styles.stepRow}>
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <View key={i} style={[styles.stepDot, (i + 1) === step && styles.stepDotActive, (i + 1) < step && styles.stepDotDone]} />
@@ -699,6 +746,42 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
+          {/* ── Step 8: Education document (10th/12th/ITI & Diploma/Graduate) ── */}
+          {step === DOC_STEP && (
+            <View style={styles.section}>
+              <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>
+              <AppText style={[styles.question, { color: theme.colors.text }]}>{t('wpc_docQ')}</AppText>
+              <AppText style={[styles.hint, { color: theme.colors.mutedText, marginBottom: 16 }]}>{t('wpc_docHint')}</AppText>
+
+              <View style={[styles.docCard, {
+                backgroundColor: docUploaded ? (isDark ? '#15803D18' : '#F0FDF4') : (isDark ? theme.colors.surface1 : '#fff'),
+                borderColor: docUploaded ? (isDark ? '#22C55E55' : '#BBF7D0') : (isDark ? theme.colors.border : '#DDE3F0'),
+              }]}>
+                <AppText style={styles.docEmoji}>{docUploaded ? '✅' : '📄'}</AppText>
+                <AppText style={[styles.docStatus, { color: docUploaded ? (isDark ? '#86EFAC' : '#166534') : theme.colors.text }]}>
+                  {docUploaded ? t('wpc_docUploadedBadge') : t('wpc_docUploadBtn')}
+                </AppText>
+
+                <TouchableOpacity
+                  onPress={() => void handlePickDoc()}
+                  disabled={uploadingDoc}
+                  activeOpacity={0.85}
+                  style={[styles.docBtn, { backgroundColor: theme.colors.primary, opacity: uploadingDoc ? 0.6 : 1 }]}
+                >
+                  <AppText style={styles.docBtnTxt}>
+                    {uploadingDoc ? t('uploading') : docUploaded ? `🔄 ${t('wpc_docReplaceBtn')}` : `⬆️ ${t('wpc_docUploadBtn')}`}
+                  </AppText>
+                </TouchableOpacity>
+
+                {docUploaded && !!user?.resumeUrl && (
+                  <TouchableOpacity onPress={handleViewDoc} activeOpacity={0.7} style={styles.docViewBtn}>
+                    <AppText style={[styles.docViewTxt, { color: theme.colors.primary }]}>👁  {t('viewResume')}</AppText>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
+
         </ScrollView>
 
         {/* ── Footer ── */}
@@ -738,9 +821,11 @@ const styles = StyleSheet.create({
   stepDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' },
   stepDotActive: { backgroundColor: '#fff', width: 18 },
   stepDotDone:   { backgroundColor: 'rgba(255,255,255,0.7)' },
-  headerGreet: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600' },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  headerSub:   { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 },
+  // Explicit lineHeight on every header line so tall Devanagari/Indic top &
+  // bottom matras (शिरोरेखा, ि ी े ै ो ौ ं …) are never vertically clipped.
+  headerGreet: { color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 22, fontWeight: '600' },
+  headerTitle: { color: '#fff', fontSize: 22, lineHeight: 32, fontWeight: '900', letterSpacing: -0.5, marginTop: 2 },
+  headerSub:   { color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 18, marginTop: 4 },
 
   content:   { padding: 20 },
   section:   {},
@@ -783,6 +868,15 @@ const styles = StyleSheet.create({
   ddDistrict:  { fontSize: 14, fontWeight: '700' },
   ddState:     { fontSize: 11.5, marginTop: 1 },
   ddCheck:     { fontSize: 18, fontWeight: '800' },
+
+  // ── Step 8: education document upload card ──
+  docCard:    { borderWidth: 1.5, borderRadius: 18, padding: 22, alignItems: 'center', marginTop: 4 },
+  docEmoji:   { fontSize: 40, marginBottom: 10 },
+  docStatus:  { fontSize: 15, fontWeight: '700', textAlign: 'center', lineHeight: 21, marginBottom: 16 },
+  docBtn:     { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', minWidth: 200 },
+  docBtnTxt:  { fontSize: 15, fontWeight: '800', color: '#fff' },
+  docViewBtn: { marginTop: 12, paddingVertical: 6 },
+  docViewTxt: { fontSize: 14, fontWeight: '700' },
 
   footer:     { paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, gap: 10 },
   footerRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },

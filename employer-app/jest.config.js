@@ -34,6 +34,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/passthroughProvider.tsx',
     '.*shared-mobile/src/shared/state/alert/AppAlertContext$':
       '<rootDir>/src/__tests__/__mocks__/shared/appAlert.tsx',
+    '.*shared-mobile/src/core/api/endpoints/appConfigApi$':
+      '<rootDir>/src/__tests__/__mocks__/shared/appConfigApi.ts',
     '.*shared-mobile/src/features/auth/services/authService$':
       '<rootDir>/src/__tests__/__mocks__/shared/authService.ts',
     '.*shared-mobile/src/features/auth/validation/authSchemas$':
@@ -47,6 +49,8 @@ module.exports = {
     '.*shared-mobile/src/shared/components/ui/AppText$':
       '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
     '.*shared-mobile/src/shared/components/ui/AppInput$':
+      '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
+    '.*shared-mobile/src/shared/components/ui/Trademark$':
       '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
 
     // ── shared-mobile: broad catch-alls for screens / navigators ───────────

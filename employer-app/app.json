@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker Employer",
     "slug": "bookmyworker-employer",
-    "version": "1.0.19",
+    "version": "1.0.21",
     "orientation": "portrait",
     "scheme": "bookmyworker-employer",
     "icon": "./assets/icon.png",

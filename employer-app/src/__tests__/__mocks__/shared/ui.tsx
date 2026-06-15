@@ -83,3 +83,7 @@ export const LoadingState = ({
 }: {
   message?: string;
 }): React.JSX.Element => <Text>{message}</Text>;
+
+// Trademark renders the ™ glyph; inert stub so screens that import it (e.g.
+// EmployerRegisterScreen) load without resolving the real shared-mobile file.
+export const Trademark = (): React.JSX.Element | null => null;

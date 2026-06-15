@@ -11,6 +11,7 @@ import {
 } from './__mocks__/shared/googleSignIn';
 import { __auth } from './__mocks__/shared/authContext';
 import { __themeState } from './__mocks__/shared/theme';
+import { __authFlags } from './__mocks__/shared/appConfigApi';
 
 const makeNav = () => ({ navigate: jest.fn() });
 
@@ -418,5 +419,101 @@ describe('EmployerRegisterScreen — platform behavior', () => {
     fireEvent.press(screen.getByText('employerTypeIndividual'));
     fireEvent.press(screen.getByText('continueBtn'));
     expect(screen.getByText('createYourAccount')).toBeTruthy();
+  });
+});
+
+describe('EmployerRegisterScreen — registration OTP disabled', () => {
+  beforeEach(() => {
+    __authFlags.registrationOtpEnabled = false;
+  });
+  afterEach(() => {
+    __authFlags.registrationOtpEnabled = true;
+  });
+
+  const fillForm = () => {
+    fireEvent.changeText(screen.getByPlaceholderText('companyNamePlaceholder'), 'Acme Co');
+    fireEvent.changeText(screen.getByPlaceholderText('9876543210'), '9876543210');
+    fireEvent.changeText(screen.getByPlaceholderText('minSixChars'), 'secret1');
+    fireEvent.changeText(screen.getByPlaceholderText('reEnterPassword'), 'secret1');
+  };
+
+  it('shows the "create account" label instead of the OTP label on step 2', () => {
+    renderScreen();
+    goToStep2();
+    expect(screen.getByText('createAccount')).toBeTruthy();
+    expect(screen.queryByText('sendOtpRegister')).toBeNull();
+  });
+
+  it('registers the employer directly without requesting an OTP, then signs in', async () => {
+    const nav = renderScreen();
+    goToStep2();
+    fillForm();
+    fireEvent.press(screen.getByText('createAccount'));
+
+    await waitFor(() => {
+      expect(authService.register).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone: '9876543210',
+          name: 'Acme Co',
+          password: 'secret1',
+          role: 'Employer',
+          employerType: { individual: true, contractor: false, agency: false, industry: false },
+        }),
+      );
+    });
+    expect(authService.requestOtp).not.toHaveBeenCalled();
+    expect(nav.navigate).not.toHaveBeenCalledWith('RegisterOtp', expect.anything());
+    expect(authService.loginWithPassword).toHaveBeenCalledWith('9876543210', 'secret1', 'employer');
+    await waitFor(() => {
+      expect(__auth.signIn).toHaveBeenCalledWith(
+        expect.objectContaining({ onboardingCompleted: false }),
+      );
+    });
+  });
+
+  it('surfaces an error when direct registration fails', async () => {
+    authService.register.mockRejectedValueOnce(new Error('phone already registered'));
+    renderScreen();
+    goToStep2();
+    fillForm();
+    fireEvent.press(screen.getByText('createAccount'));
+    await waitFor(() => {
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'phone already registered');
+    });
+    expect(__auth.signIn).not.toHaveBeenCalled();
+  });
+
+  it('finalizes a Google sign-up directly (no OTP) and signs in', async () => {
+    (isGoogleSignInAvailable as jest.Mock).mockReturnValue(true);
+    (signInWithGoogle as jest.Mock).mockResolvedValueOnce('id-token');
+    authService.googleStart.mockResolvedValueOnce({
+      needsPhone: true,
+      googleTicket: 'ticket-123',
+      name: 'Ravi',
+    });
+    renderScreen();
+    fireEvent.press(screen.getByText('employerTypeAgency'));
+    fireEvent.press(screen.getByText('continueWithGoogle'));
+    await waitFor(() => expect(screen.getByText('yourDetails')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByPlaceholderText('9876543210'), '9876543210');
+    fireEvent.press(screen.getByText('createAccount'));
+
+    await waitFor(() => {
+      expect(authService.googleRegister).toHaveBeenCalledWith(
+        expect.objectContaining({
+          googleTicket: 'ticket-123',
+          phone: '9876543210',
+          name: 'Ravi',
+          employerType: { individual: false, contractor: false, agency: true, industry: false },
+        }),
+      );
+    });
+    expect(authService.requestOtp).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(__auth.signIn).toHaveBeenCalledWith(
+        expect.objectContaining({ onboardingCompleted: false }),
+      );
+    });
   });
 });

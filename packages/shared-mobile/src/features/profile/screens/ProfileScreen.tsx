@@ -31,6 +31,7 @@ import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
+import { workerNeedsEducationDoc, hasEducationDoc } from '../../../shared/utils/workerProfileUtils';
 
 type ProfileNav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -198,7 +199,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         { key: 'sub',      label: t('pf_subscription'), done: empIsSubscribed },
       ];
     }
-    return [
+    const fields: CompletenessField[] = [
       { key: 'name',     label: t('pf_name'),     done: !!user?.fullName?.trim() },
       { key: 'phone',    label: t('pf_phone'),    done: !!user?.phone },
       { key: 'state',    label: t('pf_state'),    done: !!user?.state?.trim() },
@@ -206,7 +207,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       { key: 'photo',    label: t('pf_photo'),    done: !!user?.profileImage },
       { key: 'kyc',      label: t('pf_kyc'),      done: user?.kycStatus === 'verified', onPress: () => navigation.navigate('KycVerification') },
     ];
-  }, [isEmployer, t, navigation, user?.fullName, user?.phone, user?.email, user?.state, user?.district, user?.profileImage, user?.kycStatus, empProfile?.kyc, empProfile?.status, empProfile?.profilePhoto, empIsSubscribed]);
+    // 10th/12th/ITI & Diploma/Graduate candidates must upload their education
+    // document — surface it as a pending chip so the % reflects it (uploaded via
+    // the document banner on Home).
+    if (workerNeedsEducationDoc(user)) {
+      fields.push({ key: 'eduDoc', label: t('pf_eduDoc'), done: hasEducationDoc(user) });
+    }
+    return fields;
+  }, [isEmployer, t, navigation, user, user?.fullName, user?.phone, user?.email, user?.state, user?.district, user?.profileImage, user?.kycStatus, user?.resumeUrl, user?.workerSubType, empProfile?.kyc, empProfile?.status, empProfile?.profilePhoto, empIsSubscribed]);
 
   const handleSelectLanguage = async (lang: AppLanguage): Promise<void> => {
     setSavingLang(true);

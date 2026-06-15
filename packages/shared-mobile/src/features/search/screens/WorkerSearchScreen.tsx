@@ -919,11 +919,11 @@ const FilterSheet = ({
               <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_qualification')}</AppText>
             </View>
             <View style={fsh.typeGrid}>
+              {/* Only the two education tiers. Skilled/Unskilled are skill levels (not
+                  qualifications); the legacy ITI/Diploma & Graduate are migrated to these. */}
               {[
                 { label: t('ws_school_iti'),       sub: t('ws_certificate_holders'), val: '10th/12th/ITI',   icon: '🎓' },
                 { label: t('ws_diploma_graduate'), sub: t('ws_bachelors_above'),     val: 'Diploma/Graduate', icon: '📜' },
-                { label: t('ws_iti_diploma'),      sub: t('ws_certificate_holders'), val: 'ITI/Diploma',      icon: '🎓' },
-                { label: t('ws_graduate'),         sub: t('ws_bachelors_above'),     val: 'Graduate',         icon: '📜' },
               ].map((opt) => {
                 const active = f.qualification === opt.val;
                 return (

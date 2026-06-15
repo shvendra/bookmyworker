@@ -9,6 +9,8 @@ import { authService } from './__mocks__/shared/authService';
 import { showAlert } from './__mocks__/shared/appAlert';
 import { __themeState } from './__mocks__/shared/theme';
 import { getDocumentAsync } from './__mocks__/documentPicker';
+import { __authFlags } from './__mocks__/shared/appConfigApi';
+import { __auth } from './__mocks__/shared/authContext';
 
 const makeNav = () => ({ navigate: jest.fn() });
 
@@ -284,5 +286,78 @@ describe('AgentRegisterScreen — step 2 (details form)', () => {
     renderScreen();
     goToStep2AsWorker();
     expect(screen.getByText('yourDetails')).toBeTruthy();
+  });
+});
+
+describe('AgentRegisterScreen — registration OTP disabled', () => {
+  beforeEach(() => {
+    __authFlags.registrationOtpEnabled = false;
+  });
+  afterEach(() => {
+    __authFlags.registrationOtpEnabled = true;
+  });
+
+  it('shows the "create account" label instead of the OTP label', () => {
+    renderScreen();
+    goToStep2AsWorker();
+    expect(screen.getByText('createAccount')).toBeTruthy();
+    expect(screen.queryByText('sendOtpRegister')).toBeNull();
+  });
+
+  it('registers directly without requesting an OTP, then signs in', async () => {
+    await AsyncStorage.setItem(AGENT_LANG_KEY, 'hi');
+    const nav = renderScreen();
+    goToStep2AsWorker();
+    fillForm();
+    fireEvent.press(screen.getByText('createAccount'));
+
+    await waitFor(() => {
+      expect(authService.register).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone: '9876543210',
+          name: 'Ravi Kumar',
+          password: 'secret1',
+          role: 'SelfWorker',
+          language: 'hi',
+          workerSubType: 'Skilled',
+        }),
+      );
+    });
+    expect(authService.requestOtp).not.toHaveBeenCalled();
+    expect(nav.navigate).not.toHaveBeenCalledWith('RegisterOtp', expect.anything());
+    expect(authService.loginWithPassword).toHaveBeenCalledWith('9876543210', 'secret1', 'worker');
+    await waitFor(() => {
+      expect(__auth.signIn).toHaveBeenCalledWith(
+        expect.objectContaining({ onboardingCompleted: false }),
+      );
+    });
+  });
+
+  it('uses the agent role hint for an agent registration', async () => {
+    renderScreen();
+    selectAgent();
+    fireEvent.press(screen.getByText('agentTypeGroupSupplier'));
+    fireEvent.press(screen.getByText('continueBtn'));
+    fillForm();
+    fireEvent.press(screen.getByText('createAccount'));
+
+    await waitFor(() => {
+      expect(authService.register).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'Agent', agentType: 'Group worker supplier' }),
+      );
+    });
+    expect(authService.loginWithPassword).toHaveBeenCalledWith('9876543210', 'secret1', 'agent');
+  });
+
+  it('surfaces an error when direct registration fails', async () => {
+    authService.register.mockRejectedValueOnce(new Error('phone already registered'));
+    renderScreen();
+    goToStep2AsWorker();
+    fillForm();
+    fireEvent.press(screen.getByText('createAccount'));
+    await waitFor(() => {
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'phone already registered');
+    });
+    expect(__auth.signIn).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -37,7 +37,7 @@ import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { QuickActionCard, QuickActionsRow } from '../../../shared/components/ui/QuickActionCard';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
-import { getJobTitle, getCategoryLabel, getLocationStr, isWorkerProfileComplete } from '../../../shared/utils/labelUtils';
+import { getJobTitle, getCategoryLabel, getLocationStr, isWorkerProfileComplete, workerNeedsEducationDoc } from '../../../shared/utils/labelUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
@@ -45,8 +45,6 @@ import i18n from '../../../core/i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = SCREEN_W - 40;
-
-const RESUME_TYPES = ['ITI/Diploma', 'Graduate'];
 
 // ── Work type visual config ───────────────────────────────────────────────────
 interface WorkVisual { emoji: string; color: string; bg: string; accent: string }
@@ -502,7 +500,11 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     void liveReqsQuery.refetch();
   };
 
-  const showResumeSection = isSelfWorker && user?.workerSubType && RESUME_TYPES.includes(user.workerSubType);
+  // Show the document-upload banner for every 10th/12th/ITI & Diploma/Graduate
+  // candidate (worker or selfworker), using the current qualification-tier values
+  // — the old hard-coded ['ITI/Diploma','Graduate'] list never matched the live
+  // tier names, so the banner silently never appeared.
+  const showResumeSection = workerNeedsEducationDoc(user);
 
   const handlePickResume = async (): Promise<void> => {
     try {
@@ -533,6 +535,24 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
 
   const kycPending = user?.kycStatus === 'pending';
   const greetKey = getGreetKey();
+
+  // ── Profile completeness % for the header avatar badge ──
+  // Mirrors the chip set on the Profile-strength card (ProfileScreen), including
+  // the education document for 10th/12th/ITI & Diploma/Graduate tiers, so the
+  // badge, the card and the onboarding gate all agree.
+  const profilePct = useMemo(() => {
+    const fields = [
+      !!user?.fullName?.trim(),
+      !!user?.phone,
+      !!user?.state?.trim(),
+      !!user?.district?.trim(),
+      !!user?.profileImage,
+      user?.kycStatus === 'verified',
+    ];
+    if (workerNeedsEducationDoc(user)) fields.push(!!user?.resumeUrl);
+    const done = fields.filter(Boolean).length;
+    return Math.round((done / fields.length) * 100);
+  }, [user?.fullName, user?.phone, user?.state, user?.district, user?.profileImage, user?.kycStatus, user?.resumeUrl, user?.workerSubType, user?.role]);
 
   const totalCount = reqsQuery.data?.pagination?.totalCount ?? 0;
   const myInterestsCount = reqsQuery.data?.myInterestsCount ?? 0;
@@ -580,6 +600,9 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         title={user?.fullName ?? t('workerRole')}
         caption={kycPending ? `⚠️ ${t('verificationPending')}` : `✓ ${t('verified')}`}
         avatarName={user?.fullName ?? 'W'}
+        avatarUri={user?.profileImage}
+        avatarBadge={`${profilePct}%`}
+        avatarBadgeColor={profilePct >= 90 ? '#10B981' : profilePct >= 70 ? '#3B82F6' : profilePct >= 40 ? '#F59E0B' : '#EF4444'}
         onAvatarPress={() => navigation.navigate('Profile')}
         rightIcon="🔔"
         onRightPress={() => navigation.navigate('Notifications')}
@@ -1022,9 +1045,11 @@ const sliderCard = StyleSheet.create({
   infoWrap: { flex: 1, gap: 2 },
   title: { fontSize: 15, fontWeight: '900', lineHeight: 20, letterSpacing: -0.2 },
   catLabel: { fontSize: 11, fontWeight: '600', lineHeight: 15 },
-  salaryRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 5 },
-  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19, flexShrink: 1 },
-  periodBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
+  // Wrap so a long wage + "प्रति माह" period badge never clip in any language —
+  // the badge drops to the next line instead of cutting the wage/period text.
+  salaryRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 5, flexWrap: 'wrap', rowGap: 5 },
+  salaryTxt: { fontSize: 15, fontWeight: '900', lineHeight: 19, flexShrink: 0 },
+  periodBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3, flexShrink: 0 },
   periodTxt: { fontSize: 11, fontWeight: '800' },
   iconCol: { gap: 7, alignItems: 'center', flexShrink: 0 },
   iconBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

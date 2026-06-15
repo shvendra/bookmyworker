@@ -24,6 +24,7 @@ import { AppInput } from '../../../../packages/shared-mobile/src/shared/componen
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
 import { isGoogleSignInAvailable, signInWithGoogle } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
+import { useAppConfig } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import {
   registerStep2Schema,
   type RegisterStep2Values,
@@ -44,10 +45,15 @@ const EMPLOYER_TYPES: { key: EmployerTypeKey; labelKey: string; icon: string; de
 ];
 
 export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
+  // SuperAdmin toggle — when false, registration skips the WhatsApp OTP step and
+  // creates the account directly (otherwise the backend rejects requestOtp and the
+  // employer is stuck on an "OTP disabled" error).
+  const { config } = useAppConfig();
+  const registrationOtpEnabled = config.authFlags.registrationOtpEnabled;
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTypes, setSelectedTypes] = useState<Record<EmployerTypeKey, boolean>>({
@@ -96,9 +102,21 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
     }
     setIsLoading(true);
     try {
-      await authService.requestOtp(phone, undefined);
       /* istanbul ignore next -- defensive; a type is always selected before reaching this screen */
       const typesToSend = hasType ? selectedTypes : { ...selectedTypes, individual: true };
+      if (!registrationOtpEnabled) {
+        // OTP disabled by admin → finalize the Google sign-up directly (no OTP step).
+        const gSession = await authService.googleRegister({
+          googleTicket,
+          phone,
+          name: googleName || 'Employer',
+          employerType: typesToSend,
+        });
+        gSession.onboardingCompleted = false; // fresh employer → KYC
+        await signIn(gSession);
+        return;
+      }
+      await authService.requestOtp(phone, undefined);
       navigation.navigate('RegisterOtp', {
         phone,
         role: 'Employer',
@@ -136,9 +154,32 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
     setStep(2);
   };
 
+  // Direct (no-OTP) registration. Mirrors the post-verify flow in RegisterOtpScreen
+  // so the result is identical apart from the skipped OTP step: create the employer,
+  // log in with the chosen password, then route to KYC (onboarding incomplete).
+  const registerDirectly = async (values: RegisterStep2Values): Promise<void> => {
+    const selectedLang = i18n.language ?? 'hi';
+    await authService.register({
+      name: values.name,
+      phone: values.phone,
+      password: values.password,
+      role: 'Employer',
+      language: selectedLang,
+      employerType: selectedTypes,
+    });
+    const session = await authService.loginWithPassword(values.phone, values.password, 'employer');
+    session.onboardingCompleted = false; // fresh employer → KYC
+    await signIn(session);
+  };
+
   const onSubmit = handleSubmit(async (values) => {
     setIsLoading(true);
     try {
+      if (!registrationOtpEnabled) {
+        // OTP disabled by admin → create the account directly and skip the OTP step.
+        await registerDirectly(values);
+        return;
+      }
       await authService.requestOtp(values.phone, undefined);
       navigation.navigate('RegisterOtp', {
         phone: values.phone,
@@ -202,7 +243,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
                   maxLength={10}
                 />
               </View>
-              <AppButton title={t('sendOtpRegister')} onPress={handleGoogleContinue} loading={isLoading} size="lg" fullWidth style={styles.submitBtn} />
+              <AppButton title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')} onPress={handleGoogleContinue} loading={isLoading} size="lg" fullWidth style={styles.submitBtn} />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -441,7 +482,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
             </View>
 
             <AppButton
-              title={t('sendOtpRegister')}
+              title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')}
               onPress={onSubmit}
               loading={isLoading}
               size="lg"

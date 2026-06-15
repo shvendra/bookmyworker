@@ -35,6 +35,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/authStorage.ts',
     '.*shared-mobile/src/core/api/endpoints/appConfigApi$':
       '<rootDir>/src/__tests__/__mocks__/shared/appConfigApi.ts',
+    '.*shared-mobile/src/core/api/endpoints/workerApi$':
+      '<rootDir>/src/__tests__/__mocks__/shared/workerApi.ts',
     '.*shared-mobile/src/state/auth/AuthContext$':
       '<rootDir>/src/__tests__/__mocks__/shared/authContext.tsx',
     '.*shared-mobile/src/shared/state/toast/ToastContext$':
@@ -60,6 +62,8 @@ module.exports = {
     '.*shared-mobile/src/shared/components/ui/GradientHeader$':
       '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
     '.*shared-mobile/src/shared/components/ui/Badge$':
+      '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
+    '.*shared-mobile/src/shared/components/ui/Trademark$':
       '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
 
     // ── shared-mobile: broad catch-alls for screens / navigators ───────────

@@ -21,6 +21,9 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AGENT_LANG_KEY } from '../language/LanguageSelectScreen';
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
+import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
+import { useAppConfig } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
+import { workerApi } from '../../../../packages/shared-mobile/src/core/api/endpoints/workerApi';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
@@ -60,9 +63,15 @@ const AGENT_TYPES: Array<{ value: string; labelKey: string; descKey: string; ico
 ];
 
 export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { signIn } = useAuth();
+  // SuperAdmin toggle — when false, registration skips the WhatsApp OTP step and
+  // creates the account directly (otherwise the backend rejects requestOtp and the
+  // user is stuck on an "OTP disabled" error).
+  const { config } = useAppConfig();
+  const registrationOtpEnabled = config.authFlags.registrationOtpEnabled;
 
   const [step, setStep]               = useState<1 | 2>(1);
   const [role, setRole]               = useState<Role | null>(null);
@@ -116,12 +125,43 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
     setStep(2);
   };
 
+  // Direct (no-OTP) registration. Mirrors the post-verify flow in RegisterOtpScreen
+  // so the experience is identical apart from the skipped OTP step.
+  const registerDirectly = async (values: RegisterStep2Values, language?: string): Promise<void> => {
+    if (!role) return;
+    const selectedLang = language ?? i18n.language ?? 'hi';
+    await authService.register({
+      name: values.name,
+      phone: values.phone,
+      password: values.password,
+      role,
+      language: selectedLang,
+      workerSubType: workerSubType || undefined,
+      agentType: agentType || undefined,
+    });
+    // Log in with the password just set — no second OTP. Fresh registrations route
+    // through profile completion first, so mark onboarding incomplete.
+    const roleHint = role === 'Agent' ? 'agent' : 'worker';
+    const session = await authService.loginWithPassword(values.phone, values.password, roleHint);
+    session.onboardingCompleted = false;
+    if (resumeUri && resumeName) {
+      try { await workerApi.uploadResume(resumeUri, resumeName); } catch { /* non-fatal */ }
+    }
+    if (i18n.language !== selectedLang) await i18n.changeLanguage(selectedLang);
+    await signIn(session);
+  };
+
   const onSubmit = handleSubmit(async (values) => {
     if (!role) return;
     setIsLoading(true);
     try {
-      await authService.requestOtp(values.phone, undefined);
       const savedLang = await AsyncStorage.getItem(AGENT_LANG_KEY);
+      if (!registrationOtpEnabled) {
+        // OTP disabled by admin → create the account directly and skip the OTP step.
+        await registerDirectly(values, savedLang ?? undefined);
+        return;
+      }
+      await authService.requestOtp(values.phone, undefined);
       navigation.navigate('RegisterOtp', {
         phone: values.phone,
         role,
@@ -466,7 +506,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
             </View>
 
             <AppButton
-              title={t('sendOtpRegister')}
+              title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')}
               onPress={onSubmit}
               loading={isLoading}
               size="lg"
