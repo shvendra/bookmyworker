@@ -2065,7 +2065,7 @@ const rm = StyleSheet.create({
   headerTitle:  { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub:    { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   closeBtn:     { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  body:         { maxHeight: 400, paddingHorizontal: 16, paddingTop: 8 },
+  body:         { maxHeight: 560, paddingHorizontal: 16, paddingTop: 8 },
   workerCard:   { borderRadius: 14, borderWidth: 1, borderColor: BORDER, padding: 14, marginBottom: 10, gap: 10 },
   workerRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar:       { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFBEB', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FDE68A' },

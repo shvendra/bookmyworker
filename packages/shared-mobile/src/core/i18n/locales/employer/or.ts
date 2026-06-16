@@ -1,4 +1,7 @@
 export const employerTranslation = {
+  notif_newWorker_title: 'ଆପଣଙ୍କ ନିକଟରେ ନୂଆ ୱର୍କର ଉପଲବ୍ଧ',
+  notif_newWorker_body: 'ଜଣେ ଯାଞ୍ଚିତ {{skills}} ୱର୍କର ବର୍ତ୍ତମାନ {{location}} ରେ ଉପଲବ୍ଧ। ସଠିକ୍ ମ୍ୟାଚ୍ ପାଇଁ ଟାପ୍ କରନ୍ତୁ।',
+  notif_newWorker_bodyNoSkill: 'ଜଣେ ଯାଞ୍ଚିତ ୱର୍କର ବର୍ତ୍ତମାନ {{location}} ରେ ଉପଲବ୍ଧ। ସଠିକ୍ ମ୍ୟାଚ୍ ପାଇଁ ଟାପ୍ କରନ୍ତୁ।',
   ws_newWorker: 'ନୂଆ',
   post_changeType: 'ବଦଳାନ୍ତୁ',
   calWeekdaysShort: ['ରବି', 'ସୋମ', 'ମଙ୍ଗଳ', 'ବୁଧ', 'ଗୁରୁ', 'ଶୁକ୍ର', 'ଶନି'],

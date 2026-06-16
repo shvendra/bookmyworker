@@ -1,4 +1,7 @@
 export const employerTranslation = {
+  notif_newWorker_title: 'আপনার কাছে নতুন ওয়ার্কার পাওয়া যাচ্ছে',
+  notif_newWorker_body: 'একজন ভেরিফায়েড {{skills}} ওয়ার্কার এখন {{location}} এ পাওয়া যাচ্ছে। সঠিক ম্যাচ খুঁজতে ট্যাপ করুন।',
+  notif_newWorker_bodyNoSkill: 'একজন ভেরিফায়েড ওয়ার্কার এখন {{location}} এ পাওয়া যাচ্ছে। সঠিক ম্যাচ খুঁজতে ট্যাপ করুন।',
   ws_newWorker: 'নতুন',
   post_changeType: 'পরিবর্তন',
   calWeekdaysShort: ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি'],

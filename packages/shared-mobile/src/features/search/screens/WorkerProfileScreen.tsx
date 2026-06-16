@@ -504,7 +504,7 @@ const RequirementPickerModal = ({
                           {isChk && <AppText style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</AppText>}
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <AppText style={pm.reqTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.2}>
+                          <AppText style={pm.reqTitle} numberOfLines={1} ellipsizeMode="tail">
                             {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                           </AppText>
                           <AppText style={pm.reqSub}>
@@ -562,12 +562,12 @@ const pm = StyleSheet.create({
   emptyDesc:  { fontSize: 12.5, color: '#64748b', textAlign: 'center', lineHeight: 19 },
   postBtn:    { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 4 },
   postBtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff' },
-  list:       { maxHeight: 320 },
+  list:       { maxHeight: 520 },
   reqRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
   reqRowDisabled: { opacity: 0.5 },
   checkbox:   { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  reqTitle:   { fontSize: 13.5, fontWeight: '700', color: '#0f172a' },
-  reqSub:     { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
+  reqTitle:   { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  reqSub:     { fontSize: 12, color: '#94a3b8', marginTop: 2 },
   statusTag:  { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#f1f5f9', flexShrink: 0 },
   statusTxt:  { fontSize: 10, fontWeight: '700' },
   footer:        { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
@@ -676,7 +676,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
                       {isChk && <View style={inv.radioDot} />}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText style={inv.reqTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.2}>
+                      <AppText style={inv.reqTitle} numberOfLines={1} ellipsizeMode="tail">
                         {[r.workType, r.subCategory].filter(Boolean).map((x) => subcatDisplay(String(x))).join(' · ')}
                       </AppText>
                       <AppText style={inv.reqSub}>ERN {r.ERN_NUMBER || '—'}{r.district ? `  ·  ${r.district}` : ''}</AppText>
@@ -708,7 +708,7 @@ const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, work
 
 const inv = StyleSheet.create({
   overlay:   { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
-  sheet:     { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '80%', overflow: 'hidden' },
+  sheet:     { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '88%', overflow: 'hidden' },
   header:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
@@ -720,12 +720,12 @@ const inv = StyleSheet.create({
   emptyDesc:   { fontSize: 12.5, color: '#64748b', textAlign: 'center' },
   postBtn:     { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 6 },
   postBtnTxt:  { fontSize: 13, fontWeight: '800', color: '#fff' },
-  list:        { maxHeight: 300 },
+  list:        { maxHeight: 480 },
   reqRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
   radio:       { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   radioDot:    { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
-  reqTitle:    { fontSize: 13.5, fontWeight: '700', color: '#0f172a' },
-  reqSub:      { fontSize: 11.5, color: '#94a3b8', marginTop: 1 },
+  reqTitle:    { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  reqSub:      { fontSize: 12, color: '#94a3b8', marginTop: 2 },
   footer:      { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
   cancelBtn:   { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingVertical: 14, alignItems: 'center' },
   cancelTxt:   { fontSize: 14, fontWeight: '700', color: '#64748b' },

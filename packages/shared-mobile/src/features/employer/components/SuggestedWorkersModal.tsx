@@ -249,7 +249,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
 
 const s = StyleSheet.create({
   overlay:       { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
-  sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '82%', overflow: 'hidden' },
+  sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, height: '92%', overflow: 'hidden' },
   header:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#1037A4' },
   headerTitle:   { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub:     { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
@@ -257,7 +257,7 @@ const s = StyleSheet.create({
   center:        { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
   emptyBox:      { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24, gap: 4 },
   emptyTitle:    { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  list:          { maxHeight: 460 },
+  list:          { flex: 1 },
   row:           { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f1f5f9' },
   avatar:        { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EEF2FE' },
   avatarFallback:{ alignItems: 'center', justifyContent: 'center' },

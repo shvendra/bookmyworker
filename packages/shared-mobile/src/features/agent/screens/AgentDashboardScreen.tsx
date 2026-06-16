@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { showAlert } from '../../../shared/state/alert/AppAlertContext';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -136,7 +137,7 @@ const VERIFIED_BADGE_SHOWN_KEY = 'verifiedBadgeShown_v1';
 
 // ── Stat Widget Card ──────────────────────────────────────────────────────────
 interface StatWidgetProps {
-  emoji: string;
+  emoji: keyof typeof Ionicons.glyphMap;
   label: string;
   sub: string | null;
   gradient: readonly [string, string];
@@ -155,7 +156,7 @@ const StatWidget = ({ emoji, label, sub, gradient, onPress, isLoading }: StatWid
   >
     <View style={[styles.statWidgetGrad, { backgroundColor: gradient[1] }]} pointerEvents="none" />
     <View style={styles.statWidgetInner}>
-      <AppText style={styles.statEmoji}>{emoji}</AppText>
+      <Ionicons name={emoji} size={22} color="#FFFFFF" style={styles.statEmoji} />
       <AppText style={styles.statLabel}>{label}</AppText>
       {isLoading ? (
         <View style={styles.statSubSkeleton} />
@@ -254,8 +255,8 @@ const ReqSliderCard = ({ req, alreadyApplied, isLiked, onApply, onLike, onShare,
 
       {/* ── Meta: location + workers + perks (wraps so nothing is clipped) */}
       <View style={[sliderCard.metaWrap, { borderTopColor: isDark ? theme.colors.border : '#EEF2F8' }]}>
-        <AppText style={sliderCard.metaIcon}>📍</AppText>
-        <AppText style={[sliderCard.metaTxt, { color: theme.colors.mutedText }]}>{location}</AppText>
+        <Ionicons name="location-sharp" size={12} color={theme.colors.mutedText} style={sliderCard.metaIcon} />
+        <AppText style={[sliderCard.metaTxt, { color: theme.colors.mutedText, flexShrink: 1 }]}>{location}</AppText>
         {workers > 0 && (
           <>
             <AppText style={[sliderCard.metaDot, { color: theme.colors.mutedText }]}> · </AppText>
@@ -584,7 +585,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 
   const statWidgets: StatWidgetProps[] = [
     {
-      emoji: '📋',
+      emoji: 'list',
       label: t('allRequirements'),
       sub: reqsQuery.isLoading ? null : `${totalCount} ${t('openReqs')}`,
       gradient: ['#1E3A8A', '#2563EB'] as const,
@@ -592,7 +593,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
       onPress: () => navigation.navigate('JobMarketplace'),
     },
     {
-      emoji: '❤️',
+      emoji: 'heart',
       label: t('myInterests'),
       sub: reqsQuery.isLoading ? null : `${myInterestsCount} ${t('applied')}`,
       gradient: ['#7C2D12', '#EA580C'] as const,
@@ -601,7 +602,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
     },
     ...(isAgent ? [
       {
-        emoji: '👷',
+        emoji: 'people',
         label: t('myWorkers'),
         sub: statsQuery.isLoading ? null : `${statsQuery.data?.totalLeads ?? 0} ${t('registered')}`,
         gradient: ['#065F46', '#059669'] as const,
@@ -609,7 +610,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         onPress: () => navigation.navigate('AgentWorkers'),
       } as StatWidgetProps,
       {
-        emoji: '✅',
+        emoji: 'checkmark-circle',
         label: t('verifiedWorkers'),
         sub: statsQuery.isLoading ? null : `${statsQuery.data?.verifiedLeads ?? 0} ${t('verifiedLower')}`,
         gradient: ['#1E3A8A', '#2563EB'] as const,
@@ -618,14 +619,14 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
       } as StatWidgetProps,
     ] : [
       {
-        emoji: '➕',
+        emoji: 'add-circle',
         label: t('registerWorker'),
         sub: t('findWorkNearYou'),
         gradient: ['#064E3B', '#059669'] as const,
         onPress: () => navigation.navigate('AddWorker'),
       } as StatWidgetProps,
       {
-        emoji: '🔍',
+        emoji: 'search',
         label: t('browseJobs'),
         sub: t('findWorkNearYou'),
         gradient: ['#1E3A8A', '#2563EB'] as const,
@@ -725,7 +726,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
             >
               <View style={invBanner.left}>
                 <View style={invBanner.iconWrap}>
-                  <AppText style={{ fontSize: 22 }}>📬</AppText>
+                  <Ionicons name="mail" size={22} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <AppText style={invBanner.title}>
@@ -760,7 +761,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
           {isAgent && !user?.veryfiedBage && (
             <Pressable onPress={() => setBadgeModalVisible(true)} style={styles.verifyBanner}>
               <View style={styles.verifyBannerLeft}>
-                <AppText style={styles.verifyBannerIcon}>⭐</AppText>
+                <Ionicons name="star" size={20} color="#FBBF24" style={styles.verifyBannerIcon} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <AppText variant="labelSm" color="#FFFFFF">{t('getVerifiedBadge')}</AppText>
                   <AppText variant="caption" color="rgba(255,255,255,0.72)">Boost visibility — ₹{pricing.verifiedBadge.agent}</AppText>
@@ -895,7 +896,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 
             <View style={styles.waLeft}>
               <View style={styles.waIconWrap}>
-                <AppText style={styles.waIcon}>💬</AppText>
+                <Ionicons name="logo-whatsapp" size={24} color="#FFFFFF" style={styles.waIcon} />
               </View>
               <View style={styles.waTextBlock}>
                 <AppText style={styles.waTitle}>{t('waTitle')}</AppText>
@@ -963,7 +964,9 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 40 },
-  body: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16 },
+  // Gutter (20) matches the GradientHeader so content lines up with the greeting;
+  // larger top padding gives the first card room to breathe below the header.
+  body: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 },
 
   // ── Alerts ──────────────────────────────────────────────────────────────────
   alertBanner: {
@@ -982,7 +985,7 @@ const styles = StyleSheet.create({
   verifyBannerArrow: { fontSize: 18, color: 'rgba(255,255,255,0.8)', fontWeight: '700' },
 
   // ── 2×2 stat widget grid ────────────────────────────────────────────────────
-  widgetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 4, marginTop: 2 },
+  widgetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20, marginTop: 2 },
   statWidget: {
     width: '47.5%', borderRadius: 20, overflow: 'hidden',
     minHeight: 110, padding: 16, position: 'relative',
@@ -1022,7 +1025,7 @@ const styles = StyleSheet.create({
   sliderEmptyTxt: { fontSize: 13, fontWeight: '500' },
   sliderEmptyLink: { fontSize: 13, fontWeight: '700', color: '#1037A4', marginTop: 4 },
 
-  sectionGap: { marginTop: 1, marginBottom: 8 },
+  sectionGap: { marginTop: 1, marginBottom: 16 },
 
   // ── Activity card ───────────────────────────────────────────────────────────
 
@@ -1152,7 +1155,7 @@ const modal = StyleSheet.create({
 
 // ── Job Invitations banner ────────────────────────────────────────────────────
 const invBanner = StyleSheet.create({
-  wrap:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#7C3AED', borderRadius: 16, padding: 14, marginBottom: 10, elevation: 4, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
+  wrap:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#7C3AED', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 4, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
   left:    { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   iconWrap:{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title:   { fontSize: 14, fontWeight: '800', color: '#FFFFFF', lineHeight: 18 },

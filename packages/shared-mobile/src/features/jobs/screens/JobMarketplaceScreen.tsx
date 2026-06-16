@@ -153,7 +153,7 @@ interface ReqCardProps {
   onCallPress: (reqId: string, employerName: string) => void;
 }
 
-const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyInterested, isLiked, onInterest, onLike, onCallPress }: ReqCardProps): React.JSX.Element => {
+const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyInterested, isLiked, onInterest, onLike, onCallPress }: ReqCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
@@ -214,7 +214,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
           borderWidth: 1, borderColor: isDark ? 'rgba(236,72,153,0.35)' : '#FBCFE8',
           borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
         }}>
-          <AppText style={{ fontSize: 11 }}>🚀</AppText>
+          <Ionicons name="rocket" size={11} color={isDark ? '#F9A8D4' : '#BE185D'} />
           <AppText style={{ fontSize: 10.5, fontWeight: '800', color: isDark ? '#F9A8D4' : '#BE185D', letterSpacing: 0.3 }}>
             {t('req_boostedBadge')}
           </AppText>
@@ -244,13 +244,13 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
           activeOpacity={0.75}
           style={[styles.likeBtn, { backgroundColor: isLiked ? '#FEE2E2' : (isDark ? theme.colors.surface : '#F8FAFC') }]}
         >
-          <AppText style={styles.likeBtnIcon}>{isLiked ? '❤️' : '🤍'}</AppText>
+          <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={18} color={isLiked ? '#EF4444' : (isDark ? theme.colors.mutedText : '#94A3B8')} />
         </TouchableOpacity>
       </View>
 
       {/* ── Location row ─────────────────────────────────────── */}
       <View style={styles.infoRow}>
-        <AppText style={styles.infoRowIcon}>📍</AppText>
+        <Ionicons name="location-sharp" size={13} color={theme.colors.mutedText} style={styles.infoRowIcon} />
         <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flex: 1, minWidth: 0 }]} numberOfLines={2}>
           {locationStr}
         </AppText>
@@ -259,7 +259,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
       {/* ── Contact person row (number stays behind the reveal/Call flow) ── */}
       {req.contactPersonName ? (
         <View style={styles.infoRow}>
-          <AppText style={styles.infoRowIcon}>👤</AppText>
+          <Ionicons name="person" size={13} color={theme.colors.mutedText} style={styles.infoRowIcon} />
           <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flex: 1, minWidth: 0 }]} numberOfLines={2}>
             {req.contactPersonName}
           </AppText>
@@ -268,13 +268,13 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
 
       {/* ── Salary row ───────────────────────────────────────── */}
       <View style={styles.infoRow}>
-        <AppText style={styles.infoRowIcon}>💼</AppText>
+        <Ionicons name="wallet" size={13} color={visual.color} style={styles.infoRowIcon} />
         <AppText style={[styles.salaryAmt, { color: visual.color, flexShrink: 1 }]} numberOfLines={1}>{salaryText}</AppText>
         <AppText style={[styles.salarySlash, { color: theme.colors.mutedText, flexShrink: 0 }]}> {t('salaryPer')} {salaryPeriod}</AppText>
         {workers > 0 && (
           <>
             <AppText style={[styles.dot, { color: theme.colors.mutedText, flexShrink: 0 }]}> · </AppText>
-            <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flexShrink: 0 }]} numberOfLines={1}>👷 {t('workerNeeded', { count: workers })}</AppText>
+            <AppText style={[styles.infoRowText, { color: theme.colors.mutedText, flexShrink: 0 }]} numberOfLines={1}><Ionicons name="people" size={12} color={theme.colors.mutedText} />{' '}{t('workerNeeded', { count: workers })}</AppText>
           </>
         )}
       </View>
@@ -286,52 +286,52 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
         </View>
         {req.accommodationAvailable && (
           <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}>🏠 {t('perkStay')}</AppText>
+            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}><Ionicons name="home" size={11} color="#15803D" />{' '}{t('perkStay')}</AppText>
           </View>
         )}
         {req.foodAvailable && (
           <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}>🍱 {t('perkFood')}</AppText>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}><Ionicons name="restaurant" size={11} color="#C2410C" />{' '}{t('perkFood')}</AppText>
           </View>
         )}
         {req.transportProvided && (
           <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}>🚌 {t('perkTransport')}</AppText>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}><Ionicons name="bus" size={11} color="#1D4ED8" />{' '}{t('perkTransport')}</AppText>
           </View>
         )}
         {req.bonus && (
           <View style={[styles.chip, { backgroundColor: '#FDF4FF', borderColor: '#E9D5FF' }]}>
-            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}>🎁 {t('perkBonus')}</AppText>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}><Ionicons name="gift" size={11} color="#7C3AED" />{' '}{t('perkBonus')}</AppText>
           </View>
         )}
         {req.incentive && (
           <View style={[styles.chip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-            <AppText style={[styles.chipText, { color: '#92400E' }]} numberOfLines={1}>🌟 {t('perkIncentive')}</AppText>
+            <AppText style={[styles.chipText, { color: '#92400E' }]} numberOfLines={1}><Ionicons name="star" size={11} color="#92400E" />{' '}{t('perkIncentive')}</AppText>
           </View>
         )}
         {req.weeklyOff && (
           <View style={[styles.chip, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}>📅 {t('perkWeeklyOff')}</AppText>
+            <AppText style={[styles.chipText, { color: '#15803D' }]} numberOfLines={1}><Ionicons name="calendar" size={11} color="#15803D" />{' '}{t('perkWeeklyOff')}</AppText>
           </View>
         )}
         {req.overtimeAvailable && (
           <View style={[styles.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}>⏱ {t('perkOvertime')}</AppText>
+            <AppText style={[styles.chipText, { color: '#C2410C' }]} numberOfLines={1}><Ionicons name="time" size={11} color="#C2410C" />{' '}{t('perkOvertime')}</AppText>
           </View>
         )}
         {req.insuranceAvailable && (
           <View style={[styles.chip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}>🛡 {t('perkInsurance')}</AppText>
+            <AppText style={[styles.chipText, { color: '#1D4ED8' }]} numberOfLines={1}><Ionicons name="shield-checkmark" size={11} color="#1D4ED8" />{' '}{t('perkInsurance')}</AppText>
           </View>
         )}
         {req.pfAvailable && (
           <View style={[styles.chip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
-            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}>🏦 {t('perkPf')}</AppText>
+            <AppText style={[styles.chipText, { color: '#7C3AED' }]} numberOfLines={1}><Ionicons name="business" size={11} color="#7C3AED" />{' '}{t('perkPf')}</AppText>
           </View>
         )}
         {req.esicAvailable && (
           <View style={[styles.chip, { backgroundColor: '#ECFEFF', borderColor: '#A5F3FC' }]}>
-            <AppText style={[styles.chipText, { color: '#0E7490' }]} numberOfLines={1}>🏥 {t('perkEsic')}</AppText>
+            <AppText style={[styles.chipText, { color: '#0E7490' }]} numberOfLines={1}><Ionicons name="medkit" size={11} color="#0E7490" />{' '}{t('perkEsic')}</AppText>
           </View>
         )}
       </View>
@@ -367,7 +367,7 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
               activeOpacity={0.8}
               style={styles.viewContactBtn}
             >
-              <AppText style={styles.viewContactIcon}>👁️</AppText>
+              <Ionicons name="eye" size={14} color="#FFFFFF" style={styles.viewContactIcon} />
               <AppText style={styles.viewContactText}>{t('viewContact')}</AppText>
             </TouchableOpacity>
           )}
@@ -387,7 +387,8 @@ const ReqCard = ({ req, isAgent, isVerifiedAgent, isSelfWorker, alreadyIntereste
       </View>
     </TouchableOpacity>
   );
-};
+});
+ReqCard.displayName = 'ReqCard';
 
 // ── Contact reveal modal ──────────────────────────────────────────────────────
 interface ContactModalProps {
@@ -811,7 +812,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
         {/* Search bar */}
         <View style={styles.searchBar}>
-          <AppText style={styles.searchBarIcon}>🔍</AppText>
+          <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" style={styles.searchBarIcon} />
           <TextInput
             value={search}
             onChangeText={handleSearchChange}
@@ -831,7 +832,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               style={[styles.filterIconBtn, { backgroundColor: hasFilters ? '#F97316' : 'rgba(255,255,255,0.18)' }]}
               activeOpacity={0.8}
             >
-              <AppText style={styles.filterIconText}>⚙️</AppText>
+              <Ionicons name="options" size={16} color="#FFFFFF" style={styles.filterIconText} />
               {hasFilters && <View style={styles.filterActiveDot} />}
             </TouchableOpacity>
           )}
@@ -841,9 +842,9 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         {!showLikedOnly && !showMyInterests && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
             {([
-              { id: 'default', label: `✦ ${t('sortAllJobs')}` },
-              { id: 'salary',  label: `💰 ${t('sortHighSalary')}` },
-              { id: 'new',     label: `⚡ ${t('sortNewJobs')}` },
+              { id: 'default', icon: 'sparkles' as const, label: t('sortAllJobs') },
+              { id: 'salary',  icon: 'cash' as const,     label: t('sortHighSalary') },
+              { id: 'new',     icon: 'flash' as const,    label: t('sortNewJobs') },
             ] as const).map((s) => (
               <TouchableOpacity
                 key={s.id}
@@ -851,7 +852,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
                 style={[styles.sortChip, sortMode === s.id && styles.sortChipActive]}
               >
                 <AppText style={[styles.sortChipText, sortMode === s.id && styles.sortChipTextActive]}>
-                  {s.label}
+                  <Ionicons name={s.icon} size={12} color={sortMode === s.id ? '#1037A4' : 'rgba(255,255,255,0.85)'} />{' '}{s.label}
                 </AppText>
               </TouchableOpacity>
             ))}
@@ -1126,7 +1127,7 @@ const styles = StyleSheet.create({
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheetContainer: {
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '80%', overflow: 'hidden',
+    maxHeight: '88%', overflow: 'hidden',
   },
   sheetHandle: {
     width: 40, height: 4, borderRadius: 2,

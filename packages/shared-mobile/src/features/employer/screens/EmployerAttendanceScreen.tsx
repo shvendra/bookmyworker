@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
 
 const hm = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%' },
+  sheet:   { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '88%' },
   header:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1 },
   title:   { fontSize: 17, fontWeight: '900', flexShrink: 1 },
   closeBtn:{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },

@@ -1168,6 +1168,12 @@ export const employerTranslation = {
   notificationsTitle:            'Notifications',
   noNotifications:               'No notifications yet.',
   markAllRead:                   'Mark all as read',
+  // Translatable notification content — rebuilt client-side from notification.data
+  // so the title/body localize to the user's language (all 11), with the stored
+  // English string as fallback for any unknown type.
+  notif_newWorker_title:         'New Worker Available Near You',
+  notif_newWorker_body:          'A verified {{skills}} worker is now available in {{location}}. Tap to find the right match.',
+  notif_newWorker_bodyNoSkill:   'A verified worker is now available in {{location}}. Tap to find the right match.',
 
   // ── Activity screen ────────────────────────────────────────────────────────
   activityTitle:                 'My Activity',

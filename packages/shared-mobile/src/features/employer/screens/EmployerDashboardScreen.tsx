@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { shortlistStorage } from '../../../core/storage/shortlistStorage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -407,7 +408,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
           <View style={rsc.topLeft}>
             {boosted ? (
               <View style={[rsc.ernChip, { borderColor: 'rgba(244,114,182,0.55)', backgroundColor: 'rgba(236,72,153,0.28)' }]}>
-                <AppText style={[rsc.ernTxt, { color: '#FBCFE8' }]} numberOfLines={1}>{'🚀 '}{t('req_boostedBadge')}</AppText>
+                <AppText style={[rsc.ernTxt, { color: '#FBCFE8' }]} numberOfLines={1}><Ionicons name="rocket" size={10} color="#FBCFE8" />{' '}{t('req_boostedBadge')}</AppText>
               </View>
             ) : null}
             {req.ERN_NUMBER ? (
@@ -417,7 +418,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             ) : null}
             {req.workerNeedDate ? (
               <View style={[rsc.ernChip, { borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-                <AppText style={rsc.ernTxt} numberOfLines={1}>{'🗓 '}{fmtDate(req.workerNeedDate)}</AppText>
+                <AppText style={rsc.ernTxt} numberOfLines={1}><Ionicons name="calendar-outline" size={11} color="rgba(255,255,255,0.72)" />{' '}{fmtDate(req.workerNeedDate)}</AppText>
               </View>
             ) : null}
           </View>
@@ -440,13 +441,13 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             activeOpacity={req.assignedAgentPhone ? 0.75 : 1}
             style={[rsc.agentStrip, { backgroundColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.4)' }]}
           >
-            <AppText style={rsc.agentStripIcon}>{'👷'}</AppText>
+            <Ionicons name="person-circle" size={20} color="#DDD6FE" style={rsc.agentStripIcon} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <AppText style={rsc.agentName} numberOfLines={1}>
                 {req.assignedAgentName ?? t('agentAssigned')}
               </AppText>
               {req.assignedAgentPhone ? (
-                <AppText style={rsc.agentPhone}>{'📞'} {req.assignedAgentPhone}</AppText>
+                <AppText style={rsc.agentPhone}><Ionicons name="call" size={11} color="#DDD6FE" />{' '}{req.assignedAgentPhone}</AppText>
               ) : null}
             </View>
             {req.assignedAgentPhone ? (
@@ -460,7 +461,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             rsc.interestStrip,
             { backgroundColor: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.4)' },
           ]}>
-            <AppText style={rsc.interestIcon}>{'🙋'}</AppText>
+            <Ionicons name="hand-left" size={14} color="#FCD34D" style={rsc.interestIcon} />
             <AppText style={[rsc.interestTxt, { color: '#FCD34D' }]} numberOfLines={1}>
               {t(interested === 1 ? 'agentsInterested' : 'agentsInterested_plural', { count: interested })}
             </AppText>
@@ -472,13 +473,13 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
           {(req.district || req.state) ? (
             <View style={rsc.metaChip}>
               <AppText style={rsc.metaTxt} numberOfLines={1}>
-                {'📍'} {getLocationStr({ district: req.district, state: req.state }, i18n.language, '')}
+                <Ionicons name="location-sharp" size={11} color="rgba(255,255,255,0.72)" />{' '}{getLocationStr({ district: req.district, state: req.state }, i18n.language, '')}
               </AppText>
             </View>
           ) : null}
           {totalWorkers > 0 ? (
             <View style={rsc.metaChip}>
-              <AppText style={rsc.metaTxt}>{'👷'} {totalWorkers}</AppText>
+              <AppText style={rsc.metaTxt}><Ionicons name="people" size={11} color="rgba(255,255,255,0.72)" />{' '}{totalWorkers}</AppText>
             </View>
           ) : null}
           {req.minBudgetPerWorker != null ? (
@@ -500,7 +501,7 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             style={rsc.inviteBtn}
           >
             <AppText style={rsc.inviteBtnTxt} numberOfLines={1}>
-              {'🧑‍🔧'} {t('sw_inviteWorkers')}
+              <Ionicons name="person-add" size={14} color="#6D3FD6" />{' '}{t('sw_inviteWorkers')}
             </AppText>
           </TouchableOpacity>
         ) : null}
@@ -514,13 +515,13 @@ const ReqSliderCard = React.memo(({ req, idx, onPress, onClose, closing, canInvi
             style={rsc.boostBtn}
           >
             <AppText style={rsc.boostBtnTxt} numberOfLines={1}>
-              {boosting ? t('req_boosting') : `🚀 ${t('req_boostToTop')} (${boostRemaining})`}
+              {boosting ? t('req_boosting') : <><Ionicons name="rocket" size={13} color="#fff" />{' '}{`${t('req_boostToTop')} (${boostRemaining})`}</>}
             </AppText>
           </TouchableOpacity>
         ) : boostEnabled && !closed && boosted ? (
           <View style={[rsc.boostBtn, rsc.boostBtnDone]}>
             <AppText style={[rsc.boostBtnTxt, { color: '#FBCFE8' }]} numberOfLines={1}>
-              {'🚀'} {t('req_boostedOnTop')}
+              <Ionicons name="rocket" size={13} color="#FBCFE8" />{' '}{t('req_boostedOnTop')}
             </AppText>
           </View>
         ) : null}
@@ -583,7 +584,7 @@ const RequirementCarousel = React.memo(({
   if (requirements.length === 0) {
     return (
       <View style={rsc.emptyWrap}>
-        <AppText style={rsc.emptyIcon}>{'📋'}</AppText>
+        <Ionicons name="clipboard-outline" size={36} color={themeColors.mutedText} style={rsc.emptyIcon} />
         <AppText style={[rsc.emptyTitle, { color: themeColors.text }]}>
           {tab === 'all' ? t('noRequirementsYet') : t('noTabRequirements', { tab })}
         </AppText>
@@ -950,8 +951,8 @@ interface SswPromo {
 }
 const SSW_PROMOS: SswPromo[] = [
   // Palette aligned to the Figma promo slides (find = blue slide, post = teal slide).
-  { id: 'p1', emoji: '👷', tagKey: 'ssw_promo1_tag', titleKey: 'ssw_promo1_title', subKey: 'ssw_promo1_sub', ctaKey: 'ssw_promo1_cta', action: 'find', bg1: '#1B379A', bg2: '#2C50D6', accent: '#BFE0FF' },
-  { id: 'p2', emoji: '⚡', tagKey: 'ssw_promo2_tag', titleKey: 'ssw_promo2_title', subKey: 'ssw_promo2_sub', ctaKey: 'ssw_promo2_cta', action: 'post', bg1: '#0C3B40', bg2: '#10666B', accent: '#7FE7DE' },
+  { id: 'p1', emoji: 'people', tagKey: 'ssw_promo1_tag', titleKey: 'ssw_promo1_title', subKey: 'ssw_promo1_sub', ctaKey: 'ssw_promo1_cta', action: 'find', bg1: '#1B379A', bg2: '#2C50D6', accent: '#BFE0FF' },
+  { id: 'p2', emoji: 'flash', tagKey: 'ssw_promo2_tag', titleKey: 'ssw_promo2_title', subKey: 'ssw_promo2_sub', ctaKey: 'ssw_promo2_cta', action: 'post', bg1: '#0C3B40', bg2: '#10666B', accent: '#7FE7DE' },
 ];
 
 const SubscriptionStatusWidget = React.memo(({
@@ -1074,7 +1075,7 @@ const SubscriptionStatusWidget = React.memo(({
         {/* Remaining contacts */}
         <View style={[ssw.statBox, { backgroundColor: cBoxBg, borderColor: cBoxBdr }]}>
           <View style={ssw.statTop}>
-            <AppText style={ssw.statEmoji}>{'📞'}</AppText>
+            <Ionicons name="call" size={15} color="#FFFFFF" style={ssw.statEmoji} />
             <AppText style={[ssw.statNum, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>{remainingContacts}</AppText>
           </View>
           <AppText style={[ssw.statLabel, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
@@ -1085,7 +1086,7 @@ const SubscriptionStatusWidget = React.memo(({
         {/* Expiry */}
         <View style={[ssw.statBox, { backgroundColor: eBoxBg, borderColor: eBoxBdr }]}>
           <View style={ssw.statTop}>
-            <AppText style={ssw.statEmoji}>{'⏰'}</AppText>
+            <Ionicons name="time" size={15} color="#FFFFFF" style={ssw.statEmoji} />
             <AppText style={[ssw.statNum, { color: eBoxTxt, fontSize: isExpiringSoon || isExpired ? 15 : 13 }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>
               {expiryLabel}
             </AppText>
@@ -1144,7 +1145,7 @@ const SubscriptionStatusWidget = React.memo(({
                 </View>
                 <View style={ssw.promoRight}>
                   <View style={[ssw.promoEmojiBubble, { backgroundColor: p.accent + '22', borderColor: p.accent + '55' }]}>
-                    <AppText style={ssw.promoEmoji}>{p.emoji}</AppText>
+                    <Ionicons name={p.emoji as keyof typeof Ionicons.glyphMap} size={30} color={p.accent} />
                   </View>
                 </View>
               </View>
@@ -1183,7 +1184,7 @@ const ssw = StyleSheet.create({
   statLabel:    { fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
 
   // ── Slider (active subscribers) ──
-  sliderWrap:   { marginBottom: 14 },
+  sliderWrap:   { marginBottom: 20 },
   slide:        { width: SSW_SLIDE_W, minHeight: SSW_SLIDE_H },   // grows with content; height is just a floor
   cardInSlide:  { flex: 1, marginBottom: 0 },          // subscription card stretches to the row height
 
@@ -1647,7 +1648,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           onPress={handleWorkerSearchNavigate}
           style={styles.freeBanner}
         >
-          <AppText style={styles.freeBannerEmoji}>🎁</AppText>
+          <Ionicons name="gift" size={24} color="#137A38" style={styles.freeBannerEmoji} />
           <View style={{ flex: 1 }}>
             <AppText style={styles.freeBannerTitle} maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {t('dashFreeContactsTitle', { count: freeContactsRemaining })}
@@ -1667,7 +1668,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           {/* Top: icon + status pill */}
           <View style={styles.qaTop}>
             <View style={styles.qaIconWrap}>
-              <AppText style={styles.qaIcon}>⚡</AppText>
+              <Ionicons name="flash" size={20} color="#FFC24B" />
             </View>
             <View style={styles.qaNewBadge}>
               <AppText style={styles.qaNewTxt}>
@@ -1697,7 +1698,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           {/* Top: icon + status pill */}
           <View style={styles.qaTop}>
             <View style={[styles.qaIconWrap, styles.qaIconWrapGreen]}>
-              <AppText style={styles.qaIcon}>👷</AppText>
+              <Ionicons name="people" size={20} color="#16A34A" />
             </View>
             <View style={[styles.qaNewBadge, styles.qaNewBadgeGreen]}>
               <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>{t('badgeAvailable')}</AppText>
@@ -1788,7 +1789,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         {/* Card header */}
         <View style={reqCard.header}>
           <View style={reqCard.headerLeft}>
-            <AppText style={[reqCard.title, { color: theme.colors.text }]} numberOfLines={2}>{t('newRequirements')}</AppText>
+            <AppText style={[reqCard.title, { color: theme.colors.text }]}>{t('newRequirements')}</AppText>
             {all.length > 0 && (
               <View style={[reqCard.countPill, { backgroundColor: theme.colors.primary + '18', borderColor: theme.colors.primary + '40' }]}>
                 <AppText style={[reqCard.countPillTxt, { color: theme.colors.primary }]}>{all.length}</AppText>
@@ -1866,16 +1867,16 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </View>
           <View style={pip.row}>
             {([
-              { key: 'Shortlisted' as const, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', darkBg: '#1E3A8A22', darkBorder: '#3B82F655', emoji: '🔖' },
-              { key: 'Selected'    as const, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', darkBg: '#5B21B622', darkBorder: '#8B5CF655', emoji: '✅' },
-              { key: 'Joined'      as const, color: '#059669', bg: '#ECFDF5', border: '#6EE7B7', darkBg: '#06543622', darkBorder: '#34D39955', emoji: '🤝' },
+              { key: 'Shortlisted' as const, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', darkBg: '#1E3A8A22', darkBorder: '#3B82F655', icon: 'bookmark' as const },
+              { key: 'Selected'    as const, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', darkBg: '#5B21B622', darkBorder: '#8B5CF655', icon: 'checkmark-circle' as const },
+              { key: 'Joined'      as const, color: '#059669', bg: '#ECFDF5', border: '#6EE7B7', darkBg: '#06543622', darkBorder: '#34D39955', icon: 'briefcase' as const },
             ] as const).map((s) => {
               const isDark = theme.mode === 'dark';
               const cellBg = isDark ? s.darkBg : s.bg;
               const cellBorder = isDark ? s.darkBorder : s.border;
               return (
                 <View key={s.key} style={[pip.cell, { backgroundColor: cellBg, borderColor: cellBorder }]}>
-                  <AppText style={pip.cellEmoji}>{s.emoji}</AppText>
+                  <Ionicons name={s.icon} size={17} color={s.color} style={pip.cellEmoji} />
                   <AppText style={[pip.count, { color: s.color }]}>
                     {pipelineQuery.isLoading ? '—' : String(pipelineQuery.data?.[s.key] ?? 0)}
                   </AppText>
@@ -1897,7 +1898,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       >
         <View style={calStrip.left}>
           <View style={[calStrip.iconWrap, { backgroundColor: '#EFF6FF' }]}>
-            <AppText style={calStrip.icon}>📅</AppText>
+            <Ionicons name="calendar" size={20} color="#2563EB" style={calStrip.icon} />
           </View>
           <View style={calStrip.text}>
             <AppText numberOfLines={2} style={[calStrip.title, { color: theme.colors.text }]}>{t('requirementCalendar')}</AppText>
@@ -2177,18 +2178,20 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   scroll:   { flex: 1 },
-  content:  { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
+  // Gutter (20) matches the hero header so card edges line up with the greeting;
+  // generous top padding lets the first card breathe below the rounded sheet edge.
+  content:  { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 44 },
 
   // ── Free contacts banner ────────────────────────────────────────────────────
-  freeBanner:        { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7', borderRadius: 16, padding: 14, marginBottom: 14 },
+  freeBanner:        { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7', borderRadius: 16, padding: 16, marginBottom: 20 },
   freeBannerEmoji:   { fontSize: 24 },
   freeBannerTitle:   { fontSize: 14, fontWeight: '800', color: '#137A38' },
   freeBannerSub:     { fontSize: 11.5, fontWeight: '600', color: '#0E7A3A', marginTop: 2, opacity: 0.9 },
   freeBannerChevron: { fontSize: 26, fontWeight: '800', color: '#137A38', marginLeft: 2 },
 
   // ── Quick Action Cards ──────────────────────────────────────────────────────
-  qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 14, alignItems: 'stretch' },
-  qaCard:         { flex: 1, minHeight: 152, borderRadius: 20, padding: 14, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12 },
+  qaRow:          { flexDirection: 'row', gap: 12, marginBottom: 20, alignItems: 'stretch' },
+  qaCard:         { flex: 1, minHeight: 156, borderRadius: 20, padding: 16, overflow: 'hidden', elevation: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12 },
   qaCardBlue:     { backgroundColor: '#2243BC', shadowColor: '#1B379A' },
   qaCardGreen:    { backgroundColor: '#E8F7EE', borderWidth: 1, borderColor: '#CBEBD6', shadowColor: '#16A34A', elevation: 2, shadowOpacity: 0.08 },
   qaTop:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -2396,10 +2399,10 @@ const fh = StyleSheet.create({
 
 // ─── Requirements Card (unified section wrapper) ──────────────────────────────
 const reqCard = StyleSheet.create({
-  wrap:        { borderRadius: 20, borderWidth: 1, marginBottom: 14, overflow: 'hidden', elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
+  wrap:        { borderRadius: 20, borderWidth: 1, marginBottom: 20, overflow: 'hidden', elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 },
 
   // Header row
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 6 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
   headerLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
   title:       { flexShrink: 1, fontSize: 15, lineHeight: 20, fontWeight: '800', letterSpacing: -0.1 },
   countPill:   { borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0 },
@@ -2410,7 +2413,7 @@ const reqCard = StyleSheet.create({
   postBtnTxt:  { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 
   // Tab row
-  tabRow:      { flexDirection: 'row', borderRadius: 13, padding: 5, gap: 6, marginBottom: 14, marginHorizontal: 14 },
+  tabRow:      { flexDirection: 'row', borderRadius: 13, padding: 5, gap: 6, marginBottom: 14, marginHorizontal: 16 },
   tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 36, borderRadius: 9, gap: 6 },
   tabActive:   { shadowColor: '#142250', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 2 },
   tabLabel:    { fontWeight: '800', fontSize: 13 },

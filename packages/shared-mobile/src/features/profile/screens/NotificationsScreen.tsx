@@ -16,6 +16,7 @@ import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { notificationApi, type NotificationItem } from '../../../core/api/endpoints/notificationApi';
+import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -112,7 +113,7 @@ const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element =>
           ) : null}
           {data.workerProfession ? (
             <View style={[wp.chip, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-              <AppText style={[wp.chipTxt, { color: '#C2410C' }]} numberOfLines={1}>{data.workerProfession}</AppText>
+              <AppText style={[wp.chipTxt, { color: '#C2410C' }]} numberOfLines={1}>{subcatDisplay(data.workerProfession)}</AppText>
             </View>
           ) : null}
           {data.workerLocation ? (
@@ -153,6 +154,22 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
   const isNewWorker = item.type === 'newWorker';
   const workerData = isNewWorker ? (item.data as WorkerData) : null;
 
+  // Localize known notification types by rebuilding the title/body from the
+  // notification's structured `data` (all 11 languages). Unknown/legacy types
+  // fall back to the stored (English) string so nothing ever renders blank.
+  let displayTitle = cleanText(item.title);
+  let displayBody = cleanText(item.body);
+  if (isNewWorker && workerData) {
+    const loc = workerData.workerLocation ?? '';
+    const skill = workerData.workerProfession ? subcatDisplay(workerData.workerProfession) : '';
+    // defaultValue → if a language is missing the key, fall back to the stored
+    // string (never a raw key); so this is safe even before all 11 are filled in.
+    displayTitle = t('notif_newWorker_title', { defaultValue: cleanText(item.title) });
+    displayBody = skill
+      ? t('notif_newWorker_body', { skills: skill, location: loc, defaultValue: cleanText(item.body) })
+      : t('notif_newWorker_bodyNoSkill', { location: loc, defaultValue: cleanText(item.body) });
+  }
+
   return (
     <TouchableOpacity
       onPress={() => onPress(item._id)}
@@ -192,14 +209,14 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
                 numberOfLines={2}
                 style={[styles.titleText, isUnread && { fontWeight: '700' }]}
               >
-                {cleanText(item.title)}
+                {displayTitle}
               </AppText>
               <AppText variant="micro" color={theme.colors.mutedText} style={styles.time}>
                 {formatTime(item.createdAt, t)}
               </AppText>
             </View>
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={3}>
-              {cleanText(item.body)}
+              {displayBody}
             </AppText>
           </View>
         </View>

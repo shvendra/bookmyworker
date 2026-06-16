@@ -1,4 +1,7 @@
 export const employerTranslation = {
+  notif_newWorker_title: 'ਤੁਹਾਡੇ ਨੇੜੇ ਨਵਾਂ ਵਰਕਰ ਉਪਲਬਧ ਹੈ',
+  notif_newWorker_body: 'ਇੱਕ ਵੈਰੀਫਾਈਡ {{skills}} ਵਰਕਰ ਹੁਣ {{location}} ਵਿੱਚ ਉਪਲਬਧ ਹੈ। ਸਹੀ ਮੈਚ ਲਈ ਟੈਪ ਕਰੋ।',
+  notif_newWorker_bodyNoSkill: 'ਇੱਕ ਵੈਰੀਫਾਈਡ ਵਰਕਰ ਹੁਣ {{location}} ਵਿੱਚ ਉਪਲਬਧ ਹੈ। ਸਹੀ ਮੈਚ ਲਈ ਟੈਪ ਕਰੋ।',
   ws_newWorker: 'ਨਵਾਂ',
   post_changeType: 'ਬਦਲੋ',
   calWeekdaysShort: ['ਐਤ', 'ਸੋਮ', 'ਮੰਗਲ', 'ਬੁੱਧ', 'ਵੀਰ', 'ਸ਼ੁੱਕਰ', 'ਸ਼ਨੀ'],

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { certificateApi } from '../../../core/api/endpoints/certificateApi';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,7 +48,7 @@ const FRONTEND_TO_BACKEND: Record<string, string> = {
 };
 
 interface MenuItemProps {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   danger?: boolean;
@@ -73,7 +74,7 @@ const MenuItem = ({ icon, label, onPress, danger = false, badge, right, isLast =
           { backgroundColor: danger ? theme.colors.dangerLight : theme.colors.primaryLight },
         ]}
       >
-        <AppText style={styles.menuIcon}>{icon}</AppText>
+        <Ionicons name={icon} size={19} color={danger ? theme.colors.danger : theme.colors.primary} />
       </View>
       <AppText
         variant="body"
@@ -309,13 +310,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             activeOpacity={0.8}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <AppText style={styles.avatarEditIcon}>✏️</AppText>
+            <Ionicons name="pencil" size={12} color="#1037A4" />
           </TouchableOpacity>
         </View>
         <AppText style={styles.profileName}>{user?.fullName ?? t('employer:pf_userFallback')}</AppText>
         {(user?.district ?? user?.state) ? (
           <AppText style={styles.profileLocation}>
-            📍 {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
+            <Ionicons name="location-sharp" size={12} color="rgba(255,255,255,0.85)" />{' '}
+            {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
           </AppText>
         ) : null}
         {/* Verification status pill */}
@@ -335,7 +337,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           style={styles.editProfileBtn}
           activeOpacity={0.8}
         >
-          <AppText style={styles.editProfileIcon}>✏️</AppText>
+          <Ionicons name="create-outline" size={15} color="#fff" style={styles.editProfileIcon} />
           <AppText style={styles.editProfileTxt}>{t('profile_editPublicProfile')}</AppText>
         </TouchableOpacity>
       </View>
@@ -358,7 +360,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             activeOpacity={0.8}
             style={[styles.switchCard, { backgroundColor: theme.colors.primary }, theme.shadow.md]}
           >
-            <AppText style={styles.switchIcon}>🔄</AppText>
+            <Ionicons name="swap-horizontal" size={22} color="#FFFFFF" style={styles.switchIcon} />
             <View style={styles.switchText}>
               <AppText variant="labelSm" color="#FFFFFF">{t('profile_switchAccount')}</AppText>
               <AppText variant="micro" color="rgba(255,255,255,0.75)">
@@ -374,7 +376,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         {/* Verification & Trust */}
         <MenuSection label={t('profile_sectionVerification')}>
           <MenuItem
-            icon="🛡️"
+            icon="shield-checkmark-outline"
             label={t('profile_kycVerification')}
             onPress={() => navigation.navigate('KycVerification')}
             badge={user?.kycStatus === 'pending' ? '1' : undefined}
@@ -389,14 +391,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           {/* Certificates — workers upload skill certs; agents upload labour licence */}
           {(user?.role === 'worker' || user?.role === 'selfworker' || user?.role === 'agent') && (
             <MenuItem
-              icon={user?.role === 'agent' ? '📋' : '🎓'}
+              icon={user?.role === 'agent' ? 'document-text-outline' : 'school-outline'}
               label={user?.role === 'agent' ? t('cert_licenceMenuLabel') : t('cert_menuLabel')}
               onPress={() => navigation.navigate('Certificates')}
             />
           )}
           {user?.role === 'agent' && (
             <MenuItem
-              icon="🏆"
+              icon="ribbon-outline"
               label={t('becomeVerifiedAgent')}
               onPress={() => setVerifiedModalVisible(true)}
               isLast
@@ -533,7 +535,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               choice persists to the DB via setLanguage and is rehydrated into the
               app-specific lang key on each boot by useLangSync. */}
           <MenuItem
-            icon="🌐"
+            icon="language-outline"
             label={t('profile_language')}
             onPress={() => setLangModalVisible(true)}
             right={
@@ -546,7 +548,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             }
           />
           <MenuItem
-            icon="🔔"
+            icon="notifications-outline"
             label={t('profile_notificationsHub')}
             onPress={() => navigation.navigate('Notifications')}
             right={
@@ -558,34 +560,34 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           />
           {(user?.role === 'agent' || user?.role === 'worker' || user?.role === 'selfworker') && (
             <MenuItem
-              icon="📬"
+              icon="mail-outline"
               label={t('profile_jobInvitations')}
               onPress={() => navigation.navigate('Invitations')}
             />
           )}
-          <MenuItem icon="🛡️" label={t('profile_securityPrivacy')} onPress={() => navigation.navigate('TermsPrivacy')} />
+          <MenuItem icon="lock-closed-outline" label={t('profile_securityPrivacy')} onPress={() => navigation.navigate('TermsPrivacy')} />
           {user?.role === 'employer' && (
-            <MenuItem icon="💳" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
+            <MenuItem icon="card-outline" label={t('profile_paymentsBilling')} onPress={() => navigation.navigate('Subscription')} />
           )}
           {user?.role === 'employer' && (
-            <MenuItem icon="🧾" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+            <MenuItem icon="receipt-outline" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
           )}
           {user?.role === 'employer' && (
-            <MenuItem icon="📋" label={t('profile_myActivity')} onPress={() => navigation.navigate('MyActivity')} />
+            <MenuItem icon="pulse-outline" label={t('profile_myActivity')} onPress={() => navigation.navigate('MyActivity')} />
           )}
           {user?.role === 'employer' && (
-            <MenuItem icon="📞" label={t('profile_callHistory')} onPress={() => navigation.navigate('CallHistory')} />
+            <MenuItem icon="call-outline" label={t('profile_callHistory')} onPress={() => navigation.navigate('CallHistory')} />
           )}
           {user?.role === 'employer' && (
-            <MenuItem icon="👁️" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
+            <MenuItem icon="eye-outline" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
           )}
-          <MenuItem icon="⚙️" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
+          <MenuItem icon="options-outline" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 
         {/* Appearance Section */}
         <MenuSection label={t('profile_sectionAppearance')}>
           <MenuItem
-            icon="🌙"
+            icon="moon-outline"
             label={t('profile_darkMode')}
             onPress={() => {}}
             isLast
@@ -604,7 +606,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         {user?.role === 'employer' && (
           <MenuSection label={t('profile_sectionWorkers')}>
             <MenuItem
-              icon="👷"
+              icon="people-outline"
               label={t('profile_browseWorkers')}
               onPress={() => navigation.navigate('WorkerSearch')}
               isLast
@@ -620,7 +622,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           activeOpacity={0.82}
           style={[styles.signOutBtn, { backgroundColor: theme.colors.dangerLight, borderColor: theme.colors.danger }]}
         >
-          <AppText style={styles.signOutIcon}>🚪</AppText>
+          <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} style={styles.signOutIcon} />
           <AppText variant="label" color={theme.colors.danger} style={styles.signOutText}>
             {t('profile_signOut')}
           </AppText>
@@ -719,7 +721,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               },
             ]}
           >
-            <AppText style={styles.menuIcon}>🗑️</AppText>
+            <Ionicons name="trash-outline" size={18} color={theme.colors.danger} />
           </View>
 
           <View style={{ flex: 1 }}>
@@ -833,7 +835,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       >
         <View style={styles.signOutOverlay}>
           <View style={[styles.signOutDialog, { backgroundColor: theme.colors.card }]}>
-            <AppText style={styles.signOutEmoji}>🚪</AppText>
+            <Ionicons name="log-out-outline" size={34} color={theme.colors.danger} style={styles.signOutEmoji} />
             <AppText variant="subtitle" style={styles.signOutTitle}>{t('profile_signOutTitle')}</AppText>
             <AppText variant="body" color={theme.colors.mutedText} style={styles.signOutMessage}>
               {t('profile_signOutMessage')}
@@ -866,7 +868,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       >
         <View style={styles.signOutOverlay}>
           <View style={[styles.signOutDialog, { backgroundColor: theme.colors.card }]}>
-            <AppText style={styles.signOutEmoji}>⚠️</AppText>
+            <Ionicons name="warning-outline" size={34} color={theme.colors.danger} style={styles.signOutEmoji} />
             <AppText variant="subtitle" color={theme.colors.danger} style={styles.signOutTitle}>
               {t('profile_deleteAccountTitle')}
             </AppText>
@@ -1111,7 +1113,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 44,
     paddingTop: 12,
-    maxHeight: '75%',
+    maxHeight: '88%',
   },
   modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   modalTitle: { marginBottom: 4 },

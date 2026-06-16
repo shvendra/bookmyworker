@@ -1,4 +1,7 @@
 export const employerTranslation = {
+  notif_newWorker_title: 'तुमच्या जवळ नवीन वर्कर उपलब्ध आहे',
+  notif_newWorker_body: 'एक व्हेरिफाइड {{skills}} वर्कर आता {{location}} मध्ये उपलब्ध आहे. योग्य मॅच शोधण्यासाठी टॅप करा.',
+  notif_newWorker_bodyNoSkill: 'एक व्हेरिफाइड वर्कर आता {{location}} मध्ये उपलब्ध आहे. योग्य मॅच शोधण्यासाठी टॅप करा.',
   ws_newWorker: 'नवीन',
   post_changeType: 'बदला',
   calWeekdaysShort: ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि'],

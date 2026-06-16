@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   statLabel:   { fontSize: 10, textAlign: 'center', lineHeight: 13 },
   statDivider: { width: 1, marginVertical: 4 },
 
-  body:        { maxHeight: 420 },
+  body:        { maxHeight: 560 },
   bodyContent: { padding: 14, gap: 10 },
 
   benefitGroup:  { borderRadius: 18, borderWidth: 1, padding: 14, gap: 8 },

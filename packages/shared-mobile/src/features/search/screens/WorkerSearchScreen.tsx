@@ -1324,14 +1324,14 @@ const AgentCard = ({
             {isNewWorker(agent.createdAt) && (
               <View style={wc.newBadge}>
                 <AppText style={wc.newBadgeTxt} numberOfLines={1} maxFontSizeMultiplier={1.2}>
-                  ✨ {t('ws_newWorker')}
+                  <Ionicons name="sparkles" size={10} color="#FFFFFF" />{' '}{t('ws_newWorker')}
                 </AppText>
               </View>
             )}
           </View>
 
           {!!locationStr && (
-            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={2}>📍 {locationStr}</AppText>
+            <AppText style={[wc.location, { color: theme.colors.mutedText }]} numberOfLines={2}><Ionicons name="location-sharp" size={11} color={theme.colors.mutedText} />{' '}{locationStr}</AppText>
           )}
 
           <View style={wc.metaRow}>
@@ -1369,7 +1369,7 @@ const AgentCard = ({
         >
           {matchedAreas.map((area, idx) => (
             <View key={`${area}-${idx}`} style={[wc.skillChip, { backgroundColor: '#F6F8FE', borderColor: '#E1E8FD' }]}>
-              <AppText style={wc.skillChipIcon}>📎</AppText>
+              <Ionicons name="construct" size={11} color="#2243BC" style={wc.skillChipIcon} />
               {/* No numberOfLines: chips live in a horizontal ScrollView, so the
                   full work-type label must render on one line (Android ellipsizes
                   numberOfLines text against the viewport width otherwise). */}
@@ -1386,13 +1386,13 @@ const AgentCard = ({
         <View style={[wc.docsRow, { borderTopColor: theme.colors.border }]}>
           {!!agent.resumeUrl && (
             <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
-              <AppText style={wc.resumeIcon}>📄</AppText>
+              <Ionicons name="document-text" size={13} color={theme.colors.primary} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>{t('ws_resume')}</AppText>
             </TouchableOpacity>
           )}
           {!!agent.labourLicenceUrl && (
             <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
-              <AppText style={wc.resumeIcon}>📋</AppText>
+              <Ionicons name="document-attach" size={13} color={theme.colors.success} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>{t('ws_licence')}</AppText>
             </TouchableOpacity>
           )}
@@ -1408,7 +1408,7 @@ const AgentCard = ({
               style={[wc.callBtn, { backgroundColor: BRAND }]}
               activeOpacity={0.85}
             >
-              <AppText style={wc.callBtnTxt}>📞 {unlockedPhone}</AppText>
+              <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{unlockedPhone}</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
@@ -1421,7 +1421,7 @@ const AgentCard = ({
         ) : isContactsExhausted ? (
           <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={[wc.topupCta, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '40' }]}>
             <View style={[wc.lockIconBox, { backgroundColor: theme.colors.accentLight }]}>
-              <AppText style={{ fontSize: 16 }}>⚠️</AppText>
+              <Ionicons name="warning" size={16} color={theme.colors.warning} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={[wc.topupTitle, { color: theme.colors.warningDark }]}>{t('ws_contact_limit_reached')}</AppText>
@@ -1440,7 +1440,7 @@ const AgentCard = ({
               <ActivityIndicator size="small" color={WHITE} />
             ) : (
               <>
-                <AppText style={wc.callAgentIcon}>📞</AppText>
+                <Ionicons name="call" size={16} color={WHITE} style={wc.callAgentIcon} />
                 <AppText style={wc.callAgentTxt}>{isAgent ? t('ws_call_agent') : t('ws_call_worker')}</AppText>
               </>
             )}

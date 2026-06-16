@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RequirementType } from '../../../core/api/endpoints/requirementsApi';
@@ -53,28 +54,28 @@ const REQ_TYPES: ReqTypeOption[] = [
     value: 'Daily_Wages',
     label: 'Daily Wages',
     description: 'Hire workers on a per-day basis for short-term or recurring work',
-    icon: '📅',
+    icon: 'today-outline',
     color: '#3B82F6',
   },
   {
     value: 'Contract_Based',
     label: 'Contract Based',
     description: 'Fixed-term contracts for project-based or time-bound work',
-    icon: '📋',
+    icon: 'document-text-outline',
     color: '#8B5CF6',
   },
   {
     value: 'Supply_Based',
     label: 'Supply Based',
     description: 'Bulk labour supply for large-scale or ongoing workforce needs',
-    icon: '👥',
+    icon: 'people-outline',
     color: '#F59E0B',
   },
   {
     value: 'Office_Staff',
     label: 'Support Staff',
     description: 'Hire office administrators, data entry and support personnel',
-    icon: '💼',
+    icon: 'briefcase-outline',
     color: '#10B981',
   },
 ];
@@ -231,7 +232,7 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
         )}
         <View style={styles.heroInner}>
           <View style={styles.heroIconWrap}>
-            <AppText style={styles.heroEmoji}>🔊</AppText>
+            <Ionicons name="megaphone" size={30} color="#FFFFFF" />
           </View>
           <AppText
             style={styles.heroTitle}
@@ -275,7 +276,7 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
 
             {/* Icon box */}
             <View style={[styles.typeIconBox, { backgroundColor: rt.color + '18' }]}>
-              <AppText style={styles.typeIconEmoji}>{rt.icon}</AppText>
+              <Ionicons name={rt.icon as keyof typeof Ionicons.glyphMap} size={24} color={rt.color} />
             </View>
 
             {/* Body */}
@@ -284,9 +285,6 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
                 <AppText
                   style={[styles.typeCardTitle, { color: theme.colors.text, flexShrink: 1 }]}
                   maxFontSizeMultiplier={1.2}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.85}
                 >
                   {t(`type_${rt.value}_label` as any)}
                 </AppText>
@@ -591,7 +589,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {/* ── Type badge ── */}
       <View style={[ps.typeBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.typeBannerIcon, { backgroundColor: theme.colors.primaryLight }]}>
-          <AppText style={{ fontSize: 22 }}>{typeInfo.icon}</AppText>
+          <Ionicons name={typeInfo.icon as keyof typeof Ionicons.glyphMap} size={24} color={theme.colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={[ps.typeBannerLabel, { color: theme.colors.primary }]}>{t(`type_${reqType}_label` as any)}</AppText>
@@ -945,7 +943,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       ) : (
         /* ── Submit ── */
         <AppButton
-          title={mutation.isPending ? t('post_publishing') : `🚀  ${t('post_publishBtn')}`}
+          title={mutation.isPending ? t('post_publishing') : t('post_publishBtn')}
           onPress={onSubmit}
           loading={mutation.isPending}
           disabled={mutation.isPending}
@@ -1243,10 +1241,10 @@ const styles = StyleSheet.create({
   typeIconEmoji: { fontSize: 28 },
   typeCardBody: { flex: 1, gap: 5, paddingLeft: 12, paddingVertical: 16 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  typeCardTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  typeCardTitle: { fontSize: 16, lineHeight: 22, fontWeight: '800', letterSpacing: -0.3 },
   popularBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   popularTxt:   { fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
-  typeCardDesc: { fontSize: 12.5, lineHeight: 17 },
+  typeCardDesc: { fontSize: 12.5, lineHeight: 19 },
   tagPill: { alignSelf: 'flex-start', maxWidth: '100%', borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 4 },
   tagTxt:  { fontSize: 11, fontWeight: '700', lineHeight: 16, paddingRight: 2 },
   typeArrow: { fontSize: 30, lineHeight: 34, paddingLeft: 4 },
