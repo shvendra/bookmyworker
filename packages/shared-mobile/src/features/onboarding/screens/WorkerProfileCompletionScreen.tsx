@@ -308,14 +308,14 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
       case 5: return selectedSubs.length > 0;
       case 6: return selectedState !== '' && selectedDistrict !== '';
       case 7: return areas.length > 0; // areasOfWork is now mandatory
-      case 8: return docUploaded;      // education document is mandatory for these tiers
+      case 8: return true;             // resume is optional — never blocks Submit
       default: return true;
     }
   };
 
-  // Step 8 — pick & upload the education document. Mirrors the dashboard resume
-  // banner: uploads immediately, then patches `resumeUrl` into the session so the
-  // profile gate (isWorkerProfileComplete) clears and Finish can proceed.
+  // Step 8 — pick & upload the (optional) resume. Mirrors the dashboard resume
+  // banner: uploads immediately, then patches `resumeUrl` into the session. Skipping
+  // it is fine — the profile is already complete without it.
   const handlePickDoc = async (): Promise<void> => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -341,7 +341,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
   };
 
   const handleViewDoc = (): void => {
-    if (user?.resumeUrl) navigation.navigate('PdfViewer', { url: user.resumeUrl, title: t('wpc_docQ') });
+    if (user?.resumeUrl) navigation.navigate('PdfViewer', { url: user.resumeUrl, title: t('pf_eduDoc') });
   };
 
   // Persist the data entered in a given step to the backend the moment the user
@@ -746,7 +746,7 @@ export const WorkerProfileCompletionScreen = ({ navigation }: Props): React.JSX.
             </View>
           )}
 
-          {/* ── Step 8: Education document (10th/12th/ITI & Diploma/Graduate) ── */}
+          {/* ── Step 8: Resume upload (optional) ── */}
           {step === DOC_STEP && (
             <View style={styles.section}>
               <AppText style={[styles.stepLabel, { color: theme.colors.primary }]}>{stepLabel}</AppText>

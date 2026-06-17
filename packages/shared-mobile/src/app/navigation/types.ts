@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Register: undefined;
   RegisterOtp: {
     phone: string;
+    alternate?: string;
     role: 'Employer' | 'Agent' | 'SelfWorker';
     name: string;
     password: string;

@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'ഇതര നമ്പർ',
+  ws_alt_prefix: 'ഇതര',
   notif_newWorker_title: 'നിങ്ങളുടെ അടുത്ത് പുതിയ വർക്കർ ലഭ്യമാണ്',
   notif_newWorker_body: 'ഒരു വെരിഫൈഡ് {{skills}} വർക്കർ ഇപ്പോൾ {{location}} ൽ ലഭ്യമാണ്. ശരിയായ മാച്ച് കണ്ടെത്താൻ ടാപ്പ് ചെയ്യുക.',
   notif_newWorker_bodyNoSkill: 'ഒരു വെരിഫൈഡ് വർക്കർ ഇപ്പോൾ {{location}} ൽ ലഭ്യമാണ്. ശരിയായ മാച്ച് കണ്ടെത്താൻ ടാപ്പ് ചെയ്യുക.',

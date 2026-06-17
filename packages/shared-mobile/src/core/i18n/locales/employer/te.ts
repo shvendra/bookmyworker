@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'ప్రత్యామ్నాయ నంబర్',
+  ws_alt_prefix: 'ప్రత్యా',
   notif_newWorker_title: 'మీ సమీపంలో కొత్త వర్కర్ అందుబాటులో ఉన్నారు',
   notif_newWorker_body: 'ఒక వెరిఫైడ్ {{skills}} వర్కర్ ఇప్పుడు {{location}} లో అందుబాటులో ఉన్నారు. సరైన మ్యాచ్ కోసం ట్యాప్ చేయండి.',
   notif_newWorker_bodyNoSkill: 'ఒక వెరిఫైడ్ వర్కర్ ఇప్పుడు {{location}} లో అందుబాటులో ఉన్నారు. సరైన మ్యాచ్ కోసం ట్యాప్ చేయండి.',

@@ -6,10 +6,10 @@ import type { AppLanguage } from '../../shared/types/domain';
 
 const SUPPORTED: AppLanguage[] = ['en', 'hi', 'mr', 'gu', 'ta', 'te', 'kn', 'ml', 'bn', 'or', 'pa'];
 
-const deviceCode = Localization.getLocales()[0]?.languageCode ?? 'hi';
+const deviceCode = Localization.getLocales()[0]?.languageCode ?? 'en';
 const defaultLanguage: AppLanguage = (SUPPORTED as string[]).includes(deviceCode)
   ? (deviceCode as AppLanguage)
-  : 'hi';
+  : 'en';
 
 // initImmediate: false forces synchronous init so translations are ready before
 // the first component render (avoids keys showing instead of translated strings).
@@ -17,7 +17,7 @@ const defaultLanguage: AppLanguage = (SUPPORTED as string[]).includes(deviceCode
 i18n.use(initReactI18next).init({
   resources,
   lng: defaultLanguage,
-  fallbackLng: 'hi',
+  fallbackLng: 'en',
   defaultNS: 'translation',
   ns: ['translation', 'employer'],
   interpolation: { escapeValue: false },

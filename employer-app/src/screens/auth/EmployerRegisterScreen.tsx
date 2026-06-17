@@ -158,7 +158,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
   // so the result is identical apart from the skipped OTP step: create the employer,
   // log in with the chosen password, then route to KYC (onboarding incomplete).
   const registerDirectly = async (values: RegisterStep2Values): Promise<void> => {
-    const selectedLang = i18n.language ?? 'hi';
+    const selectedLang = i18n.language ?? 'en';
     await authService.register({
       name: values.name,
       phone: values.phone,

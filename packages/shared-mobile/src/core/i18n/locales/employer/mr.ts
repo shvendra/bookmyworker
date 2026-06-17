@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'पर्यायी नंबर',
+  ws_alt_prefix: 'पर्या.',
   notif_newWorker_title: 'तुमच्या जवळ नवीन वर्कर उपलब्ध आहे',
   notif_newWorker_body: 'एक व्हेरिफाइड {{skills}} वर्कर आता {{location}} मध्ये उपलब्ध आहे. योग्य मॅच शोधण्यासाठी टॅप करा.',
   notif_newWorker_bodyNoSkill: 'एक व्हेरिफाइड वर्कर आता {{location}} मध्ये उपलब्ध आहे. योग्य मॅच शोधण्यासाठी टॅप करा.',

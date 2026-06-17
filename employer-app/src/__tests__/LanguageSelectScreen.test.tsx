@@ -66,7 +66,10 @@ describe('LanguageSelectScreen', () => {
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(EMPLOYER_LANG_KEY, 'mr');
     });
-    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
+    // Also records the deliberate-pick marker so it wins over a stale DB language.
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(`${EMPLOYER_LANG_KEY}_pending`, 'mr');
+    // One flow run = the two keys above; the guarded second tap adds nothing.
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
     expect(i18n.changeLanguage).toHaveBeenLastCalledWith('mr');
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith('Welcome');

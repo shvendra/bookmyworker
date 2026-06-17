@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Modal,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useAppTheme } from '../../../core/theme';
 import { agentApi } from '../../../core/api/endpoints/agentApi';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -43,6 +47,7 @@ interface RawWorker {
   name?: string;
   fullName?: string;
   phone?: string;
+  alternate?: string;
   status?: string;
   state?: string;
   district?: string;
@@ -83,6 +88,44 @@ export const MyWorkersScreen = (): React.JSX.Element => {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const user = state.session?.user;
   const [filter, setFilter] = useState<Filter>('all');
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  // Manage-numbers modal: edit / swap a worker's primary & alternate numbers.
+  const [managing, setManaging] = useState<{ id: string; name: string } | null>(null);
+  const [primaryInput, setPrimaryInput] = useState('');
+  const [alternateInput, setAlternateInput] = useState('');
+  const [savingNumbers, setSavingNumbers] = useState(false);
+
+  const openManage = (id: string, name: string, phone: string, alternate: string): void => {
+    setManaging({ id, name });
+    setPrimaryInput(phone ?? '');
+    setAlternateInput(alternate ?? '');
+  };
+  const swapNumbers = (): void => {
+    setPrimaryInput(alternateInput);
+    setAlternateInput(primaryInput);
+  };
+  const saveNumbers = async (): Promise<void> => {
+    if (!managing) return;
+    const tenDigit = /^[6-9]\d{9}$/;
+    if (!tenDigit.test(primaryInput)) { toast.error(t('mwInvalidPrimary'), t('mwNumbersUpdateFailTitle')); return; }
+    if (alternateInput && !tenDigit.test(alternateInput)) { toast.error(t('mwInvalidAlternate'), t('mwNumbersUpdateFailTitle')); return; }
+    if (alternateInput && alternateInput === primaryInput) { toast.error(t('mwSameNumbers'), t('mwNumbersUpdateFailTitle')); return; }
+    setSavingNumbers(true);
+    try {
+      await agentApi.updateWorker(managing.id, { phone: primaryInput, alternate: alternateInput });
+      toast.success(t('mwNumbersUpdated'), t('mwNumbersUpdatedTitle'));
+      setManaging(null);
+      await queryClient.invalidateQueries({ queryKey: ['my-workers'] });
+      void refetch();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? t('mwNumbersUpdateFail'), t('mwNumbersUpdateFailTitle'));
+    } finally {
+      setSavingNumbers(false);
+    }
+  };
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['my-workers'],
@@ -185,6 +228,20 @@ export const MyWorkersScreen = (): React.JSX.Element => {
                   <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
                     {w.phone ?? '—'} · {workerLocation(w)}
                   </AppText>
+                  {w.alternate ? (
+                    <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>
+                      {t('alternateNumber')}: {w.alternate}
+                    </AppText>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => openManage(id, workerName(w), w.phone ?? '', w.alternate ?? '')}
+                    style={[styles.manageBtn, { borderColor: theme.colors.primary }]}
+                    activeOpacity={0.7}
+                  >
+                    <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>
+                      {t('mwManageNumbers')}
+                    </AppText>
+                  </TouchableOpacity>
                  {workerWork(w) !== '—' && (
   <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2}>
     {/* Translate each stored skill/area to the active language (all 11 langs) */}
@@ -204,6 +261,60 @@ export const MyWorkersScreen = (): React.JSX.Element => {
         })
       )}
     </ScrollView>
+
+      {/* Manage numbers modal — edit / swap primary & alternate */}
+      <Modal visible={!!managing} transparent animationType="slide" onRequestClose={() => setManaging(null)}>
+        <View style={styles.mwOverlay}>
+          <View style={[styles.mwSheet, { backgroundColor: theme.colors.card }]}>
+            <AppText variant="label" style={{ marginBottom: 4 }}>{t('mwManageNumbers')}</AppText>
+            <AppText variant="caption" color={theme.colors.mutedText} style={{ marginBottom: 12 }}>
+              {t('mwPrimaryHint')}
+            </AppText>
+
+            <AppText variant="caption" color={theme.colors.mutedText} style={{ marginBottom: 4 }}>{t('mwPrimaryNumber')}</AppText>
+            <TextInput
+              value={primaryInput}
+              onChangeText={(v) => setPrimaryInput(v.replace(/[^\d]/g, '').slice(0, 10))}
+              keyboardType="phone-pad"
+              maxLength={10}
+              placeholder="9876543210"
+              placeholderTextColor={theme.colors.mutedText}
+              style={[styles.mwInput, { borderColor: theme.colors.border, color: theme.colors.text }]}
+            />
+
+            <AppText variant="caption" color={theme.colors.mutedText} style={{ marginTop: 12, marginBottom: 4 }}>{t('alternateNumberOptional')}</AppText>
+            <TextInput
+              value={alternateInput}
+              onChangeText={(v) => setAlternateInput(v.replace(/[^\d]/g, '').slice(0, 10))}
+              keyboardType="phone-pad"
+              maxLength={10}
+              placeholder="9876543210"
+              placeholderTextColor={theme.colors.mutedText}
+              style={[styles.mwInput, { borderColor: theme.colors.border, color: theme.colors.text }]}
+            />
+
+            <TouchableOpacity onPress={swapNumbers} style={styles.mwSwap} activeOpacity={0.7}>
+              <AppText variant="caption" color={theme.colors.primary} style={{ fontWeight: '700' }}>⇅ {t('mwSwap')}</AppText>
+            </TouchableOpacity>
+
+            <View style={styles.mwActions}>
+              <TouchableOpacity onPress={() => setManaging(null)} style={[styles.mwCancel, { borderColor: theme.colors.border }]} activeOpacity={0.7}>
+                <AppText variant="caption" color={theme.colors.text} style={{ fontWeight: '700' }}>{t('mwCancel')}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void saveNumbers()}
+                disabled={savingNumbers}
+                style={[styles.mwSave, { backgroundColor: theme.colors.primary, opacity: savingNumbers ? 0.6 : 1 }]}
+                activeOpacity={0.85}
+              >
+                {savingNumbers
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <AppText variant="caption" color="#fff" style={{ fontWeight: '800' }}>{t('mwSaveNumbers')}</AppText>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -220,4 +331,12 @@ const styles = StyleSheet.create({
   filterText: { fontWeight: '600' },
   workerCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   workerInfo: { flex: 1, gap: 2 },
+  manageBtn: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginTop: 4 },
+  mwOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
+  mwSheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 32 },
+  mwInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  mwSwap: { alignSelf: 'center', paddingVertical: 12 },
+  mwActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  mwCancel: { flex: 1, borderWidth: 1.5, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  mwSave: { flex: 2, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
+import { langPendingKey } from '../../../../packages/shared-mobile/src/core/i18n/useLangSync';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
@@ -53,7 +54,7 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'LanguageSelect'>;
 
 export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element => {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<AppLanguage>('hi');
+  const [selected, setSelected] = useState<AppLanguage>('en');
   const [saving, setSaving] = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -72,6 +73,9 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
     if (saving) return;
     setSaving(true);
     await AsyncStorage.setItem(AGENT_LANG_KEY, selected);
+    // Mark this as a deliberate pick so it wins over any stale DB language on the
+    // next login (useLangSync consumes the marker once).
+    await AsyncStorage.setItem(langPendingKey(AGENT_LANG_KEY), selected);
     await i18n.changeLanguage(selected);
     navigation.replace('Welcome');
   };

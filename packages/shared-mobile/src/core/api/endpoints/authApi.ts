@@ -119,6 +119,7 @@ export const requestOtp = async (payload: RequestOtpPayload): Promise<{ message:
 export interface RegisterPayload {
   name: string;
   phone: string;
+  alternate?: string;
   password: string;
   role: 'Employer' | 'Agent' | 'SelfWorker';
   language?: string;
@@ -293,6 +294,7 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
 
 export interface ProfileFields {
   name?: string;
+  alternate?: string;
   state?: string;
   district?: string;
   block?: string;

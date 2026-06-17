@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
+import { langPendingKey } from '../../../../packages/shared-mobile/src/core/i18n/useLangSync';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
@@ -76,6 +77,9 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
     if (saving) return;
     setSaving(true);
     await AsyncStorage.setItem(EMPLOYER_LANG_KEY, selected);
+    // Mark this as a deliberate pick so it wins over any stale DB language on the
+    // next login (useLangSync consumes the marker once).
+    await AsyncStorage.setItem(langPendingKey(EMPLOYER_LANG_KEY), selected);
     await i18n.changeLanguage(selected);
     navigation.replace('Welcome');
   };

@@ -24,6 +24,11 @@ export const registerStep2Schema = z
       .max(100, 'Name too long')
       .regex(/^[a-zA-Z\s'.'\-]+$/, 'Name can only contain letters, spaces and apostrophes'),
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'),
+    alternate: z
+      .string()
+      .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit number')
+      .optional()
+      .or(z.literal('')),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
     state: z.string().optional().or(z.literal('')),

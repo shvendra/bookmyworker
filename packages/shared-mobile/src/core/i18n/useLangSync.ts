@@ -6,9 +6,21 @@ import { useAuth } from '../../state/auth/AuthContext';
 import type { AppLanguage } from '../../shared/types/domain';
 
 /**
+ * Derives the "pending pick" marker key for an app's language key. The language
+ * picker (LanguageSelectScreen) writes the user's active selection here so that
+ * useLangSync can tell a fresh, deliberate pick apart from the DB value it caches
+ * back into the main key on every login.
+ */
+export const langPendingKey = (appLangKey: string): string => `${appLangKey}_pending`;
+
+/**
  * Keeps the app-specific language key in AsyncStorage in sync with the DB:
  *
- *  • Login with existing account that has a language in DB
+ *  • A language the user actively picked on the startup picker (pending marker set)
+ *      → this wins over whatever is in the DB, and is written back to the DB.
+ *        Repairs accounts that were previously saved with the wrong language.
+ *
+ *  • Login with existing account that has a language in DB (no pending pick)
  *      → write DB language to local storage so next cold-boot is instant
  *
  *  • First login / registration (no DB language yet)
@@ -31,6 +43,28 @@ export function useLangSync(appLangKey: string): void {
     const dbLang = (state.session.user.language ?? '') as AppLanguage | '';
 
     void (async () => {
+      // ── Case 0: User actively picked a language on the startup picker ─────────
+      // A deliberate pick always wins — even over an existing DB value — and is
+      // persisted back to the DB. This repairs accounts that were saved with the
+      // wrong language by an earlier defaulting bug. The marker is consumed once.
+      const pendingLang = (await AsyncStorage.getItem(langPendingKey(appLangKey))) as AppLanguage | null;
+      if (pendingLang) {
+        await AsyncStorage.removeItem(langPendingKey(appLangKey));
+        await AsyncStorage.setItem(appLangKey, pendingLang);
+        if (pendingLang !== dbLang) {
+          try {
+            await updateProfileFields({ language: pendingLang });
+          } catch {
+            // non-fatal — DB save will be retried next login
+          }
+          await updateProfile({ language: pendingLang });
+        }
+        if (i18n.language !== pendingLang) {
+          void i18n.changeLanguage(pendingLang);
+        }
+        return;
+      }
+
       if (dbLang) {
         // ── Case A: DB has a language ──────────────────────────────────────────
         // Write it to local storage so AppNavigator applies it instantly on next boot
@@ -42,7 +76,7 @@ export function useLangSync(appLangKey: string): void {
         // Fall back to the current i18n language (already set by LanguageSelectScreen
         // or device locale) — never force 'en' for a user who hasn't saved one yet.
         const localLang = (await AsyncStorage.getItem(appLangKey)) as AppLanguage | null;
-        const lang: AppLanguage = localLang ?? (i18n.language as AppLanguage) ?? 'hi';
+        const lang: AppLanguage = localLang ?? (i18n.language as AppLanguage) ?? 'en';
 
         // Persist to DB so every future login auto-restores this language
         try {

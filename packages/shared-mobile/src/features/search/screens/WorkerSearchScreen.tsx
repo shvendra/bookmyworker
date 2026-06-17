@@ -1236,6 +1236,7 @@ interface AgentCardProps {
   isSubscribed: boolean;
   isContactsExhausted: boolean;
   unlockedPhone?: string;
+  unlockedAlternate?: string;
   loadingUnlock: boolean;
   callStatus: string;
   savingRemark: boolean;
@@ -1254,6 +1255,7 @@ const AgentCard = ({
   isSubscribed,
   isContactsExhausted,
   unlockedPhone,
+  unlockedAlternate,
   loadingUnlock,
   callStatus,
   savingRemark,
@@ -1402,22 +1404,43 @@ const AgentCard = ({
       {/* ── Call Agent CTA ── */}
       <View style={[wc.ctaSection, { borderTopColor: theme.colors.border }]}>
         {unlockedPhone ? (
-          <View style={wc.unlockedRow}>
-            <TouchableOpacity
-              onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
-              style={[wc.callBtn, { backgroundColor: BRAND }]}
-              activeOpacity={0.85}
-            >
-              <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{unlockedPhone}</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
-              style={wc.waBtn}
-              activeOpacity={0.85}
-            >
-              <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
-            </TouchableOpacity>
-          </View>
+          <>
+            <View style={wc.unlockedRow}>
+              <TouchableOpacity
+                onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
+                style={[wc.callBtn, { backgroundColor: BRAND }]}
+                activeOpacity={0.85}
+              >
+                <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{unlockedPhone}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
+                style={wc.waBtn}
+                activeOpacity={0.85}
+              >
+                <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
+              </TouchableOpacity>
+            </View>
+            {/* Alternate number — same unlock, only when the worker has one. */}
+            {unlockedAlternate ? (
+              <View style={[wc.unlockedRow, { marginTop: 8 }]}>
+                <TouchableOpacity
+                  onPress={() => void Linking.openURL(`tel:${unlockedAlternate}`)}
+                  style={[wc.callBtn, { backgroundColor: '#0f766e' }]}
+                  activeOpacity={0.85}
+                >
+                  <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{t('ws_alt_prefix')} {unlockedAlternate}</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => void Linking.openURL(`https://wa.me/91${unlockedAlternate}`)}
+                  style={wc.waBtn}
+                  activeOpacity={0.85}
+                >
+                  <AppText style={wc.waBtnTxt}>WhatsApp</AppText>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </>
         ) : isContactsExhausted ? (
           <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={[wc.topupCta, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '40' }]}>
             <View style={[wc.lockIconBox, { backgroundColor: theme.colors.accentLight }]}>
@@ -1673,6 +1696,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const [searchQuery,      setSearchQuery]      = useState('');
 
   const [unlockedPhones,  setUnlockedPhones]  = useState<Record<string, string>>({});
+  // Worker's optional secondary number per worker, revealed by the SAME unlock.
+  const [unlockedAlternates, setUnlockedAlternates] = useState<Record<string, string>>({});
   const [loadingUnlock,   setLoadingUnlock]   = useState<Record<string, boolean>>({});
   const [callStatus,      setCallStatus]      = useState<Record<string, string>>({});
   const [savingRemark,    setSavingRemark]    = useState<Record<string, boolean>>({});
@@ -1849,6 +1874,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       setLoadingUnlock((p) => ({ ...p, [agentId]: true }));
       const res = await workerApi.unlockNumber(agentId);
       if (res.phone) setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone }));
+      if (res.alternate) setUnlockedAlternates((p) => ({ ...p, [agentId]: res.alternate! }));
       // Contact consumed → refresh the count everywhere (search header, dashboard,
       // plan features). Mirrors WorkerProfileScreen / PaymentWebViewScreen.
       void qc.invalidateQueries({ queryKey: ['search-user-profile'] });
@@ -2122,6 +2148,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               isSubscribed={isSubscribed}
               isContactsExhausted={isContactsExhausted}
               unlockedPhone={unlockedPhones[item._id]}
+              unlockedAlternate={unlockedAlternates[item._id]}
               loadingUnlock={loadingUnlock[item._id] ?? false}
               callStatus={callStatus[item._id] ?? ''}
               savingRemark={savingRemark[item._id] ?? false}

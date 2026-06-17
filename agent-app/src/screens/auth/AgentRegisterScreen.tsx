@@ -83,7 +83,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterStep2Values>({
     resolver: zodResolver(registerStep2Schema),
-    defaultValues: { name: '', phone: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', phone: '', alternate: '', password: '', confirmPassword: '' },
   });
 
   const onSelectRole = (r: Role): void => {
@@ -129,10 +129,11 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   // so the experience is identical apart from the skipped OTP step.
   const registerDirectly = async (values: RegisterStep2Values, language?: string): Promise<void> => {
     if (!role) return;
-    const selectedLang = language ?? i18n.language ?? 'hi';
+    const selectedLang = language ?? i18n.language ?? 'en';
     await authService.register({
       name: values.name,
       phone: values.phone,
+      alternate: values.alternate || undefined,
       password: values.password,
       role,
       language: selectedLang,
@@ -164,6 +165,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
       await authService.requestOtp(values.phone, undefined);
       navigation.navigate('RegisterOtp', {
         phone: values.phone,
+        alternate: values.alternate || undefined,
         role,
         name: values.name,
         password: values.password,
@@ -481,6 +483,17 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                   <AppInput value={value} onChangeText={onChange} onBlur={onBlur}
                     placeholder="9876543210" keyboardType="phone-pad"
                     leadingIcon="+91" maxLength={10} errorText={errors.phone?.message} />
+                )}
+              />
+            </View>
+
+            <View style={styles.formField}>
+              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.fieldLabel}>{t('alternateNumberOptional')}</AppText>
+              <Controller control={control} name="alternate"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput value={value} onChangeText={onChange} onBlur={onBlur}
+                    placeholder="9123456780" keyboardType="phone-pad"
+                    leadingIcon="+91" maxLength={10} errorText={errors.alternate?.message} />
                 )}
               />
             </View>

@@ -64,6 +64,8 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
   const [invitingId, setInvitingId]   = useState<string | null>(null);
   const [invitedIds, setInvitedIds]   = useState<string[]>([]);
   const [unlockedPhones, setUnlockedPhones] = useState<Record<string, string>>({});
+  // Worker's optional secondary number per worker, revealed by the SAME unlock.
+  const [unlockedAlternates, setUnlockedAlternates] = useState<Record<string, string>>({});
   const [unlockingId, setUnlockingId]       = useState<string | null>(null);
 
   const reqToken = norm(workType);
@@ -94,6 +96,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
     if (!visible) return;
     setInvitedIds([]);
     setUnlockedPhones({});
+    setUnlockedAlternates({});
     setWorkers([]);
     setPage(1);
     setHasMore(true);
@@ -115,6 +118,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
       const res = await workerApi.unlockNumber(w._id);
       if (res.phone) {
         setUnlockedPhones((prev) => ({ ...prev, [w._id]: res.phone! }));
+        if (res.alternate) setUnlockedAlternates((prev) => ({ ...prev, [w._id]: res.alternate! }));
         toast.success(
           res.alreadyHired ? t('wp_toastAlreadyHired') : t('wp_toastUnlocked'),
           res.alreadyHired ? t('wp_alreadyHiredTitle') : t('wp_unlockedTitle'),
@@ -206,9 +210,16 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                     </View>
                     <View style={s.actions}>
                       {unlockedPhones[w._id] ? (
-                        <TouchableOpacity onPress={() => void Linking.openURL(`tel:${unlockedPhones[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
-                          <AppText style={s.phoneTxt} numberOfLines={1}>📞 {unlockedPhones[w._id]}</AppText>
-                        </TouchableOpacity>
+                        <View style={{ gap: 6 }}>
+                          <TouchableOpacity onPress={() => void Linking.openURL(`tel:${unlockedPhones[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
+                            <AppText style={s.phoneTxt} numberOfLines={1}>📞 {unlockedPhones[w._id]}</AppText>
+                          </TouchableOpacity>
+                          {unlockedAlternates[w._id] ? (
+                            <TouchableOpacity onPress={() => void Linking.openURL(`tel:${unlockedAlternates[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
+                              <AppText style={s.phoneTxt} numberOfLines={1}>📲 {unlockedAlternates[w._id]}</AppText>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
                       ) : (
                         <TouchableOpacity
                           onPress={() => void viewContact(w)}

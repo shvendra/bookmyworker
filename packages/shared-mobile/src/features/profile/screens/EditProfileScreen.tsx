@@ -99,6 +99,7 @@ function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
 
 const editProfileSchema = z.object({
   name:            z.string().min(3, 'Name must be at least 3 characters'),
+  alternate:       z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit number').optional().or(z.literal('')),
   email:           z.string().email('Enter a valid email').optional().or(z.literal('')),
   address:         z.string().optional(),
   accountNumber:   z.string().optional(),
@@ -168,6 +169,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
       name: user?.fullName ?? '',
+      alternate: '',
       email: user?.email ?? '',
       address: '',
       accountNumber: '',
@@ -187,7 +189,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           user?: {
             fullName?: string; email?: string; state?: string; district?: string;
             block?: string; address?: string; accountNumber?: string;
-            ifscCode?: string; bankName?: string;
+            ifscCode?: string; bankName?: string; alternate?: string;
             gender?: string; dob?: string | number; areasOfWork?: string[];
             serviceArea?: string[];
             workExperience?: string | number; categories?: string[];
@@ -198,6 +200,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         if (!u) return;
         reset({
           name: u.fullName ?? user?.fullName ?? '',
+          alternate: u.alternate ?? '',
           email: u.email ?? user?.email ?? '',
           address: u.address ?? '',
           accountNumber: u.accountNumber ?? '',
@@ -307,6 +310,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       // Main profile update (FormData for photo support)
       const formData = new FormData();
       formData.append('name', values.name);
+      // Always send alternate so the user can also clear it ("" clears on the backend).
+      formData.append('alternate', values.alternate ?? '');
       if (values.email)         formData.append('email', values.email);
       if (stateVal)             formData.append('state', stateVal);
       if (districtVal)          formData.append('district', districtVal);
@@ -423,6 +428,9 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             <AppText style={styles.verifiedTxt}>🔒 {t('ep_verified', 'Verified')}</AppText>
           </View>
         </View>
+
+        {/* Editable alternate / secondary contact number */}
+        <FormInput control={control} name="alternate" label={t('ep_alternateNumber')} placeholder={t('tenDigitMobile')} keyboardType="phone-pad" maxLength={10} />
 
         {/* BASIC INFO */}
         <SectionLabel label={t('ep_basicInfo')} theme={theme} />

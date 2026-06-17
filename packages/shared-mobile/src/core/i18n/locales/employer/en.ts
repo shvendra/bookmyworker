@@ -1,5 +1,8 @@
 export const employerTranslation = {
   ws_newWorker: 'New',
+  // Alternate / secondary contact number (revealed by the same unlock)
+  wp_alternateNumber: 'Alternate Number',
+  ws_alt_prefix: 'Alt',
   calWeekdaysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
 
   att_noWorkersMsg: 'No joined workers to mark attendance for.',

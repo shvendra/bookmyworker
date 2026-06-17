@@ -751,6 +751,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const insets = useSafeAreaInsets();
 
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
+  // Worker's optional secondary number, revealed by the SAME unlock (no extra charge).
+  const [unlockedAlternate, setUnlockedAlternate] = useState<string | null>(null);
   const [unlocking,     setUnlocking]     = useState(false);
   const [alreadyHired,  setAlreadyHired]  = useState(false); // worker has Joined status — free contact
 
@@ -854,6 +856,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
       const res = await workerApi.unlockNumber(workerId);
       if (res.phone) {
         setUnlockedPhone(res.phone);
+        setUnlockedAlternate(res.alternate ? res.alternate : null);
         setAlreadyHired(res.alreadyHired === true);
         if (res.alreadyHired) {
           toast.success(t('wp_toastAlreadyHired'), t('wp_alreadyHiredTitle'));
@@ -1192,6 +1195,34 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       <AppText style={s.phoneNum}>{unlockedPhone}</AppText>
                     </View>
                   </View>
+                  {/* Alternate number — only shown when the worker has one (same unlock). */}
+                  {unlockedAlternate ? (
+                    <View style={s.phoneCard}>
+                      <View style={s.phoneIconWrap}>
+                        <AppText style={{ fontSize: 20 }}>📲</AppText>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={s.phoneLabel}>{t('wp_alternateNumber')}</AppText>
+                        <AppText style={s.phoneNum}>{unlockedAlternate}</AppText>
+                      </View>
+                      <View style={s.altActions}>
+                        <TouchableOpacity
+                          onPress={() => void Linking.openURL(`tel:${unlockedAlternate}`)}
+                          style={s.altIconBtn}
+                          activeOpacity={0.85}
+                        >
+                          <AppText style={{ fontSize: 16 }}>📞</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => void Linking.openURL(`https://wa.me/91${unlockedAlternate}`)}
+                          style={s.altIconBtn}
+                          activeOpacity={0.85}
+                        >
+                          <AppText style={{ fontSize: 16 }}>💬</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : null}
                   <View style={s.contactBtns}>
                     <TouchableOpacity
                       onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
@@ -1368,6 +1399,8 @@ const s = StyleSheet.create({
   phoneIconWrap:{ width: 46, height: 46, borderRadius: 12, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center' },
   phoneLabel:   { fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 2 },
   phoneNum:     { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+  altActions:   { flexDirection: 'row', gap: 8 },
+  altIconBtn:   { width: 38, height: 38, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#bbf7d0', alignItems: 'center', justifyContent: 'center' },
   contactBtns:  { flexDirection: 'row', gap: 10 },
   callBtn:      { flex: 1, backgroundColor: '#0f172a', borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   callBtnTxt:   { color: '#ffffff', fontSize: 15, fontWeight: '800' },

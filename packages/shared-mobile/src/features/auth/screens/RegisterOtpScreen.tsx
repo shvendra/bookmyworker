@@ -125,7 +125,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
       // ── Google sign-up flow: no password — finalize via google/register ──
       if (params.googleTicket) {
-        const gLang = params.language ?? i18n.language ?? 'hi';
+        const gLang = params.language ?? i18n.language ?? 'en';
         const gSession = await authService.googleRegister({
           googleTicket: params.googleTicket,
           phone: params.phone,
@@ -148,9 +148,9 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
       // Use the language the user selected before registration (passed as a param).
       // Fall back to the current i18n language so we never send undefined.
-      const selectedLang = params.language ?? i18n.language ?? 'hi';
+      const selectedLang = params.language ?? i18n.language ?? 'en';
       await authService.register({
-        name: params.name, phone: params.phone, password: params.password,
+        name: params.name, phone: params.phone, alternate: params.alternate || undefined, password: params.password,
         role: params.role, language: selectedLang,
         state: params.state, district: params.district,
         block: params.block, pinCode: params.pinCode, email: params.email,

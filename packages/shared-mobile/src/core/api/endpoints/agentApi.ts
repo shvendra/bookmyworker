@@ -5,6 +5,7 @@ export interface WorkerItem {
   _id: string;
   name: string;
   phone: string;
+  alternate?: string;
   district?: string;
   state?: string;
   status: 'Verified' | 'Unverified' | 'Block';
@@ -44,6 +45,11 @@ export const agentApi = {
     apiClient.post('/api/v1/job/post', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then((r) => r.data),
+
+  // Update an agent-owned worker. Used to edit / swap the worker's primary &
+  // alternate numbers (the backend guards primary-number uniqueness).
+  updateWorker: (workerId: string, data: { phone?: string; alternate?: string }) =>
+    apiClient.put(`/api/v1/job/update/${workerId}`, data).then((r) => r.data),
 
   getMyWorkers: (params?: { page?: number; limit?: number }) =>
     apiClient

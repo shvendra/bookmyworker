@@ -186,7 +186,7 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   // so the experience is identical apart from the skipped OTP step.
   const registerDirectly = async (values: RegisterStep2Values): Promise<void> => {
     if (!role) return;
-    const selectedLang = i18n.language ?? 'hi';
+    const selectedLang = i18n.language ?? 'en';
     await authService.register({
       name: values.name, phone: values.phone, password: values.password,
       role, language: selectedLang,

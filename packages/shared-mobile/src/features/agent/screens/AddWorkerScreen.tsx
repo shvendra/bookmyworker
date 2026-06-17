@@ -61,6 +61,7 @@ const buildAddWorkerSchema = (t: TFunction) =>
   z.object({
     name: z.string().min(3, t('awValName')),
     mobile: z.string().regex(/^[6-9]\d{9}$/, t('awValMobile')),
+    alternate: z.string().regex(/^[6-9]\d{9}$/, t('awValAlternate')).optional().or(z.literal('')),
     gender: z.enum(['Male', 'Female', 'Other']).optional(),
     dob: z.string().optional(),
     address: z.string().optional(),
@@ -193,6 +194,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('phone', values.mobile);
+      if (values.alternate) formData.append('alternate', values.alternate);
       formData.append('password', values.mobile);
       formData.append('role', 'Worker');
       if (values.gender) formData.append('gender', values.gender);
@@ -260,6 +262,7 @@ export const AddWorkerScreen = (): React.JSX.Element => {
           <SectionCard icon="👤" title={t('awBasicInfo')} theme={theme}>
             <FormInput control={control} name="name" label={t('fullNameRequired')} placeholder={t('awFullNamePh')} />
             <FormInput control={control} name="mobile" label={t('mobileNumberRequired')} placeholder={t('tenDigitMobile')} keyboardType="phone-pad" maxLength={10} />
+            <FormInput control={control} name="alternate" label={t('alternateNumberOptional')} placeholder={t('tenDigitMobile')} keyboardType="phone-pad" maxLength={10} />
             <Controller
               control={control}
               name="gender"

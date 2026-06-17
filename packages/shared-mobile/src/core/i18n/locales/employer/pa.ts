@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'ਬਦਲਵਾਂ ਨੰਬਰ',
+  ws_alt_prefix: 'ਬਦਲ',
   notif_newWorker_title: 'ਤੁਹਾਡੇ ਨੇੜੇ ਨਵਾਂ ਵਰਕਰ ਉਪਲਬਧ ਹੈ',
   notif_newWorker_body: 'ਇੱਕ ਵੈਰੀਫਾਈਡ {{skills}} ਵਰਕਰ ਹੁਣ {{location}} ਵਿੱਚ ਉਪਲਬਧ ਹੈ। ਸਹੀ ਮੈਚ ਲਈ ਟੈਪ ਕਰੋ।',
   notif_newWorker_bodyNoSkill: 'ਇੱਕ ਵੈਰੀਫਾਈਡ ਵਰਕਰ ਹੁਣ {{location}} ਵਿੱਚ ਉਪਲਬਧ ਹੈ। ਸਹੀ ਮੈਚ ਲਈ ਟੈਪ ਕਰੋ।',

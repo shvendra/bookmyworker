@@ -11,6 +11,7 @@ export type AgentStackParamList = {
   Register: undefined;
   RegisterOtp: {
     phone: string;
+    alternate?: string;
     role: 'Agent' | 'SelfWorker';
     name: string;
     password: string;

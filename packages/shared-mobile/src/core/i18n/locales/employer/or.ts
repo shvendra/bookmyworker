@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'ବିକଳ୍ପ ନମ୍ବର',
+  ws_alt_prefix: 'ବିକଳ୍ପ',
   notif_newWorker_title: 'ଆପଣଙ୍କ ନିକଟରେ ନୂଆ ୱର୍କର ଉପଲବ୍ଧ',
   notif_newWorker_body: 'ଜଣେ ଯାଞ୍ଚିତ {{skills}} ୱର୍କର ବର୍ତ୍ତମାନ {{location}} ରେ ଉପଲବ୍ଧ। ସଠିକ୍ ମ୍ୟାଚ୍ ପାଇଁ ଟାପ୍ କରନ୍ତୁ।',
   notif_newWorker_bodyNoSkill: 'ଜଣେ ଯାଞ୍ଚିତ ୱର୍କର ବର୍ତ୍ତମାନ {{location}} ରେ ଉପଲବ୍ଧ। ସଠିକ୍ ମ୍ୟାଚ୍ ପାଇଁ ଟାପ୍ କରନ୍ତୁ।',

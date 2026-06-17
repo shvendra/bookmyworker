@@ -38,9 +38,7 @@ export function isWorkerProfileComplete(user: UserProfile | null | undefined): b
   if (!user) return true;
   const role = (user.role ?? '').toLowerCase();
   if (!WORKER_ROLES.includes(role)) return true;
-  if (!(user.gender && user.dob)) return false;
-  // 10th/12th/ITI & Diploma/Graduate candidates must also upload their
-  // education document — without it the profile is not yet complete.
-  if (workerNeedsEducationDoc(user) && !hasEducationDoc(user)) return false;
-  return true;
+  // Resume upload is optional, so it never gates completeness — gender + age
+  // (dob) are the only hard requirements.
+  return !!(user.gender && user.dob);
 }

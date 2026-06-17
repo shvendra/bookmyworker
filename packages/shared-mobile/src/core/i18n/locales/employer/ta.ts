@@ -1,4 +1,6 @@
 export const employerTranslation = {
+  wp_alternateNumber: 'மாற்று எண்',
+  ws_alt_prefix: 'மாற்று',
   notif_newWorker_title: 'உங்கள் அருகில் புதிய வொர்க்கர் கிடைக்கிறார்',
   notif_newWorker_body: 'ஒரு சரிபார்க்கப்பட்ட {{skills}} வொர்க்கர் இப்போது {{location}} இல் கிடைக்கிறார். சரியான பொருத்தத்தைக் கண்டறிய தட்டவும்.',
   notif_newWorker_bodyNoSkill: 'ஒரு சரிபார்க்கப்பட்ட வொர்க்கர் இப்போது {{location}} இல் கிடைக்கிறார். சரியான பொருத்தத்தைக் கண்டறிய தட்டவும்.',

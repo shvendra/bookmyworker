@@ -155,6 +155,7 @@ export const workerApi = {
 
   unlockNumber: async (agentId: string): Promise<{
     phone?: string;
+    alternate?: string;  // worker's optional secondary number — revealed by the SAME unlock (no extra charge)
     message?: string;
     alreadyHired?: boolean;  // true when worker has Joined status — contact is free
     usedFreeContact?: boolean;  // true when a gifted free contact was used (no charge)
@@ -163,6 +164,7 @@ export const workerApi = {
   }> => {
     const res = await apiClient.get<{
       phone?: string;
+      alternate?: string;
       message?: string;
       alreadyHired?: boolean;
       usedFreeContact?: boolean;

@@ -41,7 +41,7 @@ describe('LanguageSelectScreen', () => {
     expect(screen.getByText('Choose Your Language')).toBeTruthy();
   });
 
-  it('defaults to Hindi and shows the selected-language hint', () => {
+  it('defaults to English and shows the selected-language hint', () => {
     renderScreen();
     expect(screen.getByText('Selected:', { exact: false })).toBeTruthy();
   });
@@ -58,33 +58,36 @@ describe('LanguageSelectScreen', () => {
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(AGENT_LANG_KEY, 'mr');
     });
-    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
+    // Also records the deliberate-pick marker so it wins over a stale DB language.
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(`${AGENT_LANG_KEY}_pending`, 'mr');
+    // One flow run = the two keys above; the guarded second tap adds nothing.
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
     expect(i18n.changeLanguage).toHaveBeenLastCalledWith('mr');
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith('Welcome');
   });
 
-  it('defaults to Hindi when continue is pressed without changing selection', async () => {
+  it('defaults to English when continue is pressed without changing selection', async () => {
     renderScreen();
     fireEvent.press(screen.getByText('Continue'));
     await waitFor(() => {
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(AGENT_LANG_KEY, 'hi');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith(AGENT_LANG_KEY, 'en');
     });
   });
 
   it('computes pressed/unpressed style for a non-selected card', () => {
     renderScreen();
-    // English is not the default selection (Hindi), so its card exercises the
+    // Hindi is not the default selection (English), so its card exercises the
     // `pressed && !isSelected` style branch.
-    const styleFn = findStyleFn(screen.getAllByText('English')[0]);
+    const styleFn = findStyleFn(screen.getAllByText('Hindi')[0]);
     expect(styleFn).toBeInstanceOf(Function);
     expect(styleFn({ pressed: true })).toBeTruthy();
     expect(styleFn({ pressed: false })).toBeTruthy();
   });
 
-  it('computes the selected-card style for the default Hindi card', () => {
+  it('computes the selected-card style for the default English card', () => {
     renderScreen();
-    const styleFn = findStyleFn(screen.getAllByText('हिंदी')[0]);
+    const styleFn = findStyleFn(screen.getAllByText('English')[0]);
     expect(styleFn).toBeInstanceOf(Function);
     // isSelected is true → the `pressed && !isSelected` arm is false.
     expect(styleFn({ pressed: true })).toBeTruthy();

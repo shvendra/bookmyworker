@@ -80,7 +80,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
     resolver: zodResolver(kycSchema),
     defaultValues: {
       fullName: state.session?.user.fullName ?? '',
-      language: (state.session?.user.language as KycFormValues['language']) ?? (i18n.language as KycFormValues['language']) ?? 'hi',
+      language: (state.session?.user.language as KycFormValues['language']) ?? (i18n.language as KycFormValues['language']) ?? 'en',
     },
   });
 
