@@ -3899,6 +3899,16 @@
   {
     "label": "Support Staff Permanent",
     "value": "support_staff_permanent",
+    "hindilabel": "सहायक स्टाफ (स्थायी)",
+    "marathilabel": "सहाय्यक कर्मचारी (कायम)",
+    "gujaratilabel": "સહાયક સ્ટાફ (કાયમી)",
+    "tamillabel": "உதவி பணியாளர் (நிரந்தரம்)",
+    "telugulabel": "సహాయక సిబ్బంది (శాశ్వత)",
+    "kannadalabel": "ಸಹಾಯಕ ಸಿಬ್ಬಂದಿ (ಶಾಶ್ವತ)",
+    "malayalamlabel": "സഹായ സ്റ്റാഫ് (സ്ഥിരം)",
+    "banglalabel": "সহায়ক স্টাফ (স্থায়ী)",
+    "odialabel": "ସହାୟକ ଷ୍ଟାଫ୍ (ସ୍ଥାୟୀ)",
+    "punjabilabel": "ਸਹਾਇਕ ਸਟਾਫ (ਸਥਾਈ)",
     "subcategories": [
       {
         "label": "Telecaller",
@@ -4605,6 +4615,16 @@
   {
     "label": "Support Staff Contract",
     "value": "support_staff_contract",
+    "hindilabel": "सहायक स्टाफ (अनुबंध)",
+    "marathilabel": "सहाय्यक कर्मचारी (कंत्राटी)",
+    "gujaratilabel": "સહાયક સ્ટાફ (કરાર)",
+    "tamillabel": "உதவி பணியாளர் (ஒப்பந்தம்)",
+    "telugulabel": "సహాయక సిబ్బంది (ఒప్పందం)",
+    "kannadalabel": "ಸಹಾಯಕ ಸಿಬ್ಬಂದಿ (ಒಪ್ಪಂದ)",
+    "malayalamlabel": "സഹായ സ്റ്റാഫ് (കരാർ)",
+    "banglalabel": "সহায়ক স্টাফ (চুক্তি)",
+    "odialabel": "ସହାୟକ ଷ୍ଟାଫ୍ (ଚୁକ୍ତି)",
+    "punjabilabel": "ਸਹਾਇਕ ਸਟਾਫ (ਠੇਕਾ)",
     "subcategories": [
       {
         "label": "Telecaller",

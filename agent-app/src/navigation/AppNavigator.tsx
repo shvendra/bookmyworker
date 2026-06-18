@@ -38,6 +38,7 @@ import { RoleTabsNavigator } from '../../../packages/shared-mobile/src/app/navig
 
 // Inner screens
 import { EditProfileScreen } from '../../../packages/shared-mobile/src/features/profile/screens/EditProfileScreen';
+import { WorkPreferencesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/WorkPreferencesScreen';
 import { CertificatesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/CertificatesScreen';
 import { KycVerificationScreen } from '../../../packages/shared-mobile/src/features/profile/screens/KycVerificationScreen';
 import { NotificationPreferencesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/NotificationPreferencesScreen';
@@ -241,6 +242,7 @@ export const AppNavigator = (): React.JSX.Element => {
               {() => <RoleTabsNavigator role={agentAppRole} />}
             </Stack.Screen>
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="WorkPreferences" component={WorkPreferencesScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JobMarketplace" component={JobMarketplaceScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JobMarketplaceDetail" component={JobMarketplaceDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ animation: 'slide_from_right' }} />

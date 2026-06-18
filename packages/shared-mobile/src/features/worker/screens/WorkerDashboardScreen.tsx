@@ -20,9 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import * as DocumentPicker from 'expo-document-picker';
 import { useAppTheme } from '../../../core/theme';
-import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { useAuth } from '../../../state/auth/AuthContext';
@@ -34,7 +32,6 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { SectionHeader } from '../../../shared/components/ui/SectionHeader';
 import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
-import { QuickActionCard, QuickActionsRow } from '../../../shared/components/ui/QuickActionCard';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import type { WorkCategory } from '../../../shared/components/ui/WorkerCategoryGrid';
 import { getJobTitle, getCategoryLabel, getLocationStr, isWorkerProfileComplete, workerNeedsEducationDoc } from '../../../shared/utils/labelUtils';
@@ -377,12 +374,11 @@ const MiniWageModal = ({ visible, req, onClose, onSubmit, loading }: MiniWageMod
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export const WorkerDashboardScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { state, updateProfile } = useAuth();
+  const { state } = useAuth();
   const { t } = useTranslation();
   const user = state.session?.user;
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const queryClient = useQueryClient();
-  const [uploadingResume, setUploadingResume] = useState(false);
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [wageModalReq, setWageModalReq] = useState<RawRequirement | null>(null);
@@ -391,7 +387,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
   const scrollPaused = useRef(false);
   const liveCountRef = useRef(0);
 
-  const isSelfWorker = (user?.role ?? '').toLowerCase() === 'selfworker';
   const userId = user?.id ?? '';
 
   // ── Queries ──────────────────────────────────────────────────────────────────
@@ -500,34 +495,9 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     void liveReqsQuery.refetch();
   };
 
-  // Show the document-upload banner for every 10th/12th/ITI & Diploma/Graduate
-  // candidate (worker or selfworker), using the current qualification-tier values
-  // — the old hard-coded ['ITI/Diploma','Graduate'] list never matched the live
-  // tier names, so the banner silently never appeared.
-  const showResumeSection = workerNeedsEducationDoc(user);
-
-  const handlePickResume = async (): Promise<void> => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: true,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      setUploadingResume(true);
-      const resumeUrl = await workerApi.uploadResume(asset.uri, asset.name ?? 'resume.pdf');
-      await updateProfile({ resumeUrl });
-      showAlert(t('alertResumeUploadedTitle'), t('alertResumeUploadedMsg'));
-    } catch {
-      showAlert(t('alertUploadFailedTitle'), t('alertUploadFailedMsg'));
-    } finally {
-      setUploadingResume(false);
-    }
-  };
-
-  const handleViewResume = (): void => {
-    if (user?.resumeUrl) navigation.navigate('PdfViewer', { url: user.resumeUrl, title: 'My Resume' });
-  };
+  // Resume upload moved out of the dashboard into the dedicated "Work Preferences"
+  // screen (Profile → Work Preferences). Only the eligible education-document tiers
+  // see the resume option there, via the same workerNeedsEducationDoc() gate.
 
   const handleCategoryPress = (cat: WorkCategory): void => {
     navigation.navigate('JobMarketplace', { workType: cat.value });
@@ -554,42 +524,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
     return Math.round((done / fields.length) * 100);
   }, [user?.fullName, user?.phone, user?.state, user?.district, user?.profileImage, user?.kycStatus, user?.resumeUrl, user?.workerSubType, user?.role]);
 
-  const totalCount = reqsQuery.data?.pagination?.totalCount ?? 0;
-  const myInterestsCount = reqsQuery.data?.myInterestsCount ?? 0;
   const liveReqs = liveReqsQuery.data?.requirements ?? [];
-
-  const statWidgets: StatWidgetProps[] = [
-    {
-      emoji: '📋',
-      label: t('allRequirements'),
-      sub: reqsQuery.isLoading ? null : `${totalCount} ${t('openReqs')}`,
-      gradient: ['#1E3A8A', '#2563EB'] as const,
-      isLoading: reqsQuery.isLoading,
-      onPress: () => navigation.navigate('JobMarketplace'),
-    },
-    {
-      emoji: '❤️',
-      label: t('myInterests'),
-      sub: reqsQuery.isLoading ? null : `${myInterestsCount} ${t('applied')}`,
-      gradient: ['#7C2D12', '#EA580C'] as const,
-      isLoading: reqsQuery.isLoading,
-      onPress: () => navigation.navigate('JobMarketplace', { myInterests: true }),
-    },
-    {
-      emoji: '🔍',
-      label: t('browseJobs'),
-      sub: t('findWorkNearYou'),
-      gradient: ['#064E3B', '#059669'] as const,
-      onPress: () => navigation.navigate('JobMarketplace'),
-    },
-    {
-      emoji: '👤',
-      label: t('myProfile'),
-      sub: t('viewAndEdit'),
-      gradient: ['#4C1D95', '#7C3AED'] as const,
-      onPress: () => navigation.navigate('Profile'),
-    },
-  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -675,56 +610,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
             </Pressable>
           )} */}
 
-          {/* Resume Upload Banner (ITI/Diploma & Graduate only) */}
-          {showResumeSection && (
-            <View style={styles.resumeCard}>
-              <View style={styles.resumeCardTop}>
-                <View style={styles.resumeIconBox}>
-                  <AppText style={styles.resumeEmoji}>📄</AppText>
-                </View>
-                <View style={styles.resumeTextCol}>
-                  <AppText style={styles.resumeTitle}>
-                    {user?.resumeUrl ? t('resumeUploaded') : t('uploadYourResume')}
-                  </AppText>
-                  <AppText style={styles.resumeSub}>
-                    {user?.resumeUrl
-                      ? t('resumeUploadedDesc')
-                      : t('resumeUploadDesc', { subType: user?.workerSubType ?? '' })}
-                  </AppText>
-                </View>
-              </View>
-              <View style={styles.resumeActions}>
-                <TouchableOpacity
-                  style={[styles.resumeBtn, styles.resumeBtnPrimary, uploadingResume && styles.resumeBtnDisabled]}
-                  onPress={() => void handlePickResume()}
-                  disabled={uploadingResume}
-                  activeOpacity={0.8}
-                >
-                  <AppText style={styles.resumeBtnTxtPrimary}>
-                    {uploadingResume ? t('uploading') : user?.resumeUrl ? `🔄 ${t('replaceResume')}` : `⬆️ ${t('uploadResume')}`}
-                  </AppText>
-                </TouchableOpacity>
-                {user?.resumeUrl && (
-                  <TouchableOpacity
-                    style={styles.resumeViewBtn}
-                    onPress={handleViewResume}
-                    activeOpacity={0.8}
-                  >
-                    <AppText style={styles.resumeViewIcon}>👁</AppText>
-                    <AppText style={styles.resumeViewTxt}>{t('viewResume')}</AppText>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-
-          {/* ── 4 Stat Widgets (2×2 grid) ─────────────────────── */}
-          <View style={styles.widgetGrid}>
-            {statWidgets.map((w, i) => (
-              <StatWidget key={i} {...w} />
-            ))}
-          </View>
-
           {/* ── Live Requirements Slider ───────────────────────── */}
           <View style={styles.sliderSection}>
             <View style={styles.sliderHeader}>
@@ -803,35 +688,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
             horizontal
             onCategoryPress={handleCategoryPress}
           />
-
-          {/* Quick Actions */}
-          <SectionHeader title={t('quickActions')} style={styles.sectionGap} />
-          <QuickActionsRow>
-            <QuickActionCard
-              icon="🔍"
-              title={t('browseJobs')}
-              subtitle={t('findNearYou')}
-              color={theme.colors.primary}
-              onPress={() => navigation.navigate('JobMarketplace')}
-            />
-            {isSelfWorker ? (
-              <QuickActionCard
-                icon="❤️"
-                title={t('likedJobs')}
-                subtitle={t('mySavedJobs')}
-                color="#E11D48"
-                onPress={() => navigation.navigate('JobMarketplace', { likedOnly: true })}
-              />
-            ) : (
-              <QuickActionCard
-                icon="📋"
-                title={t('myApplicationsTab')}
-                subtitle={t('browseJobs')}
-                color={theme.colors.success}
-                onPress={() => navigation.navigate('MyApplications')}
-              />
-            )}
-          </QuickActionsRow>
 
           {/* ── Quick links row ───────────────────────────────── */}
           <View style={styles.quickRow}>

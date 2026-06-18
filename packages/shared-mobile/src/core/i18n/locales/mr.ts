@@ -796,15 +796,15 @@ export const translation = {
   ep_newPasswordPlaceholder: 'किमान ६ अक्षरे',
   ep_confirmPassword: 'पासवर्ड पुष्टी करा',
   ep_confirmPasswordPlaceholder: 'नवीन पासवर्ड पुन्हा टाका',
-  ep_galleryBtn: '📷 गॅलरी',
+  ep_galleryBtn: 'गॅलरी',
   ep_verified: 'सत्यापित',
-  ep_cameraBtn: '📸 कॅमेरा',
+  ep_cameraBtn: 'कॅमेरा',
   ep_saveChanges: 'बदल जतन करा',
   ep_profileSaved: 'प्रोफाइल जतन केली',
   ep_profileSavedMsg: 'तुमची प्रोफाइल यशस्वीरित्या अपडेट झाली.',
   ep_updateFailed: 'अपडेट अयशस्वी',
   ep_cameraPermission: 'कॅमेरा परवानगी आवश्यक आहे.',
-  ep_cropTip: '✂️ निवडल्यानंतर फोटो क्रॉप व फिरवता येतो',
+  ep_cropTip: 'निवडल्यानंतर फोटो क्रॉप व फिरवता येतो',
 
   // ── Placement screen ────────────────────────────────────────────────────────
   pl_title: 'माझ्या नियुक्त्या',
@@ -1087,4 +1087,9 @@ export const translation = {
   mwInvalidPrimary: "वैध 10 अंकी प्राथमिक नंबर प्रविष्ट करा.",
   mwInvalidAlternate: "वैध 10 अंकी पर्यायी नंबर प्रविष्ट करा.",
   mwSameNumbers: "प्राथमिक आणि पर्यायी नंबर समान असू शकत नाहीत.",
+  profile_workPreferences: "कामाच्या प्राधान्ये",
+  wpref_title: "कामाच्या प्राधान्ये",
+  wpref_subtitle: "तुमची कामाची कौशल्ये, कामाची क्षेत्रे, अनुभव आणि रेझ्युमे कधीही अपडेट करा.",
+  wpref_experienceLabel: "कामाचा अनुभव (वर्षे)",
+  wpref_save: "बदल जतन करा",
 } as const;

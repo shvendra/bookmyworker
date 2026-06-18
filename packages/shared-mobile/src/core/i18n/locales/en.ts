@@ -806,15 +806,15 @@ export const translation = {
   ep_newPasswordPlaceholder: 'Min 6 characters',
   ep_confirmPassword: 'Confirm New Password',
   ep_confirmPasswordPlaceholder: 'Re-enter new password',
-  ep_galleryBtn: '📷 Gallery',
+  ep_galleryBtn: 'Gallery',
   ep_verified: 'Verified',
-  ep_cameraBtn: '📸 Camera',
+  ep_cameraBtn: 'Camera',
   ep_saveChanges: 'Save Changes',
   ep_profileSaved: 'Profile Saved',
   ep_profileSavedMsg: 'Your profile has been updated successfully.',
   ep_updateFailed: 'Update Failed',
   ep_cameraPermission: 'Camera permission is required.',
-  ep_cropTip: '✂️ After selecting, you can crop & rotate your photo',
+  ep_cropTip: 'After selecting, you can crop & rotate your photo',
 
   // ── Placement screen ────────────────────────────────────────────────────────
   pl_title: 'My Placements',
@@ -1103,4 +1103,10 @@ export const translation = {
   mwInvalidPrimary: "Enter a valid 10-digit primary number.",
   mwInvalidAlternate: "Enter a valid 10-digit alternate number.",
   mwSameNumbers: "Primary and alternate cannot be the same.",
+  // Work Preferences screen (Profile → Work Preferences)
+  profile_workPreferences: "Work Preferences",
+  wpref_title: "Work Preferences",
+  wpref_subtitle: "Update your work skills, work areas, experience and resume anytime.",
+  wpref_experienceLabel: "Work experience (years)",
+  wpref_save: "Save changes",
 } as const;

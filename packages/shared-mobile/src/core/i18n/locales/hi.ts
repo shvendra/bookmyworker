@@ -798,15 +798,15 @@ export const translation = {
   ep_newPasswordPlaceholder: 'कम से कम 6 अक्षर',
   ep_confirmPassword: 'पासवर्ड दोबारा डालें',
   ep_confirmPasswordPlaceholder: 'नया पासवर्ड दोबारा डालें',
-  ep_galleryBtn: '📷 गैलरी',
+  ep_galleryBtn: 'गैलरी',
   ep_verified: 'वेरिफाइड',
-  ep_cameraBtn: '📸 कैमरा',
+  ep_cameraBtn: 'कैमरा',
   ep_saveChanges: 'बदलाव सेव करें',
   ep_profileSaved: 'प्रोफ़ाइल सेव हुई',
   ep_profileSavedMsg: 'आपकी प्रोफ़ाइल अपडेट हो गई।',
   ep_updateFailed: 'अपडेट फेल',
   ep_cameraPermission: 'कैमरा की अनुमति ज़रूरी है।',
-  ep_cropTip: '✂️ चुनने के बाद, आप फ़ोटो को क्रॉप और घुमा सकते हैं',
+  ep_cropTip: 'चुनने के बाद, आप फ़ोटो को क्रॉप और घुमा सकते हैं',
 
   // ── Placement screen ────────────────────────────────────────────────────────
   pl_title: 'मेरी प्लेसमेंट',
@@ -1089,4 +1089,9 @@ export const translation = {
   mwInvalidPrimary: "मान्य 10 अंकों का प्राथमिक नंबर दर्ज करें।",
   mwInvalidAlternate: "मान्य 10 अंकों का वैकल्पिक नंबर दर्ज करें।",
   mwSameNumbers: "प्राथमिक और वैकल्पिक नंबर एक समान नहीं हो सकते।",
+  profile_workPreferences: "कार्य प्राथमिकताएँ",
+  wpref_title: "कार्य प्राथमिकताएँ",
+  wpref_subtitle: "अपने कार्य कौशल, कार्य क्षेत्र, अनुभव और रिज़्यूमे को कभी भी अपडेट करें।",
+  wpref_experienceLabel: "कार्य अनुभव (वर्ष)",
+  wpref_save: "परिवर्तन सहेजें",
 } as const;

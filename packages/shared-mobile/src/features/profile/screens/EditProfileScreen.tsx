@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Ionicons } from '@expo/vector-icons';
 import categoriesData from '../../../shared/data/categories.json';
 import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -397,7 +398,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
               </View>
             )}
             <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.primary }]}>
-              <AppText style={styles.avatarEditIcon}>📷</AppText>
+              <Ionicons name="camera" size={14} color="#fff" />
             </View>
             {photoLoading && (
               <View style={styles.avatarOverlay}>
@@ -407,16 +408,17 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           </TouchableOpacity>
           <View style={styles.photoButtons}>
             <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
-              <AppText style={styles.photoBtnIcon}>🖼️</AppText>
+              <Ionicons name="images-outline" size={17} color="#fff" style={styles.photoBtnIcon} />
               <AppText style={styles.photoBtnTxt} color="#fff">{t('ep_galleryBtn')}</AppText>
             </TouchableOpacity>
             <TouchableOpacity onPress={takePhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-              <AppText style={styles.photoBtnIcon}>📷</AppText>
+              <Ionicons name="camera-outline" size={18} color={theme.colors.text} style={styles.photoBtnIcon} />
               <AppText style={styles.photoBtnTxt} color={theme.colors.text}>{t('ep_cameraBtn')}</AppText>
             </TouchableOpacity>
           </View>
           <View style={styles.cropTipBanner}>
-            <AppText style={styles.cropTipText}>✂️ {t('ep_cropTip')}</AppText>
+            <Ionicons name="crop-outline" size={16} color="#2243BC" />
+            <AppText style={[styles.cropTipText, { flexShrink: 1 }]}>{t('ep_cropTip')}</AppText>
           </View>
         </View>
 
@@ -425,7 +427,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           <AppText style={[styles.mobileLabel, { color: theme.colors.mutedText }]}>{t('ep_mobileNumber')}</AppText>
           <AppText style={[styles.mobileValue, { color: theme.colors.text }]}>+91 {user?.phone}</AppText>
           <View style={styles.verifiedBadge}>
-            <AppText style={styles.verifiedTxt}>🔒 {t('ep_verified', 'Verified')}</AppText>
+            <Ionicons name="shield-checkmark" size={12} color="#137A38" />
+            <AppText style={styles.verifiedTxt}>{t('ep_verified', 'Verified')}</AppText>
           </View>
         </View>
 
@@ -577,7 +580,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                   {t('wpc_subCatQ')}
                 </AppText>
                 <View style={[styles.searchBox, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
-                  <AppText style={{ fontSize: 15 }}>🔍</AppText>
+                  <Ionicons name="search" size={16} color={theme.colors.mutedText} />
                   <TextInput
                     style={[styles.searchInput, { color: theme.colors.text }]}
                     value={subSearch}
@@ -588,7 +591,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                   />
                   {subSearch.length > 0 && (
                     <TouchableOpacity onPress={() => setSubSearch('')}>
-                      <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
+                      <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -630,7 +633,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
             {/* Search box */}
             <View style={[styles.searchBox, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: isDark ? theme.colors.border : '#DDE3F0' }]}>
-              <AppText style={{ fontSize: 15 }}>🔍</AppText>
+              <Ionicons name="search" size={16} color={theme.colors.mutedText} />
               <TextInput
                 style={[styles.searchInput, { color: theme.colors.text }]}
                 value={areaSearch}
@@ -641,7 +644,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
               />
               {areaSearch.length > 0 && (
                 <TouchableOpacity onPress={() => setAreaSearch('')}>
-                  <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
+                  <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
                 </TouchableOpacity>
               )}
             </View>
@@ -668,7 +671,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                         </AppText>
                         <AppText style={{ fontSize: 11.5, color: theme.colors.mutedText }}>{d.state}</AppText>
                       </View>
-                      {selected && <AppText style={{ fontSize: 17, color: theme.colors.primary, fontWeight: '800' }}>✓</AppText>}
+                      {selected && <Ionicons name="checkmark-circle" size={19} color={theme.colors.primary} />}
                     </TouchableOpacity>
                   );
                 })}

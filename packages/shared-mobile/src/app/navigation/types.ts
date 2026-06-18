@@ -45,6 +45,7 @@ export type RootStackParamList = {
   // ── Authenticated: tabs (root) + inner screens ───────────────
   Main: undefined;
   EditProfile: undefined;
+  WorkPreferences: undefined;
   JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean; likedOnly?: boolean } | undefined;
   JobMarketplaceDetail: { requirementId: string };
   JobDetail: { jobId: string };

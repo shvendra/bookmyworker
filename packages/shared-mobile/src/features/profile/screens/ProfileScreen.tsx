@@ -388,6 +388,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               ) : undefined
             }
           />
+          {/* Work Preferences — workers update skills, work areas, experience & resume anytime */}
+          {(user?.role === 'worker' || user?.role === 'selfworker') && (
+            <MenuItem
+              icon="briefcase-outline"
+              label={t('profile_workPreferences')}
+              onPress={() => navigation.navigate('WorkPreferences')}
+            />
+          )}
           {/* Certificates — workers upload skill certs; agents upload labour licence */}
           {(user?.role === 'worker' || user?.role === 'selfworker' || user?.role === 'agent') && (
             <MenuItem

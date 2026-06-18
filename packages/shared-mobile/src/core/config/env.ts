@@ -1,5 +1,7 @@
-const FALLBACK_API_BASE_URL = 'https://bookmyworkers.com';
-const FALLBACK_SOCKET_BASE_URL = 'https://bookmyworkers.com';
+// Canonical production host = www (matches CRM/next-web REACT_APP_API_BASE_URL).
+// The non-www host does not serve the API, so the fallback must include www.
+const FALLBACK_API_BASE_URL = 'https://www.bookmyworkers.com';
+const FALLBACK_SOCKET_BASE_URL = 'https://www.bookmyworkers.com';
 
 export const ENV = {
   API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL ?? FALLBACK_API_BASE_URL,

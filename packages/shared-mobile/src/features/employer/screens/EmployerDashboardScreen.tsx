@@ -2180,7 +2180,7 @@ const styles = StyleSheet.create({
   scroll:   { flex: 1 },
   // Gutter (20) matches the hero header so card edges line up with the greeting;
   // generous top padding lets the first card breathe below the rounded sheet edge.
-  content:  { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 44 },
+  content:  { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 44 },
 
   // ── Free contacts banner ────────────────────────────────────────────────────
   freeBanner:        { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#6EE7B7', borderRadius: 16, padding: 16, marginBottom: 20 },
@@ -2354,7 +2354,7 @@ const pip = StyleSheet.create({
 });
 
 const fh = StyleSheet.create({
-  wrap:          { backgroundColor: '#1037A4', paddingHorizontal: 20, paddingBottom: 40, overflow: 'hidden' },
+  wrap:          { backgroundColor: '#1037A4', paddingHorizontal: 16, paddingBottom: 40, overflow: 'hidden' },
   circle1:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 220, height: 220, top: -80, right: -60 },
   circle2:       { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', width: 140, height: 140, bottom: -45, left: -30 },
   // Brand bar: logo + actions + avatar

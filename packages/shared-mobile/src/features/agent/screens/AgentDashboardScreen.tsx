@@ -46,7 +46,9 @@ import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlid
 import i18n from '../../../core/i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const CARD_W = SCREEN_W - 40;
+// Full content width = screen minus the body's horizontal padding (12 each side),
+// so each slider card fills the viewport for clean one-at-a-time paging.
+const CARD_W = SCREEN_W - 24;
 
 // ── Work type visual config ───────────────────────────────────────────────────
 interface WorkVisual { emoji: string; color: string; bg: string; accent: string }
@@ -576,64 +578,10 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   // silently rendering zeros / an empty job list on the agent's home screen.
   const hasLoadError = reqsQuery.isError || liveReqsQuery.isError || (isAgent && statsQuery.isError);
 
-  const totalCount = reqsQuery.data?.pagination?.totalCount ?? 0;
-  const myInterestsCount = reqsQuery.data?.myInterestsCount ?? 0;
   const liveReqs = liveReqsQuery.data?.requirements ?? [];
 
   const kycPending = user?.kycStatus === 'pending' || user?.kycStatus === 'rejected';
   const greetKey = getGreetKey();
-
-  const statWidgets: StatWidgetProps[] = [
-    {
-      emoji: 'list',
-      label: t('allRequirements'),
-      sub: reqsQuery.isLoading ? null : `${totalCount} ${t('openReqs')}`,
-      gradient: ['#1E3A8A', '#2563EB'] as const,
-      isLoading: reqsQuery.isLoading,
-      onPress: () => navigation.navigate('JobMarketplace'),
-    },
-    {
-      emoji: 'heart',
-      label: t('myInterests'),
-      sub: reqsQuery.isLoading ? null : `${myInterestsCount} ${t('applied')}`,
-      gradient: ['#7C2D12', '#EA580C'] as const,
-      isLoading: reqsQuery.isLoading,
-      onPress: () => navigation.navigate('JobMarketplace', { myInterests: true }),
-    },
-    ...(isAgent ? [
-      {
-        emoji: 'people',
-        label: t('myWorkers'),
-        sub: statsQuery.isLoading ? null : `${statsQuery.data?.totalLeads ?? 0} ${t('registered')}`,
-        gradient: ['#065F46', '#059669'] as const,
-        isLoading: statsQuery.isLoading,
-        onPress: () => navigation.navigate('AgentWorkers'),
-      } as StatWidgetProps,
-      {
-        emoji: 'checkmark-circle',
-        label: t('verifiedWorkers'),
-        sub: statsQuery.isLoading ? null : `${statsQuery.data?.verifiedLeads ?? 0} ${t('verifiedLower')}`,
-        gradient: ['#1E3A8A', '#2563EB'] as const,
-        isLoading: statsQuery.isLoading,
-        onPress: () => navigation.navigate('AgentWorkers'),
-      } as StatWidgetProps,
-    ] : [
-      {
-        emoji: 'add-circle',
-        label: t('registerWorker'),
-        sub: t('findWorkNearYou'),
-        gradient: ['#064E3B', '#059669'] as const,
-        onPress: () => navigation.navigate('AddWorker'),
-      } as StatWidgetProps,
-      {
-        emoji: 'search',
-        label: t('browseJobs'),
-        sub: t('findWorkNearYou'),
-        gradient: ['#1E3A8A', '#2563EB'] as const,
-        onPress: () => navigation.navigate('JobMarketplace'),
-      } as StatWidgetProps,
-    ]),
-  ];
 
   // ── Profile completeness fields (agent) — agent-specific info ──
   // Email & work-areas are intentionally excluded: the agent app does not
@@ -774,13 +722,6 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
           {/* ── Profile Strength card moved to the Profile tab (below the
                 profile photo). The avatar % badge in the header still reflects
                 completeness. ── */}
-
-          {/* ── 4 Stat Widgets (2×2 grid) ─────────────────────── */}
-          <View style={styles.widgetGrid}>
-            {statWidgets.map((w, i) => (
-              <StatWidget key={i} {...w} />
-            ))}
-          </View>
 
           {/* ── Live Requirements Slider ───────────────────────── */}
           <View style={styles.sliderSection}>
@@ -966,7 +907,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 40 },
   // Gutter (20) matches the GradientHeader so content lines up with the greeting;
   // larger top padding gives the first card room to breathe below the header.
-  body: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 },
+  body: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 20 },
 
   // ── Alerts ──────────────────────────────────────────────────────────────────
   alertBanner: {
@@ -978,7 +919,7 @@ const styles = StyleSheet.create({
   verifyBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#1E3A8A', borderRadius: 14,
-    padding: 14, marginBottom: 16, gap: 10,
+    padding: 14, marginBottom: 4, gap: 10,
   },
   verifyBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   verifyBannerIcon: { fontSize: 20, lineHeight: 24 },
@@ -998,7 +939,7 @@ const styles = StyleSheet.create({
   statSubSkeleton: { width: '60%', height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 2 },
 
   // ── Requirements slider ─────────────────────────────────────────────────────
-  sliderSection: { marginTop: 14, marginBottom: 18 },
+  sliderSection: { marginTop: 8, marginBottom: 10 },
   sliderHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 12, paddingHorizontal: 0,
@@ -1013,7 +954,7 @@ const styles = StyleSheet.create({
   viewAllBtnText: { fontSize: 12, fontWeight: '700', color: '#1037A4' },
   viewAllBtnArrow: { fontSize: 14, fontWeight: '800', color: '#1037A4' },
 
-  sliderContent: { paddingHorizontal: 0, paddingBottom: 4, gap: 12, flexDirection: 'row', alignItems: 'stretch' },
+  sliderContent: { paddingHorizontal: 0, paddingBottom: 4, gap: 12, flexDirection: 'row', alignItems: 'flex-start' },
 
   // Skeleton
   sliderSkeleton: { flexDirection: 'row', gap: 12 },
@@ -1122,7 +1063,7 @@ const sliderCard = StyleSheet.create({
   perkTxt: { fontSize: 12, fontWeight: '700', lineHeight: 16 },
 
   // Apply button
-  applyWrap: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 14, borderTopWidth: StyleSheet.hairlineWidth },
+  applyWrap: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, borderTopWidth: StyleSheet.hairlineWidth },
   applyBtn: {
     borderRadius: 14, paddingVertical: 13, alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.16, shadowRadius: 6, elevation: 4,
