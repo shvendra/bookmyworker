@@ -391,17 +391,23 @@ const PickerModal = ({
   onClose,
   allLabel = 'All',
   labelFor,
+  multiple = false,
 }: {
   visible: boolean;
   title: string;
   options: string[];
+  /** Single mode: the selected value. Multiple mode: a comma-joined string. */
   selected: string;
+  /** Single mode: sets the value + closes. Multiple mode: toggles the value
+   *  (called with '' for the "All" option, which clears). */
   onSelect: (v: string) => void;
   onClose: () => void;
   allLabel?: string;
   /** Optional display translator — maps an option's stored value → shown text.
    *  Selection still operates on the original `options` value. */
   labelFor?: (value: string) => string;
+  /** Multi-select: tap toggles each option (sheet stays open); tap outside / "All" closes. */
+  multiple?: boolean;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -423,6 +429,8 @@ const PickerModal = ({
   }, [visible]);
 
   const display = (o: string): string => (labelFor ? labelFor(o) : o);
+  // Multi-select: the currently-selected values (parsed from the comma-joined string).
+  const selectedList = multiple ? selected.split(',').map((s) => s.trim()).filter(Boolean) : [];
   // Match against both the displayed label (e.g. Hindi) AND the raw stored value
   // (English) so users can search in either script — e.g. "Madhya Pradesh" or
   // "मध्य प्रदेश", "Construction" or "निर्माण".
@@ -480,10 +488,19 @@ const PickerModal = ({
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => {
               const val = item === allLabel ? '' : item;
-              const active = selected === val;
+              const active = multiple
+                ? (val === '' ? selectedList.length === 0 : selectedList.includes(val))
+                : selected === val;
               return (
                 <TouchableOpacity
-                  onPress={() => { onSelect(val); setQ(''); onClose(); }}
+                  onPress={() => {
+                    if (multiple) {
+                      onSelect(val);                       // parent toggles ('' clears)
+                      if (val === '') { setQ(''); onClose(); } // "All" → clear + close; otherwise stay open
+                    } else {
+                      onSelect(val); setQ(''); onClose();
+                    }
+                  }}
                   activeOpacity={0.8}
                   style={[pm.oopt, { borderColor: active ? BRAND : theme.colors.border, backgroundColor: active ? BRAND + '0F' : theme.colors.card }]}
                 >
@@ -637,6 +654,29 @@ const FilterSheet = ({
     });
   };
 
+  // Multi-select fields (district, subCategory) are stored as comma-joined strings
+  // (the backend parses them). Toggle one value in/out; '' (the "All" option) clears.
+  const toggleMulti = <K extends keyof WorkerFilters>(k: K) => (val: string): void => {
+    if (val === '') { set(k, '' as WorkerFilters[K]); return; }
+    setF((prev) => {
+      const cur = String(prev[k] ?? '');
+      const list = cur ? cur.split(',').map((s) => s.trim()).filter(Boolean) : [];
+      const nextList = list.includes(val) ? list.filter((x) => x !== val) : [...list, val];
+      const next = { ...prev, [k]: nextList.join(',') } as WorkerFilters;
+      if (k === 'district') { next.tehsil = ''; }
+      return next;
+    });
+  };
+  // "District A +2" summary for a comma-joined multi value.
+  const multiSummary = (csv: string, labelFor: (v: string) => string): string => {
+    const list = csv ? csv.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    if (list.length === 0) return '';
+    if (list.length === 1) return labelFor(list[0]);
+    return `${labelFor(list[0])} +${list.length - 1}`;
+  };
+  // Tehsil/Block only applies when exactly ONE district is selected.
+  const oneDistrict = !!f.district && !f.district.includes(',');
+
   const stateList    = useMemo(() => Object.keys(indianStates).sort(), []);
   const districtList = useMemo(
     () => (f.state ? Object.keys(indianStates[f.state] ?? {}).sort() : []),
@@ -644,7 +684,7 @@ const FilterSheet = ({
   );
   const tehsilList = useMemo(
     () =>
-      f.state && f.district
+      f.state && f.district && !f.district.includes(',')
         ? (indianStates[f.state]?.[f.district] ?? []).sort()
         : [],
     [f.state, f.district],
@@ -742,7 +782,7 @@ const FilterSheet = ({
             />
             <DropField
               label={t('ws_district')}
-              value={f.district ? getLocationDisplayName(f.district, 'district', i18n.language) : ''}
+              value={multiSummary(f.district, (n) => getLocationDisplayName(n, 'district', i18n.language))}
               placeholder={f.state ? t('ws_select_district') : t('ws_select_state_first')}
               onPress={() => {
                 if (lockDistrict) { handleLockedAttempt(); return; }
@@ -751,13 +791,13 @@ const FilterSheet = ({
               disabled={!f.state}
               locked={lockDistrict}
             />
-            {(districtList.length > 0 || f.tehsil) && (
+            {(oneDistrict || f.tehsil) && (
               <DropField
                 label={t('ws_tehsil_block')}
                 value={f.tehsil ? getLocationDisplayName(f.tehsil, 'block', i18n.language) : ''}
-                placeholder={f.district ? t('ws_select_tehsil') : t('ws_select_district_first')}
-                onPress={() => f.district && setPicker('tehsil')}
-                disabled={!f.district}
+                placeholder={oneDistrict ? t('ws_select_tehsil') : t('ws_select_district_first')}
+                onPress={() => oneDistrict && setPicker('tehsil')}
+                disabled={!oneDistrict}
               />
             )}
           </View>
@@ -781,7 +821,7 @@ const FilterSheet = ({
             {f.workerType && subCatValues.length > 0 && (
               <DropField
                 label={t('ws_sub_category')}
-                value={f.subCategory ? subcatDisplay(f.subCategory) : ''}
+                value={multiSummary(f.subCategory, subcatDisplay)}
                 placeholder={t('ws_all_sub_categories')}
                 onPress={() => setPicker('subcat')}
               />
@@ -1004,10 +1044,11 @@ const FilterSheet = ({
           title={t('ws_sub_category')}
           options={subCatValues}
           selected={f.subCategory}
-          onSelect={(v) => set('subCategory', v)}
+          onSelect={toggleMulti('subCategory')}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_sub_categories_opt')}
           labelFor={subcatDisplay}
+          multiple
         />
         <PickerModal
           visible={picker === 'state'}
@@ -1024,10 +1065,11 @@ const FilterSheet = ({
           title={t('ws_district_city')}
           options={districtList}
           selected={f.district}
-          onSelect={(v) => set('district', v)}
+          onSelect={toggleMulti('district')}
           onClose={() => setPicker(null)}
           allLabel={t('ws_all_districts_opt')}
           labelFor={(name) => getLocationDisplayName(name, 'district', i18n.language)}
+          multiple
         />
         <PickerModal
           visible={picker === 'tehsil'}
