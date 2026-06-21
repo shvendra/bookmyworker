@@ -10,6 +10,8 @@ export interface UserProfile {
   phone: string;
   role: AppRole;
   kycStatus: KycStatus;
+  // Reason an admin gave when rejecting KYC (only meaningful when kycStatus === 'rejected').
+  kycRejectionReason?: string;
   language: AppLanguage;
   email?: string;
   profileImage?: string;

@@ -81,6 +81,7 @@ export type RootStackParamList = {
   } | undefined;
   AddWorker: undefined;
   AgentWorkers: undefined;
+  WorkerKycReupload: { workerId: string; workerName?: string; reason?: string };
   WorkerSearch: { workType?: string } | undefined;
   KycVerification: undefined;
   NotificationPreferences: undefined;

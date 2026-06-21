@@ -325,11 +325,25 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           <View style={styles.verifiedBadge}>
             <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
           </View>
+        ) : user?.kycStatus === 'rejected' ? (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('KycVerification')}
+            activeOpacity={0.85}
+            style={styles.rejectedPill}
+          >
+            <Ionicons name="alert-circle" size={13} color="#fff" />
+            <AppText style={styles.rejectedPillTxt}>{t('kyc_statusRejectedShort')}</AppText>
+          </TouchableOpacity>
         ) : (
           <View style={styles.pendingPill}>
             <View style={styles.pendingPillDot} />
             <AppText style={styles.pendingPillTxt}>{t('profile_pendingVerification')}</AppText>
           </View>
+        )}
+        {user?.kycStatus === 'rejected' && !!user?.kycRejectionReason && (
+          <AppText style={styles.rejectedReasonTxt} numberOfLines={3}>
+            {user.kycRejectionReason}
+          </AppText>
         )}
         {/* Edit Public Profile button */}
         <TouchableOpacity
@@ -972,6 +986,27 @@ const styles = StyleSheet.create({
   },
   pendingPillDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#F59E0B' },
   pendingPillTxt: { fontSize: 10.5, fontWeight: '800', color: '#FBBF24', letterSpacing: 0.6 },
+  rejectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(239,68,68,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.7)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  rejectedPillTxt: { fontSize: 10.5, fontWeight: '800', color: '#FECACA', letterSpacing: 0.6 },
+  rejectedReasonTxt: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: 'rgba(255,255,255,0.92)',
+    textAlign: 'center',
+    marginTop: 6,
+    maxWidth: 280,
+  },
   profileName: {
     fontSize: 20,
     fontWeight: '800',

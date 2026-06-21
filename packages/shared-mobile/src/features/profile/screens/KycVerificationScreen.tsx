@@ -149,10 +149,15 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   const toast = useToast();
   const navigation = useNavigation();
   const user = state.session?.user;
-  const kycStatus: KycStatus = (user?.kycStatus ?? 'pending') as KycStatus;
-  const isVerified = kycStatus === 'verified';
 
   const [profileLoaded, setProfileLoaded] = useState(false);
+  // The freshest status/reason comes from the getuser fetch below; until that
+  // resolves we fall back to the (possibly stale) session values.
+  const [liveStatus, setLiveStatus] = useState<KycStatus | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>(user?.kycRejectionReason ?? '');
+
+  const kycStatus: KycStatus = (liveStatus ?? user?.kycStatus ?? 'pending') as KycStatus;
+  const isVerified = kycStatus === 'verified';
 
   // Government ID photos (front & back)
   const [front, setFront] = useState<DocState | null>(null);
@@ -168,14 +173,26 @@ export const KycVerificationScreen = (): React.JSX.Element => {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [success,    setSuccess]    = useState(false);
+  // Explicit, recorded consent to provide a government ID for KYC.
+  const [consent,    setConsent]    = useState(false);
 
   // Load existing KYC data from profile
   useEffect(() => {
     const load = async (): Promise<void> => {
       try {
         const res = await apiClient.get<{
-          user?: { kyc?: { aadharFront?: string; aadharBack?: string; gstNumber?: string; firmName?: string; firmAddress?: string } };
+          user?: { status?: string; kycRejectionReason?: string; kyc?: { aadharFront?: string; aadharBack?: string; gstNumber?: string; firmName?: string; firmAddress?: string; consent?: boolean } };
         }>('/api/v1/user/getuser');
+        if (res.data?.user?.kyc?.consent) setConsent(true);
+        const backendStatus = res.data?.user?.status;
+        if (backendStatus) {
+          setLiveStatus(
+            backendStatus === 'Verified' ? 'verified'
+            : (backendStatus === 'Block' || backendStatus === 'Rejected') ? 'rejected'
+            : 'pending',
+          );
+        }
+        setRejectionReason(res.data?.user?.kycRejectionReason ?? '');
         const kyc = res.data?.user?.kyc;
         if (kyc?.aadharFront || kyc?.aadharBack) {
           const frontUrl = buildPhotoUrl(kyc.aadharFront);
@@ -195,6 +212,10 @@ export const KycVerificationScreen = (): React.JSX.Element => {
 
   const handleSubmit = async (): Promise<void> => {
     setError(null);
+    if (!consent) {
+      toast.warning(t('kyc_consentRequired'), t('kyc_docsRequired'));
+      return;
+    }
     setSubmitting(true);
     try {
       // Industry + has GST → submit GST/firm details instead of a government ID
@@ -207,6 +228,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
           gstNumber: gstNumber.trim(),
           firmName: firmName.trim(),
           firmAddress: firmAddress.trim(),
+          kycConsent: 'true',
         });
         setSuccess(true);
         toast.success(t('kyc_docsSubmittedMsg'), t('kyc_docsSubmitted'));
@@ -219,6 +241,7 @@ export const KycVerificationScreen = (): React.JSX.Element => {
       const formData = new FormData();
       formData.append('aadharFront', { uri: front.uri, name: front.name, type: front.type } as unknown as Blob);
       formData.append('aadharBack',  { uri: back.uri,  name: back.name,  type: back.type  } as unknown as Blob);
+      formData.append('kycConsent', 'true');
       await apiClient.put('/api/v1/user/update', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -264,6 +287,12 @@ export const KycVerificationScreen = (): React.JSX.Element => {
             ? t('kyc_statusRejected')
             : t('kyc_statusPending')}
         </AppText>
+        {kycStatus === 'rejected' && !!rejectionReason && (
+          <View style={scr.reasonBox}>
+            <AppText style={scr.reasonLabel}>{t('kyc_rejectionReasonLabel')}</AppText>
+            <AppText style={scr.reasonText}>{rejectionReason}</AppText>
+          </View>
+        )}
       </View>
 
       {/* ── KYC form (hidden if verified) ───────────────────────────── */}
@@ -357,14 +386,25 @@ export const KycVerificationScreen = (): React.JSX.Element => {
             </View>
           )}
 
+          {/* ── Consent (required) ────────────────────────────────────── */}
+          <Pressable
+            onPress={() => setConsent((c) => !c)}
+            style={({ pressed }) => [scr.consentRow, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View style={[scr.consentBox, { borderColor: consent ? C.blue : '#C7D0E2', backgroundColor: consent ? C.blue : 'transparent' }]}>
+              {consent && <AppText style={scr.consentTick}>✓</AppText>}
+            </View>
+            <AppText style={[scr.consentTxt, { color: theme.colors.mutedText }]}>{t('kyc_consentLabel')}</AppText>
+          </Pressable>
+
           {/* ── Submit ────────────────────────────────────────────────── */}
           <TouchableOpacity
             onPress={() => void handleSubmit()}
-            disabled={submitting || !profileLoaded || (isIndustry && hasGst === null)}
+            disabled={submitting || !profileLoaded || !consent || (isIndustry && hasGst === null)}
             activeOpacity={0.85}
             style={[scr.submitBtn, {
               backgroundColor: submitting ? C.slate : C.navy,
-              opacity: (!profileLoaded || (isIndustry && hasGst === null)) ? 0.5 : 1,
+              opacity: (!profileLoaded || !consent || (isIndustry && hasGst === null)) ? 0.5 : 1,
             }]}
           >
             {submitting ? (
@@ -406,6 +446,9 @@ const scr = StyleSheet.create({
   statusRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   statusLabel:  { fontSize: 13, fontWeight: '700', color: '#0f172a' },
   statusMsg:    { fontSize: 12, lineHeight: 18 },
+  reasonBox:    { marginTop: 10, padding: 10, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#fca5a5' },
+  reasonLabel:  { fontSize: 11, fontWeight: '800', color: '#b91c1c', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 },
+  reasonText:   { fontSize: 13, lineHeight: 19, color: '#7f1d1d' },
 
   card:       { marginBottom: 0 },
   fieldHint:  { fontSize: 12, lineHeight: 18, marginBottom: 14 },
@@ -424,6 +467,11 @@ const scr = StyleSheet.create({
 
   feedbackBox:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
   feedbackText: { flex: 1, fontSize: 13, lineHeight: 18 },
+
+  consentRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 4, paddingHorizontal: 2 },
+  consentBox:  { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  consentTick: { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  consentTxt:  { flex: 1, fontSize: 12, lineHeight: 18 },
 
   submitBtn:  { borderRadius: 16, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
   submitTxt:  { color: '#ffffff', fontSize: 15, fontWeight: '800' },

@@ -41,6 +41,7 @@ import { EditProfileScreen } from '../../../packages/shared-mobile/src/features/
 import { WorkPreferencesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/WorkPreferencesScreen';
 import { CertificatesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/CertificatesScreen';
 import { KycVerificationScreen } from '../../../packages/shared-mobile/src/features/profile/screens/KycVerificationScreen';
+import { WorkerKycReuploadScreen } from '../../../packages/shared-mobile/src/features/agent/screens/WorkerKycReuploadScreen';
 import { NotificationPreferencesScreen } from '../../../packages/shared-mobile/src/features/profile/screens/NotificationPreferencesScreen';
 import { NotificationsScreen } from '../../../packages/shared-mobile/src/features/profile/screens/NotificationsScreen';
 import { MyActivityScreen } from '../../../packages/shared-mobile/src/features/profile/screens/MyActivityScreen';
@@ -134,6 +135,18 @@ export const AppNavigator = (): React.JSX.Element => {
         navigationRef.navigate('Invitations', undefined);
       } else if (type === 'chat' && data?.roomId) {
         navigationRef.navigate('ChatRoom', { roomId: data.roomId as string, roomName: (data.roomName as string) ?? 'Chat' });
+      } else if (type === 'kyc') {
+        // KYC update: a worker-scoped notice (data.workerId) deep-links to that
+        // worker's re-upload screen; otherwise it's the agent's own KYC.
+        if (data?.status === 'Rejected' && data?.workerId) {
+          navigationRef.navigate('WorkerKycReupload', {
+            workerId: data.workerId as string,
+            workerName: data.workerName as string | undefined,
+            reason: data.reason as string | undefined,
+          });
+        } else {
+          navigationRef.navigate('KycVerification', undefined);
+        }
       } else {
         navigationRef.navigate('Notifications', undefined);
       }

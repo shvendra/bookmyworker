@@ -8,7 +8,9 @@ export interface WorkerItem {
   alternate?: string;
   district?: string;
   state?: string;
-  status: 'Verified' | 'Unverified' | 'Block';
+  status: 'Verified' | 'Unverified' | 'Block' | 'Rejected';
+  // Reason an admin gave when rejecting this worker's KYC (status === 'Rejected').
+  kycRejectionReason?: string;
   areasOfWork?: string[];
   profilePhoto?: string;
   createdAt: string;
@@ -50,6 +52,14 @@ export const agentApi = {
   // alternate numbers (the backend guards primary-number uniqueness).
   updateWorker: (workerId: string, data: { phone?: string; alternate?: string }) =>
     apiClient.put(`/api/v1/job/update/${workerId}`, data).then((r) => r.data),
+
+  // Re-upload an agent-owned worker's Aadhaar documents (e.g. after a KYC
+  // rejection). Sending new docs resets a rejected worker back to "Unverified"
+  // and clears the rejection reason on the backend.
+  reuploadWorkerKyc: (workerId: string, formData: FormData) =>
+    apiClient.put(`/api/v1/job/update/${workerId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data),
 
   getMyWorkers: (params?: { page?: number; limit?: number }) =>
     apiClient

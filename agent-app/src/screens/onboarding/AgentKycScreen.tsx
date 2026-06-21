@@ -73,6 +73,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [idFront, setIdFront] = useState<DocState | null>(null);
+  const [consent, setConsent] = useState(false);
 
   const kycStatus = state.session?.user.kycStatus ?? 'pending';
 
@@ -96,6 +97,10 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
       setErrorMessage(t('kycUploadIdError'));
       return;
     }
+    if (!consent) {
+      setErrorMessage(t('kyc_consentRequired'));
+      return;
+    }
     setErrorMessage(null);
     setIsSubmitting(true);
     try {
@@ -109,6 +114,7 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
       try {
         const formData = new FormData();
         formData.append('aadharFront', { uri: idFront.uri, name: idFront.name, type: idFront.type } as unknown as Blob);
+        formData.append('kycConsent', 'true');
         const token = await getAccessToken();
         await fetch(`${ENV.API_BASE_URL}/api/v1/user/update`, {
           method: 'PUT',
@@ -212,12 +218,20 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
           </View>
         ) : null}
 
+        {/* Consent (required) */}
+        <Pressable onPress={() => setConsent((c) => !c)} style={s.consentRow}>
+          <View style={[s.consentBox, { borderColor: consent ? BRAND : BORDER, backgroundColor: consent ? BRAND : 'transparent' }]}>
+            {consent ? <AppText style={s.consentTick}>✓</AppText> : null}
+          </View>
+          <AppText style={[s.consentTxt, { color: SLATE }]}>{t('kyc_consentLabel')}</AppText>
+        </Pressable>
+
         {/* CTA */}
         <TouchableOpacity
           onPress={onSubmit}
-          disabled={isSubmitting || !idFront}
+          disabled={isSubmitting || !idFront || !consent}
           activeOpacity={0.85}
-          style={[s.submitBtn, { backgroundColor: isSubmitting || !idFront ? SLATE : BRAND }]}
+          style={[s.submitBtn, { backgroundColor: isSubmitting || !idFront || !consent ? SLATE : BRAND }]}
         >
           {isSubmitting ? (
             <ActivityIndicator color={WHITE} size="small" />
@@ -278,6 +292,11 @@ const s = StyleSheet.create({
 
   errorBox:  { borderRadius: 10, borderWidth: 1, padding: 12 },
   errorText: { fontSize: 13 },
+
+  consentRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingHorizontal: 4 },
+  consentBox:  { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  consentTick: { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  consentTxt:  { flex: 1, fontSize: 12, lineHeight: 18 },
 
   submitBtn: { borderRadius: 16, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
   submitTxt: { color: WHITE, fontSize: 16, fontWeight: '800', letterSpacing: 0.1 },

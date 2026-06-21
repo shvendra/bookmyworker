@@ -37,11 +37,13 @@ const fmtDate = (iso: string): string => {
 const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation<Nav>();
   const isVerified = worker.status === 'Verified';
+  const isRejected = worker.status === 'Rejected';
   const skills = worker.areasOfWork?.slice(0, 2).map(s => s.replace(/_/g, ' ')).join(', ');
 
   return (
-    <AppCard style={[styles.card, { borderColor: theme.colors.border }]}>
+    <AppCard style={[styles.card, { borderColor: isRejected ? '#fca5a5' : theme.colors.border }]}>
       <View style={styles.cardRow}>
         <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
           <AppText style={[styles.avatarText, { color: theme.colors.primary }]}>
@@ -54,8 +56,8 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
               {worker.name}
             </AppText>
             <Badge
-              label={isVerified ? t('verified') : t('statusPending')}
-              variant={isVerified ? 'success' : 'warning'}
+              label={isVerified ? t('verified') : isRejected ? t('kyc_statusRejectedShort') : t('statusPending')}
+              variant={isVerified ? 'success' : isRejected ? 'danger' : 'warning'}
             />
           </View>
           <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardMeta}>
@@ -76,6 +78,26 @@ const WorkerCard = ({ worker }: { worker: WorkerItem }): React.JSX.Element => {
           </AppText>
         </View>
       </View>
+
+      {isRejected && (
+        <View style={styles.rejectedFooter}>
+          {!!worker.kycRejectionReason && (
+            <View style={styles.reasonBox}>
+              <AppText style={styles.reasonLabel}>{t('kyc_rejectionReasonLabel')}</AppText>
+              <AppText style={styles.reasonText}>{worker.kycRejectionReason}</AppText>
+            </View>
+          )}
+          <AppButton
+            title={t('kyc_reupload_cta')}
+            onPress={() => navigation.navigate('WorkerKycReupload', {
+              workerId: worker._id,
+              workerName: worker.name,
+              reason: worker.kycRejectionReason,
+            })}
+            size="sm"
+          />
+        </View>
+      )}
     </AppCard>
   );
 };
@@ -216,4 +238,8 @@ const styles = StyleSheet.create({
   workerName: { flex: 1 },
   cardMeta: { marginTop: 2 },
   cardDate: { marginTop: 4 },
+  rejectedFooter: { marginTop: 12, gap: 10 },
+  reasonBox: { padding: 10, borderRadius: 12, backgroundColor: '#fff1f2', borderWidth: 1, borderColor: '#fca5a5' },
+  reasonLabel: { fontSize: 11, fontWeight: '800', color: '#b91c1c', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 },
+  reasonText: { fontSize: 13, lineHeight: 19, color: '#7f1d1d' },
 });

@@ -25,6 +25,7 @@ interface BackendUser {
   phone: string;
   role: string;
   status: string;
+  kycRejectionReason?: string;
   email?: string;
   state?: string;
   district?: string;
@@ -72,7 +73,8 @@ function mapBackendUser(u: BackendUser): UserProfile {
     fullName: u.name,
     phone: u.phone,
     role: mapRole(u.role),
-    kycStatus: u.status === 'Verified' ? 'verified' : u.status === 'Block' ? 'rejected' : 'pending',
+    kycStatus: u.status === 'Verified' ? 'verified' : (u.status === 'Block' || u.status === 'Rejected') ? 'rejected' : 'pending',
+    kycRejectionReason: u.kycRejectionReason || undefined,
     language: (u.language as AppLanguage | undefined) ?? undefined,
     email: u.email,
     state: u.state,

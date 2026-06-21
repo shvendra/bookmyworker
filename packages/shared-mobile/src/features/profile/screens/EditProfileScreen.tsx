@@ -60,6 +60,13 @@ Object.entries(indianStates).forEach(([stateName, districts]) => {
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 
+// Selection caps for work preferences — a worker may pick at most
+// MAX_CATEGORIES work categories and MAX_SUBCATEGORIES skills (sub-categories).
+// Mirrors the limit pattern used in WorkerProfileCompletionScreen so the
+// warning toasts reuse the already-translated wpc_* keys (all 11 languages).
+const MAX_CATEGORIES = 2;
+const MAX_SUBCATEGORIES = 7;
+
 // WORKER_SUB_TYPES is imported from the shared WORKER_QUALIFICATION_TIERS source of
 // truth (localized via labelKey in all 11 languages) so it stays in sync with the
 // registration + onboarding flows.
@@ -259,6 +266,11 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   }, [allAvailableSubs, subSearch]);
 
   const toggleCat = useCallback((val: string) => {
+    // Cap additions at MAX_CATEGORIES; removing an already-selected one is always fine.
+    if (!selectedCats.includes(val) && selectedCats.length >= MAX_CATEGORIES) {
+      toast.warning(t('wpc_workCatLimit', { count: MAX_CATEGORIES }), t('wpc_limitTitle'));
+      return;
+    }
     setSelectedCats((prev) => {
       const next = prev.includes(val) ? prev.filter((c) => c !== val) : [...prev, val];
       // Drop any selected sub-categories that belong to a now-deselected category
@@ -271,10 +283,15 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       }
       return next;
     });
-  }, []);
+  }, [selectedCats, toast, t]);
   const toggleSub = useCallback((val: string) => {
+    // Cap additions at MAX_SUBCATEGORIES; removing an already-selected one is always fine.
+    if (!selectedSubs.includes(val) && selectedSubs.length >= MAX_SUBCATEGORIES) {
+      toast.warning(t('wpc_subCatLimit', { count: MAX_SUBCATEGORIES }), t('wpc_limitTitle'));
+      return;
+    }
     setSelectedSubs((prev) => (prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]));
-  }, []);
+  }, [selectedSubs, toast, t]);
 
   const pickPhoto = async (): Promise<void> => {
     setPhotoLoading(true);
@@ -548,7 +565,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
             {/* Work categories */}
             <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 14 }]}>
-              {t('wpc_workCatQ')}
+              {t('wpc_workCatQ')} — {selectedCats.length}/{MAX_CATEGORIES} {t('wpc_selected', 'Selected')}
             </AppText>
             <View style={styles.genderRow}>
               {ALL_CATS.map((cat) => {
@@ -620,7 +637,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                 </View>
                 {selectedSubs.length > 0 && (
                   <AppText style={[styles.fieldLabel, { color: theme.colors.mutedText, marginTop: 10 }]}>
-                    {t('wpc_subCatSelected', 'Selected skills')} ({selectedSubs.length})
+                    {t('wpc_subCatSelected', 'Selected skills')} ({selectedSubs.length}/{MAX_SUBCATEGORIES})
                   </AppText>
                 )}
               </>

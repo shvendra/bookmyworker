@@ -109,7 +109,7 @@ function mapAgentToWorkerProfile(u: RawAgent): WorkerProfile {
     rating: u.rating ?? 0,
     verified: u.status === 'Verified',
     profileImage: u.profilePhoto,
-    kycStatus: u.status === 'Verified' ? 'verified' : u.status === 'Block' ? 'rejected' : 'pending',
+    kycStatus: u.status === 'Verified' ? 'verified' : (u.status === 'Block' || u.status === 'Rejected') ? 'rejected' : 'pending',
     available: u.status !== 'Block',
     dailyRate: u.fixedSalary ?? u.salaryFrom,
     skills: u.areasOfWork,

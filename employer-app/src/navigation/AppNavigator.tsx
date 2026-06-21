@@ -117,6 +117,8 @@ export const AppNavigator = (): React.JSX.Element => {
         });
       } else if (type === 'requirement' && data?.requirementId) {
         navigationRef.navigate('RequirementDetail', { requirementId: data.requirementId as string });
+      } else if (type === 'kyc') {
+        navigationRef.navigate('KycVerification', undefined);
       } else {
         navigationRef.navigate('Notifications', undefined);
       }
