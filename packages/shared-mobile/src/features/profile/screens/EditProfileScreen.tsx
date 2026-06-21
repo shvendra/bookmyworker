@@ -29,6 +29,7 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useAppTheme } from '../../../core/theme';
+import { requestReviewOnce } from '../../../core/review/storeReview';
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { ageString } from '../../../shared/utils/ageUtils';
 import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
@@ -156,6 +157,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
   // Role type (agentType for agents, workerSubType for workers/selfworkers)
   const roleLower = (user?.role ?? '').toLowerCase();
   const isAgent = roleLower === 'agent';
+  const isEmployer = roleLower === 'employer';
   const ROLE_TYPE_OPTIONS = isAgent ? AGENT_TYPES : WORKER_SUB_TYPES;
   const [roleType, setRoleType] = useState<string>(
     (isAgent ? user?.agentType : user?.workerSubType) ?? '',
@@ -352,6 +354,11 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
         formData.append('profilePhoto', { uri: photoUri, name: filename, type: match ? `image/${match[1]}` : 'image/jpeg' } as unknown as Blob);
       }
       const updatedUser = await updateProfile(formData);
+
+      // Uploaded a profile photo → strong positive signal. Ask once.
+      // Fires for workers/selfworkers (agent app) AND employers (employer app),
+      // but NEVER for the 'agent' role — agents must not see the review prompt.
+      if (photoUri && ((isWorkerRole && !isAgent) || isEmployer)) void requestReviewOnce();
 
       // Worker-specific fields via JSON endpoint
       if (isWorkerRole) {

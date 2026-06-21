@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../../../packages/shared-mobile/src/core/i18n';
 import { ScreenHeader } from '../../../../packages/shared-mobile/src/shared/components/ui/GradientHeader';
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
+import { requestReviewOnce } from '../../../../packages/shared-mobile/src/core/review/storeReview';
 import { getAccessToken } from '../../../../packages/shared-mobile/src/core/storage/authStorage';
 import { ENV } from '../../../../packages/shared-mobile/src/core/config/env';
 import { resetToMain } from '../../../../packages/shared-mobile/src/core/navigation/navigationRef';
@@ -126,6 +127,9 @@ export const AgentKycScreen = ({ navigation }: Props): React.JSX.Element => {
       }
 
       await completeOnboarding();
+      // Worker completed KYC → strong intent signal. Ask for a review once.
+      // Excluded for the 'agent' role — agents must NOT see the review prompt.
+      if ((state.session?.user.role ?? '').toLowerCase() !== 'agent') void requestReviewOnce();
       resetToMain();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t('kycSomethingWrong'));

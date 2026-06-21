@@ -6,6 +6,17 @@ const sharedRoot = path.resolve(projectRoot, '..', 'packages', 'shared-mobile');
 
 const config = getDefaultConfig(projectRoot);
 
+// Use classic (main-field) module resolution instead of package "exports".
+// Metro 0.83's package-exports resolution is non-deterministic on a cold cache
+// here: it mis-resolved the `react` specifier to `@types/react` (breaking the
+// release bundle), and split `@tanstack/react-query` into two instances
+// (ESM `import` vs CJS `require` conditions) — which caused the runtime
+// "No QueryClient set" crash because the provider and the hooks ended up with
+// different React Query contexts. Classic resolution honours each package's
+// `react-native`/`main` field consistently for every importer, giving a single
+// instance of React, React Query, etc.
+config.resolver.unstable_enablePackageExports = false;
+
 // Watch the shared package source
 config.watchFolders = [sharedRoot];
 
@@ -45,6 +56,18 @@ config.resolver.extraNodeModules = {
   'socket.io-client':                         path.resolve(appModules, 'socket.io-client'),
   'i18next':                                  path.resolve(appModules, 'i18next'),
   'react-i18next':                            path.resolve(appModules, 'react-i18next'),
+};
+
+// Pin the bare `react` specifier to this app's real React entry. Independently of
+// package-exports, Metro intermittently mis-resolves `react` to `@types/react`
+// (empty `main`, no runtime entry) on a cold cache, which breaks the release
+// bundle. Forcing it here is deterministic and keeps `react` a singleton.
+const reactIndex = path.resolve(appModules, 'react', 'index.js');
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'react') {
+    return { type: 'sourceFile', filePath: reactIndex };
+  }
+  return context.resolveRequest(context, moduleName, platform);
 };
 
 module.exports = config;

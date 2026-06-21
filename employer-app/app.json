@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "BookMyWorker Employer",
+    "name": "BookMyWorker Recruiter",
     "slug": "bookmyworker-employer",
-    "version": "1.0.25",
+    "version": "1.0.27",
     "orientation": "portrait",
     "scheme": "bookmyworker-employer",
     "icon": "./assets/icon.png",

@@ -14,6 +14,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { apiClient } from '../../../core/api/client';
+import { requestReviewOnce } from '../../../core/review/storeReview';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
@@ -582,7 +583,12 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
       status: 'Selected' | 'Joined';
       hireRate?: { agreedRate: number; rateType: 'Daily' | 'Monthly' };
     }) => workerMappingApi.updateMappingStatus(mappingId, status, hireRate),
-    onSuccess: () => { invalidatePipeline(); setBusyId(null); },
+    onSuccess: () => {
+      invalidatePipeline();
+      setBusyId(null);
+      // Moved a worker to Selected / Joined → positive milestone. Ask once.
+      void requestReviewOnce();
+    },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to update status.';
       showAlert(t('error'), msg);

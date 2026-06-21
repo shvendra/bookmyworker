@@ -20,6 +20,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppTheme } from '../../../core/theme';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { requestReviewOnce } from '../../../core/review/storeReview';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -363,6 +364,10 @@ const RequirementPickerModal = ({
         ...hireRate,
       });
       toast.success(t('wp_toastJoined', { name: workerName, count: selected.length }));
+      // Selecting / joining a worker is a strong positive action → ask once.
+      // Plain "Shortlisted" here is skipped (the dedicated shortlist toggle
+      // already covers that), so we don't double up.
+      if (status === 'Selected' || status === 'Joined') void requestReviewOnce();
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -789,6 +794,8 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         added ? t('wp_toastShortlistAdded') : t('wp_toastShortlistRemoved'),
         added ? t('wp_shortlistedTitle') : t('wp_removedTitle'),
       );
+      // Shortlisting (not un-shortlisting) is a positive action → ask once.
+      if (added) void requestReviewOnce();
     }).finally(() => setShortlistBusy(false));
   };
 

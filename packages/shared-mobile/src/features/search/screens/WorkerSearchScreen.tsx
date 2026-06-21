@@ -32,6 +32,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { requestReviewOnce } from '../../../core/review/storeReview';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -48,6 +49,7 @@ import i18n from '../../../core/i18n';
 import { getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
 import { ageString } from '../../../shared/utils/ageUtils';
 import { getLocationDisplayName } from '../../../shared/data/locationTranslations';
+import { SmartMatchStrip } from '../components/SmartMatchStrip';
 
 const PAGE_LIMIT = 25;
 
@@ -1313,6 +1315,9 @@ const AgentCard = ({
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const photoUrl  = buildPhotoUrl(agent.profilePhoto);
+  // If the profile photo fails to load (broken/missing URL), fall back to the
+  // gender avatar instead of showing a broken-image icon.
+  const [photoFailed, setPhotoFailed] = useState(false);
   const initials  = formatName(agent.name ?? '?')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const isAgent      = String(agent.role ?? '').toLowerCase() === 'agent';
@@ -1342,8 +1347,12 @@ const AgentCard = ({
       <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={wc.infoRow}>
         {/* Avatar */}
         <View style={wc.avatarWrap}>
-          {photoUrl ? (
-            <Image source={{ uri: photoUrl }} style={[wc.avatar, { borderColor: accentColor }]} />
+          {photoUrl && !photoFailed ? (
+            <Image
+              source={{ uri: photoUrl }}
+              onError={() => setPhotoFailed(true)}
+              style={[wc.avatar, { borderColor: accentColor }]}
+            />
           ) : (
             <Image
               source={String(agent.gender ?? '').trim().toLowerCase() === 'female' ? AVATAR_FEMALE : AVATAR_MALE}
@@ -1946,6 +1955,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       // Notify the worker about the call outcome update
       void apiClient.post('/api/v1/notifications/call-outcome', { workerId: agentId, outcome: status }).catch(() => {});
       toast.success(t('ws_outcome_saved_msg'), t('ws_saved_title'));
+      // Positive call outcome (green = interested/available, blue = hired/joined)
+      // → happy moment. Ask for a review once. Negative/neutral outcomes skip.
+      const outcomeColor = getOutcomeColor(status);
+      if (outcomeColor === OUTCOME_GREEN || outcomeColor === OUTCOME_BLUE) void requestReviewOnce();
     } catch {
       toast.error(t('ws_outcome_save_failed_msg'), t('ws_save_failed_title'));
     } finally {
@@ -2182,6 +2195,17 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           maxToRenderPerBatch={8}
           windowSize={10}
           removeClippedSubviews={Platform.OS === 'android'}
+          ListHeaderComponent={
+            <SmartMatchStrip
+              params={{
+                category: appliedFilters.workerType || undefined,
+                subCategory: appliedFilters.subCategory || undefined,
+                state: appliedFilters.state || undefined,
+                district: appliedFilters.district || undefined,
+              }}
+              enabled={activeFilterCount > 0}
+            />
+          }
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) void fetchNextPage(); }}
           onEndReachedThreshold={0.6}
           renderItem={({ item }) => (

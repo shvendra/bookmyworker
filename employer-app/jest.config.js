@@ -24,6 +24,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/queryClient.ts',
     '.*shared-mobile/src/core/navigation/navigationRef$':
       '<rootDir>/src/__tests__/__mocks__/shared/navigationRef.ts',
+    '.*shared-mobile/src/core/review/storeReview$':
+      '<rootDir>/src/__tests__/__mocks__/shared/storeReview.ts',
     '.*shared-mobile/src/core/errors/globalErrorHandler$':
       '<rootDir>/src/__tests__/__mocks__/shared/globalErrorHandler.ts',
     '.*shared-mobile/src/core/auth/googleSignIn$':

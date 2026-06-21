@@ -18,6 +18,7 @@ import { resetToMain } from '../../../core/navigation/navigationRef';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Badge } from '../../../shared/components/ui/Badge';
 import { useAppTheme } from '../../../core/theme';
+import { requestReviewOnce } from '../../../core/review/storeReview';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { type KycFormValues, kycSchema } from '../../auth/validation/authSchemas';
 
@@ -141,6 +142,8 @@ export const EmployerKycScreen = ({ navigation }: Props): React.JSX.Element => {
       await apiClient.put('/api/v1/user/update', payload);
 
       await completeOnboarding();
+      // Employer completed KYC → strong intent signal. Ask for a review once.
+      void requestReviewOnce();
       resetToMain();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t('kycSomethingWrong'));

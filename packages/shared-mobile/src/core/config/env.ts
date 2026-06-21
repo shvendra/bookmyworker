@@ -20,7 +20,10 @@ export const S3_BASE = 'https://bookmyworker.s3.eu-north-1.amazonaws.com';
  * - Relative keys (e.g. "uploads/photo.jpg") are prefixed with the S3 base.
  */
 export const buildPhotoUrl = (path?: string | null): string | undefined => {
-  if (!path) return undefined;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${S3_BASE}/${path}`.replace(/([^:]\/)\/+/g, '$1');
+  // Treat empty / whitespace / literal "null"/"undefined" as "no photo" so the
+  // caller falls back to the gender avatar instead of building a 404 URL.
+  const p = (path ?? '').trim();
+  if (!p || p === 'null' || p === 'undefined') return undefined;
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
+  return `${S3_BASE}/${p}`.replace(/([^:]\/)\/+/g, '$1');
 };
