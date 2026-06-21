@@ -10,13 +10,6 @@ import { getWorkTypeLabel } from '../../../shared/utils/labelUtils';
 import { ageString } from '../../../shared/utils/ageUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
-const PAGE_SIZE = 20;
-
-// Punctuation-insensitive token so "Security & Facility Workers",
-// "security_facility_workers", etc. all compare equal.
-const norm = (s?: string): string =>
-  String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
 // Birth year / legacy age / full date string / timestamp → current age string.
 const getAge = (dob?: string | number): string => ageString(dob);
 
@@ -38,17 +31,18 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   requirementId: string;
-  workType?: string;    // requirement's parent category — used to fetch + filter
+  workType?: string;    // requirement's parent category — drives the smart match
+  reqState?: string;    // requirement location — improves match ranking
+  reqDistrict?: string;
   titleLabel?: string;  // display label in the header
 }
 
 /**
- * Invite suggested workers (same category as the requirement) to a requirement.
- * Mirrors the CRM dialog: only workers whose areasOfWork matches the requirement
- * category, infinite auto-load, per-worker Invite. Uses the existing
- * requirementsApi.inviteWorker (by workerId); the backend enforces the plan gate.
+ * Invite suggested workers to a requirement. The list is the AI Smart Match
+ * result for this requirement (ranked best-fit) — same logic as the CRM dialog.
+ * Uses requirementsApi.inviteWorker (by workerId); the backend enforces the plan gate.
  */
-export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workType, titleLabel }: Props): React.JSX.Element => {
+export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workType, reqState, reqDistrict, titleLabel }: Props): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const { t: tCommon } = useTranslation(); // cat_* keys live in the default namespace
   const toast = useToast();
@@ -59,7 +53,6 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
   const [workers, setWorkers]         = useState<RawAgent[]>([]);
   const [loading, setLoading]         = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage]               = useState(1);
   const [hasMore, setHasMore]         = useState(true);
   const [invitingId, setInvitingId]   = useState<string | null>(null);
   const [invitedIds, setInvitedIds]   = useState<string[]>([]);
@@ -68,29 +61,41 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
   const [unlockedAlternates, setUnlockedAlternates] = useState<Record<string, string>>({});
   const [unlockingId, setUnlockingId]       = useState<string | null>(null);
 
-  const reqToken = norm(workType);
-  // Only workers whose areasOfWork (parent category) matches the requirement.
-  const visibleWorkers = reqToken
-    ? workers.filter((w) => (w.areasOfWork || []).some((a) => norm(a) === reqToken))
-    : workers;
+  // Smart Match already returns workers ranked + scoped to the requirement's
+  // category, so the whole result set is shown (no extra client-side filter).
+  const visibleWorkers = workers;
 
-  const fetchPage = useCallback(async (pageNum: number) => {
-    if (pageNum === 1) setLoading(true); else setLoadingMore(true);
+  const fetchPage = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await workerApi.getAllAgents({ workerType: workType || undefined, page: pageNum, limit: PAGE_SIZE });
-      const batch = res?.rawAgents || [];
-      setWorkers((prev) => (pageNum === 1 ? batch : [...prev, ...batch]));
-      const total = res?.total;
-      setHasMore(typeof total === 'number' ? pageNum * PAGE_SIZE < total : batch.length === PAGE_SIZE);
-      setPage(pageNum);
+      const res = await workerApi.smartMatch({
+        category: workType || undefined,
+        state: reqState || undefined,
+        district: reqDistrict || undefined,
+        limit: 30,
+        backups: 0,
+      });
+      const matches: RawAgent[] = (res?.matches || []).map((m) => ({
+        _id: m.workerId,
+        name: m.name,
+        phone: '',
+        profilePhoto: m.photo,
+        gender: m.gender,
+        district: m.district,
+        state: m.state,
+        categories: m.categories || [],
+        areasOfWork: [],
+        veryfiedBage: m.verified,
+      }) as RawAgent);
+      setWorkers(matches);
     } catch {
-      if (pageNum === 1) setWorkers([]);
-      setHasMore(false);
+      setWorkers([]);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setHasMore(false); // smart match returns a complete ranked set
     }
-  }, [workType]);
+  }, [workType, reqState, reqDistrict]);
 
   useEffect(() => {
     if (!visible) return;
@@ -98,18 +103,9 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
     setUnlockedPhones({});
     setUnlockedAlternates({});
     setWorkers([]);
-    setPage(1);
-    setHasMore(true);
-    void fetchPage(1);
+    setHasMore(false);
+    void fetchPage();
   }, [visible, requirementId, fetchPage]);
-
-  // Keep advancing pages automatically if the current page had no category match
-  // (an empty list can't be scrolled to trigger onEndReached).
-  useEffect(() => {
-    if (visible && workers.length > 0 && visibleWorkers.length === 0 && hasMore && !loading && !loadingMore) {
-      void fetchPage(page + 1);
-    }
-  }, [visible, workers, visibleWorkers.length, hasMore, loading, loadingMore, page, fetchPage]);
 
   const viewContact = async (w: RawAgent): Promise<void> => {
     if (!w._id || unlockingId || unlockedPhones[w._id]) return;
@@ -180,8 +176,6 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
               data={visibleWorkers}
               keyExtractor={(w) => w._id}
               style={s.list}
-              onEndReachedThreshold={0.4}
-              onEndReached={() => { if (hasMore && !loadingMore && !loading) void fetchPage(page + 1); }}
               ListFooterComponent={loadingMore ? <View style={{ paddingVertical: 14 }}><ActivityIndicator color="#2243BC" size="small" /></View> : null}
               renderItem={({ item: w }) => {
                 const invited  = invitedIds.includes(w._id);
@@ -224,12 +218,13 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         <TouchableOpacity
                           onPress={() => void viewContact(w)}
                           disabled={!!unlockingId}
-                          style={[s.contactBtn, !!unlockingId && { opacity: 0.5 }]}
+                          style={[s.contactIconBtn, !!unlockingId && { opacity: 0.5 }]}
                           activeOpacity={0.85}
+                          accessibilityLabel={t('sw_viewContact')}
                         >
                           {unlockingId === w._id
                             ? <ActivityIndicator color="#2243BC" size="small" />
-                            : <AppText style={s.contactTxt} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('sw_viewContact')}</AppText>}
+                            : <AppText style={s.contactIcon}>📞</AppText>}
                         </TouchableOpacity>
                       )}
                       {invited ? (
@@ -285,8 +280,8 @@ const s = StyleSheet.create({
   invitedTxt:    { fontSize: 12, fontWeight: '800', color: '#15803D' },
   inviteBtn:     { alignSelf: 'stretch', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', minWidth: 112, alignItems: 'center' },
   inviteTxt:     { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
-  contactBtn:    { alignSelf: 'stretch', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', minWidth: 112, alignItems: 'center' },
-  contactTxt:    { fontSize: 13, fontWeight: '800', color: '#2243BC' },
+  contactIconBtn:{ width: 44, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center' },
+  contactIcon:   { fontSize: 18 },
   phoneBtn:      { alignSelf: 'stretch', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 108, alignItems: 'center' },
   phoneTxt:      { fontSize: 12, fontWeight: '800', color: '#15803D' },
 });

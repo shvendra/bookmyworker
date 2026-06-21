@@ -59,6 +59,31 @@ export interface GetAllAgentsResponse {
   pagination?: { totalPages: number; currentPage: number; totalCount: number; total?: number };
 }
 
+export interface SmartMatchWorker {
+  workerId: string;
+  bmwId?: string;
+  name: string;
+  photo?: string;
+  role?: string;
+  gender?: string;
+  district?: string;
+  state?: string;
+  categories?: string[];
+  avgRating?: number;
+  totalRatings?: number;
+  verified?: boolean;
+  matchScore: number;
+  reliability: string;
+  reason: string;
+}
+
+export interface SmartMatchResponse {
+  success: boolean;
+  matchedCount?: number;
+  matches: SmartMatchWorker[];
+  backups: SmartMatchWorker[];
+}
+
 export interface WorkerDetail {
   _id: string;
   name: string;
@@ -185,6 +210,28 @@ export const workerApi = {
 
   search: async (params: WorkerSearchParams) => {
     return workerApi.getAllAgents(params);
+  },
+
+  // AI Smart Match — ranked best-fit workers for the current requirement.
+  smartMatch: async (params: {
+    category?: string;
+    categories?: string[];
+    subCategory?: string;
+    state?: string;
+    district?: string;
+    limit?: number;
+    backups?: number;
+  }): Promise<SmartMatchResponse> => {
+    const res = await apiClient.post<SmartMatchResponse>('/api/v1/smart-match/match', {
+      category: params.category || undefined,
+      categories: params.categories?.length ? params.categories : undefined,
+      subCategory: params.subCategory || undefined,
+      state: params.state || undefined,
+      district: params.district || undefined,
+      limit: params.limit ?? 8,
+      backups: params.backups ?? 3,
+    });
+    return res.data;
   },
 
   getWorkerById: async (id: string): Promise<WorkerDetail> => {

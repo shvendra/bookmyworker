@@ -2141,6 +2141,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           onClose={() => setInviteReq(null)}
           requirementId={inviteReq._id}
           workType={inviteReq.workType}
+          reqState={inviteReq.state}
+          reqDistrict={inviteReq.district}
           titleLabel={(inviteReq.workType || '').replace(/_/g, ' ')}
         />
       )}
