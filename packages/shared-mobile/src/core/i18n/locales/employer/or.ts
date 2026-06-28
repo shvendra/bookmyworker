@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'ମେଳ ଖାଉଥିବା କୌଣସି ଶ୍ରମିକ ମିଳିଲା ନାହିଁ',
   sw_invite: 'ଆମନ୍ତ୍ରଣ',
   sw_viewContact: 'ସମ୍ପର୍କ ଦେଖନ୍ତୁ',
+  sm_bestMatches: 'ସର୍ବୋତ୍ତମ ମେଳ',
+  sm_aiRanked: 'ଆପଣଙ୍କ ପାଇଁ AI-ର୍ୟାଙ୍କ',
   sub_boostBenefit: "{{n}} ରିକ୍ୱାୟରମେଣ୍ଟ ବୁଷ୍ଟ — ସର୍ଚରେ ଶୀର୍ଷରେ",
   sub_boostsShort: "ବୁଷ୍ଟ",
   wp_toastInviteFail: 'ନିମନ୍ତ୍ରଣ ପଠାଇବାରେ ବିଫଳ',

@@ -367,8 +367,8 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
               activeOpacity={0.8}
               style={styles.viewContactBtn}
             >
-              <Ionicons name="eye" size={14} color="#FFFFFF" style={styles.viewContactIcon} />
-              <AppText style={styles.viewContactText}>{t('viewContact')}</AppText>
+              <Ionicons name="call" size={14} color="#FFFFFF" style={styles.viewContactIcon} />
+              <AppText style={styles.viewContactText}>{t('call')}</AppText>
             </TouchableOpacity>
           )}
 

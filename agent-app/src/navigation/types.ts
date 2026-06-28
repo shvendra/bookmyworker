@@ -4,6 +4,8 @@ import type { AppRole } from '../../../packages/shared-mobile/src/shared/types/d
 export type AgentStackParamList = {
   // First-launch language selection
   LanguageSelect: undefined;
+  // First-launch intent / role choice (shown right after language)
+  IntentSelect: undefined;
   // Auth
   Welcome: undefined;
   Login: { roleHint?: AppRole; appContext?: 'agent-app' } | undefined;

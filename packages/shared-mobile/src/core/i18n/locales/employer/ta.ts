@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'பொருந்தும் தொழிலாளர்கள் இல்லை',
   sw_invite: 'அழைக்க',
   sw_viewContact: 'தொடர்பைப் பார்க்க',
+  sm_bestMatches: 'சிறந்த பொருத்தங்கள்',
+  sm_aiRanked: 'உங்களுக்காக AI-தரவரிசை',
   sub_boostBenefit: "{{n}} ரிக்வயர்மென்ட் பூஸ்ட் — தேடலில் மேலே",
   sub_boostsShort: "பூஸ்ட்",
   wp_toastInviteFail: 'அழைப்பை அனுப்ப முடியவில்லை',

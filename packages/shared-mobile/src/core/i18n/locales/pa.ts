@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "ਤੁਸੀਂ ਇੱਥੇ ਕਿਉਂ ਆਏ ਹੋ?",
+  intentSubtitleWorker: "ਇਹ ਵਰਕਰ ਐਪ ਹੈ — ਕੰਮ ਲੱਭਣ ਅਤੇ ਨੌਕਰੀ ਪਾਉਣ ਲਈ।",
+  intentSubtitleEmployer: "ਇਹ ਐਂਪਲੌਇਰ ਐਪ ਹੈ — ਵਰਕਰ ਭਰਤੀ ਕਰਨ ਲਈ।",
+  intentFindWork: "ਮੈਨੂੰ ਕੰਮ ਚਾਹੀਦਾ ਹੈ",
+  intentFindWorkDesc: "ਨੌਕਰੀਆਂ ਵੇਖੋ, ਅਰਜ਼ੀ ਦਿਓ ਅਤੇ ਕੰਮ ਪਾਓ",
+  intentHireWorkers: "ਮੈਨੂੰ ਵਰਕਰ ਚਾਹੀਦੇ ਹਨ",
+  intentHireWorkersDesc: "ਲੋੜ ਪੋਸਟ ਕਰੋ ਅਤੇ ਵਰਕਰ ਭਰਤੀ ਕਰੋ",
+  intentRedirectEmployer: "ਭਰਤੀ ਐਂਪਲੌਇਰ ਐਪ ਵਿੱਚ ਹੁੰਦੀ ਹੈ। ਤੁਹਾਡੇ ਲਈ ਖੋਲ੍ਹ ਰਹੇ ਹਾਂ…",
+  intentRedirectWorker: "ਕੰਮ ਲੱਭਣਾ ਵਰਕਰ ਐਪ ਵਿੱਚ ਹੁੰਦਾ ਹੈ। ਤੁਹਾਡੇ ਲਈ ਖੋਲ੍ਹ ਰਹੇ ਹਾਂ…",
+  intentOpenStore: "ਪਲੇ ਸਟੋਰ ਖੋਲ੍ਹੋ",
   empGoogleSignedInNamed: "✓ Google ਨਾਲ {{name}} ਵਜੋਂ ਸਾਈਨ ਇਨ ਹੋਏ — ਪੂਰਾ ਕਰਨ ਲਈ ਆਪਣਾ ਮੋਬਾਈਲ ਨੰਬਰ ਜੋੜੋ।",
   empGoogleSignedIn: "✓ Google ਨਾਲ ਸਾਈਨ ਇਨ ਹੋਏ — ਪੂਰਾ ਕਰਨ ਲਈ ਆਪਣਾ ਮੋਬਾਈਲ ਨੰਬਰ ਜੋੜੋ।",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -886,6 +897,8 @@ export const translation = {
   wpc_subCatHint: 'ਉਹ ਸਾਰੇ ਕੰਮ ਦੀਆਂ ਕਿਸਮਾਂ ਚੁਣੋ ਜਿਨ੍ਹਾਂ ਵਿੱਚ ਤੁਸੀਂ ਮਾਹਰ ਹੋ',
   wpc_subCatSearch: 'ਲੱਭੋ ਜਿਵੇਂ ਰਾਜ ਮਿਸਤਰੀ, ਡਰਾਈਵਰ, ਰਸੋਈਆ…',
   wpc_subCatSelected: 'ਚੁਣੀਆਂ ਹੁਨਰ',
+  wpc_maxCategories: 'ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ 3 ਕੰਮ ਸ਼੍ਰੇਣੀਆਂ ਚੁਣ ਸਕਦੇ ਹੋ।',
+  wpc_maxSkills: 'ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ 8 ਹੁਨਰ ਚੁਣ ਸਕਦੇ ਹੋ।',
   wpc_subCatRequired: 'ਅੱਗੇ ਵਧਣ ਲਈ ਘੱਟੋ ਘੱਟ ਇੱਕ ਹੁਨਰ ਚੁਣੋ',
   wpc_limitTitle: 'ਹੱਦ ਪੂਰੀ ਹੋ ਗਈ',
   wpc_workCatLimit: 'ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ {{count}} ਕੰਮ ਸ਼੍ਰੇਣੀਆਂ ਚੁਣ ਸਕਦੇ ਹੋ।',

@@ -17,6 +17,7 @@ import { navigationRef } from '../../../packages/shared-mobile/src/core/navigati
 
 // Language selection — shown only on very first launch
 import { EMPLOYER_LANG_KEY, LanguageSelectScreen } from '../screens/language/LanguageSelectScreen';
+import { IntentSelectScreen } from '../screens/intent/IntentSelectScreen';
 import { useLangSync } from '../../../packages/shared-mobile/src/core/i18n/useLangSync';
 
 // Auth screens (shared)
@@ -161,9 +162,10 @@ export const AppNavigator = (): React.JSX.Element => {
           // ── Auth screens ──────────────────────────────────────────
           <>
             {langStatus === 'not_selected' ? (
-              // First-time launch: language picker → Welcome landing → Login
+              // First-time launch: language picker → intent (role) choice → Welcome → Login
               <>
                 <Stack.Screen name="LanguageSelect" component={LanguageSelectScreen} options={{ animation: 'fade' }} />
+                <Stack.Screen name="IntentSelect" component={IntentSelectScreen} options={{ animation: 'fade' }} />
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="Login" component={LoginScreen} initialParams={{ roleHint: 'employer', appContext: 'employer-app' }} />
               </>

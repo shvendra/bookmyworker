@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "നിങ്ങൾ എന്തിനാണ് ഇവിടെ വന്നത്?",
+  intentSubtitleWorker: "ഇത് വർക്കർ ആപ്പ് ആണ് — ജോലി കണ്ടെത്താനും ജോലി നേടാനും.",
+  intentSubtitleEmployer: "ഇത് എംപ്ലോയർ ആപ്പ് ആണ് — തൊഴിലാളികളെ നിയമിക്കാൻ.",
+  intentFindWork: "എനിക്ക് ജോലി വേണം",
+  intentFindWorkDesc: "ജോലികൾ കാണുക, അപേക്ഷിക്കുക, ജോലി നേടുക",
+  intentHireWorkers: "എനിക്ക് തൊഴിലാളികളെ വേണം",
+  intentHireWorkersDesc: "ആവശ്യം പോസ്റ്റ് ചെയ്ത് തൊഴിലാളികളെ നിയമിക്കുക",
+  intentRedirectEmployer: "നിയമനം എംപ്ലോയർ ആപ്പിലാണ്. നിങ്ങൾക്കായി തുറക്കുന്നു…",
+  intentRedirectWorker: "ജോലി കണ്ടെത്തൽ വർക്കർ ആപ്പിലാണ്. നിങ്ങൾക്കായി തുറക്കുന്നു…",
+  intentOpenStore: "പ്ലേ സ്റ്റോർ തുറക്കുക",
   empGoogleSignedInNamed: "✓ Google ഉപയോഗിച്ച് {{name}} ആയി സൈൻ ഇൻ ചെയ്തു — പൂർത്തിയാക്കാൻ നിങ്ങളുടെ മൊബൈൽ നമ്പർ ചേർക്കുക.",
   empGoogleSignedIn: "✓ Google ഉപയോഗിച്ച് സൈൻ ഇൻ ചെയ്തു — പൂർത്തിയാക്കാൻ നിങ്ങളുടെ മൊബൈൽ നമ്പർ ചേർക്കുക.",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -886,6 +897,8 @@ export const translation = {
   wpc_subCatHint: 'നിങ്ങൾക്ക് സ്കിൽ ഉള്ള എല്ലാ ജോലി തരങ്ങളും തിരഞ്ഞെടുക്കുക',
   wpc_subCatSearch: 'തിരയുക ഉദാ. മേസ്ത്രി, ഡ്രൈവർ, പാചകം…',
   wpc_subCatSelected: 'തിരഞ്ഞെടുത്ത കഴിവുകൾ',
+  wpc_maxCategories: 'നിങ്ങൾക്ക് പരമാവധി 3 ജോലി വിഭാഗങ്ങൾ തിരഞ്ഞെടുക്കാം.',
+  wpc_maxSkills: 'നിങ്ങൾക്ക് പരമാവധി 8 വൈദഗ്ധ്യങ്ങൾ തിരഞ്ഞെടുക്കാം.',
   wpc_subCatRequired: 'തുടരാൻ കുറഞ്ഞത് ഒരു കഴിവ് തിരഞ്ഞെടുക്കുക',
   wpc_limitTitle: 'പരിധി എത്തി',
   wpc_workCatLimit: 'നിങ്ങൾക്ക് പരമാവധി {{count}} ജോലി വിഭാഗങ്ങൾ തിരഞ്ഞെടുക്കാം.',

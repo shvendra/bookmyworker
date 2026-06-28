@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "तुम्ही इथे कशासाठी आला आहात?",
+  intentSubtitleWorker: "हे वर्कर अ‍ॅप आहे — काम शोधण्यासाठी व नोकरी मिळवण्यासाठी.",
+  intentSubtitleEmployer: "हे एम्प्लॉयर अ‍ॅप आहे — वर्कर नियुक्त करण्यासाठी.",
+  intentFindWork: "मला काम हवे आहे",
+  intentFindWorkDesc: "नोकऱ्या पाहा, अर्ज करा आणि काम मिळवा",
+  intentHireWorkers: "मला वर्कर हवे आहेत",
+  intentHireWorkersDesc: "गरज पोस्ट करा आणि वर्कर नियुक्त करा",
+  intentRedirectEmployer: "नियुक्ती एम्प्लॉयर अ‍ॅपमध्ये होते. तुमच्यासाठी उघडत आहोत…",
+  intentRedirectWorker: "काम शोधणे वर्कर अ‍ॅपमध्ये होते. तुमच्यासाठी उघडत आहोत…",
+  intentOpenStore: "प्ले स्टोअर उघडा",
   empGoogleSignedInNamed: "✓ Google ने {{name}} म्हणून साइन इन केले — पूर्ण करण्यासाठी तुमचा मोबाइल नंबर जोडा.",
   empGoogleSignedIn: "✓ Google ने साइन इन केले — पूर्ण करण्यासाठी तुमचा मोबाइल नंबर जोडा.",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -884,6 +895,8 @@ export const translation = {
   wpc_subCatHint: 'तुम्हाला ज्या कामांचे कौशल्य आहे ते सर्व निवडा',
   wpc_subCatSearch: 'शोधा उदा. गवंडी, ड्रायव्हर, स्वयंपाकी…',
   wpc_subCatSelected: 'निवडलेली कौशल्ये',
+  wpc_maxCategories: 'तुम्ही जास्तीत जास्त 3 कामाच्या श्रेणी निवडू शकता.',
+  wpc_maxSkills: 'तुम्ही जास्तीत जास्त 8 कौशल्ये निवडू शकता.',
   wpc_subCatRequired: 'पुढे जाण्यासाठी किमान एक कौशल्य निवडा',
   wpc_limitTitle: 'मर्यादा गाठली',
   wpc_workCatLimit: 'तुम्ही जास्तीत जास्त {{count}} कामाच्या श्रेणी निवडू शकता.',

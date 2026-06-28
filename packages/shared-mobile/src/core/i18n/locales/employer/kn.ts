@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'ಹೊಂದುವ ಕಾರ್ಮಿಕರು ಸಿಗಲಿಲ್ಲ',
   sw_invite: 'ಆಹ್ವಾನಿಸಿ',
   sw_viewContact: 'ಸಂಪರ್ಕ ನೋಡಿ',
+  sm_bestMatches: 'ಅತ್ಯುತ್ತಮ ಹೊಂದಾಣಿಕೆಗಳು',
+  sm_aiRanked: 'ನಿಮಗಾಗಿ AI-ಶ್ರೇಣಿ',
   sub_boostBenefit: "{{n}} ರಿಕ್ವೈರ್‌ಮೆಂಟ್ ಬೂಸ್ಟ್‌ಗಳು — ಹುಡುಕಾಟದಲ್ಲಿ ಮೇಲ್ಭಾಗ",
   sub_boostsShort: "ಬೂಸ್ಟ್",
   wp_toastInviteFail: 'ಆಹ್ವಾನ ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ',

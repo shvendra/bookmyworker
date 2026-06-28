@@ -4,10 +4,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "react-native-webview": ["./node_modules/react-native-webview"],
-      "react": ["./node_modules/@types/react"],
-      "react-dom": ["./node_modules/@types/react-dom"],
-      "*": ["./node_modules/*"]
+      "react-native-webview": ["./node_modules/react-native-webview"]
     }
   },
   "include": [

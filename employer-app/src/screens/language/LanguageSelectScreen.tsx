@@ -81,7 +81,7 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
     // next login (useLangSync consumes the marker once).
     await AsyncStorage.setItem(langPendingKey(EMPLOYER_LANG_KEY), selected);
     await i18n.changeLanguage(selected);
-    navigation.replace('Welcome');
+    navigation.replace('IntentSelect');
   };
 
   return (

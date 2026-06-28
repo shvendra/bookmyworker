@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'సరిపోలే కార్మికులు లేరు',
   sw_invite: 'ఆహ్వానించు',
   sw_viewContact: 'సంప్రదింపు చూడండి',
+  sm_bestMatches: 'ఉత్తమ మ్యాచ్‌లు',
+  sm_aiRanked: 'మీ కోసం AI-ర్యాంక్',
   sub_boostBenefit: "{{n}} రిక్వైర్‌మెంట్ బూస్ట్‌లు — సెర్చ్‌లో పైన",
   sub_boostsShort: "బూస్ట్",
   wp_toastInviteFail: 'ఆహ్వానం పంపడం విఫలమైంది',

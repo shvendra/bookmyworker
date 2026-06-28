@@ -784,6 +784,8 @@ export const employerTranslation = {
   sw_noMatch: 'ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਕਾਮਾ ਨਹੀਂ ਮਿਲਿਆ',
   sw_invite: 'ਸੱਦਾ',
   sw_viewContact: 'ਸੰਪਰਕ ਵੇਖੋ',
+  sm_bestMatches: 'ਵਧੀਆ ਮੈਚ',
+  sm_aiRanked: 'ਤੁਹਾਡੇ ਲਈ AI-ਰੈਂਕਡ',
   sub_boostBenefit: "{{n}} ਰਿਕਵਾਇਰਮੈਂਟ ਬੂਸਟ — ਸਰਚ ਵਿੱਚ ਸਭ ਤੋਂ ਉੱਪਰ",
   sub_boostsShort: "ਬੂਸਟ",
   wp_toastInviteFail: 'ਸੱਦਾ ਭੇਜਣ ਵਿੱਚ ਅਸਫਲ',

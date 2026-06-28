@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'કોઈ મેળ ખાતા કામદાર મળ્યા નથી',
   sw_invite: 'આમંત્રિત કરો',
   sw_viewContact: 'સંપર્ક જુઓ',
+  sm_bestMatches: 'શ્રેષ્ઠ મેચ',
+  sm_aiRanked: 'તમારા માટે AI-રેન્ક કરેલ',
   sub_boostBenefit: "{{n}} રિક્વાયરમેન્ટ બૂસ્ટ — સર્ચમાં ટોચ પર",
   sub_boostsShort: "બૂસ્ટ",
   wp_toastInviteFail: 'આમંત્રણ મોકલવામાં નિષ્ફળ',

@@ -2,6 +2,8 @@
 export type EmployerStackParamList = {
   // Auth
   LanguageSelect: undefined;
+  // First-launch intent / role choice (shown right after language)
+  IntentSelect: undefined;
   Welcome: undefined;
   Login: { roleHint?: 'employer'; appContext?: 'employer-app' } | undefined;
   OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app' };

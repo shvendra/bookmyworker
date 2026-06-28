@@ -64,7 +64,8 @@ describe('LanguageSelectScreen', () => {
     expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
     expect(i18n.changeLanguage).toHaveBeenLastCalledWith('mr');
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith('Welcome');
+    // Language → intent (role) choice → (later) Welcome
+    expect(replace).toHaveBeenCalledWith('IntentSelect');
   });
 
   it('defaults to English when continue is pressed without changing selection', async () => {

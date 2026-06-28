@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "ನೀವು ಇಲ್ಲಿಗೆ ಏಕೆ ಬಂದಿದ್ದೀರಿ?",
+  intentSubtitleWorker: "ಇದು ವರ್ಕರ್ ಆ್ಯಪ್ — ಕೆಲಸ ಹುಡುಕಲು ಮತ್ತು ಉದ್ಯೋಗ ಪಡೆಯಲು.",
+  intentSubtitleEmployer: "ಇದು ಎಂಪ್ಲಾಯರ್ ಆ್ಯಪ್ — ಕಾರ್ಮಿಕರನ್ನು ನೇಮಿಸಲು.",
+  intentFindWork: "ನನಗೆ ಕೆಲಸ ಬೇಕು",
+  intentFindWorkDesc: "ಉದ್ಯೋಗಗಳನ್ನು ನೋಡಿ, ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ಮತ್ತು ಕೆಲಸ ಪಡೆಯಿರಿ",
+  intentHireWorkers: "ನನಗೆ ಕಾರ್ಮಿಕರು ಬೇಕು",
+  intentHireWorkersDesc: "ಅಗತ್ಯವನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ ಮತ್ತು ಕಾರ್ಮಿಕರನ್ನು ನೇಮಿಸಿ",
+  intentRedirectEmployer: "ನೇಮಕಾತಿ ಎಂಪ್ಲಾಯರ್ ಆ್ಯಪ್‌ನಲ್ಲಿ ನಡೆಯುತ್ತದೆ. ನಿಮಗಾಗಿ ತೆರೆಯುತ್ತಿದ್ದೇವೆ…",
+  intentRedirectWorker: "ಕೆಲಸ ಹುಡುಕುವುದು ವರ್ಕರ್ ಆ್ಯಪ್‌ನಲ್ಲಿ ನಡೆಯುತ್ತದೆ. ನಿಮಗಾಗಿ ತೆರೆಯುತ್ತಿದ್ದೇವೆ…",
+  intentOpenStore: "ಪ್ಲೇ ಸ್ಟೋರ್ ತೆರೆಯಿರಿ",
   empGoogleSignedInNamed: "✓ Google ಮೂಲಕ {{name}} ಆಗಿ ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ — ಪೂರ್ಣಗೊಳಿಸಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ಸೇರಿಸಿ.",
   empGoogleSignedIn: "✓ Google ಮೂಲಕ ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ — ಪೂರ್ಣಗೊಳಿಸಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ಸೇರಿಸಿ.",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -886,6 +897,8 @@ export const translation = {
   wpc_subCatHint: 'ನೀವು ಪರಿಣತರಾಗಿರುವ ಎಲ್ಲ ಕೆಲಸ ವಿಧಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ',
   wpc_subCatSearch: 'ಹುಡುಕಿ ಉದಾ. ಗಾರೆ ಕೆಲಸ, ಡ್ರೈವರ್, ಅಡಿಗೆ…',
   wpc_subCatSelected: 'ಆಯ್ಕೆ ಮಾಡಿದ ಕೌಶಲ್ಯಗಳು',
+  wpc_maxCategories: 'ನೀವು ಗರಿಷ್ಠ 3 ಕೆಲಸದ ವರ್ಗಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
+  wpc_maxSkills: 'ನೀವು ಗರಿಷ್ಠ 8 ಕೌಶಲ್ಯಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',
   wpc_subCatRequired: 'ಮುಂದುವರಿಯಲು ಕನಿಷ್ಠ ಒಂದು ಕೌಶಲ್ಯ ಆಯ್ಕೆ ಮಾಡಿ',
   wpc_limitTitle: 'ಮಿತಿ ತಲುಪಿದೆ',
   wpc_workCatLimit: 'ನೀವು ಗರಿಷ್ಠ {{count}} ಕೆಲಸದ ವರ್ಗಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಬಹುದು.',

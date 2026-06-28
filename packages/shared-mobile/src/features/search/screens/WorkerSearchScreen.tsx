@@ -1318,6 +1318,10 @@ const AgentCard = ({
   // If the profile photo fails to load (broken/missing URL), fall back to the
   // gender avatar instead of showing a broken-image icon.
   const [photoFailed, setPhotoFailed] = useState(false);
+  // Only reveal the real photo once it has ACTUALLY loaded — a broken/slow URL
+  // then stays hidden and the gender avatar (rendered underneath) shows instead,
+  // so the card never displays a broken-image box.
+  const [photoLoaded, setPhotoLoaded] = useState(false);
   const initials  = formatName(agent.name ?? '?')
     .split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
   const isAgent      = String(agent.role ?? '').toLowerCase() === 'agent';
@@ -1345,18 +1349,19 @@ const AgentCard = ({
 
       {/* ── Main info row (tappable) ── */}
       <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={wc.infoRow}>
-        {/* Avatar */}
+        {/* Avatar — gender avatar is the always-present base; the real photo is
+            overlaid on top and only made visible once it has truly loaded. */}
         <View style={wc.avatarWrap}>
-          {photoUrl && !photoFailed ? (
+          <Image
+            source={String(agent.gender ?? '').trim().toLowerCase() === 'female' ? AVATAR_FEMALE : AVATAR_MALE}
+            style={[wc.avatar, { borderColor: accentColor }]}
+          />
+          {photoUrl && !photoFailed && (
             <Image
               source={{ uri: photoUrl }}
+              onLoad={() => setPhotoLoaded(true)}
               onError={() => setPhotoFailed(true)}
-              style={[wc.avatar, { borderColor: accentColor }]}
-            />
-          ) : (
-            <Image
-              source={String(agent.gender ?? '').trim().toLowerCase() === 'female' ? AVATAR_FEMALE : AVATAR_MALE}
-              style={[wc.avatar, { borderColor: accentColor }]}
+              style={[wc.avatar, { borderColor: accentColor, position: 'absolute', top: 0, left: 0, opacity: photoLoaded ? 1 : 0 }]}
             />
           )}
           <View style={[wc.presDot, { backgroundColor: agent.veryfiedBage ? GREEN : AMBER, borderColor: theme.colors.card }]} />
@@ -2194,7 +2199,12 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           initialNumToRender={10}
           maxToRenderPerBatch={8}
           windowSize={10}
-          removeClippedSubviews={Platform.OS === 'android'}
+          // removeClippedSubviews is the #1 cause of the native
+          // ReactViewGroup.drawChild IndexOutOfBoundsException crash on the New
+          // Architecture (Fabric) — child view indices desync when clipped during
+          // scroll. FlatList already virtualises via windowSize/maxToRenderPerBatch,
+          // so keep it OFF on Fabric.
+          removeClippedSubviews={false}
           ListHeaderComponent={
             <SmartMatchStrip
               params={{

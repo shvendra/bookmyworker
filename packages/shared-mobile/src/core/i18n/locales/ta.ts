@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "நீங்கள் ஏன் இங்கு வந்தீர்கள்?",
+  intentSubtitleWorker: "இது வொர்க்கர் ஆப் — வேலை தேடவும் பணியில் சேரவும்.",
+  intentSubtitleEmployer: "இது எம்ப்ளாயர் ஆப் — தொழிலாளர்களை நியமிக்க.",
+  intentFindWork: "எனக்கு வேலை வேண்டும்",
+  intentFindWorkDesc: "வேலைகளைப் பார்த்து, விண்ணப்பித்து வேலை பெறுங்கள்",
+  intentHireWorkers: "எனக்கு தொழிலாளர்கள் வேண்டும்",
+  intentHireWorkersDesc: "தேவையை இடுகையிட்டு தொழிலாளர்களை நியமியுங்கள்",
+  intentRedirectEmployer: "பணியமர்த்தல் எம்ப்ளாயர் ஆப்-இல் செய்யப்படும். உங்களுக்காகத் திறக்கிறோம்…",
+  intentRedirectWorker: "வேலை தேடுதல் வொர்க்கர் ஆப்-இல் செய்யப்படும். உங்களுக்காகத் திறக்கிறோம்…",
+  intentOpenStore: "பிளே ஸ்டோரைத் திற",
   empGoogleSignedInNamed: "✓ Google மூலம் {{name}} ஆக உள்நுழைந்தீர்கள் — முடிக்க உங்கள் மொபைல் எண்ணைச் சேர்க்கவும்.",
   empGoogleSignedIn: "✓ Google மூலம் உள்நுழைந்தீர்கள் — முடிக்க உங்கள் மொபைல் எண்ணைச் சேர்க்கவும்.",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -884,6 +895,8 @@ export const translation = {
   wpc_subCatHint: 'நீங்கள் திறமையான அனைத்து பணி வகைகளையும் தேர்ந்தெடுங்கள்',
   wpc_subCatSearch: 'தேடுங்கள் உ.தா. கட்டிடம், டிரைவர், சமையல்…',
   wpc_subCatSelected: 'தேர்ந்தெடுக்கப்பட்ட திறன்கள்',
+  wpc_maxCategories: 'நீங்கள் அதிகபட்சம் 3 வேலை வகைகளைத் தேர்ந்தெடுக்கலாம்.',
+  wpc_maxSkills: 'நீங்கள் அதிகபட்சம் 8 திறன்களைத் தேர்ந்தெடுக்கலாம்.',
   wpc_subCatRequired: 'தொடர குறைந்தது ஒரு திறனை தேர்ந்தெடுக்கவும்',
   wpc_limitTitle: 'வரம்பு எட்டப்பட்டது',
   wpc_workCatLimit: 'நீங்கள் அதிகபட்சம் {{count}} வேலை வகைகளைத் தேர்ந்தெடுக்கலாம்.',

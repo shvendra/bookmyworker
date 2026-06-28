@@ -707,6 +707,8 @@ export const employerTranslation = {
   sw_noMatch: 'No matching workers found',
   sw_invite: 'Invite',
   sw_viewContact: 'View Contact',
+  sm_bestMatches: 'Best Matches',
+  sm_aiRanked: 'AI-ranked for you',
   sub_boostBenefit: "{{n}} requirement boosts — top of search",
   sub_boostsShort: "Boosts",
   wp_toastInviteFail: 'Failed to send invite',

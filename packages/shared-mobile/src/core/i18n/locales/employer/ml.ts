@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'അനുയോജ്യമായ തൊഴിലാളികളെ കണ്ടെത്തിയില്ല',
   sw_invite: 'ക്ഷണിക്കുക',
   sw_viewContact: 'കോൺടാക്ട് കാണുക',
+  sm_bestMatches: 'മികച്ച പൊരുത്തങ്ങൾ',
+  sm_aiRanked: 'നിങ്ങൾക്കായി AI-റാങ്ക്',
   sub_boostBenefit: "{{n}} റിക്വയർമെന്റ് ബൂസ്റ്റുകൾ — സെർച്ചിൽ മുകളിൽ",
   sub_boostsShort: "ബൂസ്റ്റ്",
   wp_toastInviteFail: 'ക്ഷണം അയയ്ക്കാനായില്ല',

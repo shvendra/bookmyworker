@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "What brings you here?",
+  intentSubtitleWorker: "This is the Worker app — for finding jobs and getting hired.",
+  intentSubtitleEmployer: "This is the Employer app — for hiring verified workers.",
+  intentFindWork: "I'm looking for work",
+  intentFindWorkDesc: "Browse jobs, apply and get hired",
+  intentHireWorkers: "I'm looking for workers",
+  intentHireWorkersDesc: "Post requirements and hire workers",
+  intentRedirectEmployer: "Hiring is done in the Employer app. Opening it for you…",
+  intentRedirectWorker: "Finding work is done in the Worker app. Opening it for you…",
+  intentOpenStore: "Open Play Store",
   empGoogleSignedInNamed: "✓ Signed in with Google as {{name}} — add your mobile number to finish.",
   empGoogleSignedIn: "✓ Signed in with Google — add your mobile number to finish.",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -894,6 +905,8 @@ export const translation = {
   wpc_subCatHint: 'Tap to select all work types you are skilled in',
   wpc_subCatSearch: 'Search e.g. Mason, Driver, Cook…',
   wpc_subCatSelected: 'Selected skills',
+  wpc_maxCategories: 'You can choose up to 3 work categories.',
+  wpc_maxSkills: 'You can select up to 8 skills.',
   wpc_subCatRequired: 'Select at least one skill to continue',
   wpc_limitTitle: 'Limit reached',
   wpc_workCatLimit: 'You can select up to {{count}} work categories.',

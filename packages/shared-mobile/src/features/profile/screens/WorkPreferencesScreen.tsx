@@ -70,6 +70,10 @@ const formatAreaLabel = (val: string): string => {
   return val;
 };
 
+// Selection caps: up to 3 work categories, and up to 8 skills (sub-categories) total.
+const MAX_CATS = 3;
+const MAX_SKILLS = 8;
+
 export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
@@ -106,7 +110,11 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
         const u = res.data?.user;
         if (!u || cancelled) return;
         if (Array.isArray(u.serviceArea)) setAreas(u.serviceArea);
-        if (u.workExperience != null && u.workExperience !== '') setExperience(String(u.workExperience));
+        if (u.workExperience != null && u.workExperience !== '') {
+          // Sanitize to digits only — a stored decimal/non-numeric value would
+          // otherwise make the controlled input reject every edit (un-typeable).
+          setExperience(String(u.workExperience).replace(/\D/g, '').slice(0, 2));
+        }
         if (Array.isArray(u.categories) && u.categories.length) {
           setSelectedSubs(u.categories);
           const parents: string[] = [];
@@ -144,21 +152,33 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
   }, [allAvailableSubs, subSearch, lang]);
 
   const toggleCat = useCallback((val: string) => {
-    setSelectedCats((prev) => {
-      const next = prev.includes(val) ? prev.filter((c) => c !== val) : [...prev, val];
-      if (!next.includes(val)) {
-        const removed = ALL_CATS.find((c) => c.value === val);
-        if (removed) {
-          const removedSubs = removed.subcategories.map((s) => s.value);
-          setSelectedSubs((prevSubs) => prevSubs.filter((s) => !removedSubs.includes(s)));
-        }
-      }
-      return next;
-    });
-  }, []);
+    // Removing a category also drops its selected skills.
+    if (selectedCats.includes(val)) {
+      const removed = ALL_CATS.find((c) => c.value === val);
+      const removedSubs = removed ? removed.subcategories.map((s) => s.value) : [];
+      setSelectedCats((prev) => prev.filter((c) => c !== val));
+      if (removedSubs.length) setSelectedSubs((prev) => prev.filter((s) => !removedSubs.includes(s)));
+      return;
+    }
+    // Adding: cap at MAX_CATS.
+    if (selectedCats.length >= MAX_CATS) {
+      toast.error(t('wpc_maxCategories', `You can choose up to ${MAX_CATS} work categories.`));
+      return;
+    }
+    setSelectedCats((prev) => [...prev, val]);
+  }, [selectedCats, toast, t]);
   const toggleSub = useCallback((val: string) => {
-    setSelectedSubs((prev) => (prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]));
-  }, []);
+    if (selectedSubs.includes(val)) {
+      setSelectedSubs((prev) => prev.filter((s) => s !== val));
+      return;
+    }
+    // Adding: cap at MAX_SKILLS total.
+    if (selectedSubs.length >= MAX_SKILLS) {
+      toast.error(t('wpc_maxSkills', `You can select up to ${MAX_SKILLS} skills.`));
+      return;
+    }
+    setSelectedSubs((prev) => [...prev, val]);
+  }, [selectedSubs, toast, t]);
   const toggleArea = useCallback((district: string) => {
     setAreas((prev) => (prev.includes(district) ? prev.filter((a) => a !== district) : [...prev, district]));
   }, []);
@@ -260,7 +280,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
         )}
 
         {/* ── Work categories ── */}
-        <AppText style={[fieldLabelStyle, { marginTop: 18 }]}>{t('wpc_workCatQ')}</AppText>
+        <AppText style={[fieldLabelStyle, { marginTop: 18 }]}>{t('wpc_workCatQ')} ({selectedCats.length}/{MAX_CATS})</AppText>
         <View style={styles.chipRow}>
           {ALL_CATS.map((cat) => {
             const sel = selectedCats.includes(cat.value);
@@ -303,7 +323,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
               })}
             </View>
             {selectedSubs.length > 0 && (
-              <AppText style={[fieldLabelStyle, { marginTop: 8 }]}>{t('wpc_subCatSelected', 'Selected skills')} ({selectedSubs.length})</AppText>
+              <AppText style={[fieldLabelStyle, { marginTop: 8 }]}>{t('wpc_subCatSelected', 'Selected skills')} ({selectedSubs.length}/{MAX_SKILLS})</AppText>
             )}
           </>
         )}
@@ -366,7 +386,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
         <TextInput
           style={[styles.expInput, { backgroundColor: isDark ? theme.colors.surface : '#fff', borderColor: experience ? theme.colors.primary : (isDark ? theme.colors.border : '#DDE3F0'), color: theme.colors.text }]}
           value={experience}
-          onChangeText={(v) => { if (/^\d{0,2}$/.test(v)) setExperience(v); }}
+          onChangeText={(v) => setExperience(v.replace(/\D/g, '').slice(0, 2))}
           keyboardType="number-pad"
           maxLength={2}
           placeholder={t('wpc_experiencePlaceholder', 'e.g. 5')}

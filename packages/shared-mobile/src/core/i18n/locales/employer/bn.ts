@@ -773,6 +773,8 @@ export const employerTranslation = {
   sw_noMatch: 'মিলে যায় এমন কোনো কর্মী পাওয়া যায়নি',
   sw_invite: 'আমন্ত্রণ',
   sw_viewContact: 'যোগাযোগ দেখুন',
+  sm_bestMatches: 'সেরা ম্যাচ',
+  sm_aiRanked: 'আপনার জন্য AI-র‍্যাঙ্কড',
   sub_boostBenefit: "{{n}}টি রিকোয়ারমেন্ট বুস্ট — সার্চে সবার উপরে",
   sub_boostsShort: "বুস্ট",
   wp_toastInviteFail: 'আমন্ত্রণ পাঠানো যায়নি',

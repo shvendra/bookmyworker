@@ -1,4 +1,15 @@
 export const translation = {
+  // ── Intent / role-choice screen (after language select) ──
+  intentTitle: "ଆପଣ ଏଠାକୁ କାହିଁକି ଆସିଛନ୍ତି?",
+  intentSubtitleWorker: "ଏହା ୱର୍କର ଆପ୍ — କାମ ଖୋଜିବା ଓ ଚାକିରି ପାଇବା ପାଇଁ।",
+  intentSubtitleEmployer: "ଏହା ଏମ୍ପ୍ଲୟର ଆପ୍ — କର୍ମଚାରୀ ନିଯୁକ୍ତି ପାଇଁ।",
+  intentFindWork: "ମୋତେ କାମ ଦରକାର",
+  intentFindWorkDesc: "ଚାକିରି ଦେଖନ୍ତୁ, ଆବେଦନ କରନ୍ତୁ ଓ କାମ ପାଆନ୍ତୁ",
+  intentHireWorkers: "ମୋତେ କର୍ମଚାରୀ ଦରକାର",
+  intentHireWorkersDesc: "ଆବଶ୍ୟକତା ପୋଷ୍ଟ କରନ୍ତୁ ଓ କର୍ମଚାରୀ ନିଯୁକ୍ତି କରନ୍ତୁ",
+  intentRedirectEmployer: "ନିଯୁକ୍ତି ଏମ୍ପ୍ଲୟର ଆପ୍‌ରେ ହୁଏ। ଆପଣଙ୍କ ପାଇଁ ଖୋଲୁଛୁ…",
+  intentRedirectWorker: "କାମ ଖୋଜିବା ୱର୍କର ଆପ୍‌ରେ ହୁଏ। ଆପଣଙ୍କ ପାଇଁ ଖୋଲୁଛୁ…",
+  intentOpenStore: "ପ୍ଲେ ଷ୍ଟୋର ଖୋଲନ୍ତୁ",
   empGoogleSignedInNamed: "✓ Google ସହିତ {{name}} ଭାବେ ସାଇନ୍ ଇନ୍ ହୋଇଛନ୍ତି — ସମ୍ପୂର୍ଣ୍ଣ କରିବାକୁ ଆପଣଙ୍କ ମୋବାଇଲ୍ ନମ୍ବର ଯୋଡ଼ନ୍ତୁ।",
   empGoogleSignedIn: "✓ Google ସହିତ ସାଇନ୍ ଇନ୍ ହୋଇଛନ୍ତି — ସମ୍ପୂର୍ଣ୍ଣ କରିବାକୁ ଆପଣଙ୍କ ମୋବାଇଲ୍ ନମ୍ବର ଯୋଡ଼ନ୍ତୁ।",
   // ── Agent app: onboarding / login / register (added for i18n parity) ──
@@ -886,6 +897,8 @@ export const translation = {
   wpc_subCatHint: 'ଆପଣ ଯେଉଁ କାର୍ଯ୍ୟ ଗୁଡ଼ିକରେ ଦକ୍ଷ ସବୁ ବାଛନ୍ତୁ',
   wpc_subCatSearch: 'ଖୋଜନ୍ତୁ ଯଥା ରାଜ ମିସ୍ତ୍ରି, ଡ୍ରାଇଭର…',
   wpc_subCatSelected: 'ବାଛିଥିବା ଦକ୍ଷତା',
+  wpc_maxCategories: 'ଆପଣ ସର୍ବାଧିକ 3ଟି କାର୍ଯ୍ୟ ବର୍ଗ ବାଛିପାରିବେ।',
+  wpc_maxSkills: 'ଆପଣ ସର୍ବାଧିକ 8ଟି ଦକ୍ଷତା ବାଛିପାରିବେ।',
   wpc_subCatRequired: 'ଆଗକୁ ଯିବାକୁ ଅତ୍ୟୁକ୍ତ ଏକ ଦକ୍ଷତା ବାଛନ୍ତୁ',
   wpc_limitTitle: 'ସୀମା ପୂରଣ ହୋଇଛି',
   wpc_workCatLimit: 'ଆପଣ ସର୍ବାଧିକ {{count}}ଟି କାର୍ଯ୍ୟ ବର୍ଗ ବାଛିପାରିବେ।',
