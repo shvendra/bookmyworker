@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { ENV } from '../config/env';
 import { clearAuthSession, getAccessToken } from '../storage/authStorage';
 import { emitForceSignOut } from '../../state/auth/authEventBus';
+import { reportNetworkOk, reportNetworkDown } from '../query/connectivity';
 
 export interface ApiClientError extends Error {
   statusCode?: number;
@@ -65,8 +66,15 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    reportNetworkOk(); // a server response proves connectivity is up
+    return response;
+  },
   async (error: AxiosError<{ message?: string; errors?: unknown }>) => {
+    // Feed React Query's onlineManager from real traffic: no HTTP response means a
+    // network-level failure (offline); any response means the server was reachable.
+    if (error.response) reportNetworkOk();
+    else reportNetworkDown();
     if (error.response?.status === 401) {
       // Only force-sign-out when there is an active session (expired token).
       // During login attempts there is no stored token, so 401 means wrong
