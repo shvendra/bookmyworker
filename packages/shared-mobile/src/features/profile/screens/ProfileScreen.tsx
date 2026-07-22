@@ -271,8 +271,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-      {/* Avatar + name + role + location — unified hero (absorbs status bar) */}
-      <View style={[styles.profileCenter, { backgroundColor: '#1037A4', paddingTop: insets.top + 16, paddingBottom: 24 }]}>
+      {/* Compact header — name/location/status on the LEFT, avatar + edit on the
+          RIGHT. Horizontal layout keeps the hero short (no tall vertical stack). */}
+      <View style={[styles.profileHeader, { backgroundColor: '#1037A4', paddingTop: insets.top + (navigation.canGoBack() ? 46 : 14), paddingBottom: 16 }]}>
         {/* Depth layer — matches GradientHeader */}
         <View style={styles.heroDepth} pointerEvents="none" />
         <View style={[styles.heroCircle, styles.heroCircle1]} pointerEvents="none" />
@@ -289,71 +290,73 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             <AppText style={styles.heroBackIcon}>‹</AppText>
           </TouchableOpacity>
         )}
-        {/* Avatar with an edit-pencil badge — ring color reflects KYC state */}
-        <View style={styles.avatarWrap}>
-          <Avatar
-            name={user?.fullName ?? 'U'}
-            uri={user?.profileImage}
-            size={80}
-            ring
-            ringColor={
-              user?.kycStatus === 'verified'
-                ? '#22C55E'
-                : user?.kycStatus === 'rejected'
-                ? '#EF4444'
-                : '#F59E0B'
-            }
-          />
+
+        <View style={styles.headerRow}>
+          {/* LEFT — name, location, verification status */}
+          <View style={styles.headerInfo}>
+            <AppText style={styles.profileName} numberOfLines={1}>
+              {user?.fullName ?? t('employer:pf_userFallback')}
+            </AppText>
+            {(user?.district ?? user?.state) ? (
+              <AppText style={styles.profileLocation} numberOfLines={1}>
+                <Ionicons name="location-sharp" size={12} color="rgba(255,255,255,0.85)" />{' '}
+                {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
+              </AppText>
+            ) : null}
+            <View style={styles.statusRow}>
+              {user?.kycStatus === 'verified' ? (
+                <View style={styles.verifiedBadge}>
+                  <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
+                </View>
+              ) : user?.kycStatus === 'rejected' ? (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('KycVerification')}
+                  activeOpacity={0.85}
+                  style={styles.rejectedPill}
+                >
+                  <Ionicons name="alert-circle" size={13} color="#fff" />
+                  <AppText style={styles.rejectedPillTxt}>{t('kyc_statusRejectedShort')}</AppText>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.pendingPill}>
+                  <View style={styles.pendingPillDot} />
+                  <AppText style={styles.pendingPillTxt}>{t('profile_pendingVerification')}</AppText>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* RIGHT — avatar with an edit-pencil badge (ring reflects KYC state) */}
           <TouchableOpacity
             onPress={() => navigation.navigate('EditProfile')}
-            style={styles.avatarEditBtn}
-            activeOpacity={0.8}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            style={styles.avatarWrap}
+            activeOpacity={0.85}
+            accessibilityLabel={t('profile_editPublicProfile')}
           >
-            <Ionicons name="pencil" size={12} color="#1037A4" />
+            <Avatar
+              name={user?.fullName ?? 'U'}
+              uri={user?.profileImage}
+              size={64}
+              ring
+              ringColor={
+                user?.kycStatus === 'verified'
+                  ? '#22C55E'
+                  : user?.kycStatus === 'rejected'
+                  ? '#EF4444'
+                  : '#F59E0B'
+              }
+            />
+            <View style={styles.avatarEditBtn}>
+              <Ionicons name="pencil" size={11} color="#1037A4" />
+            </View>
           </TouchableOpacity>
         </View>
-        <AppText style={styles.profileName}>{user?.fullName ?? t('employer:pf_userFallback')}</AppText>
-        {(user?.district ?? user?.state) ? (
-          <AppText style={styles.profileLocation}>
-            <Ionicons name="location-sharp" size={12} color="rgba(255,255,255,0.85)" />{' '}
-            {getLocationStr({ district: user?.district, state: user?.state }, i18n.language, '')}
-          </AppText>
-        ) : null}
-        {/* Verification status pill */}
-        {user?.kycStatus === 'verified' ? (
-          <View style={styles.verifiedBadge}>
-            <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
-          </View>
-        ) : user?.kycStatus === 'rejected' ? (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('KycVerification')}
-            activeOpacity={0.85}
-            style={styles.rejectedPill}
-          >
-            <Ionicons name="alert-circle" size={13} color="#fff" />
-            <AppText style={styles.rejectedPillTxt}>{t('kyc_statusRejectedShort')}</AppText>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.pendingPill}>
-            <View style={styles.pendingPillDot} />
-            <AppText style={styles.pendingPillTxt}>{t('profile_pendingVerification')}</AppText>
-          </View>
-        )}
+
         {user?.kycStatus === 'rejected' && !!user?.kycRejectionReason && (
           <AppText style={styles.rejectedReasonTxt} numberOfLines={3}>
             {user.kycRejectionReason}
           </AppText>
         )}
-        {/* Edit Public Profile button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('EditProfile')}
-          style={styles.editProfileBtn}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="create-outline" size={15} color="#fff" style={styles.editProfileIcon} />
-          <AppText style={styles.editProfileTxt}>{t('profile_editPublicProfile')}</AppText>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -931,13 +934,14 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: 48 },
 
-  // ── Profile hero — continuous from status bar, matches GradientHeader look ──
-  profileCenter: {
-    alignItems: 'center',
-    gap: 6,
+  // ── Profile hero — compact horizontal header (name left, avatar right) ──
+  profileHeader: {
     paddingHorizontal: 20,
     overflow: 'hidden',
   },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerInfo: { flex: 1, minWidth: 0 },
+  statusRow: { flexDirection: 'row', marginTop: 8 },
   heroDepth: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#1037A4',
@@ -959,11 +963,11 @@ const styles = StyleSheet.create({
   avatarWrap: { position: 'relative' },
   avatarEditBtn: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1003,43 +1007,24 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     lineHeight: 16,
     color: 'rgba(255,255,255,0.92)',
-    textAlign: 'center',
-    marginTop: 6,
-    maxWidth: 280,
+    marginTop: 10,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: '#FFFFFF',
-    textAlign: 'center',
     letterSpacing: 0.2,
-    marginTop: 2,
   },
   profileRole: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
     fontWeight: '500',
-    textAlign: 'center',
   },
   profileLocation: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
+    marginTop: 3,
   },
-  editProfileBtn: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 12,
-    paddingVertical: 11,
-    paddingHorizontal: 28,
-  },
-  editProfileIcon: { fontSize: 13, lineHeight: 17 },
-  editProfileTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
   heroBack: {
     position: 'absolute',
     left: 16,
