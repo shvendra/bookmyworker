@@ -1718,10 +1718,10 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </TouchableOpacity>
       </View>
 
-      {/* ── Needs Attention ──
+      {/* ── Needs Attention — only for employers with an ACTIVE subscription ──
           (Profile Strength card lives on the My Profile page; the header avatar
           still shows the completeness %.) */}
-      <NeedsAttentionCard items={attentionItems} />
+      {isSubscribed && <NeedsAttentionCard items={attentionItems} />}
 
       {/* ── Nearby Workers — hidden when the employer has an active (open) requirement ── */}
       {openCount === 0 && (
