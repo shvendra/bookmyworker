@@ -394,7 +394,7 @@ export const employerTranslation = {
   ws_pill_individual: 'Individual',
   ws_pill_age: 'Age {{min}}–{{max}}',
   // Filter sheet
-  ws_filter_title: 'Filter Professionals',
+  ws_filter_title: 'Filter Workers',
   ws_filter_subtitle: 'Narrow down your search',
   ws_filters_active: '{{count}} filter active',
   ws_filters_active_other: '{{count}} filters active',

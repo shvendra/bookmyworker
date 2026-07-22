@@ -475,7 +475,7 @@ export const employerTranslation = {
   ws_pill_group: 'ਗਰੁੱਪ / ਏਜੰਟ',
   ws_pill_individual: 'ਵਿਅਕਤੀਗਤ',
   ws_pill_age: 'ਉਮਰ {{min}}–{{max}}',
-  ws_filter_title: 'ਪੇਸ਼ੇਵਰ ਫਿਲਟਰ ਕਰੋ',
+  ws_filter_title: 'ਵਰਕਰ ਫਿਲਟਰ ਕਰੋ',
   ws_filter_subtitle: 'ਆਪਣੀ ਖੋਜ ਨੂੰ ਸੀਮਤ ਕਰੋ',
   ws_filters_active: '{{count}} ਫਿਲਟਰ ਸਰਗਰਮ',
   ws_filters_active_other: '{{count}} ਫਿਲਟਰ ਸਰਗਰਮ',

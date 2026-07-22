@@ -464,7 +464,7 @@ export const employerTranslation = {
   ws_pill_group: 'குழு / முகவர்',
   ws_pill_individual: 'தனிநபர்',
   ws_pill_age: 'வயது {{min}}–{{max}}',
-  ws_filter_title: 'வல்லுநர்களை வடிகட்டு',
+  ws_filter_title: 'தொழிலாளர்களை வடிகட்டு',
   ws_filter_subtitle: 'உங்கள் தேடலைக் குறுக்குங்கள்',
   ws_filters_active: '{{count}} வடிகட்டி செயலில்',
   ws_filters_active_other: '{{count}} வடிகட்டிகள் செயலில்',

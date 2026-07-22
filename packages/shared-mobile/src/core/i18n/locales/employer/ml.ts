@@ -464,7 +464,7 @@ export const employerTranslation = {
   ws_pill_group: 'ഗ്രൂപ്പ് / ഏജന്റ്',
   ws_pill_individual: 'വ്യക്തിഗതം',
   ws_pill_age: 'പ്രായം {{min}}–{{max}}',
-  ws_filter_title: 'പ്രൊഫഷണലുകളെ ഫിൽട്ടർ ചെയ്യുക',
+  ws_filter_title: 'തൊഴിലാളികളെ ഫിൽട്ടർ ചെയ്യുക',
   ws_filter_subtitle: 'നിങ്ങളുടെ തിരയൽ ചുരുക്കുക',
   ws_filters_active: '{{count}} ഫിൽട്ടർ സജീവം',
   ws_filters_active_other: '{{count}} ഫിൽട്ടറുകൾ സജീവം',

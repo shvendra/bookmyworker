@@ -464,7 +464,7 @@ export const employerTranslation = {
   ws_pill_group: 'গ্রুপ / এজেন্ট',
   ws_pill_individual: 'ব্যক্তিগত',
   ws_pill_age: 'বয়স {{min}}–{{max}}',
-  ws_filter_title: 'প্রোফাইল ফিল্টার করুন',
+  ws_filter_title: 'শ্রমিক ফিল্টার করুন',
   ws_filter_subtitle: 'আপনার সার্চ ছোট করে আনুন',
   ws_filters_active: '{{count}} ফিল্টার সক্রিয়',
   ws_filters_active_other: '{{count}} ফিল্টার সক্রিয়',

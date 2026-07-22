@@ -464,7 +464,7 @@ export const employerTranslation = {
   ws_pill_group: 'गट / एजंट',
   ws_pill_individual: 'वैयक्तिक',
   ws_pill_age: 'वय {{min}}–{{max}}',
-  ws_filter_title: 'व्यावसायिक फिल्टर करा',
+  ws_filter_title: 'कामगार फिल्टर करा',
   ws_filter_subtitle: 'तुमचा शोध मर्यादित करा',
   ws_filters_active: '{{count}} फिल्टर सक्रिय',
   ws_filters_active_other: '{{count}} फिल्टर सक्रिय',
