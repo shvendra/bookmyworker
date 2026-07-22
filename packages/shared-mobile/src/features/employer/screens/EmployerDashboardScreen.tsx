@@ -1099,7 +1099,44 @@ const SubscriptionStatusWidget = React.memo(({
     </TouchableOpacity>
   );
 
-  /* ── Expired (was subscribed) — show the card alone (renew prompt) ── */
+  /* ── Expired (was subscribed) — premium deep-navy + gold renewal card ── */
+  if (isExpired) {
+    return (
+      <TouchableOpacity onPress={onRenew} activeOpacity={0.92} style={ssw.expCard}>
+        {/* Layered "gradient" (no gradient lib): deep navy base + royal-blue sheen
+            on the right + a soft gold glow → a premium look that invites renewal. */}
+        <View pointerEvents="none" style={ssw.expBase} />
+        <View pointerEvents="none" style={ssw.expSheen} />
+        <View pointerEvents="none" style={ssw.expGlow} />
+
+        <View style={ssw.expTop}>
+          <View style={ssw.expIcon}>
+            <Ionicons name="diamond" size={19} color="#0B1E4D" />
+          </View>
+          <View style={ssw.expMid}>
+            <View style={ssw.expTitleRow}>
+              <AppText style={ssw.expTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.2}>
+                {t('subscriptionExpired')}
+              </AppText>
+              <View style={ssw.expPill}>
+                <View style={ssw.expPillDot} />
+                <AppText style={ssw.expPillTxt} maxFontSizeMultiplier={1.2}>{t('ssw_expiredShort')}</AppText>
+              </View>
+            </View>
+            <AppText style={ssw.expSub} numberOfLines={2} maxFontSizeMultiplier={1.3}>
+              {t('na_emp_subscribe_d')}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={ssw.expCta}>
+          <AppText style={ssw.expCtaTxt} maxFontSizeMultiplier={1.2}>{t('ssw_renewNow')}{'   →'}</AppText>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  /* ── Fallback (should not normally reach here) ── */
   if (!showSlider) return subscriptionCard;
 
   /* ── Active subscriber — slider: [subscription card, ...promo cards] ── */
@@ -1205,6 +1242,23 @@ const ssw = StyleSheet.create({
   promoRight:   { alignSelf: 'flex-end', flexShrink: 0 },
   promoEmojiBubble: { width: 62, height: 62, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   promoEmoji:   { fontSize: 30, lineHeight: 38 },
+
+  // ── Premium "Subscription Expired" renewal card ──
+  expCard:  { borderRadius: 20, overflow: 'hidden', marginBottom: 14, paddingHorizontal: 16, paddingVertical: 16, gap: 14, elevation: 5, shadowColor: '#0B1E4D', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.28, shadowRadius: 14 },
+  expBase:  { ...StyleSheet.absoluteFillObject, backgroundColor: '#0B1E4D' },
+  expSheen: { ...StyleSheet.absoluteFillObject, backgroundColor: '#1D4ED8', opacity: 0.35, left: '35%' },
+  expGlow:  { position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -60, right: -30, backgroundColor: 'rgba(255,215,140,0.16)' },
+  expTop:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  expIcon:     { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFD98A', alignItems: 'center', justifyContent: 'center' },
+  expMid:      { flex: 1, minWidth: 0 },
+  expTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  expTitle:    { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: -0.2, flexShrink: 1 },
+  expPill:     { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.55)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0 },
+  expPillDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F87171' },
+  expPillTxt:  { color: '#FCA5A5', fontSize: 10, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
+  expSub:      { color: 'rgba(255,255,255,0.82)', fontSize: 12.5, fontWeight: '600', lineHeight: 17, marginTop: 3 },
+  expCta:      { backgroundColor: '#FFD98A', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', elevation: 2, shadowColor: '#FFD98A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 8 },
+  expCtaTxt:   { color: '#0B1E4D', fontSize: 14.5, fontWeight: '900', letterSpacing: 0.2 },
 });
 
 // ─── Quick Action Card ─────────────────────────────────────────────────────────
