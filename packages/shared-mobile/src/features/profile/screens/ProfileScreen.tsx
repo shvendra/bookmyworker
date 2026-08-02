@@ -320,7 +320,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               ) : (
                 <View style={styles.pendingPill}>
                   <View style={styles.pendingPillDot} />
-                  <AppText style={styles.pendingPillTxt}>{t('profile_pendingVerification')}</AppText>
+                  <AppText style={[styles.pendingPillTxt, { flexShrink: 1 }]} numberOfLines={1}>{t('profile_pendingVerification')}</AppText>
                 </View>
               )}
             </View>

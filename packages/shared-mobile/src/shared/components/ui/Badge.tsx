@@ -94,6 +94,7 @@ export const Badge = ({ label, variant = 'neutral', dot = false, size = 'md', ou
       <AppText
         variant={isSm ? 'micro' : 'caption'}
         color={text}
+        numberOfLines={1}
         style={[styles.text, isSm && styles.smText]}
       >
         {label.charAt(0).toUpperCase() + label.slice(1)}

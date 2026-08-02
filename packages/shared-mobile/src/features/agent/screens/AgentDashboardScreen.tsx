@@ -727,8 +727,8 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
           <View style={styles.sliderSection}>
             {/* Section header */}
             <View style={styles.sliderHeader}>
-              <View>
-                <AppText style={[styles.sliderTitle, { color: theme.colors.text }]}>{t('openJobsNearYou')}</AppText>
+              <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                <AppText numberOfLines={2} style={[styles.sliderTitle, { color: theme.colors.text }]}>{t('openJobsNearYou')}</AppText>
                 <AppText style={[styles.sliderSub, { color: theme.colors.mutedText }]}>{t('scrollSeeMore')}</AppText>
               </View>
               <TouchableOpacity
@@ -972,8 +972,8 @@ const styles = StyleSheet.create({
 
   // ── Quick links ─────────────────────────────────────────────────────────────
   quickRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  quickBtn: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
-  quickBtnText: { fontSize: 13, fontWeight: '700' },
+  quickBtn: { flex: 1, minHeight: 48, borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  quickBtnText: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
   // ── WhatsApp banner ─────────────────────────────────────────────────────────
   waBanner: {

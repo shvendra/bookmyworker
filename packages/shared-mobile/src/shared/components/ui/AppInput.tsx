@@ -71,6 +71,7 @@ export const AppInput = ({
           {label ? (
             <AppText
               variant="labelSm"
+              numberOfLines={1}
               color={
                 hasError
                   ? theme.colors.danger
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 2,
   },
-  label: { letterSpacing: 0.2 },
+  label: { letterSpacing: 0.2, flexShrink: 1 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',

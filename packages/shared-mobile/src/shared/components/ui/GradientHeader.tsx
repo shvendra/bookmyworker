@@ -1,6 +1,8 @@
 /**
  * GradientHeader — Premium screen header with deep-blue gradient feel.
- * Simulated gradient via layered Views (no external dep needed).
+ * Real LinearGradient sheen layered over the base tone. The gradient fades to
+ * the base colour at the BOTTOM edge, so headers stay seamless with any hero
+ * section rendered directly below (light mode) while gaining subtle depth.
  */
 import React from 'react';
 import {
@@ -10,6 +12,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
@@ -89,12 +92,15 @@ export const GradientHeader = ({
         style,
       ]}
     >
-      {/* Gradient depth layer */}
-      <View
-        style={[
-          styles.depthLayer,
-          { backgroundColor: bgColor2 },
-        ]}
+      {/* Gradient depth layer — fades to the base tone at the bottom edge so the
+          header stays seamless with any hero rendered directly below it. */}
+      <LinearGradient
+        colors={isDark
+          ? [bgColor2, bgColor]
+          : ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.02)', 'rgba(255,255,255,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
@@ -230,10 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     overflow: 'hidden',
     zIndex: 10,
-  },
-  depthLayer: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.45,
   },
   circle: {
     position: 'absolute',

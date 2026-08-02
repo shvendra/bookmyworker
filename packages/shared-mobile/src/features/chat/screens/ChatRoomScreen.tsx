@@ -329,6 +329,10 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         data={messages}
         keyExtractor={(item) => item.id}
         inverted={messages.length > 0}
+        initialNumToRender={15}
+        maxToRenderPerBatch={12}
+        windowSize={12}
+        removeClippedSubviews={false}
         contentContainerStyle={[styles.messageList, messages.length === 0 && styles.messageListEmpty]}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>

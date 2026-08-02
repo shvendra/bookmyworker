@@ -83,7 +83,7 @@ export const NeedsAttentionCard = ({ items, style }: Props): React.JSX.Element |
                 </AppText>
               </View>
               <View style={[s.prioPill, { backgroundColor: p.bg }]}>
-                <AppText style={{ fontSize: 9.5, fontWeight: '800', color: p.color, letterSpacing: 0.3 }}>
+                <AppText numberOfLines={1} style={{ fontSize: 9.5, fontWeight: '800', color: p.color, letterSpacing: 0.3 }}>
                   {p.label}
                 </AppText>
               </View>

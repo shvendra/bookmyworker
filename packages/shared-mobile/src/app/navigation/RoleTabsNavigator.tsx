@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { AppRole } from '../../shared/types/domain';
 import { useAppTheme } from '../../core/theme';
+import { hapticSelection } from '../../core/haptics';
 import { AppText } from '../../shared/components/ui/AppText';
 
 // ── Dashboards ────────────────────────────────────────────────────────────────
@@ -229,7 +230,7 @@ const ActionTabItem = ({ tabCfg, isFocused, onPress, accessibilityLabel }: Actio
           size={24}
           color="#FFFFFF"
         />
-        <AppText variant="micro" color="#FFFFFF" style={tabStyles.actionLabel} numberOfLines={1}>
+        <AppText variant="micro" color="#FFFFFF" style={tabStyles.actionLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
           {t(tabCfg.labelKey, tabCfg.labelKey)}
         </AppText>
       </Pressable>
@@ -273,6 +274,7 @@ const CustomTabBar = ({ state, descriptors, navigation, tabConfigs }: BottomTabB
         const accessibilityLabel = options.tabBarAccessibilityLabel ?? (tabCfg?.labelKey ?? route.name);
 
         const onPress = (): void => {
+          hapticSelection();
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
           if (!isFocused && !event.defaultPrevented) {
             navigation.navigate(route.name);

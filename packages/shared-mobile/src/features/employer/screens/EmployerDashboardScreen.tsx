@@ -1057,7 +1057,7 @@ const SubscriptionStatusWidget = React.memo(({
           style={[ssw.actionBtn, { backgroundColor: tuBg, borderColor: tuBdr }]}
           activeOpacity={0.8}
         >
-          <AppText style={[ssw.actionBtnTxt, { color: tuTxt }]}>
+          <AppText numberOfLines={1} style={[ssw.actionBtnTxt, { color: tuTxt }]}>
             {isExpired ? t('renew') : t('topUp')}
           </AppText>
         </TouchableOpacity>
@@ -1870,7 +1870,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 activeOpacity={0.85}
                 style={[reqCard.tab, active && [reqCard.tabActive, { backgroundColor: theme.colors.card }]]}
               >
-                <AppText style={[reqCard.tabLabel, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
+                <AppText numberOfLines={1} style={[reqCard.tabLabel, { color: active ? theme.colors.primary : theme.colors.mutedText }]}>
                   {t.label}
                 </AppText>
                 <View style={[reqCard.tabBadge, { backgroundColor: active ? theme.colors.primary : theme.colors.border }]}>
@@ -2171,7 +2171,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 onPress={() => setCloseTarget(null)}
                 style={[confirm.btn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               >
-                <AppText style={[confirm.btnTxt, { color: theme.colors.text }]}>{t('cancel')}</AppText>
+                <AppText numberOfLines={1} style={[confirm.btnTxt, { color: theme.colors.text }]}>{t('cancel')}</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -2181,7 +2181,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
                 }}
                 style={[confirm.btn, confirm.btnDanger]}
               >
-                <AppText style={[confirm.btnTxt, { color: '#fff' }]}>{t('yesCloseIt')}</AppText>
+                <AppText numberOfLines={1} style={[confirm.btnTxt, { color: '#fff' }]}>{t('yesCloseIt')}</AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -2345,7 +2345,7 @@ const confirm = StyleSheet.create({
   reqName:     { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   bodyMsg:     { fontSize: 13, textAlign: 'center', lineHeight: 19 },
   actions:     { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 4 },
-  btn:         { flex: 1, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  btn:         { flex: 1, minHeight: 46, paddingVertical: 6, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
   btnDanger:   { backgroundColor: '#DC2626', borderColor: 'transparent', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   btnTxt:      { fontSize: 14, fontWeight: '700' },
 });
@@ -2470,9 +2470,9 @@ const reqCard = StyleSheet.create({
 
   // Tab row
   tabRow:      { flexDirection: 'row', borderRadius: 13, padding: 5, gap: 6, marginBottom: 14, marginHorizontal: 16 },
-  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 36, borderRadius: 9, gap: 6 },
+  tab:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minHeight: 36, paddingVertical: 4, borderRadius: 9, gap: 6 },
   tabActive:   { shadowColor: '#142250', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 2 },
-  tabLabel:    { fontWeight: '800', fontSize: 13 },
+  tabLabel:    { fontWeight: '800', fontSize: 13, flexShrink: 1 },
   tabBadge:    { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 1, minWidth: 18, alignItems: 'center' },
   tabBadgeTxt: { fontSize: 11, fontWeight: '800' },
 });

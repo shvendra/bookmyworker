@@ -162,8 +162,13 @@ export const AppNavigator = (): React.JSX.Element => {
     const isExpoGo = Constants.appOwnership === 'expo';
     if (isExpoGo) return;
 
+    // Guards the async-register vs sync-cleanup race: if this effect is torn
+    // down (logout / status flip) while the dynamic import is still pending, we
+    // skip registration (or immediately remove) so no listener is orphaned.
+    let cancelled = false;
     void (async () => {
       const Notifications = await import('expo-notifications');
+      if (cancelled) return;
 
       // Foreground: show alert + sound when app is open
       await Notifications.setNotificationHandler({
@@ -175,15 +180,16 @@ export const AppNavigator = (): React.JSX.Element => {
           shouldShowList: true,
         }),
       });
+      if (cancelled) return;
 
       // Foreground received: invalidate notifications query so hub badge updates
-      notifReceivedSub.current = Notifications.addNotificationReceivedListener(() => {
+      const recSub = Notifications.addNotificationReceivedListener(() => {
         // Badge refresh is handled by React Query polling on NotificationsScreen
         // Nothing additional needed here
       });
 
       // Tap handler: user taps a push notification (background or quit state)
-      notifResponseSub.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const respSub = Notifications.addNotificationResponseReceivedListener((response) => {
         const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
         const type = (data.type as string | undefined) ?? 'system';
 
@@ -232,11 +238,18 @@ export const AppNavigator = (): React.JSX.Element => {
         };
         navigate();
       });
+
+      if (cancelled) { recSub.remove(); respSub.remove(); return; }
+      notifReceivedSub.current = recSub;
+      notifResponseSub.current = respSub;
     })();
 
     return () => {
+      cancelled = true;
       notifReceivedSub.current?.remove();
       notifResponseSub.current?.remove();
+      notifReceivedSub.current = null;
+      notifResponseSub.current = null;
     };
   }, [state.status]);
 

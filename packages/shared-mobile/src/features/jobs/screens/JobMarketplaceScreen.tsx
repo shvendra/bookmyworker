@@ -270,7 +270,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
       <View style={styles.infoRow}>
         <Ionicons name="wallet" size={13} color={visual.color} style={styles.infoRowIcon} />
         <AppText style={[styles.salaryAmt, { color: visual.color, flexShrink: 1 }]} numberOfLines={1}>{salaryText}</AppText>
-        <AppText style={[styles.salarySlash, { color: theme.colors.mutedText, flexShrink: 0 }]}> {t('salaryPer')} {salaryPeriod}</AppText>
+        <AppText style={[styles.salarySlash, { color: theme.colors.mutedText, flexShrink: 1 }]} numberOfLines={1}> {t('salaryPer')} {salaryPeriod}</AppText>
         {workers > 0 && (
           <>
             <AppText style={[styles.dot, { color: theme.colors.mutedText, flexShrink: 0 }]}> · </AppText>
@@ -345,7 +345,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
             activeOpacity={0.75}
           >
             <Ionicons name="share-social" size={14} color={isDark ? theme.colors.mutedText : '#64748B'} />
-            <AppText style={[styles.shareBtnLabel, { color: isDark ? theme.colors.mutedText : '#64748B' }]}>{t('shareWithFriends')}</AppText>
+            <AppText style={[styles.shareBtnLabel, { color: isDark ? theme.colors.mutedText : '#64748B' }]} numberOfLines={1}>{t('shareWithFriends')}</AppText>
           </TouchableOpacity>
 
           {/* Call button — only visible when employer has an active subscription.
@@ -606,6 +606,8 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       setDebouncedSearch(text);
     }, 500);
   };
+  // Clear any pending debounce on unmount (no setState after unmount).
+  useEffect(() => () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); }, []);
 
   // Sync pending state with applied state whenever the sheet opens
   useEffect(() => {
@@ -906,6 +908,10 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           keyExtractor={(item, i) => item._id || String(i)}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={10}
+          removeClippedSubviews={false}
           refreshControl={<RefreshControl refreshing={isManualRefresh} onRefresh={handleRefresh} />}
           onEndReached={() => {
             if (showLikedOnly) {
@@ -1196,6 +1202,7 @@ const styles = StyleSheet.create({
     borderRadius: 999, borderWidth: 1,
     paddingHorizontal: 11, paddingVertical: 5,
     flexShrink: 0,
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -1214,7 +1221,7 @@ const styles = StyleSheet.create({
   },
   detailsBtn: { paddingVertical: 4, paddingHorizontal: 4 },
   detailsBtnText: { fontSize: 11, fontWeight: '600' },
-  actionRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionRight: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', rowGap: 6, gap: 6 },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10, flexShrink: 0 },
   shareBtnIcon: { fontSize: 13, lineHeight: 17 },
   shareBtnLabel: { fontSize: 12, fontWeight: '600' },
