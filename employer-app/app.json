@@ -70,7 +70,8 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_AUDIO"
-      ]
+      ],
+      "versionCode": 47
     },
     "web": {
       "favicon": "./assets/favicon.png"
