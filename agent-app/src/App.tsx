@@ -22,6 +22,7 @@ import { installGlobalErrorHandlers } from '../../packages/shared-mobile/src/cor
 import { useAppFonts, markFontsReady } from '../../packages/shared-mobile/src/core/theme/fonts';
 
 import { AppNavigator } from './navigation/AppNavigator';
+import { AppGate } from '../../packages/shared-mobile/src/app/AppGate';
 
 // Keep the native splash screen up until the brand fonts are ready, so text
 // never flashes in the system font first. Safe/idempotent at module load.
@@ -71,7 +72,9 @@ const App = (): React.JSX.Element | null => {
               <AppAlertProvider>
                 <ErrorBoundary FallbackComponent={AppErrorFallback}>
                   <StatusBar style="auto" />
-                  <AppNavigator />
+                  <AppGate app="agent">
+                    <AppNavigator />
+                  </AppGate>
                 </ErrorBoundary>
               </AppAlertProvider>
             </ToastProvider>

@@ -3,6 +3,11 @@
     "name": "BookMyWorker",
     "slug": "bookmyworker-agent",
     "version": "12.3.45",
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": {
+      "url": "https://u.expo.dev/ed89ef54-3e18-46f1-af1a-fe038fd6fc84",
+      "fallbackToCacheTimeout": 0
+    },
     "description": "BookMyWorker – India's trusted platform for workers, agents & employers. Find skilled workers instantly, register your team, and earn commissions.",
     "orientation": "portrait",
     "scheme": "bookmyworker-agent",
