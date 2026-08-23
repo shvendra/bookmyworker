@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker",
     "slug": "bookmyworker-agent",
-    "version": "12.3.45",
+    "version": "12.3.46",
     "runtimeVersion": { "policy": "appVersion" },
     "updates": {
       "url": "https://u.expo.dev/ed89ef54-3e18-46f1-af1a-fe038fd6fc84",
@@ -53,8 +53,8 @@
     "android": {
       "package": "com.app.myworker",
       "googleServicesFile": "./android/app/google-services.json",
-      "versionCode": 1312,
-      "versionName": "12.3.45",
+      "versionCode": 1313,
+      "versionName": "12.3.46",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0891B2"

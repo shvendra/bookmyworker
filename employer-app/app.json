@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker Recruiter",
     "slug": "bookmyworker-employer",
-    "version": "1.0.36",
+    "version": "1.0.37",
     "runtimeVersion": { "policy": "appVersion" },
     "updates": {
       "url": "https://u.expo.dev/26a471b1-82cf-4e21-ba26-6f8f6a82f6e4",
