@@ -1,0 +1,23 @@
+# .easignore overrides .gitignore for EAS Build archiving.
+# The root .gitignore excludes android/ (and google-services.json), but EAS
+# prebuild needs google-services.json. This keeps the android/ SOURCE (so the
+# file is present) while still dropping heavy build artifacts + node_modules.
+# Local build only — nothing is uploaded to a remote builder.
+
+# Heavy / regenerated
+**/node_modules/
+**/.expo/
+**/dist/
+**/web-build/
+**/coverage/
+**/.gradle/
+**/build/
+**/android/app/build/
+**/ios/build/
+**/ios/Pods/
+
+# Noise / local secrets we don't want in the archive
+**/*.log
+**/.DS_Store
+**/.env
+**/.env.*
