@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker Recruiter",
     "slug": "bookmyworker-employer",
-    "version": "1.0.33",
+    "version": "1.0.38",
     "orientation": "portrait",
     "scheme": "bookmyworker-employer",
     "icon": "./assets/icon.png",
@@ -44,9 +44,10 @@
     "android": {
       "package": "com.bookmyworkers.employer",
       "googleServicesFile": "./android/app/google-services.json",
+      "versionCode": 48,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7C3AED"
+        "backgroundColor": "#034FC9"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -70,7 +71,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
+      "apiBaseUrl": "https://www.bookmyworkers.com",
       "eas": {
         "projectId": "26a471b1-82cf-4e21-ba26-6f8f6a82f6e4"
       }

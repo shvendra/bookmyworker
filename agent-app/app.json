@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyWorker",
     "slug": "bookmyworker-agent",
-    "version": "12.3.43",
+    "version": "12.3.47",
     "description": "BookMyWorker – India's trusted platform for workers, agents & employers. Find skilled workers instantly, register your team, and earn commissions.",
     "orientation": "portrait",
     "scheme": "bookmyworker-agent",
@@ -51,12 +51,12 @@
     "android": {
       "package": "com.app.myworker",
       "googleServicesFile": "./android/app/google-services.json",
-      "versionCode": 1310,
-      "versionName": "12.3.43",
+      "versionCode": 1314,
+      "versionName": "12.3.47",
 
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0891B2"
+        "backgroundColor": "#034FC9"
       },
 
       "edgeToEdgeEnabled": true,
@@ -85,7 +85,7 @@
     },
 
     "extra": {
-      "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
+      "apiBaseUrl": "https://www.bookmyworkers.com",
       "eas": {
         "projectId": "ed89ef54-3e18-46f1-af1a-fe038fd6fc84"
       }
