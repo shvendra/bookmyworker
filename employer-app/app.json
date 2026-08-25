@@ -44,7 +44,7 @@
     "android": {
       "package": "com.bookmyworkers.employer",
       "googleServicesFile": "./android/app/google-services.json",
-      "versionCode": 48,
+      "versionCode": 49,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#034FC9"

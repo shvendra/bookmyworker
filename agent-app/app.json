@@ -51,7 +51,7 @@
     "android": {
       "package": "com.app.myworker",
       "googleServicesFile": "./android/app/google-services.json",
-      "versionCode": 1314,
+      "versionCode": 1315,
       "versionName": "12.3.47",
 
       "adaptiveIcon": {
