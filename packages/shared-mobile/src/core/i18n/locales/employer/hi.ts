@@ -800,6 +800,7 @@ export const employerTranslation = {
   wp_contactWorker: 'वर्कर से संपर्क करें',
   wp_alreadyHiredFree: 'पहले से नियुक्त — संपर्क निःशुल्क उपलब्ध',
   wp_phoneNumber: 'फ़ोन नंबर',
+  wp_safetyNotice: 'सेफ्टी टिप: वर्कर जब तक आपके सामने न आ जाए, तब तक उसे एडवांस पेमेंट या किराया न भेजें। BookMyWorker आपके और वर्कर के बीच किसी भी लेन-देन में शामिल नहीं होता।',
   wp_callNow: 'अभी कॉल करें',
   wp_whatsapp: 'व्हाट्सएप',
   wp_uses1Credit: '1 वर्कर प्रोफ़ाइल क्रेडिट इस्तेमाल होगा',

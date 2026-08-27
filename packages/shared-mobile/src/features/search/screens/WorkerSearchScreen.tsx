@@ -36,6 +36,7 @@ import { requestReviewOnce } from '../../../core/review/storeReview';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { WorkerSafetyNotice } from '../../../shared/components/ui/WorkerSafetyNotice';
 import { apiClient } from '../../../core/api/client';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { useContactQuotaNudge } from '../../../core/hooks/useContactQuotaNudge';
@@ -2206,15 +2207,18 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           // so keep it OFF on Fabric.
           removeClippedSubviews={false}
           ListHeaderComponent={
-            <SmartMatchStrip
-              params={{
-                category: appliedFilters.workerType || undefined,
-                subCategory: appliedFilters.subCategory || undefined,
-                state: appliedFilters.state || undefined,
-                district: appliedFilters.district || undefined,
-              }}
-              enabled={activeFilterCount > 0}
-            />
+            <>
+              {isEmployerRole && <WorkerSafetyNotice />}
+              <SmartMatchStrip
+                params={{
+                  category: appliedFilters.workerType || undefined,
+                  subCategory: appliedFilters.subCategory || undefined,
+                  state: appliedFilters.state || undefined,
+                  district: appliedFilters.district || undefined,
+                }}
+                enabled={activeFilterCount > 0}
+              />
+            </>
           }
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) void fetchNextPage(); }}
           onEndReachedThreshold={0.6}

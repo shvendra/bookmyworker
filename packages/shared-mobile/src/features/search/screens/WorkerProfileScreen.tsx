@@ -26,6 +26,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { WorkerSafetyNotice } from '../../../shared/components/ui/WorkerSafetyNotice';
 import { buildPhotoUrl } from '../../../core/config/env';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { useToast } from '../../../shared/state/toast/ToastContext';
@@ -1246,6 +1247,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       <AppText style={s.waBtnTxt}>{t('wp_whatsapp')}</AppText>
                     </TouchableOpacity>
                   </View>
+                  <WorkerSafetyNotice />
                 </View>
               ) : (!isSubscribed && freeContactsRemaining > 0) ? (
                 // ─ Gifted free contact — only for non-subscribed employers; a paying
