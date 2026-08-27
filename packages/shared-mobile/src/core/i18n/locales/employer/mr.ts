@@ -843,6 +843,7 @@ export const employerTranslation = {
   wp_contactWorker: 'कामगाराशी संपर्क साधा',
   wp_alreadyHiredFree: 'आधीच नियुक्त — संपर्क विनामूल्य उपलब्ध',
   wp_phoneNumber: 'फोन क्रमांक',
+  wp_safetyNotice: 'सुरक्षा टीप: कामगार तुमच्यासमोर प्रत्यक्ष येईपर्यंत त्याला आगाऊ पैसे किंवा प्रवास खर्च पाठवू नका. BookMyWorker तुमच्या आणि कामगारामधील कोणत्याही व्यवहारात सहभागी होत नाही.',
   wp_callNow: 'आता कॉल करा',
   wp_whatsapp: 'व्हॉट्सअ‍ॅप',
   wp_uses1Credit: '1 कामगार प्रोफाइल क्रेडिट वापरले जाईल',

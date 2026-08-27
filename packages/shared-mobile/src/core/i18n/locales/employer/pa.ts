@@ -854,6 +854,7 @@ export const employerTranslation = {
   wp_contactWorker: 'ਕਾਮੇ ਨਾਲ ਸੰਪਰਕ ਕਰੋ',
   wp_alreadyHiredFree: 'ਪਹਿਲਾਂ ਹੀ ਨਿਯੁਕਤ — ਸੰਪਰਕ ਮੁਫਤ ਉਪਲਬਧ',
   wp_phoneNumber: 'ਫੋਨ ਨੰਬਰ',
+  wp_safetyNotice: 'ਸੁਰੱਖਿਆ ਸੁਝਾਅ: ਵਰਕਰ ਜਦੋਂ ਤੱਕ ਤੁਹਾਡੇ ਸਾਹਮਣੇ ਖੁਦ ਨਾ ਆਵੇ, ਉਸਨੂੰ ਪੇਸ਼ਗੀ ਭੁਗਤਾਨ ਜਾਂ ਯਾਤਰਾ ਖਰਚਾ ਨਾ ਭੇਜੋ। BookMyWorker ਤੁਹਾਡੇ ਅਤੇ ਵਰਕਰ ਵਿਚਕਾਰ ਕਿਸੇ ਵੀ ਲੈਣ-ਦੇਣ ਵਿੱਚ ਸ਼ਾਮਲ ਨਹੀਂ ਹੁੰਦਾ।',
   wp_callNow: 'ਹੁਣੇ ਕਾਲ ਕਰੋ',
   wp_whatsapp: 'ਵਟਸਐਪ',
   wp_uses1Credit: '1 ਕਾਮਾ ਪ੍ਰੋਫਾਈਲ ਕ੍ਰੈਡਿਟ ਵਰਤਿਆ ਜਾਵੇਗਾ',
