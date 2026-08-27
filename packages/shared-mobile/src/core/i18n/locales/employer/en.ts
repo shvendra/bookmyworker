@@ -777,6 +777,7 @@ export const employerTranslation = {
   wp_contactWorker: 'Contact Worker',
   wp_alreadyHiredFree: 'Already hired — contact available for free',
   wp_phoneNumber: 'Phone Number',
+  wp_safetyNotice: 'Safety tip: Don’t send advance payment or travel money to any worker until they report to you in person. BookMyWorker does not get involved in payments between you and the worker.',
   wp_callNow: 'Call Now',
   wp_whatsapp: 'WhatsApp',
   wp_uses1Credit: 'Uses 1 worker-profile credit',
