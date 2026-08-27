@@ -57,6 +57,29 @@ export const apiClient = axios.create({
   },
 });
 
+// ── Transient connectivity auto-retry for login ───────────────────────────────
+// A brief backend restart/blip used to surface as an immediate "Unable to
+// connect" error on the login screen, even though the exact same blip on a
+// background query would just quietly retry on reconnect (see connectivity.ts).
+// Login is retried automatically (2x, with backoff) because it's safe: a
+// retried login attempt has no duplicate-action risk — it either succeeds or
+// fails on real credentials, nothing gets created twice. This mirrors the CRM
+// web app's identical fix — see crm/src/utils/axiosConfig.js.
+// Registration/other POSTs are deliberately NOT auto-retried here for the same
+// reason as web: resubmitting could duplicate an action if the original
+// request actually reached the server and only the response was lost.
+const RETRY_MAX = 2;
+const RETRY_DELAY_MS = [1000, 2500];
+const SAFE_TO_RETRY_URLS = ['/api/v1/user/login'];
+
+function isConnectivityFailure(error: AxiosError): boolean {
+  if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message)) return true;
+  if (!error.response) return true;
+  return [502, 503, 504].includes(error.response.status);
+}
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 apiClient.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
   if (token) {
@@ -75,6 +98,22 @@ apiClient.interceptors.response.use(
     // network-level failure (offline); any response means the server was reachable.
     if (error.response) reportNetworkOk();
     else reportNetworkDown();
+
+    const cfg = error.config;
+    const url = cfg?.url || '';
+    const isSafeToRetry = (cfg?.method || 'get').toLowerCase() === 'post'
+      && SAFE_TO_RETRY_URLS.some((u) => url.includes(u));
+    if (isSafeToRetry && cfg && isConnectivityFailure(error)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cfgAny = cfg as any;
+      const retryCount: number = cfgAny.__retryCount || 0;
+      if (retryCount < RETRY_MAX) {
+        await delay(RETRY_DELAY_MS[retryCount] || 2500);
+        cfgAny.__retryCount = retryCount + 1;
+        return apiClient(cfg); // resolves the ORIGINAL caller's promise transparently on success
+      }
+    }
+
     if (error.response?.status === 401) {
       // Only force-sign-out when there is an active session (expired token).
       // During login attempts there is no stored token, so 401 means wrong
