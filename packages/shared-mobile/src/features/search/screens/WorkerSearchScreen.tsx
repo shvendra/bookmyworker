@@ -1852,6 +1852,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     isFetchingNextPage,
     isLoading,
     isError,
+    fetchStatus,
     refetch,
   } = useInfiniteQuery({
     queryKey: ['workers-infinite', appliedFilters],
@@ -2156,7 +2157,14 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         <ScrollView contentContainerStyle={sc.list} showsVerticalScrollIndicator={false}>
           {Array.from({ length: 6 }, (_, i) => (<SkeletonCard key={i} />))}
         </ScrollView>
-      ) : isError ? (
+      ) : isError || (fetchStatus === 'paused' && !data) ? (
+        // fetchStatus === 'paused' (with no data yet) means React Query never
+        // even got to attempt the request — the device was offline, so the
+        // query never resolved to isError, it just parked itself waiting for
+        // reconnect. Previously this fell all the way through to the empty
+        // "No Workers Found" branch below, which misleadingly told the
+        // employer no workers exist when the real problem was their own
+        // connection.
         <View style={sc.stateBox}>
           <View style={sc.errorIconWrap}><AppText style={{ fontSize: 28 }}>⚠</AppText></View>
           <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>{t('ws_connection_error')}</AppText>
