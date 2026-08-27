@@ -32,7 +32,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
   const { theme } = useAppTheme();
   const { t } = useTranslation();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch, fetchStatus } = useQuery({
     queryKey: ['my-applications'],
     queryFn: () => requirementsApi.getMyApplications(),
     staleTime: 30_000,
@@ -47,7 +47,11 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title={t('myApplicationsTab')} onBack={() => navigation.goBack()} />
 
-      {isError ? (
+      {isError || (fetchStatus === 'paused' && !data) ? (
+        // paused+no-data means React Query never even attempted the request —
+        // the device was offline before it ran, so it never became isError.
+        // Without this it fell through to the empty-list view, misleadingly
+        // showing "no applications" when the real problem was connectivity.
         <ErrorState
           title={t('couldNotLoadApps')}
           description={t('checkConnectionRetry')}

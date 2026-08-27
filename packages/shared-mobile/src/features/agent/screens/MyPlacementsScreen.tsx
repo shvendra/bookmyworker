@@ -163,7 +163,7 @@ export const MyPlacementsScreen = (): React.JSX.Element => {
 
   const queryParams = filter === 'all' ? {} : { status: filter };
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching, fetchStatus } = useQuery({
     queryKey: ['my-placements', filter],
     queryFn: () => placementApi.getMyPlacements(queryParams),
     staleTime: 30_000,
@@ -261,7 +261,11 @@ export const MyPlacementsScreen = (): React.JSX.Element => {
       {/* Content */}
       {isLoading ? (
         <LoadingState message={t('pl_loading')} />
-      ) : isError ? (
+      ) : isError || (fetchStatus === 'paused' && !data) ? (
+        // paused+no-data means React Query never even attempted the request —
+        // the device was offline before it ran, so it never became isError.
+        // Without this it fell through to the empty-list view, misleadingly
+        // showing "no placements" when the real problem was connectivity.
         <ErrorState title={t('pl_errTitle')} description={t('pl_errDesc')} onRetry={refetch} />
       ) : placements.length === 0 ? (
         <EmptyState

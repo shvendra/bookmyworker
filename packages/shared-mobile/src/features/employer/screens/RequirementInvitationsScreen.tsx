@@ -427,7 +427,7 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
   })();
 
   // ── Invitations data ─────────────────────────────────────────────────────
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching, fetchStatus } = useQuery({
     queryKey: ['requirement-invitations', requirementId],
     queryFn: () => requirementsApi.getRequirementInvitations(requirementId),
     staleTime: 60 * 1000,
@@ -541,8 +541,12 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
           <AppText style={[sc.loadTxt, { color: theme.colors.mutedText }]}>{t('invLoadingText')}</AppText>
         </View>
 
-      /* Error */
-      ) : isError ? (
+      /* Error — includes fetchStatus === 'paused' with no data: the device was
+         offline before the query ever ran, so it never resolved to isError,
+         it just parked itself waiting to reconnect. Without this it fell
+         through to the empty-list view below, misleadingly showing "no
+         invitations sent" when the real problem was connectivity. */
+      ) : isError || (fetchStatus === 'paused' && !data) ? (
         <View style={sc.center}>
           <View style={sc.errorIconWrap}>
             <AppText style={sc.errorIcon}>{'⚠️'}</AppText>

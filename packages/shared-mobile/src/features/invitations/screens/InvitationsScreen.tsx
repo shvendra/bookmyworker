@@ -267,6 +267,7 @@ export const InvitationsScreen = (): React.JSX.Element => {
     hasNextPage,
     isFetchingNextPage,
     isFetching,
+    fetchStatus,
   } = useInfiniteQuery({
     queryKey: ['my-invitations'],
     queryFn: ({ pageParam = 1 }) =>
@@ -376,7 +377,12 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
       {isLoading && !data ? (
         <View style={s.center}><ActivityIndicator size="large" color="#7C3AED" /></View>
-      ) : isError ? (
+      ) : isError || (fetchStatus === 'paused' && !data) ? (
+        // paused+no-data means React Query never even attempted the request —
+        // the device was offline before it ran, so it never became isError.
+        // Without this it fell through to the empty-list view further down,
+        // misleadingly showing "no invitations" when the real problem was
+        // connectivity.
         <View style={s.center}>
           <AppText style={[s.errorTxt, { color: theme.colors.danger }]}>{t('invLoadError')}</AppText>
           <TouchableOpacity onPress={() => void refetch()} style={s.retryBtn} activeOpacity={0.85}>
