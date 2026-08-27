@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { GstPromptModal } from '../../../shared/components/ui/GstPromptModal';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useAppTheme } from '../../../core/theme';
@@ -72,6 +73,7 @@ interface FreshProfile {
   remainingContacts?: number;
   remainingPosts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
+  kyc?: { gstNumber?: string };
 }
 
 export const EmployerBenefitsScreen = (): React.JSX.Element => {
@@ -89,6 +91,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const [modalType, setModalType] = useState<EmployerTypeKey | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<PlanId>('1m');
   const [paying, setPaying] = useState(false);
+  const [gstModalVisible, setGstModalVisible] = useState(false);
 
   const profileQuery = useQuery({
     queryKey: ['employer-benefits-profile'],
@@ -111,6 +114,13 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const typeKey = resolveEmployerType((profile?.employerType ?? user?.employerType) as Parameters<typeof resolveEmployerType>[0]);
   const currentIdx = PLAN_ORDER.indexOf(typeKey);
   const isTopTier = typeKey === 'industry';
+  // Industry/Agency employers are the ones who typically need a GST invoice —
+  // if their profile has no GST on file, offer to collect it right at
+  // checkout instead of silently printing an invoice with no GSTIN. Gated on
+  // the plan tier being purchased (modalType), not the account's own
+  // registered employerType, since this screen lets an employer upgrade to
+  // any tier regardless of what they originally registered as.
+  const needsGstPrompt = (modalType === 'industry' || modalType === 'agency') && !profile?.kyc?.gstNumber;
 
   const sub = pricing.subscription as unknown as Record<string, Record<string, number>>;
   const mrp = pricing.subscriptionMrp as unknown as Record<string, Record<string, number>>;
@@ -125,7 +135,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
     catch { return '—'; }
   };
 
-  const handlePay = async (): Promise<void> => {
+  const handlePay = async (gstNumber?: string | null): Promise<void> => {
     if (!user || !modalType) return;
     setPaying(true);
     try {
@@ -143,6 +153,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
         gstCharges,
         productName: `Employer Subscription Plan - ${modalType} - ${selectedDuration}`,
         planId: selectedDuration,
+        ...(gstNumber ? { gstNumber } : {}),
       });
       if (resp.url) {
         setModalType(null);
@@ -155,6 +166,14 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
     } finally {
       setPaying(false);
     }
+  };
+
+  // Entry point for the "Pay" button — routes through the GST prompt first
+  // when applicable, otherwise goes straight to payment (unchanged behavior
+  // for everyone else).
+  const startPay = (): void => {
+    if (needsGstPrompt) { setGstModalVisible(true); return; }
+    void handlePay();
   };
 
   const openModal = (tk: EmployerTypeKey) => {
@@ -421,7 +440,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 style={[s.payBtn, { backgroundColor: BRAND, opacity: paying ? 0.7 : 1 }]}
                 activeOpacity={0.85}
                 disabled={paying}
-                onPress={() => void handlePay()}
+                onPress={startPay}
               >
                 {paying
                   ? <ActivityIndicator size="small" color={WHITE} />
@@ -431,6 +450,13 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
           </View>
         </View>
       </Modal>
+
+      <GstPromptModal
+        visible={gstModalVisible}
+        loading={paying}
+        onClose={() => setGstModalVisible(false)}
+        onContinue={(gstNumber) => { setGstModalVisible(false); void handlePay(gstNumber); }}
+      />
     </View>
   );
 };

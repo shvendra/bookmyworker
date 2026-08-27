@@ -17,6 +17,10 @@ export interface InitTransactionPayload {
   gstCharges: number;
   productName: string;
   planId: string;
+  // Optional — collected at checkout when the employer's profile has no GST
+  // on file, so it prints on the invoice (backend falls back to this when
+  // profile KYC has no GST).
+  gstNumber?: string;
 }
 
 export interface InitTransactionResponse {

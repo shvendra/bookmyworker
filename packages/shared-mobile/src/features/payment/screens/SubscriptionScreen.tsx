@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { AppText } from '../../../shared/components/ui/AppText';
+import { GstPromptModal } from '../../../shared/components/ui/GstPromptModal';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useAppTheme } from '../../../core/theme';
@@ -33,6 +34,7 @@ interface FreshProfile {
   subscriptionExpery?: string;
   remainingContacts?: number;
   employerType?: { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean };
+  kyc?: { gstNumber?: string };
 }
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -440,6 +442,8 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const { t }       = useTranslation('employer');
   const user        = authState.session?.user;
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [gstModalVisible, setGstModalVisible] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
 
   const { pricing, employerPlans, gstRate, boostConfig } = usePricingConfig();
   const isAgent = user?.role === 'agent';
@@ -466,6 +470,10 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const employerType = resolveEmployerType(
     (profile?.employerType ?? user?.employerType) as Parameters<typeof resolveEmployerType>[0],
   );
+  // Industry/Agency employers are the ones who typically need a GST invoice —
+  // if their profile has no GST on file, offer to collect it right at
+  // checkout instead of silently printing an invoice with no GSTIN.
+  const needsGstPrompt = !isAgent && (employerType === 'industry' || employerType === 'agency') && !profile?.kyc?.gstNumber;
 
   const sub = pricing.subscription as unknown as Record<string, Record<string, number>>;
   const mrp = pricing.subscriptionMrp as unknown as Record<string, Record<string, number>>;
@@ -485,7 +493,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
     : [];
   const showUpgrade = !!nextType && upgradeBenefits.length > 0;
 
-  const handleBuyPlan = async (plan: Plan): Promise<void> => {
+  const handleBuyPlan = async (plan: Plan, gstNumber?: string | null): Promise<void> => {
     if (!user) return;
     setLoadingPlanId(plan.id);
     try {
@@ -503,6 +511,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         gstCharges,
         productName: `${isAgent ? 'Agent' : 'Employer'} Subscription Plan - ${plan.id}`,
         planId: plan.id,
+        ...(gstNumber ? { gstNumber } : {}),
       });
       if (resp.url) {
         navigation.navigate('PaymentWebView', { url: resp.url, merchantOrderId: resp.merchantOrderId });
@@ -514,6 +523,14 @@ export const SubscriptionScreen = (): React.JSX.Element => {
     } finally {
       setLoadingPlanId(null);
     }
+  };
+
+  // Entry point for the "Buy" button — routes through the GST prompt first
+  // when applicable, otherwise goes straight to payment (unchanged behavior
+  // for everyone else).
+  const startBuyPlan = (plan: Plan): void => {
+    if (needsGstPrompt) { setPendingPlan(plan); setGstModalVisible(true); return; }
+    void handleBuyPlan(plan);
   };
 
   const handleTopup = async (contactCount: 50 | 100): Promise<void> => {
@@ -608,7 +625,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
             isAgent={isAgent}
             gstRate={gstRate}
             loadingPlanId={loadingPlanId}
-            onBuy={handleBuyPlan}
+            onBuy={startBuyPlan}
             t={t as (key: string, opts?: Record<string, unknown>) => string}
           />
         ))}
@@ -664,6 +681,16 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         </View>
 
       </ScrollView>
+
+      <GstPromptModal
+        visible={gstModalVisible}
+        loading={loadingPlanId !== null}
+        onClose={() => setGstModalVisible(false)}
+        onContinue={(gstNumber) => {
+          setGstModalVisible(false);
+          if (pendingPlan) void handleBuyPlan(pendingPlan, gstNumber);
+        }}
+      />
     </View>
   );
 };
