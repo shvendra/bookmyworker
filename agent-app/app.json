@@ -9,13 +9,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ECFEFF"
     },
-
     "plugins": [
       "expo-localization",
       "expo-secure-store",
@@ -36,7 +34,6 @@
         }
       ]
     ],
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bookmyworkers.agent",
@@ -47,30 +44,38 @@
         "NSLocationWhenInUseUsageDescription": "Used to show nearby jobs and attendance location."
       }
     },
-
     "android": {
       "package": "com.app.myworker",
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 1310,
       "versionName": "12.3.43",
-
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0891B2"
       },
-
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO"
       ],
-
       "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
@@ -79,18 +84,21 @@
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
       ]
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "extra": {
       "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
       "eas": {
         "projectId": "ed89ef54-3e18-46f1-af1a-fe038fd6fc84"
       }
     },
-
-    "owner": "singh2495shivendra"
+    "owner": "singh2495shivendra",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ed89ef54-3e18-46f1-af1a-fe038fd6fc84"
+    }
   }
 }
