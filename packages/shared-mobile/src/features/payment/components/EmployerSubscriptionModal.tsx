@@ -19,7 +19,7 @@ import {
   EMPLOYER_PLANS_DEFAULTS,
 } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey, PlanFeatures } from '../../../core/api/endpoints/pricingApi';
-import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 
@@ -120,8 +120,12 @@ export const EmployerSubscriptionModal = ({
   const { config } = useAppConfig();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
+  // Exact live figure with Indian digit grouping (e.g. "6,70,695+"), not a
+  // rounded "6.7L+" — matches the dashboard's "Browse Workers" tile.
+  const workerCountDisplay = `${(config.stats.workerCount ?? 0).toLocaleString('en-IN')}+`;
+
   const STATS = [
-    { value: formatStat(config.stats.workerCount), label: t('esm_statWorkers') },
+    { value: workerCountDisplay, label: t('esm_statWorkers') },
     { value: '3×',  label: t('esm_statResponses') },
     { value: '98%', label: t('esm_statSuccess') },
   ];
@@ -200,7 +204,14 @@ export const EmployerSubscriptionModal = ({
               {STATS.map((s, i) => (
                 <React.Fragment key={i}>
                   <View style={styles.statItem}>
-                    <AppText style={[styles.statValue, { color: heroText }]}>{s.value}</AppText>
+                    <AppText
+                      style={[styles.statValue, { color: heroText }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.6}
+                    >
+                      {s.value}
+                    </AppText>
                     <AppText style={[styles.statLabel, { color: heroMuted }]}>{s.label}</AppText>
                   </View>
                   {i < STATS.length - 1 && (
