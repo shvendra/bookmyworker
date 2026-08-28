@@ -783,7 +783,7 @@ export const employerTranslation = {
   wp_gstPromptBody: "Add your GSTIN so it's printed on your invoice. This is optional — you can skip and add it later from your profile.",
   wp_gstLabel: 'GSTIN',
   wp_gstSkip: 'Skip',
-  wp_gstContinue: 'Continue to Payment',
+  wp_gstContinue: 'Continue',
   wp_callNow: 'Call Now',
   wp_whatsapp: 'WhatsApp',
   wp_uses1Credit: 'Uses 1 worker-profile credit',
