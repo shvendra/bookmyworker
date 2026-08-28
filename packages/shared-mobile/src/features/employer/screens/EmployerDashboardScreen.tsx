@@ -59,6 +59,9 @@ import { FestivalWishesModal } from '../../../shared/components/ui/FestivalWishe
 let festivalShownThisSession = false;
 
 const EMPLOYER_SUB_MODAL_KEY = 'employer_sub_modal_shown';
+// How long the employer must dwell on the dashboard before the one-time
+// subscription modal auto-opens. The timer resets every time they leave.
+const SUB_MODAL_DELAY_MS = 30_000;
 
 
 // ─── Types & Constants ─────────────────────────────────────────────────────────
@@ -1565,16 +1568,34 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     }, []),
   );
 
-  // Auto-show subscription modal once for non-subscribed employers
-  useEffect(() => {
-    if (!profileQuery.isSuccess || isSubscribed) return;
-    void AsyncStorage.getItem(EMPLOYER_SUB_MODAL_KEY).then((shown) => {
-      if (!shown) {
-        setSubModalVisible(true);
-        void AsyncStorage.setItem(EMPLOYER_SUB_MODAL_KEY, '1');
-      }
-    });
-  }, [profileQuery.isSuccess, isSubscribed]);
+  // Auto-show the subscription modal once for non-subscribed employers — but
+  // never immediately. It only appears after the employer has stayed on the
+  // dashboard for SUB_MODAL_DELAY_MS. Leaving the dashboard before then cancels
+  // the timer; it starts fresh (again, not immediate) the next time they land
+  // back on the dashboard. Once shown, the AsyncStorage flag stops it forever.
+  const subModalShownRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!profileQuery.isSuccess || isSubscribed || subModalShownRef.current) return;
+
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let cancelled = false;
+
+      void AsyncStorage.getItem(EMPLOYER_SUB_MODAL_KEY).then((shown) => {
+        if (cancelled || shown || subModalShownRef.current) return;
+        timer = setTimeout(() => {
+          subModalShownRef.current = true;
+          setSubModalVisible(true);
+          void AsyncStorage.setItem(EMPLOYER_SUB_MODAL_KEY, '1');
+        }, SUB_MODAL_DELAY_MS);
+      });
+
+      return () => {
+        cancelled = true;
+        if (timer) clearTimeout(timer);
+      };
+    }, [profileQuery.isSuccess, isSubscribed]),
+  );
 
   // ── Callbacks ──────────────────────────────────────────────────────────────
   // Pull-to-refresh spinner is driven ONLY by an explicit user pull — never by

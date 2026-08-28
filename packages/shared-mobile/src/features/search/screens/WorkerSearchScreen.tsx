@@ -2092,7 +2092,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       )}
 
       {/* ── Search row — straddles the blue header / light list (blue behind top half) ── */}
-      <View style={[sc.searchSection, { backgroundColor: theme.colors.background }]}>
+      <View style={[sc.searchSection, { backgroundColor: theme.colors.background }, activePills.length === 0 && sc.searchSectionTight]}>
         <View pointerEvents="none" style={sc.searchBlueTop} />
         <View style={sc.searchRow}>
           <View style={sc.searchBarWrap}>
@@ -2295,6 +2295,11 @@ const sc = StyleSheet.create({
 
   // Search band — light bg with a blue strip behind only the top half of the input
   searchSection:   { paddingHorizontal: 16, paddingBottom: 14, position: 'relative' },
+  // No active filter pills → nothing sits below the input, so the full 14px
+  // bottom padding + the list's own paddingTop left the first result card
+  // floating with a big blank gap. Tighten the band in that case; the pills
+  // path is untouched (pillsBar carries its own marginTop).
+  searchSectionTight: { paddingBottom: 4 },
   searchBlueTop:   { position: 'absolute', top: 0, left: 0, right: 0, height: 26, backgroundColor: '#1037A4' },
   searchRow:       { flexDirection: 'row', gap: 10 },
   searchBarWrap:   { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 14, height: 52, paddingHorizontal: 14, gap: 11, shadowColor: '#142250', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.28, shadowRadius: 18, elevation: 6 },
