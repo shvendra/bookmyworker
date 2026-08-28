@@ -15,3 +15,12 @@ android/
 ios/
 bookmyworkers-mobile
 coverage/
+
+# --- secrets (never commit) ---
+**/.env
+**/.env.local
+**/.env.*.local
+**/credentials.json
+**/release.keystore
+*.jks
+*.pem

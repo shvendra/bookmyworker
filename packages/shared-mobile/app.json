@@ -82,7 +82,7 @@
     },
 
     "extra": {
-      "apiBaseUrl": "https://api.bookmyworkers.com/api/v1",
+      "apiBaseUrl": "https://www.bookmyworkers.com",
 
       "eas": {
         "projectId": "bookmyworkers-mobile"
