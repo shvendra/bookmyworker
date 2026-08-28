@@ -22,7 +22,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
-import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
@@ -1542,7 +1542,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     [all],
   );
 
-  const totalWorkersDisplay = formatStat(config.stats.workerCount);
+  // Exact live figure with Indian digit grouping (e.g. "6,70,695+"), not a
+  // rounded "6.7L+" — matches the CRM dashboard and the true directory size.
+  const totalWorkersDisplay = `${(config.stats.workerCount ?? 0).toLocaleString('en-IN')}+`;
 
   const isRefreshing = reqQuery.isFetching || profileQuery.isFetching;
 
@@ -1758,8 +1760,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <AppText style={[styles.qaNewTxt, { color: '#065f46' }]}>{t('badgeAvailable')}</AppText>
             </View>
           </View>
-          {/* Big number */}
-          <AppText style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1}>{totalWorkersDisplay}</AppText>
+          {/* Big number — full digits (e.g. "6,70,695+"); shrink to fit the tile */}
+          <AppText style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{totalWorkersDisplay}</AppText>
           {/* Title + arrow */}
           <View style={styles.qaTitleRow}>
             <AppText style={[styles.qaTitle, styles.qaTitleGreen, styles.qaTitleFlex]} numberOfLines={2}>{t('browseWorkers')}</AppText>
