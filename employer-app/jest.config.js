@@ -20,6 +20,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/i18n.ts',
     '.*shared-mobile/src/core/theme$':
       '<rootDir>/src/__tests__/__mocks__/shared/theme.tsx',
+    '.*shared-mobile/src/core/theme/fonts$':
+      '<rootDir>/src/__tests__/__mocks__/shared/fonts.ts',
     '.*shared-mobile/src/core/query/queryClient$':
       '<rootDir>/src/__tests__/__mocks__/shared/queryClient.ts',
     '.*shared-mobile/src/core/navigation/navigationRef$':
