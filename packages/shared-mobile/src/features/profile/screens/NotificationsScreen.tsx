@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -9,6 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { categoryImageFor } from '../../../shared/data/categoryImages';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -94,7 +96,7 @@ const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element =>
       {/* Avatar */}
       <View style={[wp.avatarWrap, { backgroundColor: avatar.bg, borderColor: avatar.textColor + '30' }]}>
         {photoUri ? (
-          <Image source={{ uri: photoUri }} style={wp.avatarImg} resizeMode="cover" />
+          <ExpoImage source={{ uri: photoUri }} style={wp.avatarImg} contentFit="cover" cachePolicy="memory-disk" transition={150} />
         ) : (
           <AppText style={[wp.avatarInitial, { color: avatar.textColor }]}>{initials}</AppText>
         )}
@@ -128,15 +130,34 @@ const WorkerMiniProfile = ({ data }: { data: WorkerData }): React.JSX.Element =>
 };
 
 const wp = StyleSheet.create({
-  row:           { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
-  avatarWrap:    { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
-  avatarImg:     { width: 44, height: 44, borderRadius: 22 },
-  avatarInitial: { fontSize: 18, fontWeight: '700', lineHeight: 22 },
+  row:           { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
+  avatarWrap:    { width: 60, height: 60, borderRadius: 30, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  avatarImg:     { width: 60, height: 60, borderRadius: 30 },
+  avatarInitial: { fontSize: 24, fontWeight: '700', lineHeight: 30 },
   info:          { flex: 1, gap: 5 },
   name:          { fontSize: 13, fontWeight: '800', color: '#0F172A', textTransform: 'capitalize' },
   chips:         { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   chip:          { borderRadius: 6, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2 },
   chipTxt:       { fontSize: 10, fontWeight: '700' },
+});
+
+// ── Category hero banner (Zomato/Flipkart-style big image, category/sub-cat wise) ──
+const CategoryBanner = ({ uri, label }: { uri: string; label?: string }): React.JSX.Element => (
+  <View style={cb.wrap}>
+    <ExpoImage source={{ uri }} style={cb.img} contentFit="cover" cachePolicy="memory-disk" transition={180} />
+    <LinearGradient
+      colors={['transparent', 'rgba(3,10,26,0.62)']}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    />
+    {label ? <AppText numberOfLines={1} style={cb.label}>{label}</AppText> : null}
+  </View>
+);
+
+const cb = StyleSheet.create({
+  wrap:  { marginTop: 10, height: 104, borderRadius: 14, overflow: 'hidden', backgroundColor: '#E2E8F0' },
+  img:   { width: '100%', height: '100%' },
+  label: { position: 'absolute', left: 12, bottom: 10, color: '#FFFFFF', fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
 });
 
 // ── Notification card ───────────────────────────────────────────────────────────
@@ -169,6 +190,16 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
       ? t('notif_newWorker_body', { skills: skill, location: loc, defaultValue: cleanText(item.body) })
       : t('notif_newWorker_bodyNoSkill', { location: loc, defaultValue: cleanText(item.body) });
   }
+
+  // Category/sub-category hero image (Zomato/Flipkart style). Pulls a category
+  // value from the notification's structured data; unresolvable → no banner, so
+  // notifications without category context render exactly as before.
+  const notifData = (item.data ?? {}) as Record<string, unknown>;
+  const catValueRaw =
+    (notifData.workerProfession ?? notifData.category ?? notifData.subCategory ??
+      notifData.workType ?? notifData.categoryValue) as string | undefined;
+  const catImage = categoryImageFor(catValueRaw);
+  const catLabel = catValueRaw ? subcatDisplay(String(catValueRaw)) : undefined;
 
   return (
     <TouchableOpacity
@@ -221,7 +252,10 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
           </View>
         </View>
 
-        {/* Worker mini-profile for newWorker type */}
+        {/* Big category/sub-category hero image */}
+        {catImage ? <CategoryBanner uri={catImage} label={catLabel} /> : null}
+
+        {/* Worker mini-profile (large photo + details) for worker notifications */}
         {isNewWorker && workerData ? (
           <WorkerMiniProfile data={workerData} />
         ) : null}

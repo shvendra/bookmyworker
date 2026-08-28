@@ -884,6 +884,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
                   variant="caption"
                   color={boolFlags[flag.key] ? theme.colors.primary : theme.colors.text}
                   style={styles.flagChipLabel}
+                  numberOfLines={1}
                 >
                   {t(`rd_perk_${flag.key}` as any)}
                 </AppText>
@@ -1294,7 +1295,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   flagChipIcon: { fontSize: 14 },
-  flagChipLabel: { fontWeight: '600' },
+  flagChipLabel: { fontWeight: '600', flexShrink: 1 },
   flagCheck: { fontSize: 12, fontWeight: '700' },
   textarea: { height: 100, textAlignVertical: 'top' },
   submitBtn: { marginTop: 24 },

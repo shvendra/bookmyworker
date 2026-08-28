@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useDeferredValue,
   useMemo,
   useRef,
   useState,
@@ -15,6 +16,7 @@ import {
   Linking,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -23,6 +25,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +36,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requestReviewOnce } from '../../../core/review/storeReview';
+import { hapticSuccess } from '../../../core/haptics';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -1288,14 +1292,14 @@ interface AgentCardProps {
   remarkTime?: Date;
   workerTypeApplied: string;
   appliedDistrict: string;
-  onViewContact: () => void;
+  onViewContact: (id: string) => void;
   onSubscribe: () => void;
   onTopup: () => void;
   onSaveRemark: (id: string, status: string) => void;
-  onPress: () => void;
+  onPress: (id: string) => void;
 }
 
-const AgentCard = ({
+const AgentCard = React.memo(({
   agent,
   isSubscribed,
   isContactsExhausted,
@@ -1345,11 +1349,16 @@ const AgentCard = ({
       })
     : null;
 
+  // Bind this card's id to the (stable) parent callbacks so the row can stay
+  // memoized — these only change if the parent callback or the id changes.
+  const handleCardPress = useCallback(() => onPress(agent._id), [onPress, agent._id]);
+  const handleUnlock = useCallback(() => onViewContact(agent._id), [onViewContact, agent._id]);
+
   return (
     <View style={[wc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
 
       {/* ── Main info row (tappable) ── */}
-      <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={wc.infoRow}>
+      <TouchableOpacity onPress={handleCardPress} activeOpacity={0.88} style={wc.infoRow}>
         {/* Avatar — gender avatar is the always-present base; the real photo is
             overlaid on top and only made visible once it has truly loaded. */}
         <View style={wc.avatarWrap}>
@@ -1358,10 +1367,12 @@ const AgentCard = ({
             style={[wc.avatar, { borderColor: accentColor }]}
           />
           {photoUrl && !photoFailed && (
-            <Image
+            <ExpoImage
               source={{ uri: photoUrl }}
               onLoad={() => setPhotoLoaded(true)}
               onError={() => setPhotoFailed(true)}
+              contentFit="cover"
+              cachePolicy="memory-disk"
               style={[wc.avatar, { borderColor: accentColor, position: 'absolute', top: 0, left: 0, opacity: photoLoaded ? 1 : 0 }]}
             />
           )}
@@ -1444,13 +1455,13 @@ const AgentCard = ({
       {(!!agent.resumeUrl || !!agent.labourLicenceUrl) && (
         <View style={[wc.docsRow, { borderTopColor: theme.colors.border }]}>
           {!!agent.resumeUrl && (
-            <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
               <Ionicons name="document-text" size={13} color={theme.colors.primary} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>{t('ws_resume')}</AppText>
             </TouchableOpacity>
           )}
           {!!agent.labourLicenceUrl && (
-            <TouchableOpacity onPress={onPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
               <Ionicons name="document-attach" size={13} color={theme.colors.success} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>{t('ws_licence')}</AppText>
             </TouchableOpacity>
@@ -1511,7 +1522,7 @@ const AgentCard = ({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={isSubscribed ? onViewContact : onSubscribe}
+            onPress={isSubscribed ? handleUnlock : onSubscribe}
             disabled={loadingUnlock}
             style={[wc.callAgentBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}
             activeOpacity={0.85}
@@ -1551,7 +1562,8 @@ const AgentCard = ({
       )}
     </View>
   );
-};
+});
+AgentCard.displayName = 'AgentCard';
 
 const wc = StyleSheet.create({
   card:           { borderRadius: 20, marginBottom: 14, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 16, borderWidth: StyleSheet.hairlineWidth },
@@ -1891,9 +1903,12 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   );
   const activeFilterCount = countActive(appliedFilters);
 
-  // Client-side search filter
+  // Client-side search filter. Deferring the query keeps each keystroke smooth:
+  // typing updates the input immediately while the (potentially large) list
+  // re-filter runs at a lower priority instead of blocking every character.
+  const deferredQuery = useDeferredValue(searchQuery);
   const filteredAgents = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (!q) return allAgents;
     return allAgents.filter((a) => {
       const name  = (a.name ?? '').toLowerCase();
@@ -1901,7 +1916,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       const dist  = (a.district ?? '').toLowerCase();
       return name.includes(q) || areas.includes(q) || dist.includes(q);
     });
-  }, [allAgents, searchQuery]);
+  }, [allAgents, deferredQuery]);
 
   // Header quick-filter chips removed entirely (per request) — trade filtering is
   // done through the Filters sheet. The list shows all loaded results directly.
@@ -1931,7 +1946,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     try {
       setLoadingUnlock((p) => ({ ...p, [agentId]: true }));
       const res = await workerApi.unlockNumber(agentId);
-      if (res.phone) setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone }));
+      if (res.phone) { setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone })); hapticSuccess(); }
       if (res.alternate) setUnlockedAlternates((p) => ({ ...p, [agentId]: res.alternate! }));
       // Contact consumed → refresh the count everywhere (search header, dashboard,
       // plan features). Mirrors WorkerProfileScreen / PaymentWebViewScreen.
@@ -1958,6 +1973,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     setSavingRemark((p) => ({ ...p, [agentId]: true }));
     try {
       await workerApi.saveWorkerRemark(agentId, status);
+      hapticSuccess();
       void qc.invalidateQueries({ queryKey: ['worker-remarks'] });
       // Notify the worker about the call outcome update
       void apiClient.post('/api/v1/notifications/call-outcome', { workerId: agentId, outcome: status }).catch(() => {});
@@ -1972,6 +1988,25 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       setSavingRemark((p) => ({ ...p, [agentId]: false }));
     }
   };
+
+  // ── Stable callback identities for AgentCard's React.memo ──
+  // These wrapper refs never change identity, so memoized rows skip
+  // re-rendering when an UNRELATED row updates (unlock / remark / call
+  // outcome). Each always invokes the LATEST handler via the ref, so the
+  // actual behaviour (payment, unlock, remark) is completely unchanged.
+  const cbRef = useRef({ handleViewContact, handleSaveRemark });
+  cbRef.current = { handleViewContact, handleSaveRemark };
+  const onViewContactStable = useCallback((id: string) => { void cbRef.current.handleViewContact(id); }, []);
+  const onSaveRemarkStable = useCallback((id: string, status: string) => { void cbRef.current.handleSaveRemark(id, status); }, []);
+  const onOpenProfile = useCallback((id: string) => navigation.navigate('WorkerProfile', { workerId: id }), [navigation]);
+  const onGoSubscription = useCallback(() => navigation.navigate('Subscription'), [navigation]);
+
+  // Pull-to-refresh for the worker/agent list
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await refetch(); } finally { setRefreshing(false); }
+  }, [refetch]);
 
   // Active filter pills
   const activePills: Array<{ key: string; label: string; onRemove: () => void }> = [
@@ -2230,6 +2265,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           }
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) void fetchNextPage(); }}
           onEndReachedThreshold={0.6}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND]} tintColor={BRAND} />
+          }
           renderItem={({ item }) => (
             <AgentCard
               agent={item}
@@ -2243,11 +2281,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               remarkTime={remarkTimes[item._id]}
               workerTypeApplied={appliedFilters.workerType}
               appliedDistrict={appliedFilters.district}
-              onViewContact={() => void handleViewContact(item._id)}
-              onSubscribe={() => navigation.navigate('Subscription')}
-              onTopup={() => navigation.navigate('Subscription')}
-              onSaveRemark={(id, status) => void handleSaveRemark(id, status)}
-              onPress={() => navigation.navigate('WorkerProfile', { workerId: item._id })}
+              onViewContact={onViewContactStable}
+              onSubscribe={onGoSubscription}
+              onTopup={onGoSubscription}
+              onSaveRemark={onSaveRemarkStable}
+              onPress={onOpenProfile}
             />
           )}
           ListFooterComponent={

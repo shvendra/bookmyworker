@@ -11,6 +11,13 @@ export const ENV = {
   GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
 } as const;
 
+// Normalized API ORIGIN (scheme + host, no trailing slash and no trailing
+// `/api/v1`). The two apps configure API_BASE_URL differently — employer uses
+// the bare origin, agent includes `/api/v1` — so features that build absolute
+// `/api/v1/...` paths (maintenance, health probe) must derive a clean origin to
+// avoid a doubled `/api/v1/api/v1/...`.
+export const API_ORIGIN = ENV.API_BASE_URL.replace(/\/+$/, '').replace(/\/api\/v1\/?$/, '');
+
 // All user/worker/agent photos are stored in this S3 bucket (matches CRM config.FILE_BASE_URL)
 export const S3_BASE = 'https://bookmyworker.s3.eu-north-1.amazonaws.com';
 

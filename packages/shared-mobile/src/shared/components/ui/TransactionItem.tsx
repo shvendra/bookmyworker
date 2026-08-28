@@ -9,22 +9,21 @@ interface TransactionItemProps {
   transaction: WalletTransaction;
 }
 
+// Build the date formatter ONCE (module scope) instead of per-render/per-call —
+// Intl construction is expensive under Hermes and this row renders in a list.
+const txnDateFmt = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatTxnDate = (dateStr: string): string => {
+  try {
+    return txnDateFmt.format(new Date(dateStr));
+  } catch {
+    return dateStr;
+  }
+};
+
 export const TransactionItem = ({ transaction }: TransactionItemProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const isCredit = transaction.direction === 'credit';
   const amountColor = isCredit ? theme.colors.success : theme.colors.danger;
-
-  const formatDate = (dateStr: string): string => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
-  };
 
   return (
     <View style={[styles.item, { borderBottomColor: theme.colors.border }]}>
@@ -37,7 +36,7 @@ export const TransactionItem = ({ transaction }: TransactionItemProps): React.JS
         <View style={styles.info}>
           <AppText variant="label">{transaction.description}</AppText>
           <AppText variant="caption" color={theme.colors.mutedText}>
-            {formatDate(transaction.createdAt)}
+            {formatTxnDate(transaction.createdAt)}
           </AppText>
         </View>
       </View>

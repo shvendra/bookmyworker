@@ -11,7 +11,7 @@
  * state / district / pincode, shown in a confirm card.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -163,6 +163,12 @@ export const LocationPickerModal = ({
   const webRef = useRef<WebView>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reverseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear pending debounce timers on unmount so callbacks don't setState after it.
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (reverseRef.current) clearTimeout(reverseRef.current);
+  }, []);
 
   const moveMapTo = useCallback((lat: number, lng: number, zoom = 15): void => {
     webRef.current?.injectJavaScript(`window.setLoc && window.setLoc(${lat}, ${lng}, ${zoom}); true;`);

@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.19.3",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -14,6 +14,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
@@ -23,7 +24,7 @@
       }
     },
     "production": {
-      "autoIncrement": true,
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://bookmyworkers.com",
         "EXPO_PUBLIC_SOCKET_BASE_URL": "https://bookmyworkers.com"

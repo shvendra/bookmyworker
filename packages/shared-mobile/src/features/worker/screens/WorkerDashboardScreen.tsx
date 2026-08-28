@@ -613,8 +613,8 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
           {/* ── Live Requirements Slider ───────────────────────── */}
           <View style={styles.sliderSection}>
             <View style={styles.sliderHeader}>
-              <View>
-                <AppText style={[styles.sliderTitle, { color: theme.colors.text }]}>{t('openJobsNearYou')}</AppText>
+              <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                <AppText numberOfLines={2} style={[styles.sliderTitle, { color: theme.colors.text }]}>{t('openJobsNearYou')}</AppText>
                 <AppText style={[styles.sliderSub, { color: theme.colors.mutedText }]}>{t('scrollSeeMore')}</AppText>
               </View>
               <TouchableOpacity

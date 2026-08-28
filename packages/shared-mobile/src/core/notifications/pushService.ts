@@ -35,8 +35,14 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
+        name: 'BookMyWorker',
         importance: Notifications.AndroidImportance.MAX,
+        // Premium delivery feel: distinct vibration, brand LED colour, visible
+        // on the lock screen, and the default notification sound.
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#1037A4',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        sound: 'default',
       });
     }
 

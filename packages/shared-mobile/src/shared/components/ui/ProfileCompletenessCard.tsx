@@ -66,7 +66,7 @@ export const ProfileCompletenessCard = ({ fields, onPress, style }: Props): Reac
       {/* Header: title + level pill + percentage */}
       <View style={s.headerRow}>
         <View style={s.titleRow}>
-          <AppText variant="labelSm" style={{ fontWeight: '800', color: c.text }}>
+          <AppText variant="labelSm" numberOfLines={1} style={{ fontWeight: '800', color: c.text, flexShrink: 1 }}>
             {t('pc_title')}
           </AppText>
           <View style={[s.levelPill, { backgroundColor: levelColor + '1A', borderColor: levelColor + '40' }]}>
@@ -128,7 +128,7 @@ export const ProfileCompletenessCard = ({ fields, onPress, style }: Props): Reac
 const s = StyleSheet.create({
   card: { borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 12 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 },
   levelPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1 },
   track: { height: 8, borderRadius: 8, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 8 },

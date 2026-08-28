@@ -448,8 +448,8 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
         {/* Read-only mobile (verified) */}
         <View style={[styles.readOnlyRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <AppText style={[styles.mobileLabel, { color: theme.colors.mutedText }]}>{t('ep_mobileNumber')}</AppText>
-          <AppText style={[styles.mobileValue, { color: theme.colors.text }]}>+91 {user?.phone}</AppText>
+          <AppText style={[styles.mobileLabel, { color: theme.colors.mutedText }]} numberOfLines={1}>{t('ep_mobileNumber')}</AppText>
+          <AppText style={[styles.mobileValue, { color: theme.colors.text }]} numberOfLines={1}>+91 {user?.phone}</AppText>
           <View style={styles.verifiedBadge}>
             <Ionicons name="shield-checkmark" size={12} color="#137A38" />
             <AppText style={styles.verifiedTxt}>{t('ep_verified', 'Verified')}</AppText>
@@ -770,8 +770,8 @@ const styles = StyleSheet.create({
   cropTipText:       { fontSize: 13, color: '#2243BC', fontWeight: '700' },
 
   readOnlyRow: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 22, gap: 4, position: 'relative', shadowColor: '#142250', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 12 },
-  mobileLabel: { fontSize: 12, fontWeight: '700' },
-  mobileValue: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  mobileLabel: { fontSize: 12, fontWeight: '700', paddingRight: 92 },
+  mobileValue: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2, paddingRight: 92 },
   verifiedBadge: { position: 'absolute', right: 16, top: 16, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F7EE', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
   verifiedTxt: { fontSize: 11, fontWeight: '800', color: '#137A38' },
   sectionLabel:{ marginTop: 20, marginBottom: 14, textTransform: 'uppercase', fontSize: 12, letterSpacing: 1.1, fontWeight: '800' },

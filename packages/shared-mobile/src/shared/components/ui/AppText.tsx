@@ -1,6 +1,7 @@
 import React from 'react';
 import { PixelRatio, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 import { useAppTheme } from '../../../core/theme';
+import { fontFamilyForWeight, fontsAreReady } from '../../../core/theme/fonts';
 
 // Extended variant system for a richer typographic hierarchy
 export type TextVariant =
@@ -93,7 +94,7 @@ const variantStyles = StyleSheet.create({
   },
 });
 
-export const AppText = ({
+export const AppText = React.memo(({
   children,
   variant = 'body',
   style,
@@ -130,10 +131,26 @@ export const AppText = ({
   // line box grows together with the rendered text. effScale is 1 at the default
   // font scale, so this is a NO-OP on normal devices → zero layout regression.
   const effScale = Math.min(PixelRatio.getFontScale(), cap);
-  const flat = (StyleSheet.flatten([variantStyles[variant], style]) ?? {}) as TextStyle;
+  // ONE flatten covers both the effective lineHeight (for the scale-aware line
+  // box below) AND the effective fontWeight (for the Poppins family map) —
+  // avoids doing StyleSheet.flatten twice on every single text node.
+  const flat = (StyleSheet.flatten([
+    variantStyles[variant],
+    weight ? { fontWeight: weight } : undefined,
+    style,
+  ]) ?? {}) as TextStyle;
   const baseLineHeight = typeof flat.lineHeight === 'number' ? flat.lineHeight : undefined;
   const scaledLineHeight =
     baseLineHeight != null && effScale > 1 ? baseLineHeight * effScale : undefined;
+
+  // ── Brand font (Poppins) ───────────────────────────────────────────────────
+  // Android can't synthesise weights from one family, so pick the Poppins family
+  // that matches the EFFECTIVE fontWeight (style > weight prop > variant), and
+  // neutralise fontWeight so iOS doesn't faux-bold on top. Only applied once
+  // fonts are ready — otherwise this is null and text renders exactly as before.
+  const brandFont: TextStyle | null = fontsAreReady()
+    ? { fontFamily: fontFamilyForWeight(flat.fontWeight), fontWeight: 'normal' }
+    : null;
 
   return (
     <Text
@@ -151,6 +168,8 @@ export const AppText = ({
         // Applied LAST so it overrides any variant/style lineHeight with the
         // font-scale-aware value (only when the OS is actually scaling fonts up).
         scaledLineHeight != null ? { lineHeight: scaledLineHeight } : null,
+        // Brand font family + neutralised weight — wins over variant/style weight.
+        brandFont,
       ]}
       allowFontScaling
       maxFontSizeMultiplier={cap}
@@ -162,4 +181,5 @@ export const AppText = ({
       {children}
     </Text>
   );
-};
+});
+AppText.displayName = 'AppText';

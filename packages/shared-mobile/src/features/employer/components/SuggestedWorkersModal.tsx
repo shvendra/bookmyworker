@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Linking, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { workerApi, type RawAgent } from '../../../core/api/endpoints/workerApi';
@@ -228,17 +229,20 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         </TouchableOpacity>
                       )}
                       {invited ? (
-                        <View style={s.invitedChip}><AppText style={s.invitedTxt}>✓ {t('wp_invited')}</AppText></View>
+                        <View style={s.invitedChip} accessibilityLabel={t('wp_invited')}>
+                          <Ionicons name="checkmark-done" size={20} color="#15803D" />
+                        </View>
                       ) : (
                         <TouchableOpacity
                           onPress={() => void invite(w)}
                           disabled={!!invitingId}
                           style={[s.inviteBtn, !!invitingId && { opacity: 0.5 }]}
                           activeOpacity={0.85}
+                          accessibilityLabel={t('sw_invite')}
                         >
                           {inviting
                             ? <ActivityIndicator color="#FFFFFF" size="small" />
-                            : <AppText style={s.inviteTxt} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('sw_invite')}</AppText>}
+                            : <Ionicons name="person-add" size={19} color="#FFFFFF" />}
                         </TouchableOpacity>
                       )}
                     </View>
@@ -276,10 +280,10 @@ const s = StyleSheet.create({
   // width, so the wider Hindi/Indic "View Contact" label sets the size and both
   // buttons stay aligned and fully readable across languages.
   actions:       { alignItems: 'flex-end', gap: 6, flexShrink: 0 },
-  invitedChip:   { alignSelf: 'stretch', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 112, alignItems: 'center' },
-  invitedTxt:    { fontSize: 12, fontWeight: '800', color: '#15803D' },
-  inviteBtn:     { alignSelf: 'stretch', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', minWidth: 112, alignItems: 'center' },
-  inviteTxt:     { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+  // Compact icon buttons (peer to the phone/contact icon button) — invite shows
+  // a person-add icon, the invited state a green check, instead of text.
+  invitedChip:   { width: 44, height: 40, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#BBF7D0', alignItems: 'center', justifyContent: 'center' },
+  inviteBtn:     { width: 44, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', alignItems: 'center', justifyContent: 'center' },
   contactIconBtn:{ width: 44, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center' },
   contactIcon:   { fontSize: 18 },
   phoneBtn:      { alignSelf: 'stretch', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 108, alignItems: 'center' },

@@ -1,22 +1,36 @@
-node_modules/
-.expo/
-dist/
-build/
-*.log
-.DS_Store
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-web-build/
+# .easignore overrides .gitignore for build archiving.
+# The root .gitignore excludes android/ (and google-services.json), but a
+# prebuild/build needs google-services.json, so this keeps the android/ SOURCE
+# present while still dropping heavy build artifacts + node_modules.
+# Local build only — nothing is uploaded to a remote builder.
+
+# Heavy / regenerated
+**/node_modules/
+**/.expo/
+**/dist/
+**/build/
+**/web-build/
+**/coverage/
+**/.gradle/
+**/android/app/build/
+**/ios/build/
+**/ios/Pods/
+
+# Noise
+**/*.log
+**/*.orig.*
+**/.DS_Store
 bookmyworkers-mobile
-coverage/
-*.keystore
-release.keystore
-GoogleService-Info.plist
-google-service-account.json
-.env
-.env.local
-.env.production
+
+# Local secrets / signing — never archive
+**/.env
+**/.env.*
+**/*.jks
+**/*.keystore
+**/release.keystore
+**/*.p8
+**/*.p12
+**/*.key
+**/*.mobileprovision
+**/GoogleService-Info.plist
+**/google-service-account.json

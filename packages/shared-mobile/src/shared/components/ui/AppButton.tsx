@@ -8,7 +8,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../../../core/theme';
+import { hapticLight } from '../../../core/haptics';
 import { AppText } from './AppText';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent' | 'success' | 'teal';
@@ -44,6 +46,7 @@ export const AppButton = ({
   const isDark = theme.mode === 'dark';
 
   const handlePressIn = (): void => {
+    hapticLight();
     Animated.spring(scale, {
       toValue: 0.965,
       useNativeDriver: true,
@@ -173,18 +176,13 @@ export const AppButton = ({
           style,
         ]}
       >
-        {/* Fake gradient overlay for primary/accent/teal */}
-        {isGradient && (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                borderRadius: radius,
-                backgroundColor: bg2,
-                opacity: 0.4,
-                // right-side lighter feel
-              },
-            ]}
+        {/* Real diagonal gradient for primary/accent/teal */}
+        {isGradient && bg2 && (
+          <LinearGradient
+            colors={[bg, bg2]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
             pointerEvents="none"
           />
         )}

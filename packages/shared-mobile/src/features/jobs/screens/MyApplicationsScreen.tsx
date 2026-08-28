@@ -2,6 +2,7 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { FlatList, StatusBar, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useQuery } from '@tanstack/react-query';
 import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
@@ -27,6 +28,62 @@ const applicationStatusVariant = (status: Application['status']) => {
     default: return 'warning' as const;
   }
 };
+
+interface ApplicationCardProps {
+  item: Application;
+  mutedColor: string;
+  primaryColor: string;
+  t: TFunction;
+}
+
+// Memoized row — prevents every application card from re-rendering when the
+// screen re-renders (query settling / theme change). Behaviour identical.
+const ApplicationCard = React.memo(({ item, mutedColor, primaryColor, t }: ApplicationCardProps): React.JSX.Element => (
+  <AppCard style={styles.card}>
+    <View style={styles.cardHeader}>
+      <AppText variant="label" style={styles.jobTitle} numberOfLines={3}>
+        {item.requirementTitle}
+      </AppText>
+      <Badge
+        label={item.status}
+        variant={applicationStatusVariant(item.status)}
+      />
+    </View>
+
+    {item.notes ? (
+      <AppText variant="caption" color={mutedColor} style={styles.notes}>
+        {item.notes}
+      </AppText>
+    ) : null}
+
+    <View style={styles.cardMeta}>
+      <AppText variant="caption" color={mutedColor}>
+        {t('appliedLabel')} {new Date(item.appliedAt).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })}
+      </AppText>
+      {item.updatedAt && item.updatedAt !== item.appliedAt ? (
+        <AppText variant="caption" color={mutedColor}>
+          {t('updatedLabel')} {new Date(item.updatedAt).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+          })}
+        </AppText>
+      ) : null}
+    </View>
+
+    {item.status === 'Invited' && (
+      <View style={[styles.inviteNote, { backgroundColor: primaryColor + '15', borderColor: primaryColor + '40' }]}>
+        <AppText variant="caption" color={primaryColor}>
+          {t('invitedToJobMsg')}
+        </AppText>
+      </View>
+    )}
+  </AppCard>
+));
+ApplicationCard.displayName = 'ApplicationCard';
 
 export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -75,55 +132,22 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={10}
+          removeClippedSubviews={false}
           ListHeaderComponent={
             <AppText variant="caption" color={theme.colors.mutedText} style={styles.count}>
               {t('applicationsCount', { count: applications.length })}
             </AppText>
           }
           renderItem={({ item }) => (
-            <AppCard style={styles.card}>
-              <View style={styles.cardHeader}>
-                <AppText variant="label" style={styles.jobTitle} numberOfLines={3}>
-                  {item.requirementTitle}
-                </AppText>
-                <Badge
-                  label={item.status}
-                  variant={applicationStatusVariant(item.status)}
-                />
-              </View>
-
-              {item.notes ? (
-                <AppText variant="caption" color={theme.colors.mutedText} style={styles.notes}>
-                  {item.notes}
-                </AppText>
-              ) : null}
-
-              <View style={styles.cardMeta}>
-                <AppText variant="caption" color={theme.colors.mutedText}>
-                  {t('appliedLabel')} {new Date(item.appliedAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </AppText>
-                {item.updatedAt && item.updatedAt !== item.appliedAt ? (
-                  <AppText variant="caption" color={theme.colors.mutedText}>
-                    {t('updatedLabel')} {new Date(item.updatedAt).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </AppText>
-                ) : null}
-              </View>
-
-              {item.status === 'Invited' && (
-                <View style={[styles.inviteNote, { backgroundColor: theme.colors.primary + '15', borderColor: theme.colors.primary + '40' }]}>
-                  <AppText variant="caption" color={theme.colors.primary}>
-                    {t('invitedToJobMsg')}
-                  </AppText>
-                </View>
-              )}
-            </AppCard>
+            <ApplicationCard
+              item={item}
+              mutedColor={theme.colors.mutedText}
+              primaryColor={theme.colors.primary}
+              t={t}
+            />
           )}
         />
       )}

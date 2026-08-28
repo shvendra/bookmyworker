@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { AppText } from './AppText';
 
 interface AvatarProps {
@@ -60,6 +61,9 @@ export const Avatar = ({ name, uri, size = 40, color, ring = false, ringColor, o
     <Image
       source={{ uri }}
       style={[{ width: size, height: size, borderRadius: size / 2 }, styles.image]}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      transition={150}
     />
   ) : (
     <View

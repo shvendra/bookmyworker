@@ -104,7 +104,7 @@ const StatTile = ({ value, label, color, bg }: {
   value: string; label: string; color: string; bg: string;
 }): React.JSX.Element => (
   <View style={[st.tile, { backgroundColor: bg }]}>
-    <AppText style={[st.value, { color }]}>{value}</AppText>
+    <AppText style={[st.value, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</AppText>
     <AppText style={st.label}>{label}</AppText>
   </View>
 );

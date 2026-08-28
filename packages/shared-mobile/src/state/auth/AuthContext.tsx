@@ -12,6 +12,7 @@ import { getCurrentUser, setDefaultRoleApi, updateProfileFields } from '../../co
 import { apiClient } from '../../core/api/client';
 import { notificationApi } from '../../core/api/endpoints/notificationApi';
 import { registerForPushNotifications } from '../../core/notifications/pushService';
+import { socketService } from '../../core/realtime/socketService';
 import { authService } from '../../features/auth/services/authService';
 import type { AppLanguage, AppRole } from '../../shared/types/domain';
 import type { AuthContextValue, AuthSession, AuthState } from './authTypes';
@@ -106,7 +107,10 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
     //    The AppNavigator's useEffect will call resetToWelcome() AFTER the screens
     //    are re-rendered with the auth screen set (so Welcome actually exists).
     setState({ status: 'unauthenticated', session: null });
-    // 3. Background cleanup — never blocks UI
+    // 3. Tear down the realtime socket so the WebSocket + its lifecycle
+    //    listeners don't stay alive across logout / account switch.
+    try { socketService.disconnect(); } catch {}
+    // 4. Background cleanup — never blocks UI
     void (async () => {
       try { await clearAuthSession(); } catch {}
       try {
