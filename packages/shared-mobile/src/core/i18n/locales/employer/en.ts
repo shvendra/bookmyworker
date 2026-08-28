@@ -778,6 +778,7 @@ export const employerTranslation = {
   wp_alreadyHiredFree: 'Already hired — contact available for free',
   wp_phoneNumber: 'Phone Number',
   wp_safetyNotice: 'Safety tip: Don’t send advance payment or travel money to any worker until they report to you in person. BookMyWorker does not get involved in payments between you and the worker.',
+  wp_safetyNoticeDismiss: 'Dismiss',
   wp_gstPromptTitle: 'Add GST Number?',
   wp_gstPromptBody: "Add your GSTIN so it's printed on your invoice. This is optional — you can skip and add it later from your profile.",
   wp_gstLabel: 'GSTIN',

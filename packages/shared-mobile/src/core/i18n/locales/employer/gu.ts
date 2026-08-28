@@ -844,6 +844,7 @@ export const employerTranslation = {
   wp_alreadyHiredFree: 'પહેલેથી નિયુક્ત — સંપર્ક મફત ઉપલબ્ધ',
   wp_phoneNumber: 'ફોન નંબર',
   wp_safetyNotice: 'સેફ્ટી ટિપ: વર્કર જ્યાં સુધી તમારી સામે રૂબરૂ હાજર ન થાય ત્યાં સુધી તેને એડવાન્સ પેમેન્ટ કે મુસાફરી ખર્ચ મોકલશો નહીં. BookMyWorker તમારી અને વર્કર વચ્ચેના કોઈપણ વ્યવહારમાં સામેલ થતું નથી.',
+  wp_safetyNoticeDismiss: 'બંધ કરો',
   wp_gstPromptTitle: 'GST નંબર ઉમેરવો છે?',
   wp_gstPromptBody: 'તમારો GSTIN ઉમેરો જેથી તે તમારા ઇન્વોઇસ પર પ્રિન્ટ થાય. આ વૈકલ્પિક છે — તમે તેને છોડી શકો છો અને પછીથી તમારી પ્રોફાઇલમાંથી ઉમેરી શકો છો.',
   wp_gstLabel: 'GSTIN',

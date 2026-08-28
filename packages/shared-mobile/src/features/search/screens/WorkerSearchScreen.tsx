@@ -2216,7 +2216,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           removeClippedSubviews={false}
           ListHeaderComponent={
             <>
-              {isEmployerRole && <WorkerSafetyNotice />}
+              {isEmployerRole && <WorkerSafetyNotice style={sc.safetyNotice} />}
               <SmartMatchStrip
                 params={{
                   category: appliedFilters.workerType || undefined,
@@ -2327,6 +2327,10 @@ const sc = StyleSheet.create({
 
   // List
   list:            { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 32 },
+  // Collapses WorkerSafetyNotice's own default marginTop (10) since this
+  // list's contentContainerStyle already contributes paddingTop above it —
+  // stacking both made the gap under the search bar look oversized.
+  safetyNotice:    { marginTop: 0 },
 
   // Loading more
   loadMore:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 20 },
