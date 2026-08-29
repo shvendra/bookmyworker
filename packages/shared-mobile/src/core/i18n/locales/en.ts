@@ -1070,6 +1070,8 @@ export const translation = {
   vbPriceNote: "One-time verification · No hidden charges",
   vbMaybeLater: "Maybe Later",
   vbGetVerified: "Get Verified Now",
+  vbPayErrTitle: "Couldn't start payment",
+  vbPayErrMsg: "We couldn't reach the payment gateway. Please check your connection and try again.",
   // ── Add Worker screen ──
   awAddWorkerTitle: "Add Worker",
   awBasicInfo: "Basic Information",

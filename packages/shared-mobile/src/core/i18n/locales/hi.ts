@@ -1058,6 +1058,8 @@ export const translation = {
   vbPriceNote: "एक बार का वेरिफिकेशन · कोई छिपा शुल्क नहीं",
   vbMaybeLater: "बाद में",
   vbGetVerified: "अभी वेरिफाई करें",
+  vbPayErrTitle: "पेमेंट शुरू नहीं हो सका",
+  vbPayErrMsg: "पेमेंट गेटवे से कनेक्ट नहीं हो पाया। कृपया अपना इंटरनेट जांचें और दोबारा कोशिश करें।",
   // ── Add Worker screen ──
   awAddWorkerTitle: "वर्कर जोड़ें",
   awBasicInfo: "बुनियादी जानकारी",

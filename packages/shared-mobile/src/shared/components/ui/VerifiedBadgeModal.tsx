@@ -14,6 +14,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
+import { showAlert } from '../../state/alert/AppAlertContext';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 import { Avatar } from './Avatar';
@@ -101,7 +102,14 @@ export const VerifiedBadgeModal = ({
         returnTo: 'Main',
       });
     } catch {
-      onDismiss();
+      // Never fail silently — a swallowed error here is why a broken gateway
+      // looked like "nobody is buying". Keep the sheet open and let them retry.
+      setLoading(false);
+      showAlert(t('vbPayErrTitle'), t('vbPayErrMsg'), [
+        { text: t('vbMaybeLater'), style: 'cancel' },
+        { text: t('retry'), onPress: () => { void handleGetVerified(); } },
+      ]);
+      return;
     } finally {
       setLoading(false);
     }
