@@ -702,10 +702,13 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
   const isLoading  = profileQuery.isLoading || (hasAccess && (reqListQuery.isLoading || pipelineQuery.isLoading));
   const isFetching = reqListQuery.isFetching || pipelineQuery.isFetching;
 
+  // Depend on stable primitives, not the whole query object (new ref every
+  // render → focus effect re-runs every render → refetch churn/flicker).
+  const { refetch: refetchProfile, isStale: profileStale } = profileQuery;
   useFocusEffect(
     useCallback(() => {
-      if (profileQuery.isStale) void profileQuery.refetch();
-    }, [profileQuery]),
+      if (profileStale) void refetchProfile();
+    }, [profileStale, refetchProfile]),
   );
 
   const handleRefresh = useCallback(() => {

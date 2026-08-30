@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { useAppTheme } from '../../../core/theme';
 import { useTranslation } from 'react-i18next';
 import { contactViewsApi, type ContactViewItem } from '../../../core/api/endpoints/contactViewsApi';
@@ -104,17 +105,31 @@ export const ViewedContactsScreen = ({ navigation }: Props): React.JSX.Element =
     queryKey: ['my-contact-views'],
     queryFn: () => contactViewsApi.getMyViews(1, 100),
     staleTime: 60 * 1000,
+    // Slow / flaky connections get a couple of automatic retries before we give
+    // up and show the error state — instead of instantly looking "empty".
+    retry: 2,
   });
 
+  // Depending on the whole `query` object (a fresh reference every render) made
+  // this focus effect re-subscribe on EVERY render — with `isStale` that turned
+  // into a refetch loop, the cause of the screen "blinking". `refetch` is a
+  // stable fn and `isStale` is a boolean, so the effect now settles.
+  const { refetch, isStale } = query;
   useFocusEffect(
     useCallback(() => {
-      if (query.isStale) void query.refetch();
-    }, [query]),
+      if (isStale) void refetch();
+    }, [isStale, refetch]),
   );
 
   const data = query.data;
   const items = data?.items ?? [];
   const summary = data?.summary;
+
+  // Only a genuine "loaded, nothing there" shows the empty state. A first-load
+  // failure (usually slow / no internet) shows a clear message + Retry instead
+  // of the misleading "No worker profiles viewed yet".
+  const showError = query.isError && items.length === 0;
+  const showEmpty = query.isSuccess && items.length === 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -142,9 +157,24 @@ export const ViewedContactsScreen = ({ navigation }: Props): React.JSX.Element =
       )}
 
       {query.isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <ActivityIndicator size="large" color={BRAND} />
+          <AppText style={[sc.loadingHint, { color: theme.colors.mutedText }]}>
+            {t('vcLoading', { defaultValue: 'Loading your viewed profiles…' })}
+          </AppText>
         </View>
+      ) : showError ? (
+        <ErrorState
+          title={t('vcErrorTitle', { defaultValue: 'Couldn’t load this page' })}
+          message={
+            (query.error as { message?: string })?.message ||
+            t('vcErrorNetwork', {
+              defaultValue:
+                'Your internet connection looks slow or unavailable. This does NOT mean you have no viewed profiles — please check your network and try again.',
+            })
+          }
+          onRetry={() => void refetch()}
+        />
       ) : (
         <FlatList
           data={items}
@@ -154,23 +184,25 @@ export const ViewedContactsScreen = ({ navigation }: Props): React.JSX.Element =
           refreshControl={
             <RefreshControl
               refreshing={query.isFetching}
-              onRefresh={() => void query.refetch()}
+              onRefresh={() => void refetch()}
               tintColor={BRAND}
             />
           }
           ListEmptyComponent={
-            <View style={sc.emptyBox}>
-              <AppText style={sc.emptyEmoji}>👁️</AppText>
-              <AppText style={[sc.emptyTitle, { color: theme.colors.text }]}>{t('vcEmptyTitle')}</AppText>
-              <AppText style={[sc.emptySub, { color: theme.colors.mutedText }]}>{t('vcEmptyDesc')}</AppText>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('WorkerSearch')}
-                style={sc.browseBtn}
-                activeOpacity={0.85}
-              >
-                <AppText style={sc.browseBtnTxt}>{t('browseWorkers')}</AppText>
-              </TouchableOpacity>
-            </View>
+            showEmpty ? (
+              <View style={sc.emptyBox}>
+                <AppText style={sc.emptyEmoji}>👁️</AppText>
+                <AppText style={[sc.emptyTitle, { color: theme.colors.text }]}>{t('vcEmptyTitle')}</AppText>
+                <AppText style={[sc.emptySub, { color: theme.colors.mutedText }]}>{t('vcEmptyDesc')}</AppText>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('WorkerSearch')}
+                  style={sc.browseBtn}
+                  activeOpacity={0.85}
+                >
+                  <AppText style={sc.browseBtnTxt}>{t('browseWorkers')}</AppText>
+                </TouchableOpacity>
+              </View>
+            ) : null
           }
           renderItem={({ item, index }) => <ContactCard item={item} idx={index} />}
         />
@@ -186,6 +218,7 @@ const sc = StyleSheet.create({
   summaryLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, textAlign: 'center' },
 
   listContent:  { padding: 14 },
+  loadingHint:  { fontSize: 12, textAlign: 'center' },
 
   emptyBox:     { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 32, gap: 12 },
   emptyEmoji:   { fontSize: 48 },

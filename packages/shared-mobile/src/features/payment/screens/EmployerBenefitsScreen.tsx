@@ -102,9 +102,12 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
     staleTime: 60 * 1000,
   });
 
+  // Depend on stable primitives, not the whole query object (new ref every
+  // render → focus effect re-runs every render → refetch churn/flicker).
+  const { refetch: refetchProfile, isStale: profileStale } = profileQuery;
   useFocusEffect(useCallback(() => {
-    if (profileQuery.isStale) void profileQuery.refetch();
-  }, [profileQuery]));
+    if (profileStale) void refetchProfile();
+  }, [profileStale, refetchProfile]));
 
   const profile = profileQuery.data;
   const isActive = !!profile?.isSubscribed &&

@@ -211,10 +211,13 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Depend on stable primitives, not the whole query object (new ref every
+  // render → focus effect re-runs every render → refetch churn/flicker).
+  const { refetch: refetchCallHistory, isStale: callHistoryStale } = callHistoryQuery;
   useFocusEffect(
     useCallback(() => {
-      if (callHistoryQuery.isStale) void callHistoryQuery.refetch();
-    }, [callHistoryQuery]),
+      if (callHistoryStale) void refetchCallHistory();
+    }, [callHistoryStale, refetchCallHistory]),
   );
 
   const allEntries = callHistoryQuery.data ?? [];

@@ -1785,12 +1785,15 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   });
   const profile = profileQuery.data;
 
+  // Depend on stable primitives, not the whole query object (new ref every
+  // render → focus effect re-runs every render → refetch churn/flicker).
+  const { refetch: refetchProfile, isStale: profileStale } = profileQuery;
   useFocusEffect(
     useCallback(() => {
-      if (profileQuery.isStale) {
-        void profileQuery.refetch();
+      if (profileStale) {
+        void refetchProfile();
       }
-    }, [profileQuery]),
+    }, [profileStale, refetchProfile]),
   );
 
   // Mirror the CRM: isSubscribed AND subscriptionExpery in the future
