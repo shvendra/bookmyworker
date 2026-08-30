@@ -38,6 +38,7 @@ import { Skeleton, SkeletonCard } from '../../../shared/components/ui/Skeleton';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/utils/labelUtils';
 import { buildJobShareMessage } from '../../../shared/utils/jobShare';
+import { describeLoadError, firstQueryError } from '../../../shared/utils/describeLoadError';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 // Profile-completion nudge disabled for now — mandatory completion is enforced
 // via the post-OTP WorkerProfileCompletionScreen instead.
@@ -583,6 +584,11 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   // Surface a retry affordance when the primary data sources fail, instead of
   // silently rendering zeros / an empty job list on the agent's home screen.
   const hasLoadError = reqsQuery.isError || liveReqsQuery.isError || (isAgent && statsQuery.isError);
+  // Explain WHY the refresh failed (slow internet / server busy / session).
+  const loadErrorReason = describeLoadError(
+    firstQueryError([reqsQuery, liveReqsQuery, isAgent ? statsQuery : null]),
+    t,
+  );
 
   const liveReqs = liveReqsQuery.data?.requirements ?? [];
 
@@ -664,7 +670,12 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
               style={errBanner.wrap}
             >
               <AppText style={errBanner.icon}>⚠️</AppText>
-              <AppText style={errBanner.msg} numberOfLines={2}>{t('dashboardLoadError')}</AppText>
+              <View style={errBanner.textCol}>
+                <AppText style={errBanner.msg} numberOfLines={1}>{t('dashboardLoadError')}</AppText>
+                {!!loadErrorReason && (
+                  <AppText style={errBanner.reason} numberOfLines={3}>{loadErrorReason}</AppText>
+                )}
+              </View>
               <View style={errBanner.cta}>
                 <AppText style={errBanner.ctaTxt}>{isRefreshing ? '…' : t('retry')}</AppText>
               </View>
@@ -1112,11 +1123,13 @@ const invBanner = StyleSheet.create({
 });
 
 const errBanner = StyleSheet.create({
-  wrap:   { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
-  icon:   { fontSize: 18 },
-  msg:    { flex: 1, fontSize: 13, fontWeight: '700', color: '#991B1B' },
-  cta:    { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
-  ctaTxt: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+  wrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
+  icon:    { fontSize: 18 },
+  textCol: { flex: 1, gap: 2 },
+  msg:     { fontSize: 13, fontWeight: '800', color: '#991B1B' },
+  reason:  { fontSize: 11, fontWeight: '500', color: '#B91C1C', lineHeight: 15 },
+  cta:     { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  ctaTxt:  { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
 });
 
 // ── Activity section styles ───────────────────────────────────────────────────

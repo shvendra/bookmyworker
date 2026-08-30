@@ -51,6 +51,7 @@ import { EmployerPromoSlider } from '../../../shared/components/ui/EmployerPromo
 import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
+import { describeLoadError, firstQueryError } from '../../../shared/utils/describeLoadError';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { FestivalWishesModal } from '../../../shared/components/ui/FestivalWishesModal';
 
@@ -1626,6 +1627,13 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     profileQuery.isError ||
     (isSubscribed && pipelineQuery.isError);
 
+  // Explain WHY the refresh failed (slow internet / server busy / session) so
+  // the banner isn't just "couldn't refresh" with no reason.
+  const loadErrorReason = describeLoadError(
+    firstQueryError([profileQuery, reqQuery, dashQuery, nearbyQuery, isSubscribed ? pipelineQuery : null]),
+    t,
+  );
+
   const handlePost = useCallback(() => {
     if (profileQuery.isLoading) return;
     // No subscription or expired → go to pricing
@@ -2146,7 +2154,12 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             style={errBanner.wrap}
           >
             <AppText style={errBanner.icon}>⚠️</AppText>
-            <AppText style={errBanner.msg} numberOfLines={2}>{t('dashboardLoadError', { ns: 'translation' })}</AppText>
+            <View style={errBanner.textCol}>
+              <AppText style={errBanner.msg} numberOfLines={1}>{t('dashboardLoadError', { ns: 'translation' })}</AppText>
+              {!!loadErrorReason && (
+                <AppText style={errBanner.reason} numberOfLines={3}>{loadErrorReason}</AppText>
+              )}
+            </View>
             <View style={errBanner.cta}>
               {isRefreshing
                 ? <ActivityIndicator size="small" color="#FFFFFF" />
@@ -2374,11 +2387,13 @@ const confirm = StyleSheet.create({
 });
 
 const errBanner = StyleSheet.create({
-  wrap:   { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 16, marginTop: 12 },
-  icon:   { fontSize: 18 },
-  msg:    { flex: 1, fontSize: 13, fontWeight: '700', color: '#991B1B' },
-  cta:    { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
-  ctaTxt: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+  wrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 16, marginTop: 12 },
+  icon:    { fontSize: 18 },
+  textCol: { flex: 1, gap: 2 },
+  msg:     { fontSize: 13, fontWeight: '800', color: '#991B1B' },
+  reason:  { fontSize: 11, fontWeight: '500', color: '#B91C1C', lineHeight: 15 },
+  cta:     { backgroundColor: '#DC2626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
+  ctaTxt:  { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
 });
 
 // ─── Subscription Upsell Banner ───────────────────────────────────────────────
