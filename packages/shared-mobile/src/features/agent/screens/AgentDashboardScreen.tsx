@@ -37,6 +37,7 @@ import { GradientHeader } from '../../../shared/components/ui/GradientHeader';
 import { Skeleton, SkeletonCard } from '../../../shared/components/ui/Skeleton';
 import { WorkerCategoryGrid } from '../../../shared/components/ui/WorkerCategoryGrid';
 import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/utils/labelUtils';
+import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 // Profile-completion nudge disabled for now — mandatory completion is enforced
 // via the post-OTP WorkerProfileCompletionScreen instead.
@@ -445,11 +446,16 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
     const jobTitle = req.subCategory ? fmtLabel(req.subCategory) : fmtLabel(req.workType);
     const location = getLocationStr({ district: req.district, state: req.state }, i18n.language, '—');
     const salary = `₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0}`;
+    const { message, url, title } = buildJobShareMessage({
+      requirementId: req._id,
+      jobTitle,
+      location,
+      salary,
+      period: getSalaryType(req),
+      workers: (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0),
+    });
     try {
-      await Share.share({
-        message: `🔔 Job Available: ${jobTitle}\n📍 ${location}\n💰 ${salary}/${getSalaryType(req)}\n\nApply on BookMyWorker App`,
-        title: `Job: ${jobTitle}`,
-      });
+      await Share.share({ message, url, title });
     } catch { /* dismissed */ }
   };
 

@@ -28,6 +28,7 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { showAlert } from '../../../shared/state/alert/AppAlertContext';
 import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/utils/labelUtils';
+import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'JobMarketplaceDetail'>;
@@ -284,26 +285,23 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
     revealMutation.mutate();
   }, [isSelfWorker, isAgent, isVerifiedAgent, req, revealMutation, t]);
 
-  const APP_STORE_URL = 'https://play.google.com/store/apps/details?id=com.app.myworker';
-
   const handleShare = useCallback(async () => {
     if (!req) return;
     const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
     const loc = getLocationStr({ tehsil: req.tehsil, district: req.district, state: req.state }, i18n.language, t('panIndia'));
     const period = inferPeriod(req.minBudgetPerWorker ?? 0);
     const workers = (req.workerQuantitySkilled ?? 0) + (req.workerQuantityUnskilled ?? 0);
-    const msg = [
-      `🔔 Job Available: ${jobTitle}`,
-      `📍 ${loc}`,
-      `💰 ₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0} per ${period}`,
-      workers > 0 ? `👷 ${workers} workers needed` : null,
-      req.workerNeedDate ? `📅 Start: ${fmtDate(req.workerNeedDate, i18n.language)}` : null,
-      '',
-      '📲 Download BookMyWorker App & Apply Now:',
-      APP_STORE_URL,
-    ].filter(Boolean).join('\n');
-    // url param ensures iOS share sheet shows it as a tappable link
-    try { await Share.share({ message: msg, url: APP_STORE_URL, title: `Job: ${jobTitle}` }); }
+    const { message, url, title } = buildJobShareMessage({
+      requirementId,
+      jobTitle,
+      location: loc,
+      salary: `₹${req.minBudgetPerWorker ?? 0}–${req.maxBudgetPerWorker ?? 0}`,
+      period,
+      workers,
+      startDate: req.workerNeedDate ? fmtDate(req.workerNeedDate, i18n.language) : null,
+    });
+    // url param ensures the iOS share sheet shows it as a tappable link.
+    try { await Share.share({ message, url, title }); }
     catch { /* dismissed */ }
   }, [req, i18n.language, t]);
 

@@ -34,6 +34,7 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesData from '../../../shared/data/categories.json';
 import { getJobTitle, getCategoryLabel, getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
+import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 
 type RouteProps = RouteProp<MainStackParamList, 'JobMarketplace'>;
 
@@ -173,22 +174,19 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
   const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
   const categoryLabel = getCategoryLabel(req.workType, t, req.subCategory);
 
-  const APP_STORE_URL = 'https://play.google.com/store/apps/details?id=com.app.myworker';
-
   const handleShare = async (): Promise<void> => {
     try {
-      const msg = [
-        `🔔 Job Available: ${jobTitle}`,
-        `📍 ${locationStr}`,
-        `💰 ${salaryText} per ${salaryType}`,
-        workers > 0 ? `👷 ${workers} workers needed` : null,
-        req.workerNeedDate ? `📅 Start: ${fmtDate(req.workerNeedDate)}` : null,
-        '',
-        '📲 Download BookMyWorker App & Apply Now:',
-        APP_STORE_URL,
-      ].filter((l) => l !== null).join('\n');
-      // Pass url separately so iOS share sheet shows it as a clickable link
-      await Share.share({ message: msg, url: APP_STORE_URL, title: `Job: ${jobTitle}` });
+      const { message, url, title } = buildJobShareMessage({
+        requirementId: req._id,
+        jobTitle,
+        location: locationStr,
+        salary: salaryText,
+        period: salaryType,
+        workers,
+        startDate: req.workerNeedDate ? fmtDate(req.workerNeedDate) : null,
+      });
+      // Pass url separately so the iOS share sheet shows it as a clickable link.
+      await Share.share({ message, url, title });
     } catch { /* user dismissed */ }
   };
 
