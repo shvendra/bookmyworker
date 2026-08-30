@@ -14,6 +14,11 @@ interface FullScreenNoticeProps {
   retrying?: boolean;
   onRetry?: () => void;
   accent?: 'primary' | 'warning';
+  /** Override the default "Try again" button text (e.g. "Update now"). When set,
+   *  the button never toggles to the "Checking…" state. */
+  actionLabel?: string;
+  /** Override the default "↻" button icon. */
+  actionIcon?: string;
 }
 
 /**
@@ -30,6 +35,8 @@ export const FullScreenNotice = ({
   retrying,
   onRetry,
   accent = 'primary',
+  actionLabel,
+  actionIcon,
 }: FullScreenNoticeProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const accentColor = accent === 'warning' ? theme.colors.warning : theme.colors.primary;
@@ -73,11 +80,11 @@ export const FullScreenNotice = ({
 
         {onRetry ? (
           <AppButton
-            title={retrying ? 'Checking…' : 'Try again'}
+            title={actionLabel ?? (retrying ? 'Checking…' : 'Try again')}
             onPress={onRetry}
             variant="primary"
-            icon="↻"
-            disabled={retrying}
+            icon={actionIcon ?? '↻'}
+            disabled={actionLabel ? false : retrying}
             style={styles.btn}
           />
         ) : null}
