@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '../../../shared/components/ui/AppText';
+import { AppSheet } from '../../../shared/components/ui/AppSheet';
 import { useAppTheme } from '../../../core/theme';
 import type { CalledWorker } from '../hooks/useCallReturn';
 
@@ -23,7 +23,6 @@ interface Props {
 export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
-  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<'ask' | 'wa'>('ask');
 
   useEffect(() => {
@@ -42,96 +41,71 @@ export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React
   };
 
   return (
-    <Modal visible={!!worker} transparent animationType="slide" onRequestClose={onDismiss}>
-      <TouchableOpacity activeOpacity={1} style={styles.scrim} onPress={onDismiss}>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => {}}
-          style={[
-            styles.sheet,
-            { backgroundColor: C.card, paddingBottom: insets.bottom + 18 },
-          ]}
-        >
-          <View style={[styles.grip, { backgroundColor: C.border }]} />
+    <AppSheet visible={!!worker} onClose={onDismiss} scroll={false} contentStyle={styles.content}>
+      <View style={[styles.iconWrap, { backgroundColor: C.primaryLight }]}>
+        <Ionicons
+          name={step === 'ask' ? 'call' : 'logo-whatsapp'}
+          size={22}
+          color={step === 'ask' ? C.primary : '#25D366'}
+        />
+      </View>
 
-          <View style={[styles.iconWrap, { backgroundColor: C.primaryLight }]}>
-            <Ionicons
-              name={step === 'ask' ? 'call' : 'logo-whatsapp'}
-              size={22}
-              color={step === 'ask' ? C.primary : '#25D366'}
-            />
-          </View>
-
-          {step === 'ask' ? (
-            <>
-              <AppText style={[styles.title, { color: C.text }]}>{t('ws_callcheck_title')}</AppText>
-              {!!name && (
-                <AppText style={[styles.sub, { color: C.mutedText }]}>
-                  {t('ws_callcheck_with', { name })}
-                </AppText>
-              )}
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.btn, { backgroundColor: C.primary }]}
-                onPress={() => worker && onConnected(worker)}
-              >
-                <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                <AppText style={styles.btnTxt}>{t('ws_callcheck_yes')}</AppText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.btnOutline, { borderColor: C.border }]}
-                onPress={() => setStep('wa')}
-              >
-                <Ionicons name="close-circle" size={18} color={C.mutedText} />
-                <AppText style={[styles.btnOutlineTxt, { color: C.text }]}>
-                  {t('ws_callcheck_no')}
-                </AppText>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <AppText style={[styles.title, { color: C.text }]}>{t('ws_callcheck_wa_title')}</AppText>
-              <AppText style={[styles.sub, { color: C.mutedText }]}>{t('ws_callcheck_wa_sub')}</AppText>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.btn, { backgroundColor: '#25D366' }]}
-                onPress={sendWhatsApp}
-              >
-                <Ionicons name="logo-whatsapp" size={18} color="#fff" />
-                <AppText style={styles.btnTxt}>{t('ws_callcheck_wa_btn')}</AppText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.btnOutline, { borderColor: C.border }]}
-                onPress={onDismiss}
-              >
-                <AppText style={[styles.btnOutlineTxt, { color: C.mutedText }]}>
-                  {t('ws_callcheck_skip')}
-                </AppText>
-              </TouchableOpacity>
-            </>
+      {step === 'ask' ? (
+        <>
+          <AppText style={[styles.title, { color: C.text }]}>{t('ws_callcheck_title')}</AppText>
+          {!!name && (
+            <AppText style={[styles.sub, { color: C.mutedText }]}>
+              {t('ws_callcheck_with', { name })}
+            </AppText>
           )}
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.btn, { backgroundColor: C.primary }]}
+            onPress={() => worker && onConnected(worker)}
+          >
+            <Ionicons name="checkmark-circle" size={18} color="#fff" />
+            <AppText style={styles.btnTxt}>{t('ws_callcheck_yes')}</AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.btnOutline, { borderColor: C.border }]}
+            onPress={() => setStep('wa')}
+          >
+            <Ionicons name="close-circle" size={18} color={C.mutedText} />
+            <AppText style={[styles.btnOutlineTxt, { color: C.text }]}>{t('ws_callcheck_no')}</AppText>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <AppText style={[styles.title, { color: C.text }]}>{t('ws_callcheck_wa_title')}</AppText>
+          <AppText style={[styles.sub, { color: C.mutedText }]}>{t('ws_callcheck_wa_sub')}</AppText>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.btn, { backgroundColor: '#25D366' }]}
+            onPress={sendWhatsApp}
+          >
+            <Ionicons name="logo-whatsapp" size={18} color="#fff" />
+            <AppText style={styles.btnTxt}>{t('ws_callcheck_wa_btn')}</AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.btnOutline, { borderColor: C.border }]}
+            onPress={onDismiss}
+          >
+            <AppText style={[styles.btnOutlineTxt, { color: C.mutedText }]}>{t('ws_callcheck_skip')}</AppText>
+          </TouchableOpacity>
+        </>
+      )}
+    </AppSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    alignItems: 'center',
-  },
-  grip: { width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
+  content: { alignItems: 'center', paddingTop: 2 },
   iconWrap: {
     width: 52, height: 52, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
