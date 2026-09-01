@@ -24,3 +24,7 @@ coverage/
 **/release.keystore
 *.jks
 *.pem
+
+# build artifacts (keep only in ~/Desktop/BookMyWorker-AAB-Release/)
+*.aab
+*.apk
