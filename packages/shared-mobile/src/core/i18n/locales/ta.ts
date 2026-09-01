@@ -1115,4 +1115,15 @@ export const translation = {
   wpref_subtitle: "உங்கள் வேலைத் திறன்கள், வேலைப் பகுதிகள், அனுபவம் மற்றும் ரெஸ்யூமேவை எப்போது வேண்டுமானாலும் புதுப்பிக்கவும்.",
   wpref_experienceLabel: "வேலை அனுபவம் (ஆண்டுகள்)",
   wpref_save: "மாற்றங்களைச் சேமி",
+  // ── Wrong-app login notice (cross-app guidance) ──
+  wrongApp_title: "நீங்கள் தவறான ஆப்பில் உள்ளீர்கள்",
+  wrongApp_body: "இந்த எண் BookMyWorker இல் {{role}} ஆகப் பதிவு செய்யப்பட்டுள்ளது.",
+  wrongApp_install: "{{app}} ஐ நிறுவவும்",
+  wrongApp_installHint: "தொடர {{app}} ஆப்பை நிறுவவும்.",
+  wrongApp_opening: "Play Store திறக்கிறது…",
+  wrongApp_tryAnother: "வேறு எண்ணைப் பயன்படுத்தவும்",
+  wrongApp_roleEmployer: "முதலாளி",
+  wrongApp_roleAgent: "முகவர்",
+  wrongApp_roleWorker: "பணியாளர்",
+  wrongApp_roleOther: "வேறு பங்கு",
 } as const;

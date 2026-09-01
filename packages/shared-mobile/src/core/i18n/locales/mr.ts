@@ -1115,4 +1115,15 @@ export const translation = {
   wpref_subtitle: "तुमची कामाची कौशल्ये, कामाची क्षेत्रे, अनुभव आणि रेझ्युमे कधीही अपडेट करा.",
   wpref_experienceLabel: "कामाचा अनुभव (वर्षे)",
   wpref_save: "बदल जतन करा",
+  // ── Wrong-app login notice (cross-app guidance) ──
+  wrongApp_title: "तुम्ही चुकीच्या अ‍ॅपवर आहात",
+  wrongApp_body: "हा नंबर BookMyWorker वर {{role}} म्हणून नोंदणीकृत आहे.",
+  wrongApp_install: "{{app}} इंस्टॉल करा",
+  wrongApp_installHint: "पुढे जाण्यासाठी {{app}} अ‍ॅप इंस्टॉल करा.",
+  wrongApp_opening: "Play Store उघडत आहे…",
+  wrongApp_tryAnother: "दुसरा नंबर वापरा",
+  wrongApp_roleEmployer: "नियोक्ता",
+  wrongApp_roleAgent: "एजंट",
+  wrongApp_roleWorker: "कामगार",
+  wrongApp_roleOther: "वेगळी भूमिका",
 } as const;

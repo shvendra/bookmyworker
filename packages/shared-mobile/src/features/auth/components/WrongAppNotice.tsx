@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -25,20 +26,11 @@ interface Props {
   onDismiss?: () => void;
 }
 
-const roleWord = (role?: string | null): string => {
-  switch (String(role || '').trim().toLowerCase()) {
-    case 'employer': return 'an Employer';
-    case 'agent': return 'an Agent';
-    case 'selfworker':
-    case 'worker': return 'a Worker';
-    default: return role ? `a ${role}` : 'a different role';
-  }
-};
-
 /**
  * Shown after a login attempt that failed only because the account belongs to
  * the OTHER BookMyWorker app (Worker/Agent ↔ Employer). Gives the user a clear
  * message + a one-tap "Install <app>" Play Store button instead of a dead end.
+ * Fully translated (default `translation` namespace, all 11 languages).
  */
 export const WrongAppNotice = ({
   registeredRole,
@@ -47,7 +39,18 @@ export const WrongAppNotice = ({
   onDismiss,
 }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const [opening, setOpening] = useState(false);
+
+  const roleWord = (role?: string | null): string => {
+    switch (String(role || '').trim().toLowerCase()) {
+      case 'employer': return t('wrongApp_roleEmployer');
+      case 'agent': return t('wrongApp_roleAgent');
+      case 'selfworker':
+      case 'worker': return t('wrongApp_roleWorker');
+      default: return t('wrongApp_roleOther');
+    }
+  };
 
   const openStore = (): void => {
     if (!correctApp || opening) return;
@@ -66,14 +69,12 @@ export const WrongAppNotice = ({
       </View>
 
       <AppText variant="heading" style={styles.title} color={theme.colors.text}>
-        You&apos;re on the wrong app
+        {t('wrongApp_title')}
       </AppText>
 
       <AppText variant="body" style={styles.body} color={theme.colors.textSecondary}>
-        This number is registered as {roleWord(registeredRole)} on BookMyWorker.
-        {correctApp
-          ? ` To ${(correctApp.tagline || 'continue').toLowerCase()}, install the ${correctApp.name} app.`
-          : ''}
+        {t('wrongApp_body', { role: roleWord(registeredRole) })}
+        {correctApp ? ` ${t('wrongApp_installHint', { app: correctApp.name })}` : ''}
       </AppText>
 
       {!correctApp && fallbackMessage ? (
@@ -84,7 +85,7 @@ export const WrongAppNotice = ({
 
       {correctApp ? (
         <AppButton
-          title={opening ? 'Opening Play Store…' : `Install ${correctApp.name}`}
+          title={opening ? t('wrongApp_opening') : t('wrongApp_install', { app: correctApp.name })}
           onPress={openStore}
           loading={opening}
           size="lg"
@@ -95,7 +96,7 @@ export const WrongAppNotice = ({
 
       {onDismiss ? (
         <AppButton
-          title="Use a different number"
+          title={t('wrongApp_tryAnother')}
           onPress={onDismiss}
           variant="ghost"
           size="md"

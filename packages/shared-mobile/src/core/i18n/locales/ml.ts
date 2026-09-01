@@ -1117,4 +1117,15 @@ export const translation = {
   wpref_subtitle: "നിങ്ങളുടെ ജോലി വൈദഗ്ധ്യങ്ങൾ, ജോലി മേഖലകൾ, പരിചയം, റെസ്യൂമെ എന്നിവ എപ്പോൾ വേണമെങ്കിലും അപ്ഡേറ്റ് ചെയ്യുക.",
   wpref_experienceLabel: "ജോലി പരിചയം (വർഷങ്ങൾ)",
   wpref_save: "മാറ്റങ്ങൾ സംരക്ഷിക്കുക",
+  // ── Wrong-app login notice (cross-app guidance) ──
+  wrongApp_title: "നിങ്ങൾ തെറ്റായ ആപ്പിലാണ്",
+  wrongApp_body: "ഈ നമ്പർ BookMyWorker-ൽ {{role}} ആയി രജിസ്റ്റർ ചെയ്തിരിക്കുന്നു.",
+  wrongApp_install: "{{app}} ഇൻസ്റ്റാൾ ചെയ്യുക",
+  wrongApp_installHint: "തുടരാൻ {{app}} ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യുക.",
+  wrongApp_opening: "Play Store തുറക്കുന്നു…",
+  wrongApp_tryAnother: "മറ്റൊരു നമ്പർ ഉപയോഗിക്കുക",
+  wrongApp_roleEmployer: "തൊഴിലുടമ",
+  wrongApp_roleAgent: "ഏജന്റ്",
+  wrongApp_roleWorker: "തൊഴിലാളി",
+  wrongApp_roleOther: "മറ്റൊരു റോൾ",
 } as const;

@@ -1137,4 +1137,15 @@ export const translation = {
   wpref_subtitle: "Update your work skills, work areas, experience and resume anytime.",
   wpref_experienceLabel: "Work experience (years)",
   wpref_save: "Save changes",
+  // ── Wrong-app login notice (cross-app guidance) ──
+  wrongApp_title: "You're on the wrong app",
+  wrongApp_body: "This number is registered as {{role}} on BookMyWorker.",
+  wrongApp_install: "Install {{app}}",
+  wrongApp_installHint: "Install the {{app}} app to continue.",
+  wrongApp_opening: "Opening Play Store…",
+  wrongApp_tryAnother: "Use a different number",
+  wrongApp_roleEmployer: "an employer",
+  wrongApp_roleAgent: "an agent",
+  wrongApp_roleWorker: "a worker",
+  wrongApp_roleOther: "a different role",
 } as const;
