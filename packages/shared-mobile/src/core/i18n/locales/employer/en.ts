@@ -1615,4 +1615,15 @@ export const employerTranslation = {
   na_emp_photo_d: "A clear profile photo builds trust with workers.",
   na_emp_email_t: "Add your email",
   na_emp_email_d: "Add an email for receipts and important updates.",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'Did the call connect?',
+  ws_callcheck_with: 'with {{name}}',
+  ws_callcheck_yes: 'Yes, we talked',
+  ws_callcheck_no: 'Couldn\'t connect',
+  ws_callcheck_wa_title: 'Try WhatsApp instead',
+  ws_callcheck_wa_sub: 'Send a quick message so they can reply.',
+  ws_callcheck_wa_btn: 'Send WhatsApp message',
+  ws_callcheck_skip: 'Not now',
+  ws_active_prefix: 'Active {{time}}',
 };

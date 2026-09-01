@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "స్పష్టమైన ప్రొఫైల్ ఫోటో కార్మికులతో నమ్మకాన్ని పెంచుతుంది.",
   na_emp_email_t: "మీ ఇమెయిల్‌ను జోడించండి",
   na_emp_email_d: "రసీదులు మరియు ముఖ్యమైన అప్‌డేట్‌ల కోసం ఇమెయిల్‌ను జోడించండి.",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'కాల్ కనెక్ట్ అయిందా?',
+  ws_callcheck_with: '{{name}} తో',
+  ws_callcheck_yes: 'అవును, మాట్లాడాము',
+  ws_callcheck_no: 'సంప్రదించలేకపోయాము',
+  ws_callcheck_wa_title: 'బదులుగా WhatsApp ప్రయత్నించండి',
+  ws_callcheck_wa_sub: 'వారు తిరిగి సమాధానం ఇవ్వడానికి ఒక చిన్న సందేశం పంపండి.',
+  ws_callcheck_wa_btn: 'WhatsApp సందేశం పంపండి',
+  ws_callcheck_skip: 'ఇప్పుడు కాదు',
+  ws_active_prefix: '{{time}} క్రియాశీలం',
 };

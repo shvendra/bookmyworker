@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "સ્પષ્ટ પ્રોફાઇલ ફોટોથી વર્કરનો ભરોસો વધે છે.",
   na_emp_email_t: "તમારો ઈમેલ ઉમેરો",
   na_emp_email_d: "રસીદ અને મહત્વના અપડેટ માટે ઈમેલ ઉમેરો.",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'કૉલ કનેક્ટ થયો?',
+  ws_callcheck_with: '{{name}} સાથે',
+  ws_callcheck_yes: 'હા, વાત થઈ',
+  ws_callcheck_no: 'સંપર્ક થઈ શક્યો નહીં',
+  ws_callcheck_wa_title: 'તેના બદલે WhatsApp અજમાવો',
+  ws_callcheck_wa_sub: 'એક ટૂંકો સંદેશ મોકલો જેથી તેઓ જવાબ આપી શકે.',
+  ws_callcheck_wa_btn: 'WhatsApp સંદેશ મોકલો',
+  ws_callcheck_skip: 'હમણાં નહીં',
+  ws_active_prefix: '{{time}} સક્રિય',
 };

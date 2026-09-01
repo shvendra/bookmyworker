@@ -49,6 +49,9 @@ export interface RawAgent {
   workerSubType?: string;
   agentType?: string;
   createdAt?: string;
+  /** Last authenticated activity (any platform). For self-login workers this
+   *  tracks their own logins; powers the "Active N days ago" chip. */
+  lastSeenAt?: string;
   resumeUrl?: string;
   labourLicenceUrl?: string;
 }

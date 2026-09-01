@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "ଏକ ସ୍ପଷ୍ଟ ପ୍ରୋଫାଇଲ୍ ଫଟୋ ଶ୍ରମିକଙ୍କ ସହିତ ବିଶ୍ୱାସ ଗଠନ କରେ।",
   na_emp_email_t: "ଆପଣଙ୍କ ଇମେଲ୍ ଯୋଗ କରନ୍ତୁ",
   na_emp_email_d: "ରସିଦ ଓ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ଅପଡେଟ୍ ପାଇଁ ଏକ ଇମେଲ୍ ଯୋଗ କରନ୍ତୁ।",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'କଲ୍ ସଂଯୋଗ ହେଲା କି?',
+  ws_callcheck_with: '{{name}} ସହିତ',
+  ws_callcheck_yes: 'ହଁ, କଥା ହେଲା',
+  ws_callcheck_no: 'ଯୋଗାଯୋଗ ହୋଇପାରିଲା ନାହିଁ',
+  ws_callcheck_wa_title: 'ପରିବର୍ତ୍ତେ WhatsApp ଚେଷ୍ଟା କରନ୍ତୁ',
+  ws_callcheck_wa_sub: 'ସେମାନେ ଉତ୍ତର ଦେଇ ପାରିବେ ବୋଲି ଏକ ଛୋଟ ବାର୍ତ୍ତା ପଠାନ୍ତୁ।',
+  ws_callcheck_wa_btn: 'WhatsApp ବାର୍ତ୍ତା ପଠାନ୍ତୁ',
+  ws_callcheck_skip: 'ବର୍ତ୍ତମାନ ନୁହେଁ',
+  ws_active_prefix: '{{time}} ସକ୍ରିୟ',
 };

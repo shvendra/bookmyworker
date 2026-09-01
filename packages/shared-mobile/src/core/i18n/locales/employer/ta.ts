@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "தெளிவான புரொஃபைல் படம் தொழிலாளர்களிடம் நம்பிக்கையை உருவாக்கும்.",
   na_emp_email_t: "உங்கள் மின்னஞ்சலைச் சேர்க்கவும்",
   na_emp_email_d: "ரசீதுகள் மற்றும் முக்கியமான புதுப்பிப்புகளுக்கு மின்னஞ்சலைச் சேர்க்கவும்.",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'அழைப்பு இணைந்ததா?',
+  ws_callcheck_with: '{{name}} உடன்',
+  ws_callcheck_yes: 'ஆம், பேசினோம்',
+  ws_callcheck_no: 'தொடர்பு கொள்ள முடியவில்லை',
+  ws_callcheck_wa_title: 'வாட்ஸ்அப்பில் முயற்சிக்கவும்',
+  ws_callcheck_wa_sub: 'அவர்கள் பதிலளிக்க ஒரு சிறு செய்தி அனுப்பவும்.',
+  ws_callcheck_wa_btn: 'வாட்ஸ்அப் செய்தி அனுப்பவும்',
+  ws_callcheck_skip: 'இப்போது வேண்டாம்',
+  ws_active_prefix: '{{time}} செயலில்',
 };

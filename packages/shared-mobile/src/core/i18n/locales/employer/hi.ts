@@ -1524,4 +1524,15 @@ export const employerTranslation = {
   na_emp_photo_d: "साफ़ प्रोफ़ाइल फ़ोटो से वर्कर का भरोसा बढ़ता है।",
   na_emp_email_t: "अपना ईमेल जोड़ें",
   na_emp_email_d: "रसीद और ज़रूरी अपडेट के लिए ईमेल जोड़ें।",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'क्या बात हो पाई?',
+  ws_callcheck_with: '{{name}} के साथ',
+  ws_callcheck_yes: 'हाँ, बात हुई',
+  ws_callcheck_no: 'बात नहीं हो पाई',
+  ws_callcheck_wa_title: 'व्हाट्सएप से कोशिश करें',
+  ws_callcheck_wa_sub: 'एक छोटा संदेश भेजें ताकि वे जवाब दे सकें।',
+  ws_callcheck_wa_btn: 'व्हाट्सएप संदेश भेजें',
+  ws_callcheck_skip: 'अभी नहीं',
+  ws_active_prefix: '{{time}} सक्रिय',
 };

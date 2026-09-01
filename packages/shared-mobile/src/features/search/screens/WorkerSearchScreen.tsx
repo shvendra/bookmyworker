@@ -38,6 +38,8 @@ import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requestReviewOnce } from '../../../core/review/storeReview';
 import { hapticSuccess } from '../../../core/haptics';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
+import { useCallReturn } from '../hooks/useCallReturn';
+import { CallCheckSheet } from '../components/CallCheckSheet';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { WorkerSafetyNotice } from '../../../shared/components/ui/WorkerSafetyNotice';
@@ -1157,6 +1159,7 @@ const CallOutcomePicker = ({
   name,
   initials,
   accentColor,
+  openSignal = 0,
 }: {
   agentId: string;
   current: string;
@@ -1166,11 +1169,18 @@ const CallOutcomePicker = ({
   name?: string;
   initials?: string;
   accentColor?: string;
+  /** Bump this (e.g. Date.now()) to auto-open the picker from outside — used by
+   *  the post-call "did it connect?" prompt when the user says yes. */
+  openSignal?: number;
 }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (openSignal > 0) setShow(true);
+  }, [openSignal]);
   const outcome = CALL_OUTCOMES.find((o) => o.value === current);
   const label = outcome ? t(outcome.labelKey) : undefined;
   const hasOutcome = !!current;
@@ -1297,6 +1307,10 @@ interface AgentCardProps {
   onTopup: () => void;
   onSaveRemark: (id: string, status: string) => void;
   onPress: (id: string) => void;
+  /** Place a call AND arm the "did it connect?" return prompt. */
+  onDialCall: (w: { id: string; name: string; phone: string }) => void;
+  /** Non-zero → auto-open this card's call-outcome picker (after "yes, we talked"). */
+  outcomeOpenSignal: number;
 }
 
 const AgentCard = React.memo(({
@@ -1316,6 +1330,8 @@ const AgentCard = React.memo(({
   onTopup,
   onSaveRemark,
   onPress,
+  onDialCall,
+  outcomeOpenSignal,
 }: AgentCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -1348,6 +1364,21 @@ const AgentCard = React.memo(({
         amount: `₹${wage}${agent.salaryTo && agent.salaryTo !== wage ? `–${agent.salaryTo}` : ''}`,
       })
     : null;
+
+  // "Active N days ago" chip — hidden when this number was tagged wrong/invalid.
+  // Green within 20 days, grey beyond. lastSeenAt updates on every authenticated
+  // request, so self-login workers stay accurate.
+  const lastActive = (() => {
+    if (callStatus === 'wrong_number' || callStatus === 'invalid_number') return null;
+    if (!agent.lastSeenAt) return null;
+    const d = new Date(agent.lastSeenAt);
+    if (Number.isNaN(d.getTime())) return null;
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    return {
+      text: t('ws_active_prefix', { time: timeAgoDate(d, t) }),
+      color: days <= 20 ? '#16a34a' : theme.colors.mutedText,
+    };
+  })();
 
   // Bind this card's id to the (stable) parent callbacks so the row can stay
   // memoized — these only change if the parent callback or the id changes.
@@ -1409,6 +1440,12 @@ const AgentCard = React.memo(({
             {exp !== undefined && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{t('ws_meta_exp', { years: exp })}</AppText></View>}
             {!!agent.gender && <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1 }]}><AppText style={[wc.metaChipTxt, { color: theme.colors.mutedText }]}>{metaDisplay(agent.gender)}</AppText></View>}
             {!!wageText && <View style={[wc.metaChip, wc.wageChip]}><AppText style={[wc.metaChipTxt, wc.wageTxt]}>{wageText}</AppText></View>}
+            {lastActive && (
+              <View style={[wc.metaChip, { backgroundColor: theme.colors.surface1, flexDirection: 'row', alignItems: 'center' }]}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lastActive.color, marginRight: 5 }} />
+                <AppText style={[wc.metaChipTxt, { color: lastActive.color, fontWeight: '700' }]} numberOfLines={1}>{lastActive.text}</AppText>
+              </View>
+            )}
           </View>
 
           {!!(agent.workerSubType || agent.agentType) && (
@@ -1475,7 +1512,7 @@ const AgentCard = React.memo(({
           <>
             <View style={wc.unlockedRow}>
               <TouchableOpacity
-                onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
+                onPress={() => onDialCall({ id: agent._id, name: agent.name ?? '', phone: unlockedPhone })}
                 style={[wc.callBtn, { backgroundColor: BRAND }]}
                 activeOpacity={0.85}
               >
@@ -1493,7 +1530,7 @@ const AgentCard = React.memo(({
             {unlockedAlternate ? (
               <View style={[wc.unlockedRow, { marginTop: 8 }]}>
                 <TouchableOpacity
-                  onPress={() => void Linking.openURL(`tel:${unlockedAlternate}`)}
+                  onPress={() => onDialCall({ id: agent._id, name: agent.name ?? '', phone: unlockedAlternate })}
                   style={[wc.callBtn, { backgroundColor: '#0f766e' }]}
                   activeOpacity={0.85}
                 >
@@ -1550,6 +1587,7 @@ const AgentCard = React.memo(({
           name={agent.name ? formatName(agent.name) : t('ws_unknown')}
           initials={initials}
           accentColor={accentColor}
+          openSignal={outcomeOpenSignal}
         />
       )}
 
@@ -1772,6 +1810,15 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const [savingRemark,    setSavingRemark]    = useState<Record<string, boolean>>({});
   const [remarkTimes,     setRemarkTimes]     = useState<Record<string, Date>>({});
   const [isLimitExhausted, setIsLimitExhausted] = useState(false);
+
+  // Post-call flow: dial → leave app → return → "did it connect?" sheet.
+  // "Yes" bumps outcomeOpen[<id>] so that card's outcome picker auto-opens.
+  const callReturn = useCallReturn();
+  const { dial: callReturnDial } = callReturn;
+  const [outcomeOpen, setOutcomeOpen] = useState<Record<string, number>>({});
+  const onDialCallStable = useCallback((w: { id: string; name: string; phone: string }) => {
+    callReturnDial(w);
+  }, [callReturnDial]);
 
   // Profile + subscription
   const profileQuery = useQuery({
@@ -2289,6 +2336,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               onTopup={onGoSubscription}
               onSaveRemark={onSaveRemarkStable}
               onPress={onOpenProfile}
+              onDialCall={onDialCallStable}
+              outcomeOpenSignal={outcomeOpen[item._id] ?? 0}
             />
           )}
           ListFooterComponent={
@@ -2311,6 +2360,15 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         userDistrict={userDistrict}
         lockState={isScoped}
         lockDistrict={districtScoped}
+      />
+
+      <CallCheckSheet
+        worker={callReturn.pending}
+        onConnected={(w) => {
+          callReturn.dismiss();
+          if (isSubscribed) setOutcomeOpen((m) => ({ ...m, [w.id]: Date.now() }));
+        }}
+        onDismiss={callReturn.dismiss}
       />
     </View>
   );

@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "വ്യക്തമായ പ്രൊഫൈൽ ഫോട്ടോ തൊഴിലാളികളുമായി വിശ്വാസം വളർത്തുന്നു.",
   na_emp_email_t: "നിങ്ങളുടെ ഇമെയിൽ ചേർക്കുക",
   na_emp_email_d: "രസീതുകൾക്കും പ്രധാന അപ്‌ഡേറ്റുകൾക്കുമായി ഇമെയിൽ ചേർക്കുക.",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'കോൾ കണക്റ്റ് ആയോ?',
+  ws_callcheck_with: '{{name}} യുമായി',
+  ws_callcheck_yes: 'അതെ, സംസാരിച്ചു',
+  ws_callcheck_no: 'ബന്ധപ്പെടാൻ കഴിഞ്ഞില്ല',
+  ws_callcheck_wa_title: 'പകരം WhatsApp പരീക്ഷിക്കുക',
+  ws_callcheck_wa_sub: 'അവർക്ക് മറുപടി നൽകാൻ ഒരു ചെറിയ സന്ദേശം അയയ്ക്കുക.',
+  ws_callcheck_wa_btn: 'WhatsApp സന്ദേശം അയയ്ക്കുക',
+  ws_callcheck_skip: 'ഇപ്പോൾ വേണ്ട',
+  ws_active_prefix: '{{time}} സജീവം',
 };

@@ -1522,4 +1522,15 @@ export const employerTranslation = {
   na_emp_photo_d: "একটি স্পষ্ট প্রোফাইল ছবি কর্মীদের সাথে আস্থা তৈরি করে।",
   na_emp_email_t: "আপনার ইমেল যোগ করুন",
   na_emp_email_d: "রসিদ ও গুরুত্বপূর্ণ আপডেটের জন্য একটি ইমেল যোগ করুন।",
+
+  // — post-call check + last-active (call-return flow) —
+  ws_callcheck_title: 'কল কি সংযুক্ত হয়েছে?',
+  ws_callcheck_with: '{{name}} এর সাথে',
+  ws_callcheck_yes: 'হ্যাঁ, কথা হয়েছে',
+  ws_callcheck_no: 'যোগাযোগ করা যায়নি',
+  ws_callcheck_wa_title: 'হোয়াটসঅ্যাপে চেষ্টা করুন',
+  ws_callcheck_wa_sub: 'একটি ছোট বার্তা পাঠান যাতে তারা উত্তর দিতে পারে।',
+  ws_callcheck_wa_btn: 'হোয়াটসঅ্যাপ বার্তা পাঠান',
+  ws_callcheck_skip: 'এখন নয়',
+  ws_active_prefix: '{{time}} সক্রিয়',
 };

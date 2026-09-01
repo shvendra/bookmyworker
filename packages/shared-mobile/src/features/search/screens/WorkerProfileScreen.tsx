@@ -22,6 +22,8 @@ import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requestReviewOnce } from '../../../core/review/storeReview';
 import type { WorkerDetail } from '../../../core/api/endpoints/workerApi';
+import { useCallReturn } from '../hooks/useCallReturn';
+import { CallCheckSheet } from '../components/CallCheckSheet';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -756,6 +758,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   const planFeat = usePlanFeatures();
   const insets = useSafeAreaInsets();
 
+  const callReturn = useCallReturn();
   const [unlockedPhone, setUnlockedPhone] = useState<string | null>(null);
   // Worker's optional secondary number, revealed by the SAME unlock (no extra charge).
   const [unlockedAlternate, setUnlockedAlternate] = useState<string | null>(null);
@@ -1215,7 +1218,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       </View>
                       <View style={s.altActions}>
                         <TouchableOpacity
-                          onPress={() => void Linking.openURL(`tel:${unlockedAlternate}`)}
+                          onPress={() => callReturn.dial({ id: workerId, name: displayName, phone: unlockedAlternate })}
                           style={s.altIconBtn}
                           activeOpacity={0.85}
                         >
@@ -1233,7 +1236,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                   ) : null}
                   <View style={s.contactBtns}>
                     <TouchableOpacity
-                      onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
+                      onPress={() => callReturn.dial({ id: workerId, name: displayName, phone: unlockedPhone })}
                       style={s.callBtn}
                       activeOpacity={0.85}
                     >
@@ -1361,6 +1364,11 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         </View>
       </ScrollView>
 
+      <CallCheckSheet
+        worker={callReturn.pending}
+        onConnected={() => callReturn.dismiss()}
+        onDismiss={callReturn.dismiss}
+      />
     </View>
   );
 };
