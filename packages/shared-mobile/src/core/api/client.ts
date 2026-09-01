@@ -7,6 +7,10 @@ import { reportNetworkOk, reportNetworkDown } from '../query/connectivity';
 export interface ApiClientError extends Error {
   statusCode?: number;
   details?: unknown;
+  /** Machine-readable error code from the server body, e.g. "WRONG_APP". */
+  code?: string;
+  /** The full server response body, so callers can read structured fields. */
+  data?: unknown;
 }
 
 /** Maps Axios raw error codes / HTTP statuses → human-readable messages. */
@@ -40,10 +44,14 @@ const humanMessage = (error: AxiosError<{ message?: string }>): string => {
   }
 };
 
-const toApiError = (error: AxiosError<{ message?: string; errors?: unknown }>): ApiClientError => {
+const toApiError = (
+  error: AxiosError<{ message?: string; errors?: unknown; code?: string }>,
+): ApiClientError => {
   const apiError = new Error(humanMessage(error)) as ApiClientError;
   apiError.statusCode = error.response?.status;
   apiError.details = error.response?.data?.errors;
+  apiError.code = error.response?.data?.code;
+  apiError.data = error.response?.data;
   return apiError;
 };
 

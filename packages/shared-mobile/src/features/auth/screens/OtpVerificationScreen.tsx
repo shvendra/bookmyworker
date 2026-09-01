@@ -23,6 +23,8 @@ import { useAppTheme } from '../../../core/theme';
 import { authService } from '../services/authService';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { AuthStackParamList } from '../../../app/navigation/types';
+import { WrongAppNotice } from '../components/WrongAppNotice';
+import { parseWrongApp, appForRole, type WrongAppInfo } from '../../../shared/constants/crossApp';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'OtpVerification'>;
 
@@ -44,6 +46,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
   const [focused, setFocused] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [wrongApp, setWrongApp] = useState<WrongAppInfo | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -119,6 +122,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     if (otp.length < OTP_LENGTH) return;
     setIsLoading(true);
     setErrorMessage(null);
+    setWrongApp(null);
     try {
       const session = await authService.verifyOtp({ phone: route.params.phone, otp, roleHint: route.params.roleHint, appContext: route.params.appContext });
 
@@ -127,34 +131,31 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
       const roleHint = route.params.roleHint;
       const actualRole = session.user.role;
 
-      const showRoleError = (msg: string) => {
-        setErrorMessage(msg);
+      // The backend normally 403s wrong-app logins before we get here (handled
+      // in catch → parseWrongApp). These are a client-side guard for older
+      // backends and the no-appContext path — route them to the same notice.
+      const roleMismatch =
+        (appContext === 'employer-app' && actualRole !== 'employer') ||
+        (appContext === 'agent-app' && actualRole === 'employer') ||
+        (!appContext && roleHint === 'employer' && actualRole !== 'employer') ||
+        (!appContext && !roleHint && actualRole === 'employer');
+      if (roleMismatch) {
+        setWrongApp({ registeredRole: actualRole, correctApp: appForRole(actualRole) });
         shakeBoxes();
         setDigits(Array(OTP_LENGTH).fill(''));
-        setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
-      };
-
-      if (appContext === 'employer-app' && actualRole !== 'employer') {
-        showRoleError(t('roleErrorOnlyEmployer'));
-        return;
-      }
-      if (appContext === 'agent-app' && actualRole === 'employer') {
-        showRoleError(t('roleErrorEmployerInWorkerApp'));
-        return;
-      }
-      // Legacy checks (no appContext)
-      if (!appContext && roleHint === 'employer' && actualRole !== 'employer') {
-        showRoleError(t('roleErrorNoEmployerFound'));
-        return;
-      }
-      if (!appContext && !roleHint && actualRole === 'employer') {
-        showRoleError(t('roleErrorUseEmployerApp'));
         return;
       }
 
       toast.success(t('welcomeToApp'), t('loginSuccessful'));
       await signIn(session);
     } catch (error) {
+      const wa = parseWrongApp(error);
+      if (wa) {
+        setWrongApp(wa);
+        setDigits(Array(OTP_LENGTH).fill(''));
+        setIsLoading(false);
+        return;
+      }
       const msg =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? (error instanceof Error ? error.message : t('invalidOtpMsg'));
@@ -290,8 +291,15 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
               })}
             </Animated.View>
 
-            {/* Error */}
-            {errorMessage ? (
+            {/* Error / wrong-app guidance */}
+            {wrongApp ? (
+              <WrongAppNotice
+                registeredRole={wrongApp.registeredRole}
+                correctApp={wrongApp.correctApp}
+                fallbackMessage={wrongApp.message}
+                onDismiss={() => { setWrongApp(null); navigation.goBack(); }}
+              />
+            ) : errorMessage ? (
               <View style={[styles.errorBanner, { backgroundColor: theme.colors.dangerLight }]}>
                 <AppText variant="caption" color={theme.colors.danger} center>
                   ⚠ {errorMessage}
@@ -300,7 +308,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
             ) : null}
 
             {/* Progress indicator */}
-            {filled > 0 && !errorMessage && (
+            {filled > 0 && !errorMessage && !wrongApp && (
               <View style={[styles.progressBar, { backgroundColor: theme.colors.surface2 }]}>
                 <View
                   style={[
@@ -315,15 +323,17 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
             )}
 
             {/* Verify button */}
-            <AppButton
-              title={isLoading ? t('processing') : t('verifyOtpBtn')}
-              onPress={handleVerify}
-              loading={isLoading}
-              disabled={filled < OTP_LENGTH}
-              size="lg"
-              fullWidth
-              style={styles.ctaBtn}
-            />
+            {!wrongApp && (
+              <AppButton
+                title={isLoading ? t('processing') : t('verifyOtpBtn')}
+                onPress={handleVerify}
+                loading={isLoading}
+                disabled={filled < OTP_LENGTH}
+                size="lg"
+                fullWidth
+                style={styles.ctaBtn}
+              />
+            )}
 
             {/* Resend */}
             <View style={styles.resendRow}>

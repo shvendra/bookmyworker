@@ -16,6 +16,8 @@ import { ROUTES } from '../../../shared/constants/routes';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 import type { AppRole } from '../../../shared/types/domain';
 import type { AppContext } from '../../../core/api/endpoints/authApi';
+import { WrongAppNotice } from '../components/WrongAppNotice';
+import { parseWrongApp, appForRole, type WrongAppInfo } from '../../../shared/constants/crossApp';
 
 const schema = z.object({
   phone: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
@@ -35,6 +37,7 @@ export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): 
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [wrongApp, setWrongApp] = useState<WrongAppInfo | null>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -44,6 +47,7 @@ export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): 
   const onSubmit = handleSubmit(async (values) => {
     setIsLoading(true);
     setErrorMessage(null);
+    setWrongApp(null);
     try {
       const response = await loginWithPassword({
         phone: values.phone,
@@ -52,23 +56,24 @@ export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): 
         appContext,
       });
 
-      // Role mismatch — block wrong roles per app
+      // Role mismatch — the backend normally 403s first (see catch → parseWrongApp),
+      // but keep a client-side guard for older backends / the no-appContext path.
       const actualRole = response.user.role;
       if (appContext === 'employer-app' && actualRole !== 'employer') {
-        setErrorMessage('Only Employer accounts can login to the Employer App. Please use the Worker App if you have a Worker or Agent account.');
+        setWrongApp({ registeredRole: actualRole, correctApp: appForRole(actualRole) });
         return;
       }
       if (appContext === 'agent-app' && actualRole === 'employer') {
-        setErrorMessage('Employer accounts cannot login to the Worker App. Please use the BookMyWorker Employer App.');
+        setWrongApp({ registeredRole: actualRole, correctApp: appForRole(actualRole) });
         return;
       }
       // Legacy checks (no appContext)
       if (!appContext && roleHint === 'employer' && actualRole !== 'employer') {
-        setErrorMessage('No employer account found for this number. Please register as an employer, or use the Worker / Agent app if you have a different account.');
+        setWrongApp({ registeredRole: actualRole, correctApp: appForRole(actualRole) });
         return;
       }
       if (!appContext && !roleHint && actualRole === 'employer') {
-        setErrorMessage('This number is linked to an Employer account. Please use the BookMyWorker Employer App to log in.');
+        setWrongApp({ registeredRole: actualRole, correctApp: appForRole(actualRole) });
         return;
       }
 
@@ -83,6 +88,11 @@ export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): 
         availableRoles: response.availableRoles,
       });
     } catch (error) {
+      const wa = parseWrongApp(error);
+      if (wa) {
+        setWrongApp(wa);
+        return;
+      }
       const msg =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? (error instanceof Error ? error.message : 'Invalid phone or password. Please try again.');
@@ -148,20 +158,29 @@ export const PasswordLoginForm = ({ navigation, roleHint, appContext }: Props): 
         </AppText>
       </TouchableOpacity>
 
-      {errorMessage ? (
+      {wrongApp ? (
+        <WrongAppNotice
+          registeredRole={wrongApp.registeredRole}
+          correctApp={wrongApp.correctApp}
+          fallbackMessage={wrongApp.message}
+          onDismiss={() => setWrongApp(null)}
+        />
+      ) : errorMessage ? (
         <View style={[styles.errorBanner, { backgroundColor: theme.colors.dangerLight }]}>
           <AppText variant="caption" color={theme.colors.danger}>⚠ {errorMessage}</AppText>
         </View>
       ) : null}
 
-      <AppButton
-        title={t('login')}
-        onPress={onSubmit}
-        loading={isLoading}
-        size="lg"
-        fullWidth
-        style={styles.cta}
-      />
+      {!wrongApp ? (
+        <AppButton
+          title={t('login')}
+          onPress={onSubmit}
+          loading={isLoading}
+          size="lg"
+          fullWidth
+          style={styles.cta}
+        />
+      ) : null}
     </>
   );
 };
