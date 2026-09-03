@@ -1083,8 +1083,19 @@ export const PostRequirementScreen = (): React.JSX.Element => {
   const [reqType, setReqType] = useState<RequirementType | null>(paramReqType);
 
   const isEmployer = user?.role === 'employer';
+
+  // Live plan state — same source the Plan Benefits screen uses (fetches
+  // /api/v1/user/getuser). This is what makes a MANUAL / CRM-side activation take
+  // effect here: the stale login session alone would keep showing the paywall.
+  const plan = usePlanFeatures();
+  const sessionSubscribed =
+    !!user?.isSubscribed &&
+    (!user.subscriptionExpiry || new Date(user.subscriptionExpiry).getTime() > Date.now());
+  // Preserve every existing path (incl. no lock-wall flash for a known
+  // non-subscriber): trust the session when it already grants access, and only
+  // let the freshly-loaded plan OPEN the gate, never newly close it.
   const isSubscribed = isEmployer
-    ? (!!user?.isSubscribed && (!user.subscriptionExpiry || new Date(user.subscriptionExpiry).getTime() > Date.now()))
+    ? (sessionSubscribed || (plan.loaded ? plan.isSubscribed : false))
     : true; // non-employers (agents) don't need subscription
 
   const goBack = (): void => { if (navigation.canGoBack()) navigation.goBack(); };
