@@ -48,6 +48,9 @@ export interface AppConfig {
     registrationOtpEnabled: boolean;
     loginOtpEnabled:        boolean;
   };
+  // SuperAdmin master switch for the coupon-code feature. OFF by default —
+  // the checkout coupon input only renders once this is explicitly true.
+  couponsEnabled: boolean;
 }
 
 export function formatStat(n: number): string {
@@ -97,6 +100,7 @@ const DEFAULTS: AppConfig = {
   },
   promotions: { festivalMode: false, festivalName: '', festivalMessage: '', festivalImageUrl: '' },
   authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
+  couponsEnabled: false,
 };
 
 export async function fetchAppConfig(): Promise<AppConfig> {
@@ -152,6 +156,9 @@ export async function fetchAppConfig(): Promise<AppConfig> {
       registrationOtpEnabled: auth.registrationOtpEnabled !== false,
       loginOtpEnabled:        auth.loginOtpEnabled !== false,
     },
+    // Opposite default from authFlags on purpose: coupons are OFF unless the
+    // SuperAdmin explicitly turns them on (treat anything but `true` as off).
+    couponsEnabled: d.couponsEnabled === true,
   };
 }
 

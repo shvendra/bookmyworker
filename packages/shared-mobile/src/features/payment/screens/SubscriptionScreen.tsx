@@ -4,6 +4,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -20,6 +21,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { apiClient } from '../../../core/api/client';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
+import type { CouponMeta } from '../../../core/api/endpoints/paymentApi';
 import {
   usePricingConfig, calcDiscount,
   buildFeatureBenefits,
@@ -237,7 +239,7 @@ const C = {
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
 const PlanCard = React.memo(({
-  plan, isSubscribed, isAgent, gstRate, loadingPlanId, onBuy, t,
+  plan, isSubscribed, isAgent, gstRate, loadingPlanId, onBuy, appliedCoupon, t,
 }: {
   plan: Plan;
   isSubscribed: boolean;
@@ -245,12 +247,21 @@ const PlanCard = React.memo(({
   gstRate: number;
   loadingPlanId: string | null;
   onBuy: (plan: Plan) => void;
+  appliedCoupon: CouponMeta | null;
   t: (key: string, opts?: Record<string, unknown>) => string;
   // t kept for translated header strings (plan name, duration, badge labels)
 }) => {
   const gst   = parseFloat((plan.price * gstRate).toFixed(2));
   const total = parseFloat((plan.price + gst).toFixed(2));
   const isLoading = loadingPlanId === plan.id;
+
+  // Coupon preview — the SERVER recomputes and enforces this at actual
+  // checkout; this is a display-only estimate so the employer sees the
+  // benefit on every plan without picking one first.
+  const couponDiscount = appliedCoupon ? parseFloat((plan.price * (appliedCoupon.discountPercent / 100)).toFixed(2)) : 0;
+  const discountedBase = Math.max(0, plan.price - couponDiscount);
+  const discountedGst   = parseFloat((discountedBase * gstRate).toFixed(2));
+  const discountedTotal = parseFloat((discountedBase + discountedGst).toFixed(2));
 
   // Recommend the "popular" plan: subtle highlighted border + small badge + filled CTA.
   const isRecommended = plan.tier === 'popular';
@@ -299,12 +310,23 @@ const PlanCard = React.memo(({
         </View>
       </View>
 
-      {/* GST / Total */}
+      {/* GST / Total — struck-through original + discounted total when a coupon is applied */}
       <View style={pc.gstRow}>
-        <AppText style={[pc.gstTxt, { color: C.muted }]}>{t('pricingGst', { amount: gst })}</AppText>
-        <AppText style={[pc.totalTxt, { color: C.primary }]}>
-          {t('pricingTotal', { amount: total })}
+        <AppText style={[pc.gstTxt, { color: C.muted }]}>
+          {t('pricingGst', { amount: appliedCoupon ? discountedGst : gst })}
         </AppText>
+        {appliedCoupon ? (
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+            <AppText style={[pc.gstTxt, { color: C.muted, textDecorationLine: 'line-through' }]}>₹{total}</AppText>
+            <AppText style={[pc.totalTxt, { color: C.green }]}>
+              {t('pricingTotal', { amount: discountedTotal })}
+            </AppText>
+          </View>
+        ) : (
+          <AppText style={[pc.totalTxt, { color: C.primary }]}>
+            {t('pricingTotal', { amount: total })}
+          </AppText>
+        )}
       </View>
 
       {/* Stats — employer only */}
@@ -445,6 +467,13 @@ export const SubscriptionScreen = (): React.JSX.Element => {
   const [gstModalVisible, setGstModalVisible] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
 
+  // ── Coupon ── applied once, before a plan is chosen, so every plan card
+  // shows the discounted price at a glance.
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponMeta | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
   const { pricing, employerPlans, gstRate, boostConfig } = usePricingConfig();
   const isAgent = user?.role === 'agent';
 
@@ -496,6 +525,36 @@ export const SubscriptionScreen = (): React.JSX.Element => {
     : [];
   const showUpgrade = !!nextType && upgradeBenefits.length > 0;
 
+  const handleApplyCoupon = async (): Promise<void> => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const resp = await paymentApi.validateCoupon({
+        code, employerType: isAgent ? 'agent' : employerType,
+      });
+      if (resp.success && resp.valid) {
+        setAppliedCoupon(resp.coupon);
+        toast.success(t('cp_couponApplied', { pct: resp.coupon.discountPercent, defaultValue: `${resp.coupon.discountPercent}% off applied!` }));
+      } else {
+        setAppliedCoupon(null);
+        setCouponError((resp as { message?: string }).message || t('cp_couponInvalid', { defaultValue: 'This coupon is not valid.' }));
+      }
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError(t('cp_couponCheckFailed', { defaultValue: "Couldn't check this coupon — please try again." }));
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const handleRemoveCoupon = (): void => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
+  };
+
   const handleBuyPlan = async (plan: Plan, gstNumber?: string | null): Promise<void> => {
     if (!user) return;
     setLoadingPlanId(plan.id);
@@ -515,6 +574,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         productName: `${isAgent ? 'Agent' : 'Employer'} Subscription Plan - ${plan.id}`,
         planId: plan.id,
         ...(gstNumber ? { gstNumber } : {}),
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
       });
       if (resp.url) {
         navigation.navigate('PaymentWebView', { url: resp.url, merchantOrderId: resp.merchantOrderId });
@@ -616,6 +676,56 @@ export const SubscriptionScreen = (): React.JSX.Element => {
           />
         )} */}
 
+        {/* ── Coupon ── SuperAdmin master switch (Settings.couponsEnabled, OFF by
+            default). Nothing coupon-related renders — not even the input box —
+            until this is explicitly turned on. Applied once, discounts every
+            plan card below. ── */}
+        {config.couponsEnabled && (
+        <View style={[s.couponBox, { backgroundColor: C.surface, borderColor: appliedCoupon ? C.green : C.line }]}>
+          {appliedCoupon ? (
+            <View style={s.couponAppliedRow}>
+              <View style={{ flex: 1 }}>
+                <AppText style={[s.couponAppliedTitle, { color: C.green }]}>
+                  {t('cp_couponCodeApplied', { code: appliedCoupon.code, defaultValue: `"${appliedCoupon.code}" applied` })}
+                </AppText>
+                <AppText style={[s.couponAppliedSub, { color: C.body }]}>
+                  {t('cp_couponPctOff', { pct: appliedCoupon.discountPercent, defaultValue: `${appliedCoupon.discountPercent}% off every plan below` })}
+                </AppText>
+              </View>
+              <TouchableOpacity onPress={handleRemoveCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <AppText style={[s.couponRemoveTxt, { color: C.muted }]}>{t('cp_removeCoupon', { defaultValue: 'Remove' })}</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <View style={s.couponInputRow}>
+                <TextInput
+                  value={couponInput}
+                  onChangeText={(v) => { setCouponInput(v.toUpperCase()); setCouponError(null); }}
+                  placeholder={t('cp_couponPlaceholder', { defaultValue: 'Have a coupon code?' })}
+                  placeholderTextColor={C.muted}
+                  autoCapitalize="characters"
+                  style={[s.couponInput, { color: C.ink, borderColor: C.line }]}
+                  editable={!couponChecking}
+                />
+                <TouchableOpacity
+                  onPress={() => void handleApplyCoupon()}
+                  disabled={couponChecking || !couponInput.trim()}
+                  style={[s.couponApplyBtn, { backgroundColor: C.primary, opacity: couponChecking || !couponInput.trim() ? 0.5 : 1 }]}
+                >
+                  {couponChecking
+                    ? <ActivityIndicator size="small" color={C.white} />
+                    : <AppText style={[s.couponApplyTxt, { color: C.white }]}>{t('cp_apply', { defaultValue: 'Apply' })}</AppText>}
+                </TouchableOpacity>
+              </View>
+              {couponError && (
+                <AppText style={[s.couponErrorTxt, { color: C.red }]}>{couponError}</AppText>
+              )}
+            </>
+          )}
+        </View>
+        )}
+
         {/* ── Plans heading ── */}
         <AppText style={s.sectionTitle}>{t('pricingPlansHeading')}</AppText>
 
@@ -629,6 +739,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
             gstRate={gstRate}
             loadingPlanId={loadingPlanId}
             onBuy={startBuyPlan}
+            appliedCoupon={appliedCoupon}
             t={t as (key: string, opts?: Record<string, unknown>) => string}
           />
         ))}
@@ -725,6 +836,19 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 13, fontWeight: '800', color: C.body,
                   letterSpacing: 0.8, textTransform: 'uppercase',
                   marginTop: 18, marginBottom: 12, marginHorizontal: 16 },
+
+  // Coupon box
+  couponBox:        { marginHorizontal: 16, marginTop: 16, padding: 12, borderRadius: 14, borderWidth: 1 },
+  couponInputRow:    { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  couponInput:       { flex: 1, height: 42, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12,
+                        fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+  couponApplyBtn:    { height: 42, paddingHorizontal: 18, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  couponApplyTxt:    { fontSize: 13, fontWeight: '800' },
+  couponErrorTxt:    { fontSize: 11.5, marginTop: 6 },
+  couponAppliedRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  couponAppliedTitle:{ fontSize: 14, fontWeight: '800' },
+  couponAppliedSub:  { fontSize: 11.5, marginTop: 2 },
+  couponRemoveTxt:   { fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Top-up section
   topupSection: { marginHorizontal: 16, marginTop: 4, marginBottom: 8 },
