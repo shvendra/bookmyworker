@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
-export ANDROID_HOME=$HOME/Library/Android/sdk
-ROOT=/Users/sonu/Desktop/0/bookmyworker
+export ANDROID_HOME=${ANDROID_HOME:-$HOME/Library/Android/sdk}
+ROOT=/Users/sonu/Desktop/10/bookmyworker
+OUT="$HOME/Desktop/BookMyWorker-APK-Test"
+mkdir -p "$OUT"
 
 build_app () {
   local APP="$1" LABEL="$2"
@@ -22,10 +24,12 @@ build_app () {
 build_app agent-app AGENT
 build_app employer-app EMPLOYER
 
-# Copy to clearly-named files at the repo root
+# Copy to a clearly-named Desktop folder
 AV=$(grep versionName "$ROOT/agent-app/android/app/build.gradle" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
 EV=$(grep versionName "$ROOT/employer-app/android/app/build.gradle" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-cp "$ROOT/agent-app/android/app/build/outputs/apk/release/app-release.apk"    "$ROOT/BookMyWorker-Agent-test-v${AV}.apk"
-cp "$ROOT/employer-app/android/app/build/outputs/apk/release/app-release.apk" "$ROOT/BookMyWorker-Employer-test-v${EV}.apk"
-echo "ALL DONE"
-ls -la "$ROOT"/BookMyWorker-*-test-*.apk
+AC=$(grep versionCode "$ROOT/agent-app/android/app/build.gradle" | head -1 | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+EC=$(grep versionCode "$ROOT/employer-app/android/app/build.gradle" | head -1 | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+cp "$ROOT/agent-app/android/app/build/outputs/apk/release/app-release.apk"    "$OUT/BookMyWorker-Agent-${AV}-vc${AC}.apk"
+cp "$ROOT/employer-app/android/app/build/outputs/apk/release/app-release.apk" "$OUT/BookMyWorker-Recruiter-${EV}-vc${EC}.apk"
+echo "ALL DONE — APKs in: $OUT"
+ls -la "$OUT"/*.apk
