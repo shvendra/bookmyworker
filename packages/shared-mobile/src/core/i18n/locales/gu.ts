@@ -407,7 +407,7 @@ export const translation = {
   profile_deleteBtn: 'ડિલીટ',
   profile_approved: '✓ મંજૂર',
   profile_chooseLanguage: 'ભાષા પસંદ કરો',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   employerTypeIndividual: 'વ્યક્તિગત',
   employerTypeIndividualDesc: 'ઘરેલુ / વ્યક્તિગત ભરતી',
   employerTypeContractor: 'કોન્ટ્રેક્ટર',

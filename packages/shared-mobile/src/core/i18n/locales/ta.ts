@@ -407,7 +407,7 @@ export const translation = {
   profile_deleteBtn: 'நீக்கு',
   profile_approved: '✓ அங்கீகரிக்கப்பட்டது',
   profile_chooseLanguage: 'மொழி தேர்வு',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   employerTypeIndividual: 'தனிப்பட்ட',
   employerTypeIndividualDesc: 'வீட்டு / தனிப்பட்ட ஹயரிங்',
   employerTypeContractor: 'ஒப்பந்தக்காரர்',

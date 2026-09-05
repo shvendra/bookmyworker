@@ -233,7 +233,7 @@ export const translation = {
   profile_deleteBtn: 'ഇല്ലാതാക്കുക',
   profile_approved: '✓ അംഗീകൃതം',
   profile_chooseLanguage: 'ഭാഷ തിരഞ്ഞെടുക്കൂ',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   forgotPasswordLink: 'പാസ്‌വേഡ് മറന്നോ?',
   welcomeBack: 'തിരിച്ചു സ്വാഗതം!',
   loginSubtitle: 'ജോലി കണ്ടെത്താനോ ടീമിനെ മാനേജ് ചെയ്യാനോ ലോഗിൻ ചെയ്യൂ',

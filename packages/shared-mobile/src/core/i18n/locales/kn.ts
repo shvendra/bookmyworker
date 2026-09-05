@@ -233,7 +233,7 @@ export const translation = {
   profile_deleteBtn: 'ಅಳಿಸಿ',
   profile_approved: '✓ ಅನುಮೋದಿತ',
   profile_chooseLanguage: 'ಭಾಷೆ ಆರಿಸಿ',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   forgotPasswordLink: 'ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?',
   welcomeBack: 'ಮತ್ತೆ ಸ್ವಾಗತ!',
   loginSubtitle: 'ಕೆಲಸ ಹುಡುಕಲು ಅಥವಾ ಕಾರ್ಮಿಕ ನೆಟ್‌ವರ್ಕ್ ನಿರ್ವಹಿಸಲು ಲಾಗಿನ್',

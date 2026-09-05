@@ -430,7 +430,7 @@ export const translation = {
   profile_deleteBtn: 'हटाएं',
   profile_approved: '✓ मंज़ूर',
   profile_chooseLanguage: 'भाषा चुनें',
-  profile_version: 'बुकमायवर्कर्स v1.0.0',
+  profile_version: 'बुकमायवर्कर्स v{{version}}',
   employerTypeIndividual: 'व्यक्तिगत',
   employerTypeIndividualDesc: 'घरेलू / निजी भर्ती',
   employerTypeContractor: 'ठेकेदार',

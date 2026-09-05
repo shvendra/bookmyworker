@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { certificateApi } from '../../../core/api/endpoints/certificateApi';
 import { useNavigation } from '@react-navigation/native';
@@ -781,7 +782,11 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
   </View>
 </View>
         <AppText variant="micro" color={theme.colors.mutedText} style={styles.version}>
-          {t('profile_version')}
+          {t('profile_version', {
+            version: `${Constants.expoConfig?.version ?? '?'}${
+              Constants.expoConfig?.android?.versionCode ? ` (${Constants.expoConfig.android.versionCode})` : ''
+            }`,
+          })}
         </AppText>
       </View>
 

@@ -430,7 +430,7 @@ export const translation = {
   profile_deleteBtn: 'Delete',
   profile_approved: '✓ Approved',
   profile_chooseLanguage: 'Choose Language',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   employerTypeIndividual: 'Individual',
   employerTypeIndividualDesc: 'Household / personal hire',
   employerTypeContractor: 'Contractor',

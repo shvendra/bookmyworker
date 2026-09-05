@@ -233,7 +233,7 @@ export const translation = {
   profile_deleteBtn: 'ਡਿਲੀਟ',
   profile_approved: '✓ ਮਨਜ਼ੂਰਸ਼ੁਦਾ',
   profile_chooseLanguage: 'ਭਾਸ਼ਾ ਚੁਣੋ',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   forgotPasswordLink: 'ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?',
   welcomeBack: 'ਵਾਪਸ ਜੀ ਆਇਆਂ ਨੂੰ!',
   loginSubtitle: 'ਕੰਮ ਲੱਭਣ ਜਾਂ ਕਾਮਿਆਂ ਦਾ ਨੈੱਟਵਰਕ ਸੰਭਾਲਣ ਲਈ ਲੌਗਇਨ ਕਰੋ',

@@ -233,7 +233,7 @@ export const translation = {
   profile_deleteBtn: 'মুছুন',
   profile_approved: '✓ অনুমোদিত',
   profile_chooseLanguage: 'ভাষা বেছে নিন',
-  profile_version: 'BookMyWorkers v1.0.0',
+  profile_version: 'BookMyWorkers v{{version}}',
   forgotPasswordLink: 'পাসওয়ার্ড ভুলে গেছেন?',
   welcomeBack: 'ফিরে স্বাগতম!',
   loginSubtitle: 'কাজ খুঁজতে বা দল পরিচালনায় লগইন করুন',

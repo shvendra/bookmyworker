@@ -427,7 +427,7 @@ export const translation = {
   profile_deleteBtn: 'हटवा',
   profile_approved: '✓ मंजूर',
   profile_chooseLanguage: 'भाषा निवडा',
-  profile_version: 'बुकमायवर्कर्स v1.0.0',
+  profile_version: 'बुकमायवर्कर्स v{{version}}',
   employerTypeIndividual: 'वैयक्तिक',
   employerTypeIndividualDesc: 'घरगुती / वैयक्तिक हायरिंग',
   employerTypeContractor: 'कंत्राटदार',
