@@ -112,6 +112,9 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
   const userId = state.session?.user.id ?? '';
   const userRole = state.session?.user.role;
   const roomId = `support_${userId}`;
+  // Agents already have a dedicated support channel elsewhere in their app —
+  // this shortcut is redundant (and was reported as confusing) for them.
+  const showTalkDirectly = userRole !== 'Agent';
 
   const activeCategories = useMemo(
     () => categories
@@ -335,9 +338,11 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                 </>
               )}
 
-              <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
-                <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
-              </TouchableOpacity>
+              {showTalkDirectly && (
+                <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
+                  <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
+                </TouchableOpacity>
+              )}
               {showEscalate && escalateRow}
             </>
           )}
@@ -381,9 +386,11 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                   </TouchableOpacity>
                 ))
               )}
-              <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
-                <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
-              </TouchableOpacity>
+              {showTalkDirectly && (
+                <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
+                  <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
+                </TouchableOpacity>
+              )}
               {showEscalate && escalateRow}
             </>
           )}
