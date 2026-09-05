@@ -5,6 +5,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -20,6 +21,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useAppTheme } from '../../../core/theme';
 import { apiClient } from '../../../core/api/client';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
+import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import {
   usePricingConfig, calcDiscount, buildFeatureBenefits, EMPLOYER_PLANS_DEFAULTS,
 } from '../../../core/api/endpoints/pricingApi';
@@ -84,6 +86,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const user = authState.session?.user;
   const isDark = theme.mode === 'dark';
+  const { config } = useAppConfig();
 
   const { pricing, employerPlans, gstRate, boostConfig } = usePricingConfig();
   const plansCfg: EmployerPlansConfig = employerPlans ?? EMPLOYER_PLANS_DEFAULTS;
@@ -92,6 +95,12 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const [selectedDuration, setSelectedDuration] = useState<PlanId>('1m');
   const [paying, setPaying] = useState(false);
   const [gstModalVisible, setGstModalVisible] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string; discountPercent: number; discountAmount: number; totalAmount: number;
+  } | null>(null);
 
   const profileQuery = useQuery({
     queryKey: ['employer-benefits-profile'],
@@ -157,6 +166,10 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
         productName: `Employer Subscription Plan - ${modalType} - ${selectedDuration}`,
         planId: selectedDuration,
         ...(gstNumber ? { gstNumber } : {}),
+        // Server re-validates the code and recomputes amount/gstCharges from
+        // its own numbers before charging — this is a preview hint, never
+        // trusted for the actual amount (see controllers/paymentController.js).
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
       });
       if (resp.url) {
         setModalType(null);
@@ -182,6 +195,51 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
   const openModal = (tk: EmployerTypeKey) => {
     setSelectedDuration('1m');
     setModalType(tk);
+    setCouponInput('');
+    setCouponError(null);
+    setAppliedCoupon(null);
+  };
+
+  // A coupon's discount is computed against a specific plan/duration — if
+  // either changes after applying one, the old numbers no longer apply, so
+  // clear it and make the employer re-check rather than silently keep a
+  // stale discount.
+  const changeDuration = (id: PlanId): void => {
+    setSelectedDuration(id);
+    setAppliedCoupon(null);
+    setCouponError(null);
+  };
+
+  const checkCoupon = async (): Promise<void> => {
+    const code = couponInput.trim();
+    if (!code || !modalType) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const resp = await paymentApi.validateCoupon({ code, employerType: modalType, planId: selectedDuration });
+      if (resp.valid && resp.pricing) {
+        setAppliedCoupon({
+          code: resp.coupon.code,
+          discountPercent: resp.coupon.discountPercent,
+          discountAmount: resp.pricing.discountAmount,
+          totalAmount: resp.pricing.totalAmount,
+        });
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(!resp.valid ? resp.message : t('eb_couponInvalid'));
+      }
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError(t('eb_couponCheckFailed'));
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const removeCoupon = (): void => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
   };
 
   const typeLabel = t(TYPE_NAME_KEY[typeKey]);
@@ -389,7 +447,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                   <TouchableOpacity
                     key={d.id}
                     activeOpacity={0.85}
-                    onPress={() => setSelectedDuration(d.id)}
+                    onPress={() => changeDuration(d.id)}
                     style={[s.durRow, { borderColor: selected ? BRAND : theme.colors.border, backgroundColor: selected ? theme.colors.primaryLight : theme.colors.surface1 }]}
                   >
                     <View style={[s.radio, { borderColor: selected ? BRAND : theme.colors.border }]}>
@@ -407,6 +465,45 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                   </TouchableOpacity>
                 );
               })}
+
+              {config.couponsEnabled && (
+                <View style={{ marginTop: 12 }}>
+                  <AppText style={[s.sectionLabel, { color: theme.colors.mutedText, marginBottom: 8 }]}>{t('eb_couponLabel')}</AppText>
+                  {appliedCoupon ? (
+                    <View style={[s.couponApplied, { borderColor: '#16A34A', backgroundColor: isDark ? 'rgba(22,163,74,0.12)' : '#F0FDF4' }]}>
+                      <AppText style={{ fontSize: 18 }}>🎟️</AppText>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={[s.couponAppliedCode, { color: '#16A34A' }]}>{appliedCoupon.code} {t('eb_couponApplied')}</AppText>
+                        <AppText style={[s.couponAppliedSub, { color: theme.colors.mutedText }]}>
+                          {t('eb_couponSavedFmt', { percent: appliedCoupon.discountPercent, amount: appliedCoupon.discountAmount })}
+                        </AppText>
+                      </View>
+                      <TouchableOpacity onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <AppText style={{ color: theme.colors.mutedText, fontSize: 13 }}>{t('eb_couponRemove')}</AppText>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TextInput
+                        value={couponInput}
+                        onChangeText={(v) => { setCouponInput(v.toUpperCase()); setCouponError(null); }}
+                        placeholder={t('eb_couponPlaceholder')}
+                        placeholderTextColor={theme.colors.mutedText}
+                        autoCapitalize="characters"
+                        style={[s.couponInput, { borderColor: couponError ? '#DC2626' : theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.surface1 }]}
+                      />
+                      <TouchableOpacity
+                        onPress={() => void checkCoupon()}
+                        disabled={!couponInput.trim() || couponChecking}
+                        style={[s.couponApplyBtn, { backgroundColor: BRAND, opacity: (!couponInput.trim() || couponChecking) ? 0.5 : 1 }]}
+                      >
+                        {couponChecking ? <ActivityIndicator size="small" color={WHITE} /> : <AppText style={s.couponApplyTxt}>{t('eb_couponApply')}</AppText>}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {!!couponError && <AppText style={{ color: '#DC2626', fontSize: 12, marginTop: 6 }}>{couponError}</AppText>}
+                </View>
+              )}
 
               {isActive && (remainingContacts > 0 || remainingPosts > 0) && (
                 <View style={[s.carryNote, { backgroundColor: theme.colors.primaryLight }]}>
@@ -430,11 +527,15 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               {modalType && (() => {
                 const base = priceFor(modalType, selectedDuration);
                 const gst = parseFloat((base * gstRate).toFixed(2));
-                const total = parseFloat((base + gst).toFixed(2));
+                const fullTotal = parseFloat((base + gst).toFixed(2));
+                const total = appliedCoupon?.totalAmount ?? fullTotal;
                 return (
                   <View style={[s.totalRow, { borderTopColor: theme.colors.border }]}>
                     <AppText style={[s.totalLabel, { color: theme.colors.mutedText }]}>{t('eb_total')} (+GST)</AppText>
-                    <AppText style={[s.totalVal, { color: theme.colors.text }]}>₹{total}</AppText>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      {!!appliedCoupon && <AppText style={[s.durMrp, { color: theme.colors.mutedText }]}>₹{fullTotal}</AppText>}
+                      <AppText style={[s.totalVal, { color: appliedCoupon ? '#16A34A' : theme.colors.text }]}>₹{total}</AppText>
+                    </View>
                   </View>
                 );
               })()}
@@ -447,7 +548,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               >
                 {paying
                   ? <ActivityIndicator size="small" color={WHITE} />
-                  : <AppText style={s.payBtnTxt}>{modalType ? t('eb_payNowFmt', { amount: `₹${parseFloat((priceFor(modalType, selectedDuration) * (1 + gstRate)).toFixed(2))}` }) : ''}</AppText>}
+                  : <AppText style={s.payBtnTxt}>{modalType ? t('eb_payNowFmt', { amount: `₹${appliedCoupon?.totalAmount ?? parseFloat((priceFor(modalType, selectedDuration) * (1 + gstRate)).toFixed(2))}` }) : ''}</AppText>}
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -552,6 +653,12 @@ const s = StyleSheet.create({
   totalVal:      { fontSize: 20, fontWeight: '900' },
   payBtn:        { borderRadius: 14, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   payBtnTxt:     { color: WHITE, fontSize: 15, fontWeight: '800' },
+  couponInput:      { flex: 1, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+  couponApplyBtn:   { borderRadius: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
+  couponApplyTxt:   { color: WHITE, fontSize: 13, fontWeight: '800' },
+  couponApplied:    { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  couponAppliedCode: { fontSize: 13, fontWeight: '800' },
+  couponAppliedSub:  { fontSize: 11.5, marginTop: 2 },
 });
 
 export default EmployerBenefitsScreen;
