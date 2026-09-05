@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -172,6 +172,9 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
   const { t } = useTranslation('employer');
   const meta = TYPE_META[item.type] ?? TYPE_META.system!;
   const isUnread = !item.read;
+  // Longer messages (e.g. a coupon-code offer) were silently clipped at 3
+  // lines with no way to see the rest — tapping the card now also expands it.
+  const [expanded, setExpanded] = useState(false);
   const isNewWorker = item.type === 'newWorker';
   const workerData = isNewWorker ? (item.data as WorkerData) : null;
 
@@ -203,7 +206,7 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(item._id)}
+      onPress={() => { onPress(item._id); setExpanded((e) => !e); }}
       activeOpacity={0.75}
       style={[
         styles.card,
@@ -246,7 +249,12 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
                 {formatTime(item.createdAt, t)}
               </AppText>
             </View>
-            <AppText variant="caption" color={theme.colors.mutedText} style={styles.bodyText} numberOfLines={3}>
+            <AppText
+              variant="caption"
+              color={theme.colors.mutedText}
+              style={styles.bodyText}
+              numberOfLines={expanded ? undefined : 3}
+            >
               {displayBody}
             </AppText>
           </View>
