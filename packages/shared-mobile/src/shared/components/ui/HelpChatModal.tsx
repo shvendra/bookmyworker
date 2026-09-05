@@ -112,9 +112,10 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
   const userId = state.session?.user.id ?? '';
   const userRole = state.session?.user.role;
   const roomId = `support_${userId}`;
-  // Agents already have a dedicated support channel elsewhere in their app —
-  // this shortcut is redundant (and was reported as confusing) for them.
-  const showTalkDirectly = userRole !== 'Agent';
+  // Employers and Agents already have a dedicated support channel elsewhere
+  // in their app — this shortcut is redundant (and was reported as
+  // confusing) for them. Worker/SelfWorker keep it.
+  const showTalkDirectly = userRole !== 'Agent' && userRole !== 'Employer';
 
   const activeCategories = useMemo(
     () => categories
