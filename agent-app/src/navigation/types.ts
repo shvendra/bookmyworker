@@ -47,6 +47,7 @@ export type AgentStackParamList = {
   // Main
   Main: undefined;
   EditProfile: undefined;
+  ChangePassword: undefined;
   WorkPreferences: undefined;
   JobMarketplace: { workType?: string; subCategory?: string; myInterests?: boolean; likedOnly?: boolean } | undefined;
   JobMarketplaceDetail: { requirementId: string };

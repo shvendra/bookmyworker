@@ -32,6 +32,7 @@ export type EmployerStackParamList = {
   // Main
   Main: undefined;
   EditProfile: undefined;
+  ChangePassword: undefined;
   PostRequirement: {
     workType?: string;
     reqType?: string;
