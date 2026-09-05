@@ -32,6 +32,7 @@ import { RoleTabsNavigator } from './RoleTabsNavigator';
 
 // Inner stack screens
 import { EditProfileScreen } from '../../features/profile/screens/EditProfileScreen';
+import { ChangePasswordScreen } from '../../features/profile/screens/ChangePasswordScreen';
 import { KycVerificationScreen } from '../../features/profile/screens/KycVerificationScreen';
 import { NotificationPreferencesScreen } from '../../features/profile/screens/NotificationPreferencesScreen';
 import { NotificationsScreen } from '../../features/profile/screens/NotificationsScreen';
@@ -308,6 +309,7 @@ export const AppNavigator = (): React.JSX.Element => {
               {() => <RoleTabsNavigator role={state.session?.user.role ?? 'worker'} />}
             </Stack.Screen>
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JobMarketplace" component={JobMarketplaceScreen} options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="JobMarketplaceDetail" component={JobMarketplaceDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ animation: 'slide_from_right' }} />

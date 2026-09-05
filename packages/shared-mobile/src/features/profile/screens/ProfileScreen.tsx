@@ -273,23 +273,15 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       >
       {/* Compact header — name/location/status on the LEFT, avatar + edit on the
           RIGHT. Horizontal layout keeps the hero short (no tall vertical stack). */}
-      <View style={[styles.profileHeader, { backgroundColor: '#1037A4', paddingTop: insets.top + (navigation.canGoBack() ? 46 : 14), paddingBottom: 16 }]}>
+      <View style={[styles.profileHeader, { backgroundColor: '#1037A4', paddingTop: insets.top + 14, paddingBottom: 16 }]}>
         {/* Depth layer — matches GradientHeader */}
         <View style={styles.heroDepth} pointerEvents="none" />
         <View style={[styles.heroCircle, styles.heroCircle1]} pointerEvents="none" />
         <View style={[styles.heroCircle, styles.heroCircle2]} pointerEvents="none" />
         <View style={[styles.heroCircle, styles.heroCircle3]} pointerEvents="none" />
-        {/* Back arrow */}
-        {navigation.canGoBack() && (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={[styles.heroBack, { top: insets.top + 8 }]}
-            activeOpacity={0.75}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <AppText style={styles.heroBackIcon}>‹</AppText>
-          </TouchableOpacity>
-        )}
+        {/* No back arrow here on purpose — this is the Profile TAB's root
+            screen (bottom nav), not a pushed screen, so there is nowhere
+            meaningful to go "back" to. */}
 
         <View style={styles.headerRow}>
           {/* LEFT — name, location, verification status */}
@@ -640,7 +632,17 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         )}
 
 
-      
+        {/* Change Password — deliberately its own section right above Sign
+            Out, not buried inside Edit Profile anymore. */}
+        <MenuSection label={t('profile_sectionSecurity')}>
+          <MenuItem
+            icon="key-outline"
+            label={t('profile_changePassword')}
+            onPress={() => navigation.navigate('ChangePassword')}
+            isLast
+          />
+        </MenuSection>
+
         {/* Sign Out */}
         <TouchableOpacity
           onPress={handleSignOut}
@@ -1025,18 +1027,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginTop: 3,
   },
-  heroBack: {
-    position: 'absolute',
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  heroBackIcon: { fontSize: 26, color: '#fff', fontWeight: '300', lineHeight: 30, marginLeft: -2 },
 
   approvedBadge: { backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#86efac' },
   approvedBadgeTxt: { fontSize: 11, fontWeight: '700', color: '#16a34a' },

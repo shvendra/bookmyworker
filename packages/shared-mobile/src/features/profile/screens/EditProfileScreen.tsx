@@ -106,6 +106,10 @@ function getSubLabel(sub: CatRaw['subcategories'][0], lang: string): string {
   return (f && (sub[f] as string)) || sub.label;
 }
 
+// Password change now lives on its own dedicated screen (Profile → Change
+// Password, just above Sign Out) instead of buried in this form — see
+// ChangePasswordScreen.tsx, which posts to the same safe, old-password-
+// verified /api/v1/user/update endpoint.
 const editProfileSchema = z.object({
   name:            z.string().min(3, 'Name must be at least 3 characters'),
   alternate:       z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit number').optional().or(z.literal('')),
@@ -114,13 +118,7 @@ const editProfileSchema = z.object({
   accountNumber:   z.string().optional(),
   ifscCode:        z.string().optional(),
   bankName:        z.string().optional(),
-  oldPassword:     z.string().optional(),
-  newPassword:     z.string().min(6, 'Min 6 characters').optional().or(z.literal('')),
-  confirmPassword: z.string().optional(),
-}).refine((d) => {
-  if (d.newPassword && d.newPassword !== d.confirmPassword) return false;
-  return true;
-}, { message: 'Passwords do not match', path: ['confirmPassword'] });
+});
 
 type EditProfileValues = z.infer<typeof editProfileSchema>;
 
@@ -185,9 +183,6 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       accountNumber: '',
       ifscCode: '',
       bankName: '',
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: '',
     },
   });
 
@@ -216,7 +211,6 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
           accountNumber: u.accountNumber ?? '',
           ifscCode: u.ifscCode ?? '',
           bankName: u.bankName ?? '',
-          oldPassword: '', newPassword: '', confirmPassword: '',
         });
         if (u.state)       setStateVal(u.state);
         if (u.district)    setDistrictVal(u.district);
@@ -340,14 +334,6 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       if (values.accountNumber) formData.append('accountNumber', values.accountNumber);
       if (values.ifscCode)      formData.append('ifscCode', values.ifscCode);
       if (values.bankName)      formData.append('bankName', values.bankName);
-      if (values.oldPassword && values.newPassword) {
-        formData.append('oldPassword', values.oldPassword);
-        formData.append('newPassword', values.newPassword);
-        // Backend `updateUser` requires all three fields and rejects with
-        // "Fill all password fields" otherwise. The form's zod refine already
-        // guarantees confirmPassword === newPassword at submit time.
-        formData.append('confirmPassword', values.confirmPassword ?? values.newPassword);
-      }
       if (photoUri) {
         const filename = photoUri.split('/').pop() ?? 'photo.jpg';
         const match = /\.(\w+)$/.exec(filename);
@@ -725,17 +711,6 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             )}
           </>
         )}
-
-        {/* CHANGE PASSWORD */}
-        <SectionLabel label={t('ep_changePassword')} theme={theme} />
-        <AppCard style={styles.card}>
-          <AppText variant="caption" color={theme.colors.mutedText} style={styles.cardHint}>
-            {t('ep_leaveBlankPassword')}
-          </AppText>
-          <FormInput control={control} name="oldPassword" label={t('ep_currentPassword')} placeholder={t('ep_currentPasswordPlaceholder')} secureTextEntry />
-          <FormInput control={control} name="newPassword" label={t('ep_newPassword')} placeholder={t('ep_newPasswordPlaceholder')} secureTextEntry />
-          <FormInput control={control} name="confirmPassword" label={t('ep_confirmPassword')} placeholder={t('ep_confirmPasswordPlaceholder')} secureTextEntry />
-        </AppCard>
 
         {error ? (
           <AppText variant="caption" color={theme.colors.danger} style={styles.error}>{error}</AppText>
