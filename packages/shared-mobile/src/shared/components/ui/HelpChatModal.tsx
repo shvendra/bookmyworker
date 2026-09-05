@@ -15,17 +15,29 @@ type HelpTopic = AppConfig['helpCenter']['topics'][number];
 
 type Step = 'categories' | 'subcategories' | 'questions' | 'answer';
 
-// Tokenized match — every WORD in the query must appear somewhere in the
-// topic's text, in any order, so a differently-phrased search still finds
-// an existing answer (matches the same logic CRM's Get Help/Smart Assist use).
+// Relevance-ranked match — every WORD in the query is checked independently
+// (order-independent), scored higher when it hits the question text than
+// only the answer/keywords, and a partial match (not every token needed)
+// still surfaces, ranked, instead of a hard "nothing found" as long as at
+// least one token overlaps something (matches CRM's Get Help/Smart Assist).
 function searchTopics(topics: HelpTopic[], query: string): HelpTopic[] {
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return [];
-  return topics.filter((t) => {
-    const haystack = [t.questionEn, t.questionHi, t.answerEn, t.answerHi, ...(t.keywords || [])]
+  const scored = topics.map((t) => {
+    const qText = [t.questionEn, t.questionHi].join(' ').toLowerCase();
+    const fullText = [t.questionEn, t.questionHi, t.answerEn, t.answerHi, ...(t.keywords || [])]
       .join(' ').toLowerCase();
-    return tokens.every((tok) => haystack.includes(tok));
+    let score = 0;
+    for (const tok of tokens) {
+      if (qText.includes(tok)) score += 2;
+      else if (fullText.includes(tok)) score += 1;
+    }
+    return { t, score };
   });
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.t);
 }
 
 // Employer's issues are different from Agent/Worker/SelfWorker's — a
