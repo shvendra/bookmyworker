@@ -3,7 +3,7 @@
     "name": "BookMyWorker",
     "slug": "bookmyworker-agent",
     "version": "12.3.58",
-    "description": "BookMyWorker \u2013 India's trusted platform for workers, agents & employers. Find skilled workers instantly, register your team, and earn commissions.",
+    "description": "BookMyWorker – India's trusted platform for workers, agents & employers. Find skilled workers instantly, register your team, and earn commissions.",
     "orientation": "portrait",
     "scheme": "bookmyworker-agent",
     "icon": "./assets/icon.png",
@@ -33,7 +33,9 @@
           "sounds": []
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-video",
+      "expo-audio"
     ],
     "ios": {
       "supportsTablet": true,

@@ -1335,8 +1335,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const [showFestival, setShowFestival] = useState(false);
   useEffect(() => {
     const p = config.promotions;
-    if (!p?.festivalMode) return;
-    if (!(p.festivalName || p.festivalMessage || p.festivalImageUrl)) return;
+    if (!p?.festivalMode || !p.festivalImageUrl) return;
     if (festivalShownThisSession) return;
     festivalShownThisSession = true;
     const tmr = setTimeout(() => setShowFestival(true), 1200);
@@ -2233,8 +2232,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       {/* Festival wishes popup — renders only when SuperAdmin enables Festival Mode */}
       <FestivalWishesModal
         visible={showFestival}
-        festivalName={config.promotions.festivalName}
-        festivalMessage={config.promotions.festivalMessage}
         festivalImageUrl={config.promotions.festivalImageUrl}
         onClose={() => setShowFestival(false)}
       />

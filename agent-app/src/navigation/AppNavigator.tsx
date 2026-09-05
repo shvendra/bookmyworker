@@ -12,6 +12,7 @@ import { useAppTheme } from '../../../packages/shared-mobile/src/core/theme';
 import { useAuth } from '../../../packages/shared-mobile/src/state/auth/AuthContext';
 import { LoadingState } from '../../../packages/shared-mobile/src/shared/components/feedback/LoadingState';
 import { navigationRef } from '../../../packages/shared-mobile/src/core/navigation/navigationRef';
+import { PromotionOverlay } from '../../../packages/shared-mobile/src/shared/components/ui/PromotionOverlay';
 
 // Language selection — shown only on very first launch
 import { AGENT_LANG_KEY, LanguageSelectScreen } from '../screens/language/LanguageSelectScreen';
@@ -302,6 +303,9 @@ export const AppNavigator = (): React.JSX.Element => {
           </>
         )}
       </Stack.Navigator>
+      {/* Floating promotion ad(s) — renders only when SuperAdmin has at least
+          one active Promotion Ad targeted at the Agent app. */}
+      {state.status === 'authenticated' && <PromotionOverlay target="agent_app" />}
     </NavigationContainer>
   );
 };

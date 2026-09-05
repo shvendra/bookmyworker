@@ -35,12 +35,25 @@ export interface AppConfig {
     requirementCount: number;
   };
   // Festival wishes popup (SuperAdmin-controlled). festivalMode=false → off.
+  // Deliberately image-only — the banner carries the whole greeting/design.
   promotions: {
     festivalMode:     boolean;
-    festivalName:     string;
-    festivalMessage:  string;
     festivalImageUrl: string;
   };
+  // Floating promotion ads (SuperAdmin-controlled, Settings → Promotion Ads).
+  // Several can be active at once — the app rotates through them one at a
+  // time so they never stack. `link` is optional; when set, tapping the ad
+  // opens it (e.g. a third-party sponsor). `targets` is which surface(s)
+  // SuperAdmin opted this ad into — an ad not targeting this app's surface
+  // (e.g. 'employer_app' vs 'agent_app') simply won't show here.
+  promotionAds: Array<{
+    _id?:      string;
+    mediaUrl:  string;
+    mediaType: 'image' | 'video' | 'audio';
+    link:      string;
+    isActive:  boolean;
+    targets:   string[];
+  }>;
   // SuperAdmin-controlled auth toggles. Both default ON.
   //  registrationOtpEnabled=false → signup skips the WhatsApp OTP step.
   //  loginOtpEnabled=false        → hide the "login with OTP" option.
@@ -117,7 +130,8 @@ const DEFAULTS: AppConfig = {
     employerCount:    8000,
     requirementCount: 56000,
   },
-  promotions: { festivalMode: false, festivalName: '', festivalMessage: '', festivalImageUrl: '' },
+  promotions: { festivalMode: false, festivalImageUrl: '' },
+  promotionAds: [],
   authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
   couponsEnabled: false,
   helpCenter: { categories: [], subCategories: [], topics: [] },
@@ -168,10 +182,19 @@ export async function fetchAppConfig(): Promise<AppConfig> {
     },
     promotions: {
       festivalMode:     Boolean(promo.festivalMode),
-      festivalName:     String(promo.festivalName     ?? ''),
-      festivalMessage:  String(promo.festivalMessage  ?? ''),
       festivalImageUrl: String(promo.festivalImageUrl ?? ''),
     },
+    promotionAds: (Array.isArray(d.promotionAds) ? d.promotionAds : [])
+      .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
+      .map((a) => ({
+        _id:       a._id ? String(a._id) : undefined,
+        mediaUrl:  String(a.mediaUrl ?? ''),
+        mediaType: (a.mediaType === 'video' || a.mediaType === 'audio' ? a.mediaType : 'image') as 'image' | 'video' | 'audio',
+        link:      String(a.link ?? ''),
+        isActive:  Boolean(a.isActive),
+        targets:   Array.isArray(a.targets) ? a.targets.map(String) : [],
+      }))
+      .filter((a) => !!a.mediaUrl),
     authFlags: {
       // Treat anything other than an explicit `false` as enabled (safe default).
       registrationOtpEnabled: auth.registrationOtpEnabled !== false,

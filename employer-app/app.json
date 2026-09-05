@@ -32,7 +32,9 @@
           "sounds": []
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-video",
+      "expo-audio"
     ],
     "ios": {
       "supportsTablet": true,
