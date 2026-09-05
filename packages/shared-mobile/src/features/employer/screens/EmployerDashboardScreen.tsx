@@ -54,6 +54,7 @@ import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationStri
 import { describeLoadError, firstQueryError } from '../../../shared/utils/describeLoadError';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { FestivalWishesModal } from '../../../shared/components/ui/FestivalWishesModal';
+import { HelpChatModal } from '../../../shared/components/ui/HelpChatModal';
 
 // Festival wishes popup is shown at most once per app session (not on every
 // dashboard remount). SuperAdmin's festivalMode toggle still gates it entirely.
@@ -1326,6 +1327,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const { config } = useAppConfig();
   const { pricing } = usePricingConfig();
 
+  // ── Help chat (category → subcategory → question, escalate to agent/email/call) ──
+  const [helpVisible, setHelpVisible] = useState(false);
+
   // ── Festival wishes popup (SuperAdmin-gated, once per app session) ──────────
   const [showFestival, setShowFestival] = useState(false);
   useEffect(() => {
@@ -2115,10 +2119,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               <AppText style={fh.shortlistIcon}>🔔</AppText>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => navigation.navigate('ChatRoom', {
-                roomId: `support_${user?.id ?? ''}`,
-                roomName: 'Support Chat',
-              })}
+              onPress={() => setHelpVisible(true)}
               style={fh.shortlistBtn}
               activeOpacity={0.8}
             >
@@ -2248,6 +2249,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
       {/* Profile-completion popup disabled for now. */}
       {/* {user && <ProfileCompletionModal user={user} />} */}
+
+      <HelpChatModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
 
       <GuidedTour
         tourKey="employer_tour_v1"

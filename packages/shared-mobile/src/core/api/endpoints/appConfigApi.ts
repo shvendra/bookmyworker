@@ -56,7 +56,11 @@ export interface AppConfig {
   // beyond the existing static FAQ list.
   helpCenter: {
     categories: Array<{ key: string; labelEn: string; labelHi: string; icon: string; order: number; isActive: boolean }>;
-    topics: Array<{ categoryKey: string; questionEn: string; questionHi: string; answerEn: string; answerHi: string; keywords: string[]; order: number; isActive: boolean }>;
+    // Sits between a category and its topics (Category → Subcategory →
+    // Question). A topic with no matching subCategoryKey shows directly
+    // under its category — subcategories are optional per category.
+    subCategories: Array<{ categoryKey: string; key: string; labelEn: string; labelHi: string; icon: string; order: number; isActive: boolean }>;
+    topics: Array<{ categoryKey: string; subCategoryKey: string; questionEn: string; questionHi: string; answerEn: string; answerHi: string; keywords: string[]; order: number; isActive: boolean }>;
   };
   // "Chat with Executive" business hours (24h, local time). Outside this
   // window the live-chat option is shown disabled.
@@ -114,7 +118,7 @@ const DEFAULTS: AppConfig = {
   promotions: { festivalMode: false, festivalName: '', festivalMessage: '', festivalImageUrl: '' },
   authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
   couponsEnabled: false,
-  helpCenter: { categories: [], topics: [] },
+  helpCenter: { categories: [], subCategories: [], topics: [] },
   supportAvailability: { chatStartHour: 9, chatEndHour: 18 },
 };
 
@@ -175,8 +179,9 @@ export async function fetchAppConfig(): Promise<AppConfig> {
     // SuperAdmin explicitly turns them on (treat anything but `true` as off).
     couponsEnabled: d.couponsEnabled === true,
     helpCenter: {
-      categories: (((d.helpCenter as any)?.categories ?? []) as AppConfig['helpCenter']['categories']),
-      topics:     (((d.helpCenter as any)?.topics     ?? []) as AppConfig['helpCenter']['topics']),
+      categories:    (((d.helpCenter as any)?.categories    ?? []) as AppConfig['helpCenter']['categories']),
+      subCategories: (((d.helpCenter as any)?.subCategories ?? []) as AppConfig['helpCenter']['subCategories']),
+      topics:        (((d.helpCenter as any)?.topics        ?? []) as AppConfig['helpCenter']['topics']),
     },
     supportAvailability: {
       chatStartHour: Number((d.supportAvailability as any)?.chatStartHour ?? DEFAULTS.supportAvailability.chatStartHour),
