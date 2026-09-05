@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
@@ -54,11 +54,22 @@ const ContactCard = ({ icon, title, subtitle, onPress, disabled }: ContactCardPr
 };
 
 // ── Help Center: category chips + matched Q&A ────────────────────────────────
+// A brief "thinking" beat before the answer appears — reads as the system
+// looking the answer up, rather than an instant static FAQ reveal.
 const HelpTopicRow = ({ topic }: { topic: HelpTopic }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const [open, setOpen] = useState(false);
+  const [thinking, setThinking] = useState(false);
+
+  const handleToggle = (): void => {
+    if (open) { setOpen(false); return; }
+    setThinking(true);
+    setOpen(true);
+    setTimeout(() => setThinking(false), 500);
+  };
+
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={() => setOpen((o) => !o)}
+    <TouchableOpacity activeOpacity={0.7} onPress={handleToggle}
       style={[styles.topicRow, { borderColor: theme.colors.border }]}>
       <View style={styles.topicHeaderRow}>
         <View style={{ flex: 1 }}>
@@ -71,10 +82,26 @@ const HelpTopicRow = ({ topic }: { topic: HelpTopic }): React.JSX.Element => {
       </View>
       {open && (
         <View style={styles.topicAnswerWrap}>
-          <AppText variant="body" color={theme.colors.mutedText} style={styles.topicA}>{topic.answerEn}</AppText>
-          {!!topic.answerHi && (
-            <AppText variant="caption" color={theme.colors.mutedText} style={styles.topicA}>{topic.answerHi}</AppText>
-          )}
+          <View style={styles.botRow}>
+            <View style={[styles.botAvatar, { backgroundColor: theme.colors.primary }]}>
+              <AppText style={styles.botAvatarEmoji}>🤖</AppText>
+            </View>
+            {thinking ? (
+              <View style={[styles.botBubble, { backgroundColor: theme.colors.primary + '14' }]}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <View style={[styles.botBubble, { backgroundColor: theme.colors.primary + '14', flex: 1 }]}>
+                <AppText variant="caption" color={theme.colors.primary} style={styles.botLabel}>
+                  BookMyWorker Assistant
+                </AppText>
+                <AppText variant="body" style={styles.topicA}>{topic.answerEn}</AppText>
+                {!!topic.answerHi && (
+                  <AppText variant="caption" color={theme.colors.mutedText} style={styles.topicA}>{topic.answerHi}</AppText>
+                )}
+              </View>
+            )}
+          </View>
         </View>
       )}
     </TouchableOpacity>
@@ -235,7 +262,12 @@ const styles = StyleSheet.create({
   topicRow: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 8 },
   topicHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   topicQ: { marginBottom: 2 },
-  topicAnswerWrap: { marginTop: 8, gap: 4 },
+  topicAnswerWrap: { marginTop: 8 },
   topicA: { lineHeight: 20 },
   noTopics: { marginBottom: 12 },
+  botRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  botAvatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  botAvatarEmoji: { fontSize: 13 },
+  botBubble: { borderRadius: 14, borderTopLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
+  botLabel: { fontWeight: '700', marginBottom: 4 },
 });
