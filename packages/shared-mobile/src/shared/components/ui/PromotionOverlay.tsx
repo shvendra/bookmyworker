@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, Linking, Dimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
@@ -54,6 +56,25 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
   const [position, setPosition] = useState<Position>('top-right');
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const shownOnceRef = useRef(false);
+
+  // Drag-to-reposition — an offset on top of the corner `position` above,
+  // reset every time a new ad/instance appears so it doesn't inherit the
+  // previous card's dragged-to spot.
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  useEffect(() => {
+    translateX.value = 0;
+    translateY.value = 0;
+  }, [visible, adIndex, position, translateX, translateY]);
+  const panGesture = Gesture.Pan()
+    .minDistance(6)
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+      translateY.value = e.translationY;
+    });
+  const dragStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
+  }));
 
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
@@ -131,7 +152,8 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
   };
 
   return (
-    <View pointerEvents="box-none" style={[styles.container, POSITION_STYLES[position]]}>
+    <GestureDetector gesture={panGesture}>
+    <Animated.View style={[styles.container, POSITION_STYLES[position], dragStyle]}>
       {minimized ? (
         <Pressable onPress={() => setMinimized(false)} style={styles.bubble}>
           <Ionicons name="megaphone" size={20} color="#fff" />
@@ -191,7 +213,8 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
           </Pressable>
         </View>
       )}
-    </View>
+    </Animated.View>
+    </GestureDetector>
   );
 }
 
