@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Linking, Dimensions } from 'react-native';
+import { View, Pressable, StyleSheet, Linking, Dimensions, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -37,6 +38,17 @@ const POSITION_STYLES: Record<Position, { top?: number; bottom?: number; left?: 
 
 const CARD_WIDTH = Math.min(280, Dimensions.get('window').width - 40);
 
+// Once someone explicitly closes a promotion (the ✕ button, not the
+// auto-rotate timer), it should never come back for them on this device —
+// persisted so it survives app restarts, not just this session.
+const DISMISSED_KEY = 'bmw_dismissed_promotions';
+const dismissAdId = async (id: string | undefined, current: string[]): Promise<string[]> => {
+  if (!id || current.includes(id)) return current;
+  const next = [...current, id];
+  try { await AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify(next)); } catch { /* best-effort */ }
+  return next;
+};
+
 type Props = {
   /** Which surface this instance represents — an ad only shows here if
    *  SuperAdmin explicitly targeted it (Settings → Promotion Ads). */
@@ -45,14 +57,23 @@ type Props = {
 
 export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
   const { config } = useAppConfig();
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  useEffect(() => {
+    AsyncStorage.getItem(DISMISSED_KEY)
+      .then((raw) => { if (raw) setDismissedIds(JSON.parse(raw)); })
+      .catch(() => {});
+  }, []);
   const ads = (config?.promotionAds ?? []).filter(
-    (a) => a.isActive && a.mediaUrl && a.targets?.includes(target),
+    (a) => a.isActive && a.mediaUrl && a.targets?.includes(target) && !dismissedIds.includes(a._id ?? ''),
   );
 
   const [adIndex, setAdIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [muted, setMuted] = useState(true);
+  // Unmuted by default — unlike a browser, the app has no autoplay-with-
+  // sound restriction, so video/audio ads play with sound immediately.
+  const [muted, setMuted] = useState(false);
+  const [maximized, setMaximized] = useState(false);
   const [position, setPosition] = useState<Position>('top-right');
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const shownOnceRef = useRef(false);
@@ -91,7 +112,8 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
     setAdIndex(idx);
     setPosition((prev) => randomPosition(prev));
     setMinimized(false);
-    setMuted(true);
+    setMuted(false);
+    setMaximized(false);
     setVisible(true);
   };
 
@@ -136,14 +158,14 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ad, visible, minimized, muted]);
 
-  // Image dwell timer.
+  // Image dwell timer — paused while maximized so it doesn't vanish mid-view.
   useEffect(() => {
-    if (!visible || ad?.mediaType !== 'image') return;
+    if (!visible || maximized || ad?.mediaType !== 'image') return;
     const t = setTimeout(scheduleNext, IMAGE_DWELL_MS);
     timersRef.current.push(t);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, adIndex]);
+  }, [visible, adIndex, maximized]);
 
   if (ads.length === 0 || !visible || !ad) return null;
 
@@ -151,7 +173,15 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
     if (ad.link) Linking.openURL(ad.link).catch(() => {});
   };
 
+  // Explicit user close (✕) — unlike scheduleNext's auto-rotate, this one
+  // remembers the ad so it never comes back on this device.
+  const handleUserClose = () => {
+    void dismissAdId(ad._id, dismissedIds).then(setDismissedIds);
+    scheduleNext();
+  };
+
   return (
+    <>
     <GestureDetector gesture={panGesture}>
     <Animated.View style={[styles.container, POSITION_STYLES[position], dragStyle]}>
       {minimized ? (
@@ -166,10 +196,13 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
               <AppText style={styles.headerText}>PROMOTION</AppText>
             </View>
             <View style={styles.headerBtns}>
+              <Pressable onPress={() => setMaximized(true)} style={styles.iconBtn} hitSlop={8}>
+                <Ionicons name="expand" size={13} color="#fff" />
+              </Pressable>
               <Pressable onPress={() => setMinimized(true)} style={styles.iconBtn} hitSlop={8}>
                 <Ionicons name="remove" size={14} color="#fff" />
               </Pressable>
-              <Pressable onPress={scheduleNext} style={styles.iconBtn} hitSlop={8}>
+              <Pressable onPress={handleUserClose} style={styles.iconBtn} hitSlop={8}>
                 <Ionicons name="close" size={14} color="#fff" />
               </Pressable>
             </View>
@@ -215,11 +248,81 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
       )}
     </Animated.View>
     </GestureDetector>
+
+    <Modal visible={maximized} transparent animationType="fade" onRequestClose={() => setMaximized(false)}>
+      <View style={styles.maxBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setMaximized(false)} />
+        <View style={styles.maxCard}>
+          <View style={styles.header}>
+            <View style={styles.headerLabel}>
+              <Ionicons name="megaphone-outline" size={12} color="rgba(255,255,255,0.75)" />
+              <AppText style={styles.headerText}>PROMOTION</AppText>
+            </View>
+            <Pressable onPress={() => setMaximized(false)} style={styles.iconBtn} hitSlop={8}>
+              <Ionicons name="close" size={14} color="#fff" />
+            </Pressable>
+          </View>
+
+          <Pressable onPress={handleOpen} disabled={!ad.link}>
+            {ad.mediaType === 'video' && (
+              <View>
+                <VideoView player={videoPlayer} style={styles.mediaLarge} contentFit="contain" nativeControls={false} />
+                <Pressable onPress={() => setMuted((m) => !m)} style={[styles.overlayBtn, { bottom: 12, right: 12 }]} hitSlop={8}>
+                  <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={18} color="#fff" />
+                </Pressable>
+              </View>
+            )}
+            {ad.mediaType === 'image' && (
+              <Image source={{ uri: ad.mediaUrl }} style={styles.mediaLarge} contentFit="contain" />
+            )}
+            {ad.mediaType === 'audio' && (
+              <View style={[styles.audioBox, { paddingVertical: 48 }]}>
+                <Ionicons name="musical-notes" size={44} color="#60a5fa" />
+                <Pressable
+                  onPress={() => {
+                    if (audioStatus.playing) audioPlayer.pause();
+                    else audioPlayer.play();
+                  }}
+                  style={[styles.audioPlayBtn, { width: 60, height: 60, borderRadius: 30 }]}
+                >
+                  <Ionicons name={audioStatus.playing ? 'pause' : 'play'} size={26} color="#fff" />
+                </Pressable>
+                <Pressable onPress={() => setMuted((m) => !m)} hitSlop={8}>
+                  <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={18} color="rgba(255,255,255,0.8)" />
+                </Pressable>
+              </View>
+            )}
+            {!!ad.link && (
+              <View style={styles.linkChip}>
+                <Ionicons name="open-outline" size={11} color="#fff" />
+                <AppText style={styles.linkChipText}>View</AppText>
+              </View>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
+const MAX_CARD_WIDTH = Math.min(480, Dimensions.get('window').width - 32);
+
 const styles = StyleSheet.create({
   container: { position: 'absolute', zIndex: 999, elevation: 999 },
+  maxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maxCard: {
+    width: MAX_CARD_WIDTH,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
+  },
+  mediaLarge: { width: '100%', height: MAX_CARD_WIDTH, backgroundColor: '#000' },
   bubble: {
     width: 46,
     height: 46,
