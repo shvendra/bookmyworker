@@ -819,8 +819,8 @@ const WorkerSliderCard = React.memo(({
         )}
       </View>
 
-      {/* Name */}
-      <AppText style={wsc.name} numberOfLines={1}>
+      {/* Name — shown in full (wraps to 2 lines instead of truncating with …) */}
+      <AppText style={wsc.name} numberOfLines={2}>
         {(agent.name ?? '').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
       </AppText>
 
@@ -845,14 +845,14 @@ WorkerSliderCard.displayName = 'WorkerSliderCard';
 
 const wsc = StyleSheet.create({
   card: {
-    width: 128,
-    borderRadius: 18,
+    width: 112,
+    borderRadius: 16,
     backgroundColor: '#2243BC',
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     overflow: 'hidden',
     elevation: 5,
     shadowColor: '#0B1F6E',
@@ -862,25 +862,26 @@ const wsc = StyleSheet.create({
   },
   // Fake vertical gradient (#2243BC top → #1B379A bottom)
   grad:            { position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%', backgroundColor: '#1B379A', opacity: 0.55 },
-  bgCircle1:       { position: 'absolute', width: 110, height: 110, borderRadius: 55, backgroundColor: 'rgba(255,255,255,0.06)', top: -40, right: -32 },
-  bgCircle2:       { position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.04)', bottom: -16, left: -16 },
-  photoWrap:       { width: 58, height: 58, borderRadius: 29, borderWidth: 2.5, borderColor: 'rgba(255,255,255,0.5)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A4BC2', marginTop: 2 },
-  photo:           { width: 58, height: 58 },
-  photoInitials:   { fontSize: 21, fontWeight: '800', color: '#FFFFFF' },
-  name:            { fontSize: 14, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', width: '100%', letterSpacing: -0.2, lineHeight: 18 },
-  workTypeChip:    { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, maxWidth: '100%' },
-  workTypeTxt:     { color: '#FFFFFF', fontSize: 11.5, fontWeight: '700', textAlign: 'center' },
+  bgCircle1:       { position: 'absolute', width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.06)', top: -36, right: -28 },
+  bgCircle2:       { position: 'absolute', width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.04)', bottom: -14, left: -14 },
+  photoWrap:       { width: 46, height: 46, borderRadius: 23, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A4BC2', marginTop: 2 },
+  photo:           { width: 46, height: 46 },
+  photoInitials:   { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+  // Full name, never truncated — up to 2 lines, so a longer name still shows in full.
+  name:            { fontSize: 12.5, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', width: '100%', letterSpacing: -0.1, lineHeight: 15 },
+  workTypeChip:    { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3.5, maxWidth: '100%' },
+  workTypeTxt:     { color: '#FFFFFF', fontSize: 10, fontWeight: '700', textAlign: 'center' },
   locationRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, maxWidth: '100%' },
-  locationPin:     { fontSize: 10 },
-  locationTxt:     { fontSize: 11, color: '#BACBF4', fontWeight: '600', flexShrink: 1 },
+  locationPin:     { fontSize: 9 },
+  locationTxt:     { fontSize: 10, color: '#BACBF4', fontWeight: '600', flexShrink: 1 },
   // "View All" tile at end of slider — matches worker-card height
-  moreCard:        { width: 110, borderRadius: 18, borderWidth: 1.6, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', gap: 5, paddingHorizontal: 8 },
-  moreCount:       { fontSize: 24, fontWeight: '900', color: '#1D4ED8', letterSpacing: -0.5 },
-  moreTxt:         { fontSize: 11, fontWeight: '800', color: '#1D4ED8', textAlign: 'center', lineHeight: 14 },
+  moreCard:        { width: 98, borderRadius: 16, borderWidth: 1.6, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 8 },
+  moreCount:       { fontSize: 20, fontWeight: '900', color: '#1D4ED8', letterSpacing: -0.5 },
+  moreTxt:         { fontSize: 10, fontWeight: '800', color: '#1D4ED8', textAlign: 'center', lineHeight: 13 },
 });
 
 // ─── Nearby Workers rail ───────────────────────────────────────────────────────
-const NEARBY_STEP = 140; // card width 128 + slider gap 12
+const NEARBY_STEP = 124; // card width 112 + slider gap 12
 
 interface NearbyWorkersSliderProps {
   workers: RawAgent[];
@@ -1856,15 +1857,6 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
               onWorkerPress={handleAgentTilePress}
               onViewAll={handleWorkerSearchNavigate}
             />
-            {/* Footer */}
-            <View style={[nws.footer, { borderTopColor: theme.colors.divider }]}>
-              <AppText style={[nws.footerTxt, { color: theme.colors.mutedText }]}>
-                {t('workersAvailableNear', { count: nearbyTotal.toLocaleString('en-IN') })}
-              </AppText>
-              <TouchableOpacity onPress={handleWorkerSearchNavigate} activeOpacity={0.7}>
-                <AppText style={nws.footerLink}>{t('viewAllWorkers')}</AppText>
-              </TouchableOpacity>
-            </View>
           </>
         )}
       </View>
@@ -2338,9 +2330,6 @@ const nws = StyleSheet.create({
   browseBtn:    { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#ea580c' },
   browseBtnTxt: { fontSize: 12, fontWeight: '700', color: '#ea580c' },
   sliderContent:{ paddingHorizontal: 16, paddingBottom: 10, paddingTop: 4, gap: 12 },
-  footer:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#f1f5f9' },
-  footerTxt:    { fontSize: 11, lineHeight: 16, color: '#94a3b8', fontWeight: '500', flex: 1 },
-  footerLink:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
 });
 
 
