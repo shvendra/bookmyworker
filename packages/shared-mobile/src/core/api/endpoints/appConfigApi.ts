@@ -51,6 +51,19 @@ export interface AppConfig {
   // SuperAdmin master switch for the coupon-code feature. OFF by default —
   // the checkout coupon input only renders once this is explicitly true.
   couponsEnabled: boolean;
+  // Smart Help Center — bilingual (EN/HI) categories + Q&A topics, managed
+  // from CRM → Settings → Help Center. Empty categories = nothing to show
+  // beyond the existing static FAQ list.
+  helpCenter: {
+    categories: Array<{ key: string; labelEn: string; labelHi: string; icon: string; order: number; isActive: boolean }>;
+    topics: Array<{ categoryKey: string; questionEn: string; questionHi: string; answerEn: string; answerHi: string; keywords: string[]; order: number; isActive: boolean }>;
+  };
+  // "Chat with Executive" business hours (24h, local time). Outside this
+  // window the live-chat option is shown disabled.
+  supportAvailability: {
+    chatStartHour: number;
+    chatEndHour: number;
+  };
 }
 
 export function formatStat(n: number): string {
@@ -101,6 +114,8 @@ const DEFAULTS: AppConfig = {
   promotions: { festivalMode: false, festivalName: '', festivalMessage: '', festivalImageUrl: '' },
   authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
   couponsEnabled: false,
+  helpCenter: { categories: [], topics: [] },
+  supportAvailability: { chatStartHour: 9, chatEndHour: 18 },
 };
 
 export async function fetchAppConfig(): Promise<AppConfig> {
@@ -159,6 +174,14 @@ export async function fetchAppConfig(): Promise<AppConfig> {
     // Opposite default from authFlags on purpose: coupons are OFF unless the
     // SuperAdmin explicitly turns them on (treat anything but `true` as off).
     couponsEnabled: d.couponsEnabled === true,
+    helpCenter: {
+      categories: (((d.helpCenter as any)?.categories ?? []) as AppConfig['helpCenter']['categories']),
+      topics:     (((d.helpCenter as any)?.topics     ?? []) as AppConfig['helpCenter']['topics']),
+    },
+    supportAvailability: {
+      chatStartHour: Number((d.supportAvailability as any)?.chatStartHour ?? DEFAULTS.supportAvailability.chatStartHour),
+      chatEndHour:   Number((d.supportAvailability as any)?.chatEndHour   ?? DEFAULTS.supportAvailability.chatEndHour),
+    },
   };
 }
 
