@@ -55,7 +55,9 @@ export interface AppConfig {
   // from CRM → Settings → Help Center. Empty categories = nothing to show
   // beyond the existing static FAQ list.
   helpCenter: {
-    categories: Array<{ key: string; labelEn: string; labelHi: string; icon: string; order: number; isActive: boolean }>;
+    // audience: which logged-in role sees this category — 'employer' vs
+    // 'worker_side' (Agent/Worker/SelfWorker) vs 'all' (generic content).
+    categories: Array<{ key: string; labelEn: string; labelHi: string; icon: string; order: number; isActive: boolean; audience?: 'employer' | 'worker_side' | 'all' }>;
     // Sits between a category and its topics (Category → Subcategory →
     // Question). A topic with no matching subCategoryKey shows directly
     // under its category — subcategories are optional per category.

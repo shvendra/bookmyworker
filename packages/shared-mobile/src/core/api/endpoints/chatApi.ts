@@ -84,4 +84,28 @@ export const chatApi = {
         `/api/v1/chat/unread-counts/${userId}`
       )
       .then((r) => r.data),
+
+  // ── Support chat session lifecycle ──────────────────────────────────────
+  // Whether the customer's own live-chat session is still open — active
+  // means "resume the chat", inactive means "show the Help triage again".
+  getSessionStatus: (roomId: string) =>
+    apiClient
+      .get<{ success: boolean; active: boolean; endedBy: 'user' | 'auto' | null; endedAt: string | null }>(
+        `/api/v1/chat/${roomId}/session-status`
+      )
+      .then((r) => r.data)
+      .catch(() => ({ success: false, active: false, endedBy: null, endedAt: null })),
+
+  // Called when escalating from the Help triage flow to a live agent —
+  // reopens the session and records what the customer was looking at as a
+  // visible system message, so support never starts blind.
+  startSession: (
+    roomId: string,
+    context: { categoryLabel?: string | null; subCategoryLabel?: string | null; questionText?: string | null; satisfied?: boolean | null },
+  ) =>
+    apiClient.post(`/api/v1/chat/${roomId}/start-session`, context).then((r) => r.data).catch(() => null),
+
+  // Customer-initiated only — the backend rejects this for Admin/SuperAdmin.
+  endSession: (roomId: string) =>
+    apiClient.post(`/api/v1/chat/${roomId}/end`, {}).then((r) => r.data),
 };

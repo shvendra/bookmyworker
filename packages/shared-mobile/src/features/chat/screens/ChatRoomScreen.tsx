@@ -50,6 +50,20 @@ const MessageBubble = React.memo(({
   textColor: string; bubbleBg: string; bubbleBorder: string; mutedColor: string;
 }): React.JSX.Element => {
   const { t } = useTranslation('employer');
+  const { theme } = useAppTheme();
+
+  // Triage-context / "chat ended" notes — centered muted pill, never mistaken
+  // for something the customer said that needs a reply.
+  if (item.senderId === 'system') {
+    return (
+      <View style={styles.systemPillWrap}>
+        <View style={[styles.systemPill, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <AppText variant="caption" color={theme.colors.mutedText} center>{item.text}</AppText>
+        </View>
+      </View>
+    );
+  }
+
   return (
   <View style={[styles.bubble, isMe ? styles.bubbleRight : styles.bubbleLeft]}>
     {!isMe && item.senderName ? (
@@ -102,6 +116,11 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // Session lifecycle — support rooms only. The customer can end their own
+  // chat; it also auto-ends 24h after the admin's last reply. Ended = show a
+  // banner, disable the composer, and point back to Get Help for a new one.
+  const [sessionActive, setSessionActive] = useState(true);
+  const [endingChat, setEndingChat] = useState(false);
   const flatRef = useRef<FlatList>(null);
   // Track local optimistic IDs to avoid duplicates from socket echo
   const localIds = useRef<Set<string>>(new Set());
@@ -122,6 +141,13 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     void load();
   }, [roomId]);
 
+  // Session status — support rooms only, decides whether to show the
+  // composer or the "ended" banner.
+  useEffect(() => {
+    if (!isSupportRoom) return;
+    chatApi.getSessionStatus(roomId).then((res) => setSessionActive(res.active !== false));
+  }, [isSupportRoom, roomId]);
+
   // Socket setup — connect, join room, listen for messages
   useEffect(() => {
     if (!token || !roomId) return;
@@ -137,6 +163,10 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
       // Already handled this exact server id (guards against duplicate broadcasts).
       if (localIds.current.has(msgId)) return;
       localIds.current.add(msgId);
+
+      // An admin reply reopens the session server-side — mirror that here
+      // immediately so the composer comes back without a re-fetch.
+      if (isSupportRoom && ['Admin', 'SuperAdmin'].includes(msg.role as string)) setSessionActive(true);
 
       const newMsg: ChatMessage = {
         id: msgId,
@@ -180,7 +210,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
       socketService.setStatusHandler(null);
       socketService.leaveRoom(roomId);
     };
-  }, [roomId, token, userId]);
+  }, [roomId, token, userId, isSupportRoom]);
 
   const handleLoadOlder = useCallback(async (): Promise<void> => {
     if (loadingOlder || currentPage >= totalPages) return;
@@ -281,6 +311,22 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
     setSending(false);
   }, [draft, roomId, sending, userId]);
 
+  const confirmEndChat = useCallback((): void => {
+    showAlert(t('helpchat_endChatTitle'), t('helpchat_endChatConfirm'), [
+      { text: t('helpchat_cancel'), style: 'cancel' },
+      {
+        text: t('helpchat_endChatAction'),
+        style: 'destructive',
+        onPress: () => {
+          setEndingChat(true);
+          void chatApi.endSession(roomId)
+            .then(() => setSessionActive(false))
+            .finally(() => setEndingChat(false));
+        },
+      },
+    ]);
+  }, [roomId, t]);
+
   if (initialLoading) return <LoadingState message={t('loading')} />;
   if (loadError) {
     return (
@@ -305,6 +351,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
   }
 
   const hasOlderMessages = currentPage < totalPages;
+  const composerDisabled = isSupportRoom && !sessionActive;
 
   return (
     <KeyboardAvoidingView
@@ -316,7 +363,17 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
       <ScreenHeader
         title={headerTitle}
         onBack={hideBack && !onBack ? undefined : (onBack ?? (() => navigation.goBack()))}
+        rightIcon={isSupportRoom && sessionActive ? '🚪' : undefined}
+        onRightPress={isSupportRoom && sessionActive ? confirmEndChat : undefined}
       />
+
+      {isSupportRoom && !sessionActive && (
+        <View style={[styles.endedBanner, { backgroundColor: theme.colors.warningLight }]}>
+          <AppText variant="caption" color={theme.colors.warning} style={styles.endedBannerTxt}>
+            {t('helpchat_chatEndedBanner')}
+          </AppText>
+        </View>
+      )}
 
       {socketStatus !== 'connected' && (
         <View style={styles.reconnectBar}>
@@ -383,7 +440,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
       <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity
           onPress={handleAttach}
-          disabled={uploadingMedia || sending}
+          disabled={uploadingMedia || sending || composerDisabled}
           style={[styles.attachBtn, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
         >
           {uploadingMedia ? (
@@ -395,9 +452,10 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder={t('typeMessage')}
+          placeholder={composerDisabled ? t('helpchat_chatEndedPlaceholder') : t('typeMessage')}
           placeholderTextColor={theme.colors.mutedText}
           multiline
+          editable={!composerDisabled}
           style={[
             styles.textInput,
             { backgroundColor: theme.colors.background, borderColor: theme.colors.border, color: theme.colors.text },
@@ -408,9 +466,9 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         />
         <TouchableOpacity
           onPress={() => void handleSend()}
-          disabled={!draft.trim() || sending}
+          disabled={!draft.trim() || sending || composerDisabled}
           style={[styles.sendBtn, {
-            backgroundColor: draft.trim() && !sending ? theme.colors.primary : theme.colors.border,
+            backgroundColor: draft.trim() && !sending && !composerDisabled ? theme.colors.primary : theme.colors.border,
           }]}
         >
           <AppText variant="label" color="#FFFFFF">➤</AppText>
@@ -435,6 +493,12 @@ const styles = StyleSheet.create({
   reconnectTxt: { fontSize: 12, fontWeight: '700', color: '#92400E' },
 
   senderName: { fontSize: 11, fontWeight: '700', color: '#2563eb', marginBottom: 2, marginLeft: 14 },
+
+  systemPillWrap: { alignItems: 'center', marginBottom: 8 },
+  systemPill: { maxWidth: '85%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+
+  endedBanner: { paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' },
+  endedBannerTxt: { textAlign: 'center', lineHeight: 18 },
 
   bubble:      { marginBottom: 8 },
   bubbleLeft:  { alignItems: 'flex-start' },

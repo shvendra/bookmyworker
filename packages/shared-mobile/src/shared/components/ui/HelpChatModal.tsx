@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, type AppConfig } from '../../../core/api/endpoints/appConfigApi';
+import { chatApi } from '../../../core/api/endpoints/chatApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from './AppText';
 
@@ -12,6 +13,16 @@ type HelpSubCategory = AppConfig['helpCenter']['subCategories'][number];
 type HelpTopic = AppConfig['helpCenter']['topics'][number];
 
 type Step = 'categories' | 'subcategories' | 'questions' | 'answer';
+
+// Employer's issues are different from Agent/Worker/SelfWorker's — a
+// category only shows to the audience it's scoped for (or 'all'/unset).
+// `role` is the lowercase AppRole ('employer' | 'agent' | 'worker' | ...).
+function audienceMatches(audience: HelpCategory['audience'], role: string | undefined): boolean {
+  if (!audience || audience === 'all') return true;
+  if (audience === 'employer') return role === 'employer';
+  if (audience === 'worker_side') return ['agent', 'worker', 'selfworker'].includes(role ?? '');
+  return true;
+}
 
 // "Chat with BookMyWorker Agent" — the same live support room used elsewhere
 // in the app (e.g. the Employer Dashboard's chat icon) — gated to business
@@ -59,11 +70,34 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
 
   const chatLive = isChatLive(chatStartHour, chatEndHour);
   const phoneClean = primaryPhone.replace(/\s/g, '');
+  const userId = state.session?.user.id ?? '';
+  const userRole = state.session?.user.role;
+  const roomId = `support_${userId}`;
 
   const activeCategories = useMemo(
-    () => categories.filter((c: HelpCategory) => c.isActive).sort((a: HelpCategory, b: HelpCategory) => a.order - b.order),
-    [categories],
+    () => categories
+      .filter((c: HelpCategory) => c.isActive && audienceMatches(c.audience, userRole))
+      .sort((a: HelpCategory, b: HelpCategory) => a.order - b.order),
+    [categories, userRole],
   );
+
+  // If a live chat session is already open (started from a previous
+  // escalation and still within its 24h window), skip the triage entirely
+  // and jump straight back into that conversation instead.
+  useEffect(() => {
+    if (!visible || !userId) return;
+    let cancelled = false;
+    chatApi.getSessionStatus(roomId).then((res) => {
+      if (cancelled) return;
+      if (res.active) {
+        onClose();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (navigation as any).navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
+      }
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, userId]);
   const subCatsForCategory = useMemo(
     () => (category ? subCategories.filter((s: HelpSubCategory) => s.categoryKey === category.key && s.isActive).sort((a: HelpSubCategory, b: HelpSubCategory) => a.order - b.order) : []),
     [subCategories, category],
@@ -111,12 +145,19 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     if (step === 'subcategories') { setStep('categories'); setCategory(null); return; }
   };
 
-  const openAgentChat = (): void => {
+  const openAgentChat = async (): Promise<void> => {
     if (!chatLive) return;
-    const userId = state.session?.user.id ?? '';
+    // Record exactly what was selected (and whether it satisfied) as a
+    // system message support sees first — never starts the conversation blind.
+    await chatApi.startSession(roomId, {
+      categoryLabel: category?.labelEn ?? null,
+      subCategoryLabel: subCategory?.labelEn ?? null,
+      questionText: topic?.questionEn ?? null,
+      satisfied: topic ? satisfied : null,
+    });
     handleClose();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (navigation as any).navigate('ChatRoom', { roomId: `support_${userId}`, roomName: 'Support Chat' });
+    (navigation as any).navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
   };
 
   const escalateRow = (
@@ -124,7 +165,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
       <AppText variant="label" color={theme.colors.mutedText} style={styles.escalateLabel}>{t('helpchat_stillNeedHelp')}</AppText>
 
       <TouchableOpacity
-        onPress={openAgentChat}
+        onPress={() => void openAgentChat()}
         disabled={!chatLive}
         activeOpacity={0.7}
         style={[styles.escalateCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }, !chatLive && styles.escalateCardDisabled]}
