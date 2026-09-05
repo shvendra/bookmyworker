@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'চ্যাট শেষ করুন',
   helpchat_chatEndedBanner: 'এই চ্যাট শেষ হয়ে গেছে। নতুন কথোপকথন শুরু করতে আবার Get Help ব্যবহার করুন।',
   helpchat_chatEndedPlaceholder: 'এই চ্যাট শেষ হয়ে গেছে — Get Help থেকে নতুন শুরু করুন',
+  helpchat_searchPlaceholder: 'প্রশ্ন খুঁজুন…',
   sup_faqHeading: 'সচরাচর জিজ্ঞাসিত প্রশ্ন',
   sup_faq1_q: 'আমি কীভাবে একজন কর্মীর প্রয়োজন পোস্ট করব?',
   sup_faq1_a: 'হোম → রিকোয়ারমেন্ট পোস্ট করুন-এ যান। কর্মীর ধরন, লোকেশন, বাজেট এবং সময়কালের মতো কাজের বিবরণ পূরণ করুন, তারপর আপনার রিকোয়ারমেন্ট জমা দিন।',

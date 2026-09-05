@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'ಚಾಟ್ ಮುಗಿಸಿ',
   helpchat_chatEndedBanner: 'ಈ ಚಾಟ್ ಮುಗಿದಿದೆ. ಹೊಸ ಸಂಭಾಷಣೆ ಪ್ರಾರಂಭಿಸಲು ಮತ್ತೆ Get Help ಬಳಸಿ.',
   helpchat_chatEndedPlaceholder: 'ಈ ಚಾಟ್ ಮುಗಿದಿದೆ — Get Help ನಿಂದ ಹೊಸದನ್ನು ಪ್ರಾರಂಭಿಸಿ',
+  helpchat_searchPlaceholder: 'ಪ್ರಶ್ನೆಯನ್ನು ಹುಡುಕಿ…',
   sup_faqHeading: 'ಪದೇ ಪದೇ ಕೇಳಲಾಗುವ ಪ್ರಶ್ನೆಗಳು',
   sup_faq1_q: 'ನಾನು ಕಾರ್ಮಿಕರ ಅಗತ್ಯವನ್ನು ಹೇಗೆ ಪೋಸ್ಟ್ ಮಾಡುವುದು?',
   sup_faq1_a: 'ಮುಖಪುಟ → ಅಗತ್ಯ ಪೋಸ್ಟ್ ಮಾಡಿಗೆ ಹೋಗಿ. ಕಾರ್ಮಿಕರ ಪ್ರಕಾರ, ಸ್ಥಳ, ಬಜೆಟ್ ಮತ್ತು ಅವಧಿಯಂತಹ ಉದ್ಯೋಗ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ, ನಂತರ ನಿಮ್ಮ ಅಗತ್ಯವನ್ನು ಸಲ್ಲಿಸಿ.',

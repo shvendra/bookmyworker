@@ -861,6 +861,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'चैट समाप्त करें',
   helpchat_chatEndedBanner: 'यह चैट समाप्त हो गई है। नई बातचीत शुरू करने के लिए फिर से Get Help का उपयोग करें।',
   helpchat_chatEndedPlaceholder: 'यह चैट समाप्त हो गई है — Get Help से नई शुरू करें',
+  helpchat_searchPlaceholder: 'सवाल खोजें…',
   sup_faqHeading: 'अक्सर पूछे जाने वाले सवाल',
   sup_faq1_q: 'मैं वर्कर की रिक्वायरमेंट कैसे पोस्ट करूँ?',
   sup_faq1_a: 'होम → रिक्वायरमेंट पोस्ट करें पर जाएँ। वर्कर का प्रकार, जगह, बजट और अवधि जैसी जॉब की जानकारी भरें, फिर अपनी रिक्वायरमेंट सबमिट करें।',

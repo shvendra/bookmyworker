@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'ଚାଟ୍ ସମାପ୍ତ କରନ୍ତୁ',
   helpchat_chatEndedBanner: 'ଏହି ଚାଟ୍ ସମାପ୍ତ ହୋଇଛି। ନୂଆ ବାର୍ତ୍ତାଳାପ ଆରମ୍ଭ କରିବାକୁ ପୁଣି Get Help ବ୍ୟବହାର କରନ୍ତୁ।',
   helpchat_chatEndedPlaceholder: 'ଏହି ଚାଟ୍ ସମାପ୍ତ ହୋଇଛି — Get Help ରୁ ନୂଆ ଆରମ୍ଭ କରନ୍ତୁ',
+  helpchat_searchPlaceholder: 'ପ୍ରଶ୍ନ ଖୋଜନ୍ତୁ…',
   sup_faqHeading: 'ବାରମ୍ବାର ପଚରାଯାଉଥିବା ପ୍ରଶ୍ନ',
   sup_faq1_q: 'ମୁଁ କିପରି ଶ୍ରମିକ ଆବଶ୍ୟକତା ପୋଷ୍ଟ କରିବି?',
   sup_faq1_a: 'ହୋମ → ଆବଶ୍ୟକତା ପୋଷ୍ଟ କରନ୍ତୁକୁ ଯାଆନ୍ତୁ। ଶ୍ରମିକ ପ୍ରକାର, ସ୍ଥାନ, ବଜେଟ୍ ଏବଂ ଅବଧି ଭଳି କାର୍ଯ୍ୟ ବିବରଣୀ ପୂରଣ କରନ୍ତୁ, ତାପରେ ଆପଣଙ୍କ ଆବଶ୍ୟକତା ଦାଖଲ କରନ୍ତୁ।',

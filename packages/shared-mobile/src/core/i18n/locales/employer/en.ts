@@ -838,6 +838,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'End Chat',
   helpchat_chatEndedBanner: 'This chat has ended. To start a new conversation, use Get Help again.',
   helpchat_chatEndedPlaceholder: 'This chat has ended — start a new one from Get Help',
+  helpchat_searchPlaceholder: 'Search for a question…',
   sup_faqHeading: 'FREQUENTLY ASKED QUESTIONS',
   sup_faq1_q: 'How do I post a worker requirement?',
   sup_faq1_a: 'Go to Home → Post Requirement. Fill in your job details such as worker type, location, budget, and duration, then submit your requirement.',

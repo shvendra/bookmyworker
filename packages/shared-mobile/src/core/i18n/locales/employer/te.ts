@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'చాట్ ముగించండి',
   helpchat_chatEndedBanner: 'ఈ చాట్ ముగిసింది. కొత్త సంభాషణను ప్రారంభించడానికి మళ్లీ Get Help ఉపయోగించండి.',
   helpchat_chatEndedPlaceholder: 'ఈ చాట్ ముగిసింది — Get Help నుండి కొత్తది ప్రారంభించండి',
+  helpchat_searchPlaceholder: 'ప్రశ్నను శోధించండి…',
   sup_faqHeading: 'తరచుగా అడిగే ప్రశ్నలు',
   sup_faq1_q: 'నేను కార్మికుని అవసరాన్ని ఎలా పోస్ట్ చేయాలి?',
   sup_faq1_a: 'హోమ్ → అవసరం పోస్ట్ చేయండికి వెళ్లండి. కార్మికుని రకం, ప్రదేశం, బడ్జెట్ మరియు వ్యవధి వంటి ఉద్యోగ వివరాలను నింపి, మీ అవసరాన్ని సమర్పించండి.',

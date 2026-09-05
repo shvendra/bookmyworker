@@ -915,6 +915,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'ਚੈਟ ਖਤਮ ਕਰੋ',
   helpchat_chatEndedBanner: 'ਇਹ ਚੈਟ ਖਤਮ ਹੋ ਗਈ ਹੈ। ਨਵੀਂ ਗੱਲਬਾਤ ਸ਼ੁਰੂ ਕਰਨ ਲਈ ਦੁਬਾਰਾ Get Help ਵਰਤੋ।',
   helpchat_chatEndedPlaceholder: 'ਇਹ ਚੈਟ ਖਤਮ ਹੋ ਗਈ ਹੈ — Get Help ਤੋਂ ਨਵੀਂ ਸ਼ੁਰੂ ਕਰੋ',
+  helpchat_searchPlaceholder: 'ਸਵਾਲ ਖੋਜੋ…',
   sup_faqHeading: 'ਅਕਸਰ ਪੁੱਛੇ ਜਾਂਦੇ ਸਵਾਲ',
   sup_faq1_q: 'ਮੈਂ ਕਾਮੇ ਦੀ ਲੋੜ ਕਿਵੇਂ ਪੋਸਟ ਕਰਾਂ?',
   sup_faq1_a: "ਹੋਮ → ਲੋੜ ਪੋਸਟ ਕਰੋ 'ਤੇ ਜਾਓ। ਕਾਮੇ ਦੀ ਕਿਸਮ, ਸਥਾਨ, ਬਜਟ ਅਤੇ ਮਿਆਦ ਵਰਗੀ ਨੌਕਰੀ ਦੀ ਜਾਣਕਾਰੀ ਭਰੋ, ਫਿਰ ਆਪਣੀ ਲੋੜ ਜਮ੍ਹਾਂ ਕਰੋ।",

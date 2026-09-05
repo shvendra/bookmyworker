@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, type AppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { chatApi } from '../../../core/api/endpoints/chatApi';
+import { helpSearchApi } from '../../../core/api/endpoints/helpSearchApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from './AppText';
 
@@ -13,6 +14,19 @@ type HelpSubCategory = AppConfig['helpCenter']['subCategories'][number];
 type HelpTopic = AppConfig['helpCenter']['topics'][number];
 
 type Step = 'categories' | 'subcategories' | 'questions' | 'answer';
+
+// Tokenized match — every WORD in the query must appear somewhere in the
+// topic's text, in any order, so a differently-phrased search still finds
+// an existing answer (matches the same logic CRM's Get Help/Smart Assist use).
+function searchTopics(topics: HelpTopic[], query: string): HelpTopic[] {
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return [];
+  return topics.filter((t) => {
+    const haystack = [t.questionEn, t.questionHi, t.answerEn, t.answerHi, ...(t.keywords || [])]
+      .join(' ').toLowerCase();
+    return tokens.every((tok) => haystack.includes(tok));
+  });
+}
 
 // Employer's issues are different from Agent/Worker/SelfWorker's — a
 // category only shows to the audience it's scoped for (or 'all'/unset).
@@ -67,6 +81,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
   const [thinking, setThinking] = useState(false);
   const [satisfied, setSatisfied] = useState<boolean | null>(null);
   const [showEscalate, setShowEscalate] = useState(false);
+  const [search, setSearch] = useState('');
 
   const chatLive = isChatLive(chatStartHour, chatEndHour);
   const phoneClean = primaryPhone.replace(/\s/g, '');
@@ -80,6 +95,23 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
       .sort((a: HelpCategory, b: HelpCategory) => a.order - b.order),
     [categories, userRole],
   );
+
+  // Search across every topic under a category this role can see — a
+  // shortcut past the category → subcategory clicks, for speed.
+  const searchableTopics = useMemo(() => {
+    const allowedKeys = new Set(activeCategories.map((c: HelpCategory) => c.key));
+    return topics.filter((tp: HelpTopic) => tp.isActive && allowedKeys.has(tp.categoryKey));
+  }, [topics, activeCategories]);
+  const searchResults = useMemo(() => searchTopics(searchableTopics, search), [searchableTopics, search]);
+
+  // Feedback loop: log a zero-result search (debounced) so a SuperAdmin can
+  // see real content gaps instead of guessing what to add.
+  useEffect(() => {
+    const q = search.trim();
+    if (!q || searchResults.length > 0) return;
+    const timer = setTimeout(() => helpSearchApi.logMiss(q), 900);
+    return () => clearTimeout(timer);
+  }, [search, searchResults.length]);
 
   // If a live chat session is already open (started from a previous
   // escalation and still within its 24h window), skip the triage entirely
@@ -117,6 +149,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     setSatisfied(null);
     setShowEscalate(false);
     setThinking(false);
+    setSearch('');
   };
 
   const handleClose = (): void => { reset(); onClose(); };
@@ -134,6 +167,15 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     setThinking(true);
     setStep('answer');
     setTimeout(() => setThinking(false), 500);
+  };
+  // From a search result — resolve which category/subcategory this topic
+  // belongs to (so the escalation still records accurate triage context),
+  // then reuse the normal reveal.
+  const pickTopicFromSearch = (tp: HelpTopic): void => {
+    setCategory(categories.find((c: HelpCategory) => c.key === tp.categoryKey) ?? null);
+    setSubCategory(subCategories.find((s: HelpSubCategory) => s.categoryKey === tp.categoryKey && s.key === tp.subCategoryKey) ?? null);
+    setSearch('');
+    pickTopic(tp);
   };
 
   const goBack = (): void => {
@@ -227,24 +269,58 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {step === 'categories' && (
             <>
-              <AppText variant="title" style={styles.stepTitle}>{t('helpchat_selectCategory')}</AppText>
-              <View style={styles.grid}>
-                {activeCategories.map((cat: HelpCategory) => (
-                  <TouchableOpacity
-                    key={cat.key}
-                    onPress={() => pickCategory(cat)}
-                    activeOpacity={0.75}
-                    style={[styles.gridCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-                  >
-                    <AppText style={styles.gridIcon}>{cat.icon}</AppText>
-                    <AppText variant="label" style={styles.gridLabel}>{cat.labelEn}</AppText>
-                    {!!cat.labelHi && <AppText variant="caption" color={theme.colors.mutedText}>{cat.labelHi}</AppText>}
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {activeCategories.length === 0 && (
-                <AppText variant="body" color={theme.colors.mutedText} style={styles.emptyTxt}>{t('helpchat_noTopicsHere')}</AppText>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t('helpchat_searchPlaceholder')}
+                placeholderTextColor={theme.colors.mutedText}
+                style={[styles.searchInput, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
+              />
+
+              {search.trim() ? (
+                <>
+                  {searchResults.length === 0 ? (
+                    <AppText variant="body" color={theme.colors.mutedText} style={styles.emptyTxt}>{t('helpchat_noTopicsHere')}</AppText>
+                  ) : (
+                    searchResults.map((tp: HelpTopic, i: number) => (
+                      <TouchableOpacity
+                        key={tp.categoryKey + i}
+                        onPress={() => pickTopicFromSearch(tp)}
+                        activeOpacity={0.7}
+                        style={[styles.questionRow, { borderColor: theme.colors.border }]}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <AppText variant="label">{tp.questionEn}</AppText>
+                          {!!tp.questionHi && <AppText variant="caption" color={theme.colors.mutedText}>{tp.questionHi}</AppText>}
+                        </View>
+                        <AppText color={theme.colors.mutedText}>›</AppText>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </>
+              ) : (
+                <>
+                  <AppText variant="title" style={styles.stepTitle}>{t('helpchat_selectCategory')}</AppText>
+                  <View style={styles.grid}>
+                    {activeCategories.map((cat: HelpCategory) => (
+                      <TouchableOpacity
+                        key={cat.key}
+                        onPress={() => pickCategory(cat)}
+                        activeOpacity={0.75}
+                        style={[styles.gridCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                      >
+                        <AppText style={styles.gridIcon}>{cat.icon}</AppText>
+                        <AppText variant="label" style={styles.gridLabel}>{cat.labelEn}</AppText>
+                        {!!cat.labelHi && <AppText variant="caption" color={theme.colors.mutedText}>{cat.labelHi}</AppText>}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {activeCategories.length === 0 && (
+                    <AppText variant="body" color={theme.colors.mutedText} style={styles.emptyTxt}>{t('helpchat_noTopicsHere')}</AppText>
+                  )}
+                </>
               )}
+
               <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
                 <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
               </TouchableOpacity>
@@ -354,6 +430,10 @@ const styles = StyleSheet.create({
   headerBtn: { minWidth: 44, alignItems: 'center' },
   headerBtnTxt: { fontSize: 15, fontWeight: '600' },
   body: { padding: 16, paddingBottom: 40 },
+  searchInput: {
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 14, marginBottom: 16,
+  },
   stepTitle: { marginBottom: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridCard: {

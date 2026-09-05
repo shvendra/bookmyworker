@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'ચેટ સમાપ્ત કરો',
   helpchat_chatEndedBanner: 'આ ચેટ સમાપ્ત થઈ ગઈ છે. નવી વાતચીત શરૂ કરવા માટે ફરીથી Get Help વાપરો.',
   helpchat_chatEndedPlaceholder: 'આ ચેટ સમાપ્ત થઈ ગઈ છે — Get Help માંથી નવી શરૂ કરો',
+  helpchat_searchPlaceholder: 'પ્રશ્ન શોધો…',
   sup_faqHeading: 'વારંવાર પૂછાતા પ્રશ્નો',
   sup_faq1_q: 'હું કામદારની જરૂરિયાત કેવી રીતે પોસ્ટ કરું?',
   sup_faq1_a: 'હોમ → જરૂરિયાત પોસ્ટ કરો પર જાઓ. કામદારનો પ્રકાર, સ્થળ, બજેટ અને અવધિ જેવી નોકરીની વિગતો ભરો, પછી તમારી જરૂરિયાત સબમિટ કરો.',

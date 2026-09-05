@@ -904,6 +904,7 @@ export const employerTranslation = {
   helpchat_endChatAction: 'चॅट संपवा',
   helpchat_chatEndedBanner: 'ही चॅट संपली आहे. नवीन संभाषण सुरू करण्यासाठी पुन्हा Get Help वापरा.',
   helpchat_chatEndedPlaceholder: 'ही चॅट संपली आहे — Get Help मधून नवीन सुरू करा',
+  helpchat_searchPlaceholder: 'प्रश्न शोधा…',
   sup_faqHeading: 'वारंवार विचारले जाणारे प्रश्न',
   sup_faq1_q: 'मी कामगाराची आवश्यकता कशी पोस्ट करू?',
   sup_faq1_a: 'होम → आवश्यकता पोस्ट करा वर जा. कामगाराचा प्रकार, ठिकाण, बजेट आणि कालावधी यांसारखी नोकरीची माहिती भरा आणि नंतर तुमची आवश्यकता सबमिट करा.',
