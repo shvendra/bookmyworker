@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
@@ -53,6 +54,16 @@ function audienceMatches(audience: HelpCategory['audience'], role: string | unde
 // "Chat with BookMyWorker Agent" — the same live support room used elsewhere
 // in the app (e.g. the Employer Dashboard's chat icon) — gated to business
 // hours so it isn't offered as if a human were always on the other end.
+// Help Center content only has English + Hindi text today (see backend
+// helpCategorySchema), but the app supports 10+ display languages. Showing
+// the Hindi line under every label regardless of the user's chosen language
+// looked broken for everyone else — so: Hindi text shows ONLY when the app's
+// active language is Hindi; every other language (including English) shows
+// English only, never a stray second-language caption underneath.
+function localize(language: string, en: string, hi?: string | null): string {
+  return language.startsWith('hi') && hi ? hi : en;
+}
+
 function isChatLive(startHour: number, endHour: number): boolean {
   const h = new Date().getHours();
   if (startHour === endHour) return true; // 24h window
@@ -67,10 +78,10 @@ interface HelpChatModalProps {
 /**
  * Help chat: tap the help icon → Category → Subcategory (when the category
  * has any) → Question → Answer. If the answer doesn't satisfy, the same
- * screen reveals 3 direct escalation options: chat with a BookMyWorker
- * agent (live chat, 9am–6pm by default), support email (always), support
- * call (always). A "talk to us directly" shortcut is also available from
- * every step, for anyone who'd rather skip straight to a human.
+ * screen reveals 2 direct escalation options: chat with a BookMyWorker
+ * agent (live chat, 9am–6pm by default) and support email (always). A "talk
+ * to us directly" shortcut is also available from every step, for anyone
+ * who'd rather skip straight to a human.
  *
  * Backed by the SuperAdmin-managed Help Center (CRM → Settings → Help
  * Center) — same data source as the CRM's own "Get Help" dialog and the
@@ -78,13 +89,15 @@ interface HelpChatModalProps {
  */
 export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
-  const { t } = useTranslation('employer');
+  const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation('employer');
+  const L = (en: string, hi?: string | null): string => localize(i18n.language, en, hi);
   const navigation = useNavigation();
   const { state } = useAuth();
   const { config } = useAppConfig();
   const { categories, subCategories, topics } = config.helpCenter;
   const { chatStartHour, chatEndHour } = config.supportAvailability;
-  const { supportEmail, primaryPhone } = config.contact;
+  const { supportEmail } = config.contact;
 
   const [step, setStep] = useState<Step>('categories');
   const [category, setCategory] = useState<HelpCategory | null>(null);
@@ -96,7 +109,6 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
   const [search, setSearch] = useState('');
 
   const chatLive = isChatLive(chatStartHour, chatEndHour);
-  const phoneClean = primaryPhone.replace(/\s/g, '');
   const userId = state.session?.user.id ?? '';
   const userRole = state.session?.user.role;
   const roomId = `support_${userId}`;
@@ -247,24 +259,13 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => void Linking.openURL(`tel:${phoneClean}`)}
-        activeOpacity={0.7}
-        style={[styles.escalateCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-      >
-        <AppText style={styles.escalateIcon}>📞</AppText>
-        <View style={{ flex: 1 }}>
-          <AppText variant="label">{t('sup_call')}</AppText>
-          <AppText variant="caption" color={theme.colors.mutedText}>{t('sup_callSub', { phone: primaryPhone })}</AppText>
-        </View>
-      </TouchableOpacity>
     </View>
   );
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <View style={[styles.header, { borderColor: theme.colors.border, paddingTop: insets.top + 10 }]}>
           {step !== 'categories' ? (
             <TouchableOpacity onPress={goBack} style={styles.headerBtn}>
               <AppText style={styles.headerBtnTxt}>{`‹ ${t('helpchat_back')}`}</AppText>
@@ -281,13 +282,16 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {step === 'categories' && (
             <>
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder={t('helpchat_searchPlaceholder')}
-                placeholderTextColor={theme.colors.mutedText}
-                style={[styles.searchInput, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text }]}
-              />
+              <View style={[styles.searchWrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <AppText style={styles.searchIcon}>🔍</AppText>
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder={t('helpchat_searchPlaceholder')}
+                  placeholderTextColor={theme.colors.mutedText}
+                  style={[styles.searchInput, { color: theme.colors.text }]}
+                />
+              </View>
 
               {search.trim() ? (
                 <>
@@ -302,8 +306,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                         style={[styles.questionRow, { borderColor: theme.colors.border }]}
                       >
                         <View style={{ flex: 1 }}>
-                          <AppText variant="label">{tp.questionEn}</AppText>
-                          {!!tp.questionHi && <AppText variant="caption" color={theme.colors.mutedText}>{tp.questionHi}</AppText>}
+                          <AppText variant="label">{L(tp.questionEn, tp.questionHi)}</AppText>
                         </View>
                         <AppText color={theme.colors.mutedText}>›</AppText>
                       </TouchableOpacity>
@@ -322,8 +325,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                         style={[styles.gridCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                       >
                         <AppText style={styles.gridIcon}>{cat.icon}</AppText>
-                        <AppText variant="label" style={styles.gridLabel}>{cat.labelEn}</AppText>
-                        {!!cat.labelHi && <AppText variant="caption" color={theme.colors.mutedText}>{cat.labelHi}</AppText>}
+                        <AppText variant="label" style={styles.gridLabel}>{L(cat.labelEn, cat.labelHi)}</AppText>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -352,8 +354,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                     style={[styles.gridCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                   >
                     {!!sub.icon && <AppText style={styles.gridIcon}>{sub.icon}</AppText>}
-                    <AppText variant="label" style={styles.gridLabel}>{sub.labelEn}</AppText>
-                    {!!sub.labelHi && <AppText variant="caption" color={theme.colors.mutedText}>{sub.labelHi}</AppText>}
+                    <AppText variant="label" style={styles.gridLabel}>{L(sub.labelEn, sub.labelHi)}</AppText>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -374,8 +375,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                     style={[styles.questionRow, { borderColor: theme.colors.border }]}
                   >
                     <View style={{ flex: 1 }}>
-                      <AppText variant="label">{tp.questionEn}</AppText>
-                      {!!tp.questionHi && <AppText variant="caption" color={theme.colors.mutedText}>{tp.questionHi}</AppText>}
+                      <AppText variant="label">{L(tp.questionEn, tp.questionHi)}</AppText>
                     </View>
                     <AppText color={theme.colors.mutedText}>›</AppText>
                   </TouchableOpacity>
@@ -390,7 +390,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
 
           {step === 'answer' && topic && (
             <>
-              <AppText variant="label" style={styles.answerQ}>{topic.questionEn}</AppText>
+              <AppText variant="label" style={styles.answerQ}>{L(topic.questionEn, topic.questionHi)}</AppText>
               <View style={styles.botRow}>
                 <View style={[styles.botAvatar, { backgroundColor: theme.colors.primary }]}>
                   <AppText style={styles.botAvatarEmoji}>🤖</AppText>
@@ -402,8 +402,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                 ) : (
                   <View style={[styles.botBubble, { backgroundColor: theme.colors.primary + '14', flex: 1 }]}>
                     <AppText variant="caption" color={theme.colors.primary} style={styles.botLabel}>BookMyWorker Assistant</AppText>
-                    <AppText variant="body" style={styles.answerA}>{topic.answerEn}</AppText>
-                    {!!topic.answerHi && <AppText variant="caption" color={theme.colors.mutedText} style={styles.answerA}>{topic.answerHi}</AppText>}
+                    <AppText variant="body" style={styles.answerA}>{L(topic.answerEn, topic.answerHi)}</AppText>
                   </View>
                 )}
               </View>
@@ -442,10 +441,12 @@ const styles = StyleSheet.create({
   headerBtn: { minWidth: 44, alignItems: 'center' },
   headerBtnTxt: { fontSize: 15, fontWeight: '600' },
   body: { padding: 16, paddingBottom: 40 },
-  searchInput: {
-    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 14, marginBottom: 16,
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, marginBottom: 16,
   },
+  searchIcon: { fontSize: 14 },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 14 },
   stepTitle: { marginBottom: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridCard: {
