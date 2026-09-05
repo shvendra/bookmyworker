@@ -196,7 +196,16 @@ export function useAppConfig() {
   const query = useQuery({
     queryKey: ['app-config'],
     queryFn:  fetchAppConfig,
-    staleTime: 5 * 60 * 1000,
+    // Deliberately short (was 5 min) — this config carries SuperAdmin toggles
+    // that must reflect near-instantly on an already-open screen: OTP login
+    // visibility (LoginScreen) and the coupon-code input (SubscriptionScreen).
+    // A short staleTime means any mount/reconnect refetches immediately if
+    // stale, and refetchInterval polls in the background every 15s while a
+    // screen using this hook is on-screen, without needing a restart. Stays
+    // off while backgrounded (refetchIntervalInBackground defaults to false)
+    // so it doesn't spend battery/network when nobody's looking.
+    staleTime: 15 * 1000,
+    refetchInterval: 15 * 1000,
     retry: 1,
   });
   return { config: query.data ?? DEFAULTS, isLoading: query.isLoading };
