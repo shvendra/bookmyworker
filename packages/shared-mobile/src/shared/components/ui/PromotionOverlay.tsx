@@ -217,7 +217,7 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
           <View style={styles.header}>
             <View style={styles.headerLabel}>
               <Ionicons name="megaphone-outline" size={12} color="rgba(255,255,255,0.75)" />
-              <AppText style={styles.headerText}>PROMOTION</AppText>
+              <AppText style={styles.headerText}>BOOKMYWORKER</AppText>
             </View>
             <View style={styles.headerBtns}>
               <Pressable onPress={() => setMaximized(true)} style={styles.iconBtn} hitSlop={8}>
@@ -289,7 +289,7 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
           <View style={styles.header}>
             <View style={styles.headerLabel}>
               <Ionicons name="megaphone-outline" size={12} color="rgba(255,255,255,0.75)" />
-              <AppText style={styles.headerText}>PROMOTION</AppText>
+              <AppText style={styles.headerText}>BOOKMYWORKER</AppText>
             </View>
             <Pressable onPress={() => setMaximized(false)} style={styles.iconBtn} hitSlop={8}>
               <Ionicons name="close" size={14} color="#fff" />
