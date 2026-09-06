@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, Linking, Dimensions, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -63,8 +63,24 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
       .then((raw) => { if (raw) setDismissedIds(JSON.parse(raw)); })
       .catch(() => {});
   }, []);
-  const ads = (config?.promotionAds ?? []).filter(
-    (a) => a.isActive && a.mediaUrl && a.targets?.includes(target) && !dismissedIds.includes(a._id ?? ''),
+  // `config` is refetched every 15s (see appConfigApi) and comes back as a brand
+  // new object/array on every poll even when nothing actually changed, so
+  // filtering inline would hand out a NEW `ad` object reference every 15s too —
+  // any effect keyed on that object (e.g. the video-play effect below) would
+  // then re-fire and restart playback every 15s, which is why a video ad could
+  // get stuck never rendering a frame. Memoizing on a content signature instead
+  // of the raw array keeps `ads`/`ad` referentially stable across polls unless
+  // the promotions themselves actually changed.
+  const rawAds = config?.promotionAds ?? [];
+  const adsSignature = JSON.stringify(
+    rawAds.map((a) => [a._id, a.isActive, a.mediaUrl, a.mediaType, a.link, a.targets]),
+  );
+  const ads = useMemo(
+    () => rawAds.filter(
+      (a) => a.isActive && a.mediaUrl && a.targets?.includes(target) && !dismissedIds.includes(a._id ?? ''),
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [adsSignature, target, dismissedIds],
   );
 
   const [adIndex, setAdIndex] = useState(0);
@@ -134,6 +150,14 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
   });
   useEventListener(videoPlayer, 'playToEnd', () => {
     if (ad?.mediaType === 'video') scheduleNext();
+  });
+  // Tracks real playback state so a manual Play button can be shown if
+  // autoplay silently doesn't start (e.g. the platform blocks it, or the
+  // source is still buffering) — without this there was no way to tell the
+  // video hadn't actually started, or to do anything about it.
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  useEventListener(videoPlayer, 'playingChange', (payload) => {
+    setVideoPlaying(payload.isPlaying);
   });
   useEffect(() => {
     if (ad?.mediaType === 'video' && visible && !minimized) {
@@ -212,6 +236,15 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
             {ad.mediaType === 'video' && (
               <View>
                 <VideoView player={videoPlayer} style={styles.media} contentFit="cover" nativeControls={false} />
+                {!videoPlaying && (
+                  <Pressable
+                    onPress={() => { videoPlayer.muted = muted; videoPlayer.play(); }}
+                    style={styles.videoPlayOverlay}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="play" size={22} color="#fff" />
+                  </Pressable>
+                )}
                 <Pressable onPress={() => setMuted((m) => !m)} style={[styles.overlayBtn, { bottom: 8, right: 8 }]} hitSlop={8}>
                   <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={14} color="#fff" />
                 </Pressable>
@@ -267,6 +300,15 @@ export function PromotionOverlay({ target }: Props): React.JSX.Element | null {
             {ad.mediaType === 'video' && (
               <View>
                 <VideoView player={videoPlayer} style={styles.mediaLarge} contentFit="contain" nativeControls={false} />
+                {!videoPlaying && (
+                  <Pressable
+                    onPress={() => { videoPlayer.muted = muted; videoPlayer.play(); }}
+                    style={styles.videoPlayOverlayLarge}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="play" size={32} color="#fff" />
+                  </Pressable>
+                )}
                 <Pressable onPress={() => setMuted((m) => !m)} style={[styles.overlayBtn, { bottom: 12, right: 12 }]} hitSlop={8}>
                   <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={18} color="#fff" />
                 </Pressable>
@@ -364,6 +406,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   media: { width: '100%', height: 180, backgroundColor: '#000' },
+  videoPlayOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  videoPlayOverlayLarge: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
   overlayBtn: {
     position: 'absolute',
     width: 26,
