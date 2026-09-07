@@ -34,7 +34,8 @@
       ],
       "expo-font",
       "expo-video",
-      "expo-audio"
+      "expo-audio",
+      "./plugins/withoutUnusedAudioForegroundServices.js"
     ],
     "ios": {
       "supportsTablet": true,
