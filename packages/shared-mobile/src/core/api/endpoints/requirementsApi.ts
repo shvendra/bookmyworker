@@ -56,6 +56,10 @@ export interface CreateRequirementPayload {
   insuranceAvailable?: boolean;
   pfAvailable?: boolean;
   esicAvailable?: boolean;
+  // Project listing (Agency/Contractor/Industry only) — richer, media-driven
+  // posting variant of the same requirement. Gated server-side too.
+  postingType?: 'requirement' | 'project';
+  projectTitle?: string;
 }
 
 export interface RequirementFilters {
@@ -136,6 +140,11 @@ export interface RawRequirement {
   isBoosted?: boolean;
   boostedUntil?: string;
   boostCount?: number;
+  // Project listing (Agency/Contractor/Industry only) — see CreateRequirementPayload.
+  postingType?: 'requirement' | 'project';
+  projectTitle?: string;
+  photos?: string[];
+  videoUrl?: string;
 }
 
 // Employer's boost quota for the current subscription period.
@@ -227,10 +236,16 @@ export const requirementsApi = {
   },
 
   create: (payload: CreateRequirementPayload) =>
-    apiClient.post<JobRequirement>('/api/v1/application/insertrequirement', payload).then((r) => r.data),
+    apiClient.post<{ success: boolean; requirement: RawRequirement }>('/api/v1/application/insertrequirement', payload).then((r) => r.data),
 
   update: (id: string, payload: Partial<JobRequirement>) =>
     apiClient.put<JobRequirement>(`/api/v1/application/${id}`, payload).then((r) => r.data),
+
+  // Employer edits their OWN requirement/project (ownership-checked server-side).
+  updateOwn: (id: string, payload: Partial<CreateRequirementPayload>) =>
+    apiClient
+      .put<{ success: boolean; requirement: RawRequirement }>(`/api/v1/application/${id}/employer-update`, payload)
+      .then((r) => r.data.requirement),
 
   close: (id: string) =>
     apiClient
@@ -453,6 +468,37 @@ export const requirementsApi = {
         boostedUntil: string;
         boost: BoostQuota;
       }>(`/api/v1/application/${requirementId}/boost`, {})
+      .then((r) => r.data),
+
+  // ── Project listing media (Agency/Contractor/Industry only) ─────────────────
+  uploadProjectPhoto: async (requirementId: string, fileUri: string, fileName: string, mimeType: string): Promise<{ photoUrl: string; photos: string[] }> => {
+    const form = new FormData();
+    form.append('requirementId', requirementId);
+    form.append('photo', { uri: fileUri, name: fileName, type: mimeType } as unknown as Blob);
+    const res = await apiClient.post<{ success: boolean; photoUrl: string; photos: string[] }>(
+      '/api/v1/project-media/photo', form, { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return { photoUrl: res.data.photoUrl, photos: res.data.photos };
+  },
+
+  deleteProjectPhoto: (requirementId: string, photoUrl: string) =>
+    apiClient
+      .delete<{ success: boolean; photos: string[] }>('/api/v1/project-media/photo', { data: { requirementId, photoUrl } })
+      .then((r) => r.data.photos),
+
+  uploadProjectVideo: async (requirementId: string, fileUri: string, fileName: string, mimeType: string): Promise<string> => {
+    const form = new FormData();
+    form.append('requirementId', requirementId);
+    form.append('video', { uri: fileUri, name: fileName, type: mimeType } as unknown as Blob);
+    const res = await apiClient.post<{ success: boolean; videoUrl: string }>(
+      '/api/v1/project-media/video', form, { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return res.data.videoUrl;
+  },
+
+  deleteProjectVideo: (requirementId: string) =>
+    apiClient
+      .delete<{ success: boolean }>('/api/v1/project-media/video', { data: { requirementId } })
       .then((r) => r.data),
 };
 

@@ -27,6 +27,7 @@ import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { LocationPickerModal } from '../../../shared/components/ui/LocationPickerModal';
+import { ProjectMediaPicker } from '../../../shared/components/forms/ProjectMediaPicker';
 import type { PickedLocation } from '../../../shared/components/ui/LocationPickerModal';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
@@ -125,6 +126,9 @@ const requirementSchema = z.object({
     .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number')
     .optional()
     .or(z.literal('')),
+  // Project listing only — required-ness is checked at submit time (depends
+  // on the postingMode toggle, not on req_type), same pattern as contactPerson.
+  projectTitle: z.string().optional(),
 })
   // Wage rules: each wage must be at least ₹250, and max must not be below min.
   // Issues are attached to the specific field so the inline error shows correctly.
@@ -495,6 +499,15 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
   };
   const showContactPerson = !!(empType.industry || empType.agency || empType.contractor);
 
+  // ── Project listing (Agency/Contractor/Industry only) ───────────────────────
+  const canPostProject = showContactPerson; // identical eligibility set
+  const [postingMode, setPostingMode] = useState<'requirement' | 'project'>('requirement');
+  const isProjectMode = postingMode === 'project';
+  // After a project is created, this screen switches into a media-upload step
+  // against the new requirement's id (photos/video can't attach before the
+  // requirement exists — ownership-checked server-side).
+  const [createdProject, setCreatedProject] = useState<{ _id: string; ERN_NUMBER?: number } | null>(null);
+
   // Pre-fill workType when navigating from "Hire Again"
   useEffect(() => {
     if (initialWorkType) {
@@ -561,10 +574,17 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         employerPhone: (userProfile as { phone?: string } | null)?.phone ?? user?.phone,
         contactPersonName: showContactPerson ? (values.contactPersonName || undefined) : undefined,
         contactPersonPhone: showContactPerson ? (values.contactPersonPhone || undefined) : undefined,
+        ...(isProjectMode ? { postingType: 'project' as const, projectTitle: values.projectTitle } : {}),
         ...flagPayloadFor(reqType, boolFlags),
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
+      if (isProjectMode && data?.requirement?._id) {
+        // Stay on screen, switch into the media-upload step.
+        setCreatedProject({ _id: data.requirement._id, ERN_NUMBER: data.requirement.ERN_NUMBER ? Number(data.requirement.ERN_NUMBER) : undefined });
+        toast.success(t('pl_postedBody'), t('pl_postedTitle'));
+        return;
+      }
       toast.success(t('jp_reqPostedBody'), t('jp_reqPostedTitle'));
       setTimeout(() => navigation.goBack(), 1500);
     },
@@ -573,11 +593,46 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
     },
   });
 
-  const onSubmit = handleSubmit((values) => mutation.mutate(values));
+  const onSubmit = handleSubmit((values) => {
+    if (isProjectMode && !values.projectTitle?.trim()) {
+      toast.error(t('pl_projectTitleRequired'), t('pl_projectTitleRequiredHead'));
+      return;
+    }
+    mutation.mutate(values);
+  });
 
   const toggleFlag = (key: BooleanFlagKey): void => {
     setBoolFlags((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // After a project is created, replace the form with the media-upload step —
+  // photos/video attach to the requirement that now exists, not before.
+  if (createdProject) {
+    return (
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[ppl.successBanner, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}>
+          <Ionicons name="checkmark-circle" size={20} color="#15803d" />
+          <AppText style={{ color: '#15803d', fontWeight: '700', flex: 1, marginLeft: 8 }}>
+            {createdProject.ERN_NUMBER
+              ? t('pl_ernPrefix', { ern: createdProject.ERN_NUMBER })
+              : t('pl_ernPrefixNoNum')}
+          </AppText>
+        </View>
+        <AppCard style={{ marginTop: 16 }}>
+          <ProjectMediaPicker requirementId={createdProject._id} />
+        </AppCard>
+        <AppButton
+          title={t('pl_mediaDone')}
+          onPress={() => { toast.success(t('pl_mediaDoneToast')); navigation.goBack(); }}
+          style={[styles.submitBtn, { backgroundColor: '#16a34a' }]}
+        />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView
@@ -586,6 +641,30 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
+      {/* ── Project posting-mode toggle — Agency/Contractor/Industry only ── */}
+      {canPostProject && (
+        <View style={ppl.modeToggleRow}>
+          {(['requirement', 'project'] as const).map((m) => (
+            <TouchableOpacity
+              key={m}
+              onPress={() => setPostingMode(m)}
+              activeOpacity={0.8}
+              style={[
+                ppl.modeToggleBtn,
+                {
+                  borderColor: postingMode === m ? theme.colors.primary : theme.colors.border,
+                  backgroundColor: postingMode === m ? theme.colors.primaryLight : 'transparent',
+                },
+              ]}
+            >
+              <AppText style={{ fontWeight: '800', fontSize: 13, color: postingMode === m ? theme.colors.primary : theme.colors.mutedText }}>
+                {m === 'project' ? t('pl_modeProject') : t('pl_modeStandard')}
+              </AppText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* ── Type badge ── */}
       <View style={[ps.typeBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.typeBannerIcon, { backgroundColor: theme.colors.primaryLight }]}>
@@ -897,13 +976,36 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
       </View>
 
+      {/* ── Project Title — Project mode only ── */}
+      {isProjectMode && (
+        <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+            <View style={[ps.sectionIconBox, { backgroundColor: '#F3E8FF' }]}>
+              <AppText style={ps.sectionIcon}>📷</AppText>
+            </View>
+            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('pl_projectTitleLabel')}</AppText>
+            <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+          </View>
+          <View style={ps.sectionBody}>
+            <FormInput
+              control={control}
+              name="projectTitle"
+              label={t('pl_projectTitleLabel')}
+              placeholder={t('pl_projectTitlePh')}
+            />
+          </View>
+        </View>
+      )}
+
       {/* ── 7. Work Description ── */}
       <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
           <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
             <AppText style={ps.sectionIcon}>✏️</AppText>
           </View>
-          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('post_secDescription')}</AppText>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>
+            {isProjectMode ? t('pl_secDescriptionProject') : t('post_secDescription')}
+          </AppText>
           <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
         </View>
         <View style={ps.sectionBody}>
@@ -911,7 +1013,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             control={control}
             name="remarks"
             label={t('post_remarksLabel')}
-            placeholder={t('jp_phRemarks')}
+            placeholder={isProjectMode ? t('pl_remarksPhProject') : t('jp_phRemarks')}
             multiline
             numberOfLines={4}
             style={styles.textarea}
@@ -965,6 +1067,9 @@ const ppl = StyleSheet.create({
   upgradeSub:   { fontSize: 13, textAlign: 'center', lineHeight: 19 },
   upgradeBtn:   { marginTop: 6, backgroundColor: '#2563eb', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 28, width: '100%', alignItems: 'center' },
   upgradeBtnTxt:{ color: '#fff', fontSize: 15, fontWeight: '800' },
+  modeToggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  modeToggleBtn: { flex: 1, borderWidth: 2, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  successBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 12 },
 });
 
 // ─── Section Label ────────────────────────────────────────────────────────────
