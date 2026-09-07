@@ -24,7 +24,7 @@ interface ProjectMediaPickerProps {
 export const ProjectMediaPicker = ({ requirementId, initialPhotos = [], initialVideoUrl = '' }: ProjectMediaPickerProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const toast = useToast();
-  const { t } = useTranslation();
+  const { t } = useTranslation('employer');
   const [photos, setPhotos] = useState<string[]>(initialPhotos);
   const [videoUrl, setVideoUrl] = useState<string>(initialVideoUrl);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
