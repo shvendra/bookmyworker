@@ -30,6 +30,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/storeReview.ts',
     '.*shared-mobile/src/core/errors/globalErrorHandler$':
       '<rootDir>/src/__tests__/__mocks__/shared/globalErrorHandler.ts',
+    '.*shared-mobile/src/core/api/client$':
+      '<rootDir>/src/__tests__/__mocks__/shared/client.ts',
     '.*shared-mobile/src/core/auth/googleSignIn$':
       '<rootDir>/src/__tests__/__mocks__/shared/googleSignIn.ts',
     '.*shared-mobile/src/state/auth/AuthContext$':

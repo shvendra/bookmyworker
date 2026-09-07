@@ -33,6 +33,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/storeReview.ts',
     '.*shared-mobile/src/core/errors/globalErrorHandler$':
       '<rootDir>/src/__tests__/__mocks__/shared/globalErrorHandler.ts',
+    '.*shared-mobile/src/core/api/client$':
+      '<rootDir>/src/__tests__/__mocks__/shared/client.ts',
     '.*shared-mobile/src/core/config/env$':
       '<rootDir>/src/__tests__/__mocks__/shared/env.ts',
     '.*shared-mobile/src/core/storage/authStorage$':

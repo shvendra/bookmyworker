@@ -65,6 +65,19 @@ export const apiClient = axios.create({
   },
 });
 
+/**
+ * This client is shared verbatim by both the employer app and the agent
+ * app, so the backend can't tell them apart from anything else on the
+ * request. Each app calls this once at startup (see App.tsx) with its own
+ * literal identifier, so downstream endpoints — requirement posting, worker
+ * remarks, payments, activity log — can attribute the action correctly. See
+ * backend/utils/clientPlatform.js for the read side.
+ */
+export type ClientPlatform = 'employer_app' | 'agent_app';
+export const setClientPlatform = (platform: ClientPlatform): void => {
+  apiClient.defaults.headers.common['X-Client-Platform'] = platform;
+};
+
 // ── Transient connectivity auto-retry for login ───────────────────────────────
 // A brief backend restart/blip used to surface as an immediate "Unable to
 // connect" error on the login screen, even though the exact same blip on a

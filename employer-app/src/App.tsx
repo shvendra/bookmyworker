@@ -19,6 +19,7 @@ import { ErrorState } from '../../packages/shared-mobile/src/shared/components/f
 import { ToastProvider } from '../../packages/shared-mobile/src/shared/state/toast/ToastContext';
 import { AppAlertProvider } from '../../packages/shared-mobile/src/shared/state/alert/AppAlertContext';
 import { installGlobalErrorHandlers } from '../../packages/shared-mobile/src/core/errors/globalErrorHandler';
+import { setClientPlatform } from '../../packages/shared-mobile/src/core/api/client';
 import { useAppFonts, markFontsReady } from '../../packages/shared-mobile/src/core/theme/fonts';
 
 import { AppNavigator } from './navigation/AppNavigator';
@@ -31,6 +32,10 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 // Catch async errors that escape React's render phase (the ErrorBoundary only
 // catches render-phase errors). Idempotent — safe to call at module load.
 installGlobalErrorHandlers();
+
+// Tags every outgoing request as coming from the employer app, so the
+// backend can tell it apart from the agent app (both share this API client).
+setClientPlatform('employer_app');
 
 const asyncStoragePersister = createAsyncStoragePersister({ storage: AsyncStorage });
 
