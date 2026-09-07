@@ -1399,6 +1399,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 പ്രോജക്ട് ലിസ്റ്റിംഗ്',
   pl_projectTitleLabel:          'പ്രോജക്ട് ശീർഷകം',
   pl_projectTitlePh:             'ഉദാ. 3BHK റസിഡൻഷ്യൽ സൈറ്റ് — ഫേസ് 2, പൂനെ',
+  pl_photoHintPreSubmit: '📷 ഈ പ്രോജക്റ്റ് പോസ്റ്റ് ചെയ്ത ഉടൻ തന്നെ നിങ്ങൾക്ക് ഫോട്ടോകളും വീഡിയോയും ചേർക്കാൻ കഴിയും.',
   pl_projectTitleRequired:       'ദയവായി പ്രോജക്ട് ശീർഷകം ചേർക്കുക.',
   pl_projectTitleRequiredHead:   'ശീർഷകം ആവശ്യമാണ്',
   pl_secDescriptionProject:      'പ്രോജക്ട് വിവരണം',

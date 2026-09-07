@@ -1399,6 +1399,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 ಪ್ರಾಜೆಕ್ಟ್ ಲಿಸ್ಟಿಂಗ್',
   pl_projectTitleLabel:          'ಪ್ರಾಜೆಕ್ಟ್ ಶೀರ್ಷಿಕೆ',
   pl_projectTitlePh:             'ಉದಾ. 3BHK ರೆಸಿಡೆನ್ಷಿಯಲ್ ಸೈಟ್ — ಹಂತ 2, ಪುಣೆ',
+  pl_photoHintPreSubmit: '📷 ಈ ಪ್ರಾಜೆಕ್ಟ್ ಅನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿದ ತಕ್ಷಣ ನೀವು ಫೋಟೋಗಳು ಮತ್ತು ವೀಡಿಯೊ ಸೇರಿಸಬಹುದು.',
   pl_projectTitleRequired:       'ದಯವಿಟ್ಟು ಪ್ರಾಜೆಕ್ಟ್ ಶೀರ್ಷಿಕೆ ಸೇರಿಸಿ.',
   pl_projectTitleRequiredHead:   'ಶೀರ್ಷಿಕೆ ಅಗತ್ಯವಿದೆ',
   pl_secDescriptionProject:      'ಪ್ರಾಜೆಕ್ಟ್ ವಿವರಣೆ',

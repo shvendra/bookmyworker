@@ -1399,6 +1399,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 ప్రాజెక్ట్ లిస్టింగ్',
   pl_projectTitleLabel:          'ప్రాజెక్ట్ శీర్షిక',
   pl_projectTitlePh:             'ఉదా. 3BHK రెసిడెన్షియల్ సైట్ — ఫేజ్ 2, పూణే',
+  pl_photoHintPreSubmit: '📷 ఈ ప్రాజెక్ట్‌ను పోస్ట్ చేసిన వెంటనే మీరు ఫోటోలు మరియు వీడియో జోడించగలరు.',
   pl_projectTitleRequired:       'దయచేసి ప్రాజెక్ట్ శీర్షికను జోడించండి.',
   pl_projectTitleRequiredHead:   'శీర్షిక అవసరం',
   pl_secDescriptionProject:      'ప్రాజెక్ట్ వివరణ',

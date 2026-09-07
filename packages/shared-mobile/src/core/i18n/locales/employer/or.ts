@@ -1399,6 +1399,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 ପ୍ରୋଜେକ୍ଟ ଲିଷ୍ଟିଂ',
   pl_projectTitleLabel:          'ପ୍ରୋଜେକ୍ଟ ଶୀର୍ଷକ',
   pl_projectTitlePh:             'ଯଥା 3BHK ରେସିଡେନ୍ସିଆଲ ସାଇଟ୍ — ଫେଜ୍ 2, ପୁଣେ',
+  pl_photoHintPreSubmit: '📷 ଏହି ପ୍ରୋଜେକ୍ଟ ପୋଷ୍ଟ କରିବା ପରେ ତୁରନ୍ତ ଆପଣ ଫଟୋ ଏବଂ ଭିଡିଓ ଯୋଡ଼ି ପାରିବେ।',
   pl_projectTitleRequired:       'ଦୟାକରି ପ୍ରୋଜେକ୍ଟ ଶୀର୍ଷକ ଯୋଡ଼ନ୍ତୁ।',
   pl_projectTitleRequiredHead:   'ଶୀର୍ଷକ ଆବଶ୍ୟକ',
   pl_secDescriptionProject:      'ପ୍ରୋଜେକ୍ଟ ବିବରଣୀ',

@@ -665,6 +665,59 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
       )}
 
+      {/* ── Project Title — Project mode only. Placed right under the mode
+          toggle (not buried further down) so switching modes visibly changes
+          the very next thing on screen — the whole point of the toggle. ── */}
+      {isProjectMode && (
+        <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+            <View style={[ps.sectionIconBox, { backgroundColor: '#F3E8FF' }]}>
+              <AppText style={ps.sectionIcon}>📷</AppText>
+            </View>
+            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('pl_projectTitleLabel')}</AppText>
+            <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+          </View>
+          <View style={ps.sectionBody}>
+            <FormInput
+              control={control}
+              name="projectTitle"
+              label={t('pl_projectTitleLabel')}
+              placeholder={t('pl_projectTitlePh')}
+            />
+            <View style={[ppl.photoHintRow, { backgroundColor: theme.colors.primaryLight }]}>
+              <AppText style={{ fontSize: 12.5, color: theme.colors.primary, fontWeight: '600', flex: 1 }}>
+                {t('pl_photoHintPreSubmit')}
+              </AppText>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* ── Work / Project Description — moved up here alongside the title
+          for the same reason. ── */}
+      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+          <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
+            <AppText style={ps.sectionIcon}>✏️</AppText>
+          </View>
+          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>
+            {isProjectMode ? t('pl_secDescriptionProject') : t('post_secDescription')}
+          </AppText>
+          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+        </View>
+        <View style={ps.sectionBody}>
+          <FormInput
+            control={control}
+            name="remarks"
+            label={t('post_remarksLabel')}
+            placeholder={isProjectMode ? t('pl_remarksPhProject') : t('jp_phRemarks')}
+            multiline
+            numberOfLines={4}
+            style={styles.textarea}
+          />
+        </View>
+      </View>
+
       {/* ── Type badge ── */}
       <View style={[ps.typeBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[ps.typeBannerIcon, { backgroundColor: theme.colors.primaryLight }]}>
@@ -976,51 +1029,6 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
       </View>
 
-      {/* ── Project Title — Project mode only ── */}
-      {isProjectMode && (
-        <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-          <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-            <View style={[ps.sectionIconBox, { backgroundColor: '#F3E8FF' }]}>
-              <AppText style={ps.sectionIcon}>📷</AppText>
-            </View>
-            <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>{t('pl_projectTitleLabel')}</AppText>
-            <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
-          </View>
-          <View style={ps.sectionBody}>
-            <FormInput
-              control={control}
-              name="projectTitle"
-              label={t('pl_projectTitleLabel')}
-              placeholder={t('pl_projectTitlePh')}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* ── 7. Work Description ── */}
-      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
-            <AppText style={ps.sectionIcon}>✏️</AppText>
-          </View>
-          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>
-            {isProjectMode ? t('pl_secDescriptionProject') : t('post_secDescription')}
-          </AppText>
-          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
-        </View>
-        <View style={ps.sectionBody}>
-          <FormInput
-            control={control}
-            name="remarks"
-            label={t('post_remarksLabel')}
-            placeholder={isProjectMode ? t('pl_remarksPhProject') : t('jp_phRemarks')}
-            multiline
-            numberOfLines={4}
-            style={styles.textarea}
-          />
-        </View>
-      </View>
-
       {/* ── Posts remaining indicator (hidden when count unavailable) ── */}
       {postsLabel && !postsExhausted && (
         <View style={[ppl.indicator, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
@@ -1070,6 +1078,7 @@ const ppl = StyleSheet.create({
   modeToggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   modeToggleBtn: { flex: 1, borderWidth: 2, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   successBanner: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 12 },
+  photoHintRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, padding: 10, marginTop: 10 },
 });
 
 // ─── Section Label ────────────────────────────────────────────────────────────

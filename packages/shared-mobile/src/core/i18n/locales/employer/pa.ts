@@ -1398,6 +1398,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 ਪ੍ਰੋਜੈਕਟ ਲਿਸਟਿੰਗ',
   pl_projectTitleLabel:          'ਪ੍ਰੋਜੈਕਟ ਦਾ ਸਿਰਲੇਖ',
   pl_projectTitlePh:             'ਜਿਵੇਂ 3BHK ਰਿਹਾਇਸ਼ੀ ਸਾਈਟ — ਫੇਜ਼ 2, ਪੁਣੇ',
+  pl_photoHintPreSubmit: '📷 ਇਸ ਪ੍ਰੋਜੈਕਟ ਨੂੰ ਪੋਸਟ ਕਰਨ ਦੇ ਤੁਰੰਤ ਬਾਅਦ ਤੁਸੀਂ ਫੋਟੋਆਂ ਅਤੇ ਵੀਡੀਓ ਸ਼ਾਮਲ ਕਰ ਸਕੋਗੇ।',
   pl_projectTitleRequired:       'ਕਿਰਪਾ ਕਰਕੇ ਪ੍ਰੋਜੈਕਟ ਦਾ ਸਿਰਲੇਖ ਪਾਓ।',
   pl_projectTitleRequiredHead:   'ਸਿਰਲੇਖ ਜ਼ਰੂਰੀ ਹੈ',
   pl_secDescriptionProject:      'ਪ੍ਰੋਜੈਕਟ ਦਾ ਵੇਰਵਾ',

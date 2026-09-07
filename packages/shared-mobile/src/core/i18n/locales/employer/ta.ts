@@ -1399,6 +1399,7 @@ export const employerTranslation = {
   pl_modeProject:                '📷 திட்ட பட்டியல்',
   pl_projectTitleLabel:          'திட்டத்தின் தலைப்பு',
   pl_projectTitlePh:             'எ.கா. 3BHK குடியிருப்பு தளம் — கட்டம் 2, புனே',
+  pl_photoHintPreSubmit: '📷 இந்த திட்டத்தை பதிவிட்ட உடனேயே நீங்கள் புகைப்படங்களையும் வீடியோவையும் சேர்க்க முடியும்.',
   pl_projectTitleRequired:       'தயவுசெய்து திட்டத்தின் தலைப்பை சேர்க்கவும்.',
   pl_projectTitleRequiredHead:   'தலைப்பு தேவை',
   pl_secDescriptionProject:      'திட்ட விவரம்',
