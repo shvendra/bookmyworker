@@ -603,6 +603,11 @@ export const translation = {
   salaryPeriod_month: 'Month',
   salaryPeriod_week: 'Week',
   salaryPer: 'Per',
+  proj_badge: 'Project',
+  proj_tabJobs: 'Jobs',
+  proj_tabProjects: 'Projects',
+  proj_noProjectsTitle: 'No projects yet',
+  proj_noProjectsMsg: 'Check back soon for new project listings in your area',
   // Requirement card — static UI
   workerNeeded: '{{count}} needed',
   perkStay: 'Stay',

@@ -28,6 +28,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
+import { PhotoCarousel } from '../../../shared/components/ui/PhotoCarousel';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
@@ -172,13 +173,17 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
   const salaryType = getSalaryType(req);
   const salaryPeriod = t(`salaryPeriod_${salaryType}` as 'salaryPeriod_day' | 'salaryPeriod_month' | 'salaryPeriod_week');
   const jobTitle = getJobTitle(req.workType, req.subCategory, i18n.language, t);
+  const isProject = req.postingType === 'project';
+  const displayTitle = isProject && req.projectTitle ? req.projectTitle : jobTitle;
+  const projectPhotos = req.photos ?? [];
+  const hasProjectMedia = isProject && (projectPhotos.length > 0 || !!req.videoUrl);
   const categoryLabel = getCategoryLabel(req.workType, t, req.subCategory);
 
   const handleShare = async (): Promise<void> => {
     try {
       const { message, url, title } = buildJobShareMessage({
         requirementId: req._id,
-        jobTitle,
+        jobTitle: displayTitle,
         location: locationStr,
         salary: salaryText,
         period: salaryType,
@@ -219,6 +224,13 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
         </View>
       )}
 
+      {/* ── Project photo/video carousel ─────────────────────── */}
+      {hasProjectMedia && (
+        <View style={{ marginBottom: 10 }}>
+          <PhotoCarousel photos={projectPhotos} videoUrl={req.videoUrl} height={160} />
+        </View>
+      )}
+
       {/* ── Top: logo + title + like ─────────────────────────── */}
       <View style={styles.cardTop}>
         <View style={[styles.logoBox, { backgroundColor: isDark ? theme.colors.surface : visual.bg }]}>
@@ -226,11 +238,14 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
         </View>
 
         <View style={styles.titleBlock}>
+          {isProject && (
+            <AppText style={styles.projectBadgeText}>📷 {t('proj_badge')}</AppText>
+          )}
           <AppText
             style={[styles.cardTitle, { color: theme.colors.text }]}
             numberOfLines={2}
           >
-            {jobTitle}
+            {displayTitle}
           </AppText>
           <AppText style={[styles.cardCategory, { color: theme.colors.mutedText }]} numberOfLines={2}>
             {categoryLabel}
@@ -594,6 +609,10 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
   const [pendingSubCat, setPendingSubCat] = useState<string>('');
   const showMyInterests = route.params?.myInterests === true;
   const showLikedOnly = route.params?.likedOnly === true;
+  // "Jobs" vs "Projects" tab — hidden (and unfiltered) in the Liked/My-Applications
+  // views so nothing already liked/applied silently disappears from those lists.
+  const [postingTab, setPostingTab] = useState<'jobs' | 'projects'>('jobs');
+  const showPostingTabs = !showLikedOnly && !showMyInterests;
 
   // Debounce search
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -652,7 +671,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['requirements-role', role, user?.id, selectedCategory, selectedSubCat, debouncedSearch, showMyInterests],
+    queryKey: ['requirements-role', role, user?.id, selectedCategory, selectedSubCat, debouncedSearch, showMyInterests, showPostingTabs ? postingTab : 'all'],
     queryFn: ({ pageParam = 1 }) => requirementsApi.listForRole({
       role,
       userId: user?.id,
@@ -660,6 +679,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       subCategory: selectedSubCat || undefined,
       search: debouncedSearch || undefined,
       myInterests: showMyInterests || undefined,
+      postingType: showPostingTabs ? (postingTab === 'projects' ? 'project' : 'requirement') : undefined,
       page: pageParam as number,
       limit: 50,
     }),
@@ -838,6 +858,30 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           )}
         </View>
 
+        {/* Jobs / Projects tab switcher */}
+        {showPostingTabs && (
+          <View style={styles.postingTabRow}>
+            <TouchableOpacity
+              onPress={() => setPostingTab('jobs')}
+              activeOpacity={0.85}
+              style={[styles.postingTabBtn, postingTab === 'jobs' && styles.postingTabBtnActive]}
+            >
+              <AppText style={[styles.postingTabText, postingTab === 'jobs' && styles.postingTabTextActive]}>
+                {t('proj_tabJobs')}
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setPostingTab('projects')}
+              activeOpacity={0.85}
+              style={[styles.postingTabBtn, postingTab === 'projects' && styles.postingTabBtnActive]}
+            >
+              <AppText style={[styles.postingTabText, postingTab === 'projects' && styles.postingTabTextActive]}>
+                📷 {t('proj_tabProjects')}
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Quick sort chips */}
         {!showLikedOnly && !showMyInterests && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
@@ -890,13 +934,15 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
       {sortedRequirements.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <EmptyState
-            title={showLikedOnly ? t('noLikedJobsTitle') : t('noJobsFound')}
+            title={showLikedOnly ? t('noLikedJobsTitle') : postingTab === 'projects' ? t('proj_noProjectsTitle') : t('noJobsFound')}
             message={
               showLikedOnly
                 ? t('noLikedJobsMsg')
-                : selectedCategory
-                  ? t('noJobsInArea')
-                  : t('noJobsYet')
+                : postingTab === 'projects'
+                  ? t('proj_noProjectsMsg')
+                  : selectedCategory
+                    ? t('noJobsInArea')
+                    : t('noJobsYet')
             }
           />
         </View>
@@ -1110,6 +1156,18 @@ const styles = StyleSheet.create({
   sortChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
   sortChipTextActive: { color: '#1037A4', fontWeight: '800' },
 
+  // ── Jobs / Projects tab switcher ────────────────────────────────────────────
+  postingTabRow: {
+    flexDirection: 'row', gap: 6, marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 4,
+  },
+  postingTabBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center',
+  },
+  postingTabBtnActive: { backgroundColor: 'rgba(255,255,255,0.95)' },
+  postingTabText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700' },
+  postingTabTextActive: { color: '#1037A4', fontWeight: '900' },
+
   // ── Active filter chips ──────────────────────────────────────────────────────
   activeFiltersRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8,
@@ -1180,6 +1238,7 @@ const styles = StyleSheet.create({
   titleBlock: { flex: 1, minWidth: 0 },
   cardTitle: { fontSize: 15, fontWeight: '800', lineHeight: 20, letterSpacing: -0.2 },
   cardCategory: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  projectBadgeText: { fontSize: 10.5, fontWeight: '800', color: '#7C3AED', marginBottom: 2, letterSpacing: 0.2 },
   likeBtn: {
     width: 34, height: 34, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,

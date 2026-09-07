@@ -24,6 +24,7 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import type { RawRequirement } from '../../../core/api/endpoints/requirementsApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppButton } from '../../../shared/components/ui/AppButton';
+import { PhotoCarousel } from '../../../shared/components/ui/PhotoCarousel';
 import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { showAlert } from '../../../shared/state/alert/AppAlertContext';
@@ -310,6 +311,10 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
 
   const visual        = getVisual(req.workType, req.subCategory);
   const jobTitle      = getJobTitle(req.workType, req.subCategory, i18n.language, t);
+  const isProject      = req.postingType === 'project';
+  const displayTitle   = isProject && req.projectTitle ? req.projectTitle : jobTitle;
+  const projectPhotos  = req.photos ?? [];
+  const hasProjectMedia = isProject && (projectPhotos.length > 0 || !!req.videoUrl);
   const categoryLabel = getCategoryLabel(req.workType, t, req.subCategory);
   const locationStr   = getLocationStr({ tehsil: req.tehsil, district: req.district, state: req.state }, i18n.language, t('panIndia'));
   const period        = inferPeriod(req.minBudgetPerWorker ?? 0);
@@ -379,9 +384,16 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
               <AppText style={S.heroEmoji}>{visual.emoji}</AppText>
             </View>
             <View style={S.heroTextCol}>
-              <AppText style={S.heroTitle} numberOfLines={2}>{jobTitle}</AppText>
-              <View style={S.heroCategoryChip}>
-                <AppText style={S.heroCategoryText} numberOfLines={2}>{categoryLabel}</AppText>
+              <AppText style={S.heroTitle} numberOfLines={2}>{displayTitle}</AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {isProject && (
+                  <View style={S.projectBadgeChip}>
+                    <AppText style={S.heroCategoryText}>📷 {t('proj_badge')}</AppText>
+                  </View>
+                )}
+                <View style={S.heroCategoryChip}>
+                  <AppText style={S.heroCategoryText} numberOfLines={2}>{categoryLabel}</AppText>
+                </View>
               </View>
             </View>
           </View>
@@ -405,6 +417,13 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
         <View style={S.body}>
+        {/* ── Project Gallery ───────────────────────────────────────────────── */}
+        {hasProjectMedia && (
+          <View style={[S.card, { padding: 6, backgroundColor: cardBg, borderColor: border }]}>
+            <PhotoCarousel photos={projectPhotos} videoUrl={req.videoUrl} height={220} />
+          </View>
+        )}
+
         {/* ── Job Info ──────────────────────────────────────────────────────── */}
         <View style={[S.card, { backgroundColor: cardBg, borderColor: border }]}>
           <AppText style={[S.cardTitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>
@@ -503,6 +522,7 @@ const S = StyleSheet.create({
   heroTextCol: { flex: 1, gap: 7 },
   heroTitle: { fontSize: 19, fontWeight: '900', color: '#FFFFFF', textAlign: 'left', lineHeight: 24, letterSpacing: -0.3 },
   heroCategoryChip: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  projectBadgeChip: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.28)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
   heroCategoryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   heroMetaText: { color: 'rgba(255,255,255,0.85)', fontSize: 12.5, fontWeight: '500', textAlign: 'left' },

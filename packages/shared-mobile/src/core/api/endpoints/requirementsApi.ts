@@ -170,6 +170,9 @@ export interface RoleAwareFilters {
   limit?: number;
   search?: string;
   myInterests?: boolean;
+  // "Jobs" (default/undefined — matches "requirement" or older rows with no
+  // postingType at all) vs "Projects" tab in the marketplace.
+  postingType?: 'requirement' | 'project';
 }
 
 // Serialize params with repeated keys for arrays (district=X&district=Y)
@@ -192,7 +195,7 @@ const serializeParams = (params: Record<string, unknown>): string => {
 export const requirementsApi = {
   // Mobile-optimised listing: priority-sorted (district→state→India), filter-enabled
   listForRole: (filters: RoleAwareFilters) => {
-    const { role, userId, workType, subCategory, state, district, page = 1, limit = 20, search, myInterests } = filters;
+    const { role, userId, workType, subCategory, state, district, page = 1, limit = 20, search, myInterests, postingType } = filters;
     const params: Record<string, unknown> = { page, limit };
 
     // For employer, scope to their own requirements
@@ -205,6 +208,7 @@ export const requirementsApi = {
     if (district) params.district = district;
     if (search?.trim()) params.search = search.trim();
     if (myInterests) params.myInterests = 'true';
+    if (postingType) params.postingType = postingType;
 
     const qs = serializeParams(params);
     return apiClient
