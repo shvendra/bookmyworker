@@ -634,6 +634,35 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
     );
   }
 
+  // Extracted so it can render in one of two positions: right under the mode
+  // toggle (canPostProject employers, so switching modes visibly changes the
+  // very next thing on screen) or in its original spot for everyone else —
+  // there'd be no toggle to explain a reordered form otherwise.
+  const descriptionSection = (
+    <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
+        <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
+          <AppText style={ps.sectionIcon}>✏️</AppText>
+        </View>
+        <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>
+          {isProjectMode ? t('pl_secDescriptionProject') : t('post_secDescription')}
+        </AppText>
+        <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
+      </View>
+      <View style={ps.sectionBody}>
+        <FormInput
+          control={control}
+          name="remarks"
+          label={t('post_remarksLabel')}
+          placeholder={isProjectMode ? t('pl_remarksPhProject') : t('jp_phRemarks')}
+          multiline
+          numberOfLines={4}
+          style={styles.textarea}
+        />
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -693,30 +722,10 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         </View>
       )}
 
-      {/* ── Work / Project Description — moved up here alongside the title
-          for the same reason. ── */}
-      <View style={[ps.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <View style={[ps.sectionHeader, { borderBottomColor: theme.colors.divider }]}>
-          <View style={[ps.sectionIconBox, { backgroundColor: '#EFF3FE' }]}>
-            <AppText style={ps.sectionIcon}>✏️</AppText>
-          </View>
-          <AppText style={[ps.sectionTitle, { color: theme.colors.text }]}>
-            {isProjectMode ? t('pl_secDescriptionProject') : t('post_secDescription')}
-          </AppText>
-          <View style={ps.requiredDot}><AppText style={ps.requiredTxt}>{t('required')}</AppText></View>
-        </View>
-        <View style={ps.sectionBody}>
-          <FormInput
-            control={control}
-            name="remarks"
-            label={t('post_remarksLabel')}
-            placeholder={isProjectMode ? t('pl_remarksPhProject') : t('jp_phRemarks')}
-            multiline
-            numberOfLines={4}
-            style={styles.textarea}
-          />
-        </View>
-      </View>
+      {/* ── Description — only shown up here for employers who actually see
+          the mode toggle above; otherwise it renders in its original spot
+          below (after Perks & Benefits). ── */}
+      {canPostProject && descriptionSection}
 
       {/* ── Type badge ── */}
       <View style={[ps.typeBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
@@ -1028,6 +1037,11 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           </View>
         </View>
       </View>
+
+      {/* ── Description — original position, for employers who don't see the
+          Standard/Project mode toggle (it renders up near the top instead
+          for those who do — see canPostProject above). ── */}
+      {!canPostProject && descriptionSection}
 
       {/* ── Posts remaining indicator (hidden when count unavailable) ── */}
       {postsLabel && !postsExhausted && (
