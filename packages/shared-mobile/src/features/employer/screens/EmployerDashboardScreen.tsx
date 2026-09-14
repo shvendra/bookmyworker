@@ -37,6 +37,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 // import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
 import { GuidedTour } from '../../../shared/components/ui/GuidedTour';
 import { workerMappingApi } from '../../../core/api/endpoints/workerMappingApi';
+import { clientCompaniesApi } from '../../../core/api/endpoints/clientCompaniesApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { type CompletenessField } from '../../../shared/components/ui/ProfileCompletenessCard';
 import { NeedsAttentionCard, type AttentionItem } from '../../../shared/components/ui/NeedsAttentionCard';
@@ -1512,6 +1513,16 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     enabled: isSubscribed,
   });
 
+  // Gates the "Private Workforce" quick-action tile below — same query key as
+  // MyWorkforceRequirementsScreen/MyInvoicesScreen so the cache is shared and
+  // this never fires a duplicate network call when the employer taps through.
+  const wfCompanyQuery = useQuery({
+    queryKey: ['wf-my-company'],
+    queryFn: () => clientCompaniesApi.getMyCompany(),
+    staleTime: 60_000,
+  });
+  const hasWorkforceCompany = !!wfCompanyQuery.data;
+
   const closeMutation = useMutation({
     mutationFn: (id: string) => requirementsApi.close(id),
     onMutate: (id) => setClosingId(id),
@@ -1652,6 +1663,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const handleCalendarNavigate      = useCallback(() => navigation.navigate('RequirementCalendar'), [navigation]);
   const handleAnalyticsNavigate     = useCallback(() => navigation.navigate('EmployerAnalytics'), [navigation]);
   const handleAgreementNavigate     = useCallback(() => navigation.navigate('EmployerAgreement'), [navigation]);
+  const handleWorkforceNavigate     = useCallback(() => navigation.navigate('MyWorkforceRequirements'), [navigation]);
   const handleSubscriptionNavigate = useCallback(() => navigation.navigate('Subscription'), [navigation]);
   const handleOpenSubModal = useCallback(() => setSubModalVisible(true), []);
   const handleAgentTilePress = useCallback((id: string) => navigation.navigate('WorkerProfile', { workerId: id }), [navigation]);
@@ -2024,8 +2036,30 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
       </TouchableOpacity>
 
+      {/* ── Private Workforce strip (only for employers with a linked ClientCompany —
+          avoids advertising a feature this employer can't use; mirrors D1/Section 5
+          of docs/workforce-management-mobile-plan.md) ── */}
+      {hasWorkforceCompany && (
+        <TouchableOpacity
+          onPress={handleWorkforceNavigate}
+          activeOpacity={0.85}
+          style={[calStrip.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+        >
+          <View style={calStrip.left}>
+            <View style={[calStrip.iconWrap, { backgroundColor: '#ECFDF5' }]}>
+              <Ionicons name="business" size={20} color="#059669" style={calStrip.icon} />
+            </View>
+            <View style={calStrip.text}>
+              <AppText numberOfLines={2} style={[calStrip.title, { color: theme.colors.text }]}>{i18n.t('wf_menu_label', { ns: 'employer' })}</AppText>
+              <AppText numberOfLines={2} style={[calStrip.sub, { color: theme.colors.mutedText }]}>{t('wf_dashboard_strip_sub')}</AppText>
+            </View>
+          </View>
+          <AppText style={[calStrip.arrow, { color: theme.colors.mutedText }]}>›</AppText>
+        </TouchableOpacity>
+      )}
+
     </View>
-  ), [t, theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining, boostEnabled, boostRemaining, boostingId, handleBoost, attentionItems, completenessFields, profilePct, navigation]);
+  ), [t, theme, user, isSubscribed, handleSubscriptionNavigate, handleOpenSubModal, reqQuery.isSuccess, reqQuery.isLoading, reqQuery.isFetching, all.length, openCount, closedCount, interestedCount, handlePost, handleWorkerSearchNavigate, nearbyQuery.isLoading, nearbyQuery.isSuccess, displayedNearby, nearbyTotal, reqTab, handleAgentTilePress, isRefreshing, profileQuery.isSuccess, totalWorkersDisplay, shortlistCount, handlePipelineNavigate, handleCalendarNavigate, handleAnalyticsNavigate, handleAgreementNavigate, handleWorkforceNavigate, hasWorkforceCompany, pipelineQuery.isLoading, pipelineQuery.data, filteredRequirements, handleReqCardPress, handleReqCardClose, closingId, remainingPostsLabel, plan.inviteEnabled, handleInviteReq, freeContactsRemaining, boostEnabled, boostRemaining, boostingId, handleBoost, attentionItems, completenessFields, profilePct, navigation]);
 
   const renderFooter = useMemo(() => (
     <View>

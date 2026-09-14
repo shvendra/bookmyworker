@@ -11,6 +11,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/secureStore.ts',
     '^expo-file-system$':
       '<rootDir>/src/__tests__/__mocks__/fileSystem.ts',
+    '^expo-file-system/legacy$':
+      '<rootDir>/src/__tests__/__mocks__/fileSystem.ts',
     '^expo-constants$': '<rootDir>/src/__tests__/__mocks__/expoConstants.ts',
     '^expo-notifications$':
       '<rootDir>/src/__tests__/__mocks__/notifications.ts',

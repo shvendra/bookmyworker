@@ -65,6 +65,11 @@ import { ViewedContactsScreen } from '../../../packages/shared-mobile/src/featur
 import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 import { RequirementInvitationsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementInvitationsScreen';
+import { MyWorkforceRequirementsScreen } from '../../../packages/shared-mobile/src/features/workforce/screens/MyWorkforceRequirementsScreen';
+import { NewWorkforceRequirementScreen } from '../../../packages/shared-mobile/src/features/workforce/screens/NewWorkforceRequirementScreen';
+import { WorkforceRequirementDetailScreen } from '../../../packages/shared-mobile/src/features/workforce/screens/WorkforceRequirementDetailScreen';
+import { MyInvoicesScreen } from '../../../packages/shared-mobile/src/features/workforce/screens/MyInvoicesScreen';
+import { InvoiceDetailScreen } from '../../../packages/shared-mobile/src/features/workforce/screens/InvoiceDetailScreen';
 
 import type { EmployerStackParamList } from './types';
 
@@ -229,6 +234,11 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="DocumentHub" component={DocumentHubScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementInvitations" component={RequirementInvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyWorkforceRequirements" component={MyWorkforceRequirementsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="NewWorkforceRequirement" component={NewWorkforceRequirementScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="WorkforceRequirementDetail" component={WorkforceRequirementDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyWorkforceInvoices" component={MyInvoicesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="WorkforceInvoiceDetail" component={InvoiceDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

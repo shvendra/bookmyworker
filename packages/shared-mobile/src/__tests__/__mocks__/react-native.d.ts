@@ -1,4 +1,9 @@
 declare module 'react-native' {
+  export type AppStateStatus = 'active' | 'background' | 'inactive' | 'unknown' | 'extension';
+  export const AppState: {
+    currentState: AppStateStatus;
+    addEventListener: (type: 'change', handler: (state: AppStateStatus) => void) => { remove: () => void };
+  };
   export const Platform: { OS: string; select: (obj: Record<string, unknown>) => unknown };
   export const Alert: { alert: (...args: unknown[]) => void };
   export const Linking: { openURL: (url: string) => Promise<void> };

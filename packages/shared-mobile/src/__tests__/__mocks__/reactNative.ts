@@ -1,4 +1,5 @@
 export const Platform = { OS: 'android' as const, select: (obj: Record<string, unknown>) => obj.android ?? obj.default };
+export const AppState = { currentState: 'active', addEventListener: jest.fn(() => ({ remove: jest.fn() })) };
 export const Alert = { alert: jest.fn() };
 export const Linking = { openURL: jest.fn(async () => {}) };
 export const Dimensions = { get: jest.fn(() => ({ width: 375, height: 812 })) };

@@ -599,6 +599,27 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           {user?.role === 'employer' && (
             <MenuItem icon="eye-outline" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
           )}
+          {user?.role === 'employer' && (
+            <MenuItem
+              icon="business-outline"
+              label={i18n.t('wf_menu_label', { ns: 'employer' })}
+              onPress={() => navigation.navigate('MyWorkforceRequirements')}
+            />
+          )}
+          {/* Sibling top-level item, not folded into a "Workforce" sub-menu —
+              matches the existing precedent right above of splitting
+              Subscription (profile_paymentsBilling) and Transactions
+              (profile_paymentHistory) into two separate MenuItems rather than
+              one drill-down menu. No nested/drill-down MenuItem pattern exists
+              anywhere else in this screen, so introducing one here for a
+              single extra tap wasn't worth the new UI pattern. */}
+          {user?.role === 'employer' && (
+            <MenuItem
+              icon="cash-outline"
+              label={i18n.t('wf_invoices_menu_label', { ns: 'employer' })}
+              onPress={() => navigation.navigate('MyWorkforceInvoices')}
+            />
+          )}
           <MenuItem icon="options-outline" label={t('profile_notificationSettings')} onPress={() => navigation.navigate('NotificationPreferences')} isLast />
         </MenuSection>
 

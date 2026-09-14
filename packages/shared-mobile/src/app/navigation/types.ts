@@ -107,6 +107,13 @@ export type RootStackParamList = {
   PdfViewer: { url: string; title?: string };
   Invitations: undefined;
   RequirementInvitations: { requirementId: string; requirementTitle?: string };
+  // Private Workforce Management (B2B) — additive, separate from the public
+  // marketplace requirement flow above.
+  MyWorkforceRequirements: undefined;
+  NewWorkforceRequirement: undefined;
+  WorkforceRequirementDetail: { id: string };
+  MyWorkforceInvoices: undefined;
+  WorkforceInvoiceDetail: { id: string };
 };
 
 // Aliases so existing imports don't need updating
