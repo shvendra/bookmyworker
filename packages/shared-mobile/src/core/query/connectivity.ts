@@ -25,16 +25,28 @@ import { API_ORIGIN } from '../config/env';
  *     and re-probe, so the button can NEVER be a dead no-op.
  *   • NetInfo is loaded defensively — if the native module is somehow absent, we
  *     silently fall back to the traffic + probe approach instead of crashing.
+ *   • Going OFFLINE is debounced (OFFLINE_DEBOUNCE_MS) — a brief flicker (a
+ *     weak signal dropping for a couple seconds, one request that happened to
+ *     race a network hiccup) must never flash the full-screen "No Internet"
+ *     overlay. Coming back ONLINE stays instant — recovery should never be
+ *     delayed, only the (much more visible/annoying) false-positive offline
+ *     flash needs damping.
  */
 
 let currentlyOnline = true;
 let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+let offlineDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let installed = false;
 
 const listeners = new Set<(online: boolean) => void>();
 
 const PROBE_TIMEOUT_MS = 5000;
 const RECOVERY_POLL_MS = 4000;
+// How long a connectivity drop must persist before the app actually declares
+// itself offline and shows the overlay. Tuned to ride out a brief real-world
+// flicker (a train tunnel blip, a wifi/cellular handover) without making a
+// genuine outage feel slow to report.
+const OFFLINE_DEBOUNCE_MS = 10000;
 
 // A cheap reachability probe. ANY HTTP response (even 4xx/5xx) proves the network
 // is back; only a fetch rejection (no response at all) means still offline.
@@ -77,7 +89,19 @@ function scheduleRecoveryPoll(): void {
   }, RECOVERY_POLL_MS);
 }
 
+function cancelOfflineDebounce(): void {
+  if (offlineDebounceTimer) {
+    clearTimeout(offlineDebounceTimer);
+    offlineDebounceTimer = null;
+  }
+}
+
 function setOnline(online: boolean): void {
+  // Any genuine "online" signal (or an immediate, non-debounced "offline"
+  // from setOnline(false) itself) cancels a pending debounced declaration —
+  // otherwise a stale timer could flip things offline again moments after a
+  // real recovery.
+  cancelOfflineDebounce();
   if (online === currentlyOnline) return;
   currentlyOnline = online;
   // Flips React Query's online state. On a false→true transition this fires a
@@ -94,14 +118,33 @@ function setOnline(online: boolean): void {
   });
 }
 
+/**
+ * A signal suggests the network may be down. Does NOT flip the app offline
+ * immediately — waits OFFLINE_DEBOUNCE_MS first, so a brief flicker (the
+ * signal recovers, or a reportNetworkOk()/setOnline(true) arrives, before the
+ * timer fires) never shows the overlay at all. If already offline, or a
+ * debounce is already pending, this is a no-op.
+ */
+function requestOffline(): void {
+  if (!currentlyOnline || offlineDebounceTimer) return;
+  offlineDebounceTimer = setTimeout(() => {
+    offlineDebounceTimer = null;
+    setOnline(false);
+  }, OFFLINE_DEBOUNCE_MS);
+}
+
 /** The API client saw a server response → the network is up. */
 export function reportNetworkOk(): void {
   setOnline(true);
 }
 
-/** The API client hit a network-level failure (no response) → treat as offline. */
+/**
+ * The API client hit a network-level failure (no response) — this alone does
+ * NOT mean offline (one request can race a brief hiccup); it only starts the
+ * debounced offline declaration (see requestOffline).
+ */
 export function reportNetworkDown(): void {
-  setOnline(false);
+  requestOffline();
 }
 
 /** Current connectivity, for first render of the overlay. */
@@ -149,7 +192,9 @@ export function installConnectivityManager(): void {
       // Treat "unknown" (null) reachability as online; only an explicit false or
       // a disconnected interface counts as offline. Avoids false-offline flaps.
       const online = state.isConnected !== false && state.isInternetReachable !== false;
-      setOnline(online);
+      // Recovery is instant; a drop only starts the debounce (see requestOffline).
+      if (online) setOnline(true);
+      else requestOffline();
     });
   } catch {
     /* NetInfo unavailable — traffic signals + AppState re-check still work. */
