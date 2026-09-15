@@ -170,6 +170,32 @@ export const verifyOtpOnly = async (
   return res.data;
 };
 
+// Pre-fill lookup for a NEW SelfWorker registration — returns a matching
+// "Find Work" website lead (if any) once the phone has just passed OTP
+// verification in the register flow (verifyOtpOnly, above, upserts the
+// short-lived server-side marker this endpoint checks). Always resolves;
+// never throws for a cold/no-match lookup — see leadLookup in
+// backend/controllers/userController.js for the full security note.
+export interface LeadLookupResult {
+  name?: string;
+  gender?: string;
+  workTypeValue?: string;
+  workTypeLabel?: string;
+  subWorkTypeValue?: string;
+  subWorkTypeLabel?: string;
+  state?: string;
+  district?: string;
+}
+
+export const leadLookup = async (
+  phone: string,
+  role: 'SelfWorker'
+): Promise<LeadLookupResult | null> => {
+  const res = await apiClient.get('/api/v1/user/lead-lookup', { params: { phone, role } });
+  const body = res?.data as { success?: boolean; lead?: LeadLookupResult | null } | undefined;
+  return body?.lead ?? null;
+};
+
 export const verifyOtp = async (payload: VerifyOtpPayload): Promise<VerifyOtpResponse> => {
   const response = await apiClient.post('/api/v1/user/login', {
     phone: payload.phone,
