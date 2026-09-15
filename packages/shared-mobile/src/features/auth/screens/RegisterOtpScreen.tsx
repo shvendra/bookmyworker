@@ -29,13 +29,8 @@ import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { otpSchema, type OtpFormValues } from '../validation/authSchemas';
 import type { AuthStackParamList } from '../../../app/navigation/types';
-import categoriesData from '../../../shared/data/categories.json';
-import { computeLeadPrefill } from '../utils/leadPrefill';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'RegisterOtp'>;
-
-interface CatRaw { label: string; value: string; subcategories: Array<{ label: string; value: string }> }
-const ALL_CATS: CatRaw[] = categoriesData as CatRaw[];
 
 const { width: W } = Dimensions.get('window');
 const OTP_LENGTH = 6;
@@ -154,46 +149,17 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
       // Use the language the user selected before registration (passed as a param).
       // Fall back to the current i18n language so we never send undefined.
       const selectedLang = params.language ?? i18n.language ?? 'en';
-
-      // Pre-fill from a matching website "Find Work" lead, for a brand-new
-      // SelfWorker registration only. The phone just passed OTP verification
-      // above (role: 'register'), which is exactly the proof lead-lookup's
-      // security gate requires. Entirely fail-safe: authService.leadLookup
-      // never throws (it resolves null on any error/no-match), the extra
-      // try/catch here is a second safety net, and computeLeadPrefill only
-      // fills in gaps the user left empty — it never overwrites anything they
-      // actually entered on the previous screen (see leadPrefill.ts's tests).
-      let leadPrefill: ReturnType<typeof computeLeadPrefill> = {};
-      if (params.role === 'SelfWorker') {
-        try {
-          const lead = await authService.leadLookup(params.phone);
-          leadPrefill = computeLeadPrefill(
-            {
-              gender: params.gender, state: params.state, district: params.district,
-              areasOfWork: params.areasOfWork, categories: params.categories,
-            },
-            lead,
-            ALL_CATS,
-          );
-        } catch {
-          // Never let a lookup failure affect registration — proceed with
-          // exactly what the user entered.
-        }
-      }
-
       await authService.register({
         name: params.name, phone: params.phone, alternate: params.alternate || undefined, password: params.password,
         role: params.role, language: selectedLang,
-        state: params.state || leadPrefill.state, district: params.district || leadPrefill.district,
+        state: params.state, district: params.district,
         block: params.block, pinCode: params.pinCode, email: params.email,
         referredBy: params.referredBy,
         employerType: params.employerType ? (JSON.parse(params.employerType) as { individual?: boolean; contractor?: boolean; agency?: boolean; industry?: boolean }) : undefined,
-        gender: params.gender || leadPrefill.gender,
+        gender: params.gender,
         // dob stores age as plain Number (e.g. 25)
         dob: params.dob ? Number(params.dob) : undefined,
-        address: params.address,
-        areasOfWork: params.areasOfWork ?? leadPrefill.areasOfWork,
-        categories: params.categories ?? leadPrefill.categories,
+        address: params.address, areasOfWork: params.areasOfWork, categories: params.categories,
         workExperience: params.workExperience ? Number(params.workExperience.split(' ')[0]) : undefined,
         salaryType: params.salaryType,
         fixedSalary: params.fixedSalary ? Number(params.fixedSalary) : undefined,

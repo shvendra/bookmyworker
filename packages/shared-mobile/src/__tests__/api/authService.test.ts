@@ -16,7 +16,6 @@ jest.mock('../../core/api/endpoints/authApi', () => ({
   registerUser: jest.fn(),
   switchRoleApi: jest.fn(),
   loginWithPassword: jest.fn(),
-  leadLookup: jest.fn(),
 }));
 jest.mock('../../core/api/endpoints/notificationApi', () => ({
   notificationApi: {
@@ -33,7 +32,6 @@ import {
   registerUser,
   switchRoleApi,
   loginWithPassword as loginWithPasswordApi,
-  leadLookup as leadLookupApi,
 } from '../../core/api/endpoints/authApi';
 import { notificationApi } from '../../core/api/endpoints/notificationApi';
 import { authService } from '../../features/auth/services/authService';
@@ -44,7 +42,6 @@ const mockVerifyOnly   = verifyOtpOnly as jest.Mock;
 const mockRegister     = registerUser as jest.Mock;
 const mockSwitchRole   = switchRoleApi as jest.Mock;
 const mockLoginPwd     = loginWithPasswordApi as jest.Mock;
-const mockLeadLookup   = leadLookupApi as jest.Mock;
 const mockRegisterToken = notificationApi.registerToken as jest.Mock;
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -226,31 +223,6 @@ describe('authService.verifyOtpForRegistration', () => {
     mockVerifyOnly.mockRejectedValue(new Error('Invalid OTP'));
     await expect(authService.verifyOtpForRegistration('9000000003', 'wrong'))
       .rejects.toThrow('Invalid OTP');
-  });
-});
-
-// ── leadLookup ─────────────────────────────────────────────────────────────────
-// Pre-fill lookup called right after verifyOtpForRegistration succeeds. Must be
-// entirely fail-safe — a rejection anywhere resolves to null rather than
-// throwing into the registration flow.
-
-describe('authService.leadLookup', () => {
-  it('delegates to the leadLookup API with role SelfWorker and returns the lead', async () => {
-    const lead = { name: 'Ravi', gender: 'Male', state: 'Maharashtra', district: 'Pune' };
-    mockLeadLookup.mockResolvedValue(lead);
-    const result = await authService.leadLookup('9876543210');
-    expect(mockLeadLookup).toHaveBeenCalledWith('9876543210', 'SelfWorker');
-    expect(result).toEqual(lead);
-  });
-
-  it('resolves null when the API returns null (no match / not verified)', async () => {
-    mockLeadLookup.mockResolvedValue(null);
-    await expect(authService.leadLookup('9876543210')).resolves.toBeNull();
-  });
-
-  it('resolves null (never throws) when the API call rejects', async () => {
-    mockLeadLookup.mockRejectedValue(new Error('network down'));
-    await expect(authService.leadLookup('9876543210')).resolves.toBeNull();
   });
 });
 

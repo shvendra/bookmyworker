@@ -1,4 +1,4 @@
-import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, googleStart as googleStartApi, googleRegister as googleRegisterApi, leadLookup as leadLookupApi, type RegisterPayload, type AppContext, type LeadLookupResult } from '../../../core/api/endpoints/authApi';
+import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, googleStart as googleStartApi, googleRegister as googleRegisterApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
 import { registerForPushNotifications } from '../../../core/notifications/pushService';
 import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
@@ -129,18 +129,6 @@ export const authService = {
   verifyOtpForRegistration: async (phone: string, otp: string): Promise<void> => {
     if (__DEV__ && otp === '123456') return;
     await verifyOtpOnly(phone, otp);
-  },
-
-  // Pre-fill lookup — call ONLY after verifyOtpForRegistration has succeeded for
-  // a NEW SelfWorker registration. Purely additive: never throws (any failure
-  // resolves to null so callers can safely fire-and-forget / await without a
-  // try/catch of their own), and returns null on a cold/no-match lookup.
-  leadLookup: async (phone: string): Promise<LeadLookupResult | null> => {
-    try {
-      return await leadLookupApi(phone, 'SelfWorker');
-    } catch {
-      return null;
-    }
   },
 
   // Login directly with password after registration — no second OTP needed
