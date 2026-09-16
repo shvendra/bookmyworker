@@ -75,6 +75,23 @@ import type { EmployerStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<EmployerStackParamList>();
 
+// Deep-link config for the idle-employer alert's "Call to Worker" links
+// (next-web /worker/[id] → intent://worker/<id>#Intent;scheme=
+// bookmyworker-employer;... — see next-web/src/lib/appLinks.ts's
+// employerWorkerAppIntent). The scheme itself is already registered in this
+// app's AndroidManifest.xml; this is what makes the navigator actually route
+// a cold-started deep link to the right screen instead of the default entry
+// route. WorkerProfileScreen already reads route.params.workerId — no
+// screen-side change needed, just this mapping.
+const linking = {
+  prefixes: ['bookmyworker-employer://'],
+  config: {
+    screens: {
+      WorkerProfile: 'worker/:workerId',
+    },
+  },
+};
+
 // 'checking'     — reading AsyncStorage on first mount
 // 'not_selected' — no saved language (first-time user)
 // 'selected'     — language was saved; skip Welcome, open Login directly
@@ -163,7 +180,7 @@ export const AppNavigator = (): React.JSX.Element => {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────
