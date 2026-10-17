@@ -61,6 +61,8 @@ import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationStri
 import { describeLoadError, firstQueryError } from '../../../shared/utils/describeLoadError';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { FestivalWishesModal } from '../../../shared/components/ui/FestivalWishesModal';
+import { PlanExpiredModal } from '../components/PlanExpiredModal';
+import { maxDiscountPct, planExpiredKey } from '../utils/planExpiredOffer';
 import { HelpChatModal } from '../../../shared/components/ui/HelpChatModal';
 
 // Festival wishes popup is shown at most once per app session (not on every
@@ -71,6 +73,7 @@ const EMPLOYER_SUB_MODAL_KEY = 'employer_sub_modal_shown';
 // How long the employer must dwell on the dashboard before the one-time
 // subscription modal auto-opens. The timer resets every time they leave.
 const SUB_MODAL_DELAY_MS = 30_000;
+const PLAN_EXPIRED_DELAY_MS = 3_000;
 
 
 // ─── Types & Constants ─────────────────────────────────────────────────────────
@@ -1638,6 +1641,37 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     }, [profileQuery.isSuccess, isSubscribed]),
   );
 
+  // "Your plan has expired" popup (mirrors the CRM's PlanExpiredDialog): once per expiry, a few
+  // seconds after the dashboard opens, never on top of the festival popup. Closing it — or tapping
+  // Renew — marks it seen, so it never nags again for the same expiry.
+  const [planExpiredVisible, setPlanExpiredVisible] = useState(false);
+  const planExpiredShownRef = useRef(false);
+  const expiryKey = user?.id && profile?.subscriptionExpery ? planExpiredKey(String(user.id), profile.subscriptionExpery) : null;
+  useFocusEffect(
+    useCallback(() => {
+      if (!isExpired || !expiryKey || planExpiredShownRef.current) return undefined;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let cancelled = false;
+      void AsyncStorage.getItem(expiryKey).then((seen) => {
+        if (cancelled || seen) return;
+        timer = setTimeout(() => {
+          if (cancelled || planExpiredShownRef.current || showFestival) return;
+          planExpiredShownRef.current = true;
+          setPlanExpiredVisible(true);
+        }, PLAN_EXPIRED_DELAY_MS);
+      }).catch(() => { /* storage failure → just skip the popup */ });
+      return () => { cancelled = true; if (timer) clearTimeout(timer); };
+    }, [isExpired, expiryKey, showFestival]),
+  );
+  const closePlanExpired = useCallback((): void => {
+    setPlanExpiredVisible(false);
+    if (expiryKey) void AsyncStorage.setItem(expiryKey, '1').catch(() => {});
+  }, [expiryKey]);
+  const planExpiredDiscount = useMemo(
+    () => maxDiscountPct(profile?.employerType ?? user?.employerType, pricing),
+    [profile?.employerType, user?.employerType, pricing],
+  );
+
   // ── Callbacks ──────────────────────────────────────────────────────────────
   // Pull-to-refresh spinner is driven ONLY by an explicit user pull — never by
   // background/initial query fetching. Tying RefreshControl to `isFetching` left
@@ -2319,6 +2353,13 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         visible={showFestival}
         festivalImageUrl={config.promotions.festivalImageUrl}
         onClose={() => setShowFestival(false)}
+      />
+
+      <PlanExpiredModal
+        visible={planExpiredVisible}
+        discountPct={planExpiredDiscount}
+        onClose={closePlanExpired}
+        onRenew={() => { closePlanExpired(); handleSubscriptionNavigate(); }}
       />
 
       {/* Profile-completion popup disabled for now. */}

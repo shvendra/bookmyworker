@@ -104,3 +104,40 @@ describe('pickBannerAds', () => {
     expect(pickBannerAds([ad({ targets: undefined })], [])).toEqual([]);
   });
 });
+
+import { maxDiscountPct, highestEmployerType, planExpiredKey } from '../../../features/employer/utils/planExpiredOffer';
+
+describe('planExpiredOffer', () => {
+  const pricing = {
+    subscription: {
+      individual: { '1m': 199, '6m': 999, '12m': 1999 },
+      contractor: { '1m': 599, '6m': 2900, '12m': 4999 },
+      agency: { '1m': 599, '6m': 2900, '12m': 4999 },
+      industry: { '1m': 999, '6m': 3999, '12m': 5999 },
+    },
+    subscriptionMrp: {
+      individual: { '1m': 498, '6m': 1998, '12m': 2999 },
+      contractor: { '1m': 1499, '6m': 5800, '12m': 9999 },
+      agency: { '1m': 1499, '6m': 5800, '12m': 9999 },
+      industry: { '1m': 2499, '6m': 7999, '12m': 11999 },
+    },
+  } as never;
+
+  it('picks the highest tier held', () => {
+    expect(highestEmployerType({ individual: true, industry: true })).toBe('industry');
+    expect(highestEmployerType('Contractor')).toBe('contractor');
+    expect(highestEmployerType(undefined)).toBe('individual');
+  });
+  it('returns the best % off for the tier, like the CRM', () => {
+    expect(maxDiscountPct({ individual: true }, pricing)).toBe(60); // 199 vs 498
+    expect(maxDiscountPct({ industry: true }, pricing)).toBe(60);   // 999 vs 2499
+  });
+  it('returns null when there is no real discount', () => {
+    const none = { subscription: { individual: { '1m': 100, '6m': 100, '12m': 100 } }, subscriptionMrp: { individual: { '1m': 100, '6m': 100, '12m': 100 } } } as never;
+    expect(maxDiscountPct({ individual: true }, none)).toBeNull();
+    expect(maxDiscountPct({ individual: true }, undefined)).toBeNull();
+  });
+  it('keys the popup per expiry date', () => {
+    expect(planExpiredKey('u1', '2026-01-01T00:00:00Z')).not.toBe(planExpiredKey('u1', '2026-06-01T00:00:00Z'));
+  });
+});
