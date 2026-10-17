@@ -21,6 +21,7 @@ import { AppAlertProvider } from '../../packages/shared-mobile/src/shared/state/
 import { installGlobalErrorHandlers } from '../../packages/shared-mobile/src/core/errors/globalErrorHandler';
 import { setClientPlatform } from '../../packages/shared-mobile/src/core/api/client';
 import { useAppFonts, markFontsReady } from '../../packages/shared-mobile/src/core/theme/fonts';
+import { clearCachedData, persistBuster } from '../../packages/shared-mobile/src/core/boot/bootSafety';
 
 import { AppNavigator } from './navigation/AppNavigator';
 import { AppGate } from '../../packages/shared-mobile/src/app/AppGate';
@@ -43,23 +44,33 @@ const AppErrorFallback = ({ error, resetErrorBoundary }: FallbackProps): React.J
   <ErrorState
     title="Something went wrong"
     message={error instanceof Error ? error.message : 'An unexpected error occurred'}
-    onRetry={resetErrorBoundary}
+    // "Try again" also drops cached server data, so a bad/stale cache can be
+    // recovered in-app (login + settings are untouched) instead of by reinstalling.
+    onRetry={() => { void clearCachedData().finally(resetErrorBoundary); }}
   />
 );
 
 const App = (): React.JSX.Element | null => {
   const [fontsLoaded, fontError] = useAppFonts();
+  // Watchdog: if font loading never settles, stop holding the splash and render
+  // with system fonts rather than leaving the user on a blank screen forever.
+  const [fontTimedOut, setFontTimedOut] = React.useState(false);
+  React.useEffect(() => {
+    const t = setTimeout(() => setFontTimedOut(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
 
   React.useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (fontsLoaded || fontError || fontTimedOut) {
       if (fontsLoaded) markFontsReady();
       void SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, fontTimedOut]);
 
-  // Hold on the native splash while fonts load. If loading ERRORS we still
-  // render (fonts just stay on the system default) — the app never bricks.
-  if (!fontsLoaded && !fontError) return null;
+  // Hold on the native splash while fonts load. If loading ERRORS (or stalls
+  // past the watchdog) we still render (fonts stay on the system default) —
+  // the app never bricks.
+  if (!fontsLoaded && !fontError && !fontTimedOut) return null;
 
   return (
   <I18nextProvider i18n={i18n}>
@@ -70,7 +81,7 @@ const App = (): React.JSX.Element | null => {
       <ThemeProvider primaryOverride="#1037A4">
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister: asyncStoragePersister }}
+          persistOptions={{ persister: asyncStoragePersister, buster: persistBuster }}
         >
           <AuthProvider>
             <ToastProvider>

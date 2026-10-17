@@ -7,6 +7,8 @@ interface UpdateBannerProps {
   /** version the store has, for the "vX available" copy (optional) */
   latestVersion?: string;
   updateUrl: string;
+  /** Optional in-app update (Play flow). Resolve true if it started; false/absent → open the store link. */
+  onStartInAppUpdate?: () => Promise<boolean>;
 }
 
 /**
@@ -14,7 +16,7 @@ interface UpdateBannerProps {
  * the app when the installed version is behind `latestVersion` but not below the
  * hard `minVersion`. Dismissal is per app-session (re-appears next cold start).
  */
-export const UpdateBanner = ({ latestVersion, updateUrl }: UpdateBannerProps): React.JSX.Element | null => {
+export const UpdateBanner = ({ latestVersion, updateUrl, onStartInAppUpdate }: UpdateBannerProps): React.JSX.Element | null => {
   const { theme } = useAppTheme();
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
@@ -30,7 +32,12 @@ export const UpdateBanner = ({ latestVersion, updateUrl }: UpdateBannerProps): R
         </AppText>
       </View>
       <Pressable
-        onPress={() => { void Linking.openURL(updateUrl); }}
+        onPress={() => {
+          void (async () => {
+            const started = onStartInAppUpdate ? await onStartInAppUpdate().catch(() => false) : false;
+            if (!started) await Linking.openURL(updateUrl);
+          })();
+        }}
         style={styles.cta}
         hitSlop={8}
       >

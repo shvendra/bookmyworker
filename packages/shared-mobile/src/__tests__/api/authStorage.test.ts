@@ -188,3 +188,20 @@ describe('getAccessToken', () => {
     expect(token).toBeNull();
   });
 });
+
+describe('saveRefreshedToken', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { saveRefreshedToken } = require('../../core/storage/authStorage');
+
+  it('replaces the stored tokens when a session exists', async () => {
+    await saveAuthSession(makeSession());
+    await saveRefreshedToken('renewed');
+    expect(await getAccessToken()).toBe('renewed');
+  });
+
+  it('does nothing when signed out (cannot resurrect a session)', async () => {
+    await clearAuthSession();
+    await saveRefreshedToken('renewed');
+    expect(await getAccessToken()).toBeNull();
+  });
+});

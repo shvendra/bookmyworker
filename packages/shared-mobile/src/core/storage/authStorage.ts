@@ -60,3 +60,17 @@ export const clearAuthSession = async (): Promise<void> => {
 
 export const getAccessToken = async (): Promise<string | null> =>
   SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+
+/**
+ * Store a server-renewed token (sliding session) without touching the rest of
+ * the session. Only writes when a session already exists, so a late response
+ * can never resurrect a signed-out account.
+ */
+export const saveRefreshedToken = async (token: string): Promise<void> => {
+  const existing = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+  if (!existing || !token || existing === token) return;
+  await Promise.all([
+    SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, token),
+    SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, token),
+  ]);
+};

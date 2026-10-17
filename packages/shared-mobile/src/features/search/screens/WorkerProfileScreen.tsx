@@ -25,6 +25,7 @@ import { useCallReturn } from '../hooks/useCallReturn';
 import { CallCheckSheet } from '../components/CallCheckSheet';
 import { RequirementPickerModal } from '../components/RequirementPickerModal';
 import { InviteToRequirementModal } from '../components/InviteToRequirementModal';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 import {
   C, formatName, getAge, formatAreas,
   StatTile, InfoRow, Section, DocRow, LoadingSkeleton,
@@ -192,18 +193,12 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
       const data   = errObj?.response?.data;
-      const code   = data?.code;
       const msg    = data?.message ?? errObj?.message;
 
-      if (code === 'SUBSCRIPTION_EXPIRED') {
-        toast.warning(t('wp_toastExpired'), t('wp_expiredTitle'));
-        navigation.navigate('Subscription');
-      } else if (code === 'SUBSCRIPTION_REQUIRED') {
-        toast.error(t('wp_toastSubscribe'), t('wp_subscribeTitle'));
-        navigation.navigate('Subscription');
-      } else if (code === 'CONTACT_LIMIT') {
-        toast.warning(t('wp_toastLimit'), t('wp_limitTitle'));
-        navigation.navigate('Subscription');
+      const issue = classifySubscriptionError(err);
+      if (issue) {
+        // Consistent dialog → Subscription (payment) screen on confirm.
+        promptSubscription(issue, t);
       } else {
         toast.error(msg ?? t('wp_toastUnlockFail'), t('wp_errorTitle'));
       }

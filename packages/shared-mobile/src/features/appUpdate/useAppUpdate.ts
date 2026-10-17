@@ -3,6 +3,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { compareVersions } from './compareVersions';
+import { isPlayUpdateAvailable } from './inAppUpdate';
 import { fetchAppUpdateConfig, type AppSurface, type AppUpdateConfig } from './appUpdateApi';
 
 export type UpdateStatus = 'ok' | 'optional' | 'required';
@@ -45,6 +46,7 @@ function readInstalledVersion(): string {
 export function useAppUpdate(app: AppSurface): AppUpdateState {
   const installed = useMemo(readInstalledVersion, []);
   const [cfg, setCfg] = useState<AppUpdateConfig>(EMPTY_CFG);
+  const [playUpdate, setPlayUpdate] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +66,23 @@ export function useAppUpdate(app: AppSurface): AppUpdateState {
     };
   }, [app]);
 
+  // Google Play's own signal: a newer build exists for this install. Lets the
+  // optional banner appear on every release without SuperAdmin touching the
+  // version fields. Checked on launch + foreground only (not on the 60s poll).
+  // Fail-safe → false.
+  useEffect(() => {
+    let alive = true;
+    const checkPlay = async () => {
+      const available = await isPlayUpdateAvailable();
+      if (alive) setPlayUpdate(available);
+    };
+    void checkPlay();
+    const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
+      if (s === 'active') void checkPlay();
+    });
+    return () => { alive = false; sub.remove(); };
+  }, []);
+
   return useMemo<AppUpdateState>(() => {
     const updateUrl = cfg.updateUrl || DEFAULT_STORE[app];
     if (!installed) {
@@ -75,6 +94,7 @@ export function useAppUpdate(app: AppSurface): AppUpdateState {
     } else if (cfg.latestVersion && compareVersions(installed, cfg.latestVersion) < 0) {
       status = 'optional';
     }
+    if (status === 'ok' && playUpdate) status = 'optional';
     return { status, installedVersion: installed, latestVersion: cfg.latestVersion, updateUrl, message: cfg.message };
-  }, [cfg, installed, app]);
+  }, [cfg, installed, app, playUpdate]);
 }

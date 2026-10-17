@@ -18,6 +18,8 @@ import { requirementsApi } from '../../../core/api/endpoints/requirementsApi';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { useToast } from '../../../shared/state/toast/ToastContext';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
 export interface InviteModalProps {
   visible: boolean;
@@ -31,6 +33,7 @@ export interface InviteModalProps {
 export const InviteToRequirementModal = ({ visible, onClose, workerId, workerName, workerPhone, toast }: InviteModalProps): React.JSX.Element => {
   const navInv = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const { t } = useTranslation('employer');
+  const { loaded: planLoaded, isSubscribed, subscriptionExpired } = usePlanFeatures();
   const [requirements, setRequirements] = useState<OpenRequirement[]>([]);
   const [selected, setSelected]   = useState<string | null>(null);
   const [loading, setLoading]     = useState(false);
@@ -54,6 +57,11 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
 
   const handleSend = async () => {
     if (!selected) { toast.error(t('wp_toastSelectReqFirst')); return; }
+    // No active plan → explain and send to payment instead of a doomed API call.
+    if (planLoaded && !isSubscribed) {
+      promptSubscription(subscriptionExpired ? 'expired' : 'required', t, onClose);
+      return;
+    }
     setSaving(true);
     try {
       await requirementsApi.inviteWorker(selected, { workerId, workerName, workerPhone });
@@ -61,7 +69,9 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
       onClose();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || t('wp_toastInviteFail'));
+      const issue = classifySubscriptionError(err);
+      if (issue) promptSubscription(issue, t, onClose);
+      else toast.error(e?.response?.data?.message || t('wp_toastInviteFail'));
     } finally {
       setSaving(false);
     }

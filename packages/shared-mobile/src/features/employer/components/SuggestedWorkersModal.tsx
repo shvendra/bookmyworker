@@ -10,6 +10,8 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { getWorkTypeLabel } from '../../../shared/utils/labelUtils';
 import { ageString } from '../../../shared/utils/ageUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
+import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
 // Birth year / legacy age / full date string / timestamp → current age string.
 const getAge = (dob?: string | number): string => ageString(dob);
@@ -47,6 +49,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
   const { t } = useTranslation('employer');
   const { t: tCommon } = useTranslation(); // cat_* keys live in the default namespace
   const toast = useToast();
+  const { loaded: planLoaded, isSubscribed, subscriptionExpired } = usePlanFeatures();
 
   // Translated category label for the header (falls back to the raw label).
   const headerLabel = workType ? getWorkTypeLabel(workType, tCommon) : (titleLabel || '');
@@ -125,11 +128,10 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
-      const code = e?.response?.data?.code;
       const msg  = e?.response?.data?.message ?? e?.message;
-      if (code === 'SUBSCRIPTION_EXPIRED') toast.warning(t('wp_toastExpired'), t('wp_expiredTitle'));
-      else if (code === 'SUBSCRIPTION_REQUIRED') toast.error(t('wp_toastSubscribe'), t('wp_subscribeTitle'));
-      else if (code === 'CONTACT_LIMIT') toast.warning(t('wp_toastLimit'), t('wp_limitTitle'));
+      const issue = classifySubscriptionError(err);
+      // Consistent dialog → payment screen (close this sheet first so Subscription is visible).
+      if (issue) promptSubscription(issue, t, onClose);
       else toast.error(msg ?? t('wp_toastUnlockFail'), t('wp_errorTitle'));
     } finally {
       setUnlockingId(null);
@@ -138,6 +140,11 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
 
   const invite = async (w: RawAgent): Promise<void> => {
     if (!w._id || invitingId) return;
+    // No active plan → explain and send to payment instead of a doomed API call.
+    if (planLoaded && !isSubscribed) {
+      promptSubscription(subscriptionExpired ? 'expired' : 'required', t, onClose);
+      return;
+    }
     setInvitingId(w._id);
     try {
       await requirementsApi.inviteWorker(requirementId, { workerId: w._id, workerName: w.name || 'Worker', workerPhone: w.phone });
@@ -145,7 +152,9 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
       toast.success(t('wp_toastInviteSent', { name: w.name || '' }), t('wp_invited'));
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || t('wp_toastInviteFail'));
+      const issue = classifySubscriptionError(err);
+      if (issue) promptSubscription(issue, t, onClose);
+      else toast.error(e?.response?.data?.message || t('wp_toastInviteFail'));
     } finally {
       setInvitingId(null);
     }
@@ -225,12 +234,18 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {unlockingId === w._id
                             ? <ActivityIndicator color="#2243BC" size="small" />
-                            : <AppText style={s.contactIcon}>📞</AppText>}
+                            : (
+                              <>
+                                <Ionicons name="call" size={17} color="#2243BC" />
+                                <AppText style={s.callLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('sw_call')}</AppText>
+                              </>
+                            )}
                         </TouchableOpacity>
                       )}
                       {invited ? (
                         <View style={s.invitedChip} accessibilityLabel={t('wp_invited')}>
-                          <Ionicons name="checkmark-done" size={20} color="#15803D" />
+                          <Ionicons name="checkmark-done" size={19} color="#15803D" />
+                          <AppText style={s.invitedLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('wp_invited')}</AppText>
                         </View>
                       ) : (
                         <TouchableOpacity
@@ -242,7 +257,12 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                         >
                           {inviting
                             ? <ActivityIndicator color="#FFFFFF" size="small" />
-                            : <Ionicons name="person-add" size={19} color="#FFFFFF" />}
+                            : (
+                              <>
+                                <Ionicons name="person-add" size={17} color="#FFFFFF" />
+                                <AppText style={s.inviteLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('sw_invite')}</AppText>
+                              </>
+                            )}
                         </TouchableOpacity>
                       )}
                     </View>
@@ -279,13 +299,15 @@ const s = StyleSheet.create({
   // alignSelf 'stretch' makes every action button share the column's widest
   // width, so the wider Hindi/Indic "View Contact" label sets the size and both
   // buttons stay aligned and fully readable across languages.
-  actions:       { alignItems: 'flex-end', gap: 6, flexShrink: 0 },
+  actions:       { alignItems: 'stretch', gap: 6, flexShrink: 0, minWidth: 108 },
   // Compact icon buttons (peer to the phone/contact icon button) — invite shows
   // a person-add icon, the invited state a green check, instead of text.
-  invitedChip:   { width: 44, height: 40, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#BBF7D0', alignItems: 'center', justifyContent: 'center' },
-  inviteBtn:     { width: 44, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', alignItems: 'center', justifyContent: 'center' },
-  contactIconBtn:{ width: 44, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center' },
-  contactIcon:   { fontSize: 18 },
+  invitedChip:   { height: 40, flexDirection: 'row', gap: 5, paddingHorizontal: 8, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: '#BBF7D0', alignItems: 'center', justifyContent: 'center' },
+  inviteBtn:     { height: 40, flexDirection: 'row', gap: 6, paddingHorizontal: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#2243BC', backgroundColor: '#2243BC', alignItems: 'center', justifyContent: 'center' },
+  contactIconBtn:{ height: 40, flexDirection: 'row', gap: 6, paddingHorizontal: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#E1E8FD', backgroundColor: '#EEF2FE', alignItems: 'center', justifyContent: 'center' },
+  callLabel:     { fontSize: 13, fontWeight: '800', color: '#2243BC', flexShrink: 1 },
+  inviteLabel:   { fontSize: 13, fontWeight: '800', color: '#FFFFFF', flexShrink: 1 },
+  invitedLabel:  { fontSize: 12, fontWeight: '800', color: '#15803D', flexShrink: 1 },
   phoneBtn:      { alignSelf: 'stretch', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', minWidth: 108, alignItems: 'center' },
   phoneTxt:      { fontSize: 12, fontWeight: '800', color: '#15803D' },
 });

@@ -36,6 +36,8 @@ export interface PlanFeaturesResult {
   loaded: boolean;
   /** Active, non-expired subscription. */
   isSubscribed: boolean;
+  /** Had a subscription that has lapsed (vs. never subscribed). false while loading. */
+  subscriptionExpired: boolean;
   /** Resolved employer tier key. */
   employerType: EmployerTypeKey;
   /** Human-readable plan label for display. */
@@ -141,6 +143,10 @@ export function usePlanFeatures(): PlanFeaturesResult {
     return new Date(exp).getTime() > Date.now();
   })();
 
+  // Had a plan that lapsed → "Renew"; never subscribed → "Subscribe".
+  const subscriptionExpired =
+    !isSubscribed && !!(profile?.isSubscribed ?? sessionUser?.isSubscribed);
+
   // While loading: optimistic permissive defaults so no premature lock walls.
   const pick = <T,>(rawVal: T | undefined, def: T, permissive: T): T => {
     if (!loaded) return permissive;
@@ -156,6 +162,7 @@ export function usePlanFeatures(): PlanFeaturesResult {
   return {
     loaded,
     isSubscribed: loaded ? isSubscribed : true,
+    subscriptionExpired: loaded ? subscriptionExpired : false,
     employerType,
     planLabel:
       profile?.planLabel ??

@@ -115,6 +115,9 @@ export const AppNavigator = (): React.JSX.Element => {
       } else {
         setLangStatus('not_selected');
       }
+    }).catch(() => {
+      // A failed storage read must not leave the app on the loading screen forever.
+      setLangStatus('not_selected');
     });
   }, []);
 

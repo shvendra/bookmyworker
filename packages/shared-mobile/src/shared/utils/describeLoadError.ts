@@ -31,7 +31,11 @@ export function describeLoadError(err: unknown, t: Translate): string {
   // DNS). The API client's own message already says "check your connection",
   // but we phrase it reassuringly so the user doesn't think data was lost.
   if (e.statusCode == null) return t('dashboardLoadErrorNet', { ns: 'translation' });
-  if (e.statusCode === 401) return t('dashboardLoadErrorAuth', { ns: 'translation' });
+  // 401, or a dead-JWT reply from an older backend (400 "Json Web Token is expired")
+  // — an expired session, never show the raw token text to the user.
+  if (e.statusCode === 401 || /json web token|jwt (expired|malformed)/i.test(e.message ?? '')) {
+    return t('dashboardLoadErrorAuth', { ns: 'translation' });
+  }
   if (e.statusCode >= 500) return t('dashboardLoadErrorServer', { ns: 'translation' });
   // 4xx with a server-provided message — surface it directly.
   return e.message || t('dashboardLoadErrorServer', { ns: 'translation' });

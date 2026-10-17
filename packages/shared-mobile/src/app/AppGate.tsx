@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { queryClient } from '../core/query/queryClient';
 import { forceOnlineRecheck } from '../core/query/connectivity';
@@ -8,6 +8,7 @@ import type { MaintenanceSurface } from '../features/maintenance/maintenanceApi'
 import { useAppUpdate } from '../features/appUpdate/useAppUpdate';
 import type { AppSurface } from '../features/appUpdate/appUpdateApi';
 import { UpdateBanner } from '../features/appUpdate/UpdateBanner';
+import { startInAppUpdate } from '../features/appUpdate/inAppUpdate';
 import { FullScreenNotice } from '../shared/components/feedback/FullScreenNotice';
 
 interface AppGateProps {
@@ -35,6 +36,16 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
   const update = useAppUpdate(app as AppSurface);
   const [retrying, setRetrying] = useState(false);
 
+  // Mandatory update: try the in-app (Play) flow automatically, once, so the user
+  // updates without leaving the app. If it can't start, the blocking screen's
+  // button still opens the Play Store exactly as before.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (update.status !== 'required' || autoTried.current) return;
+    autoTried.current = true;
+    void startInAppUpdate(true);
+  }, [update.status]);
+
   // 1. Mandatory update — non-dismissible. Highest priority: an app too old to
   //    talk to the current API must not pretend to work.
   if (update.status === 'required') {
@@ -48,8 +59,13 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
         }
         actionLabel="Update now"
         actionIcon="⬆️"
-        onRetry={() => { void Linking.openURL(update.updateUrl); }}
-        hint="This opens the Play Store — reopen the app once it has updated."
+        onRetry={() => {
+          void (async () => {
+            const started = await startInAppUpdate(true);
+            if (!started) await Linking.openURL(update.updateUrl);
+          })();
+        }}
+        hint="The update installs right here — if it can't, the Play Store opens instead. Reopen the app once it has updated."
       />
     );
   }
@@ -100,7 +116,11 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
   if (update.status === 'optional') {
     return (
       <View style={{ flex: 1 }}>
-        <UpdateBanner latestVersion={update.latestVersion} updateUrl={update.updateUrl} />
+        <UpdateBanner
+          latestVersion={update.latestVersion}
+          updateUrl={update.updateUrl}
+          onStartInAppUpdate={() => startInAppUpdate(false)}
+        />
         <View style={{ flex: 1 }}>{children}</View>
       </View>
     );

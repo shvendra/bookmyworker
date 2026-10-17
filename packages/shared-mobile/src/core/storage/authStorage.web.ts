@@ -53,3 +53,12 @@ export const clearAuthSession = async (): Promise<void> => {
 
 export const getAccessToken = async (): Promise<string | null> =>
   AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+export const saveRefreshedToken = async (token: string): Promise<void> => {
+  const existing = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  if (!existing || !token || existing === token) return;
+  await Promise.all([
+    AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token),
+    AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token),
+  ]);
+};

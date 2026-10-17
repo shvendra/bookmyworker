@@ -5,6 +5,7 @@ import {
   saveAuthSession,
 } from '../../core/storage/authStorage';
 import i18n from '../../core/i18n';
+import { withTimeout } from '../../core/boot/bootSafety';
 import { queryClient } from '../../core/query/queryClient';
 import { resetToWelcome } from '../../core/navigation/navigationRef';
 import { registerSignOutHandler, unregisterSignOutHandler } from './authEventBus';
@@ -29,7 +30,9 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
     const bootstrap = async (): Promise<void> => {
       let session: AuthSession | null = null;
       try {
-        session = await loadAuthSession();
+        // Watchdog: a hung native keystore read must not hold the app on the
+        // loading screen forever. 10s is far beyond any healthy read.
+        session = await withTimeout(loadAuthSession(), 10000, null);
       } catch {
         // Never let a storage failure leave the app stuck on the loading
         // splash — fall through to the unauthenticated flow.

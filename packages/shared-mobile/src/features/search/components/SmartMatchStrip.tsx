@@ -12,6 +12,7 @@ import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { buildPhotoUrl } from '../../../core/config/env';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -83,11 +84,9 @@ export const SmartMatchStrip = ({
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; code?: string } }; message?: string };
-      const code = e?.response?.data?.code;
       const msg = e?.response?.data?.message ?? e?.message;
-      if (code === 'SUBSCRIPTION_EXPIRED') toast.warning(t('wp_toastExpired'), t('wp_expiredTitle'));
-      else if (code === 'SUBSCRIPTION_REQUIRED') toast.error(t('wp_toastSubscribe'), t('wp_subscribeTitle'));
-      else if (code === 'CONTACT_LIMIT') toast.warning(t('wp_toastLimit'), t('wp_limitTitle'));
+      const issue = classifySubscriptionError(err);
+      if (issue) promptSubscription(issue, t);
       else toast.error(msg ?? t('wp_toastUnlockFail'), t('wp_errorTitle'));
     } finally {
       setUnlockingId(null);

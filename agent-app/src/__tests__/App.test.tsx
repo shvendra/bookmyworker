@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
-import { render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 // ── Provider / library stubs not covered by the global moduleNameMapper ──────
 jest.mock('@tanstack/query-async-storage-persister', () => ({
@@ -42,6 +42,7 @@ jest.mock('react-error-boundary', () => ({
 
 import { installGlobalErrorHandlers } from '../__tests__/__mocks__/shared/globalErrorHandler';
 import App from '../App';
+import { clearCachedData } from './__mocks__/shared/bootSafety';
 
 describe('App', () => {
   it('installs the global error handlers at module load', () => {
@@ -85,6 +86,27 @@ describe('App', () => {
       expect(() => render(<App />)).not.toThrow();
     } finally {
       (Platform as { OS: string }).OS = original;
+    }
+  });
+  it('"Try again" clears cached data before resetting the error boundary', async () => {
+    (globalThis as Record<string, unknown>).__APP_EB_ERROR = new Error('boom');
+    render(<App />);
+    await act(async () => { fireEvent.press(screen.getByText('retry')); });
+    expect(clearCachedData).toHaveBeenCalled();
+  });
+
+  it('stops holding the splash if fonts never load (watchdog)', () => {
+    jest.useFakeTimers();
+    (globalThis as Record<string, unknown>).__FONTS_PENDING = true;
+    (globalThis as Record<string, unknown>).__APP_EB_ERROR = new Error('after-timeout');
+    try {
+      render(<App />);
+      expect(screen.queryByText('after-timeout')).toBeNull();
+      act(() => { jest.advanceTimersByTime(8001); });
+      expect(screen.getByText('after-timeout')).toBeTruthy();
+    } finally {
+      (globalThis as Record<string, unknown>).__FONTS_PENDING = false;
+      jest.useRealTimers();
     }
   });
 });

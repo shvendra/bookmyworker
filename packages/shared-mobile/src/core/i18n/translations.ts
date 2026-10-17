@@ -43,7 +43,7 @@ export const LANGUAGE_OPTIONS: Array<{ value: string; nativeLabel: string; engli
   { value: 'en', nativeLabel: 'English', englishLabel: 'English' },
   { value: 'hi', nativeLabel: 'हिंदी', englishLabel: 'Hindi' },
   { value: 'mr', nativeLabel: 'मराठी', englishLabel: 'Marathi' },
-  { value: 'gu', nativeLabel: 'ગુજρاتī', englishLabel: 'Gujarati' },
+  { value: 'gu', nativeLabel: 'ગુજરાતી', englishLabel: 'Gujarati' },
   { value: 'ta', nativeLabel: 'தமிழ்', englishLabel: 'Tamil' },
   { value: 'te', nativeLabel: 'తెలుగు', englishLabel: 'Telugu' },
   { value: 'kn', nativeLabel: 'ಕನ್ನಡ', englishLabel: 'Kannada' },

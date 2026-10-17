@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { ENV } from '../config/env';
-import { clearAuthSession, getAccessToken } from '../storage/authStorage';
+import { clearAuthSession, getAccessToken, saveRefreshedToken } from '../storage/authStorage';
 import { emitForceSignOut } from '../../state/auth/authEventBus';
 import { reportNetworkOk, reportNetworkDown } from '../query/connectivity';
 
@@ -99,6 +99,20 @@ function isConnectivityFailure(error: AxiosError): boolean {
   return [502, 503, 504].includes(error.response.status);
 }
 
+/**
+ * True when the server says the login token is dead. Normally a 401, but older
+ * backends answered an expired/invalid JWT with a 400 ("Json Web Token is
+ * expired…"), which left the app "logged in" with a stale token where every
+ * request just failed (e.g. "Could not fetch jobs" forever). Treat both the same.
+ */
+function isSessionExpired(error: AxiosError<{ message?: string }>): boolean {
+  const status = error.response?.status;
+  if (status === 401) return true;
+  return status === 400 && /json web token/i.test(String(error.response?.data?.message ?? ''));
+}
+
+let forcingSignOut = false;
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 apiClient.interceptors.request.use(async (config) => {
@@ -112,6 +126,12 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => {
     reportNetworkOk(); // a server response proves connectivity is up
+    // Sliding session: the backend renews a mobile token that is nearing expiry
+    // and returns it in this header. Best-effort — never affects the response.
+    const renewed = response.headers?.['x-refreshed-token'];
+    if (typeof renewed === 'string' && renewed) {
+      void Promise.resolve().then(() => saveRefreshedToken(renewed)).catch(() => {});
+    }
     return response;
   },
   async (error: AxiosError<{ message?: string; errors?: unknown }>) => {
@@ -135,12 +155,16 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 401) {
+    if (isSessionExpired(error)) {
       // Only force-sign-out when there is an active session (expired token).
       // During login attempts there is no stored token, so 401 means wrong
       // credentials — let the calling code handle it via the rejected error.
+      // A burst of parallel requests all fail 401 together when a token has
+      // expired; sign out once, not once per request.
       const existingToken = await getAccessToken().catch(() => null);
-      if (existingToken) {
+      if (existingToken && !forcingSignOut) {
+        forcingSignOut = true;
+        setTimeout(() => { forcingSignOut = false; }, 3000);
         await clearAuthSession().catch(() => {});
         emitForceSignOut();
       }

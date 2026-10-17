@@ -35,6 +35,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
 import { ratingApi } from '../../../core/api/endpoints/ratingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'RequirementDetail'>;
 type ReqDetailNav = NativeStackNavigationProp<MainStackParamList>;
@@ -230,7 +231,8 @@ const AgentCard = ({
         code === 'SUBSCRIPTION_EXPIRED' || code === 'SUBSCRIPTION_REQUIRED' || code === 'CONTACT_LIMIT' ||
         msg.toLowerCase().includes('subscri') || msg.toLowerCase().includes('expired')
       ) {
-        navigation.navigate('Subscription');
+        // Consistent "no active subscription" dialog → payment screen on confirm.
+        promptSubscription(classifySubscriptionError(err) ?? 'required', t);
       }
     } finally {
       setUnlocking(false);
