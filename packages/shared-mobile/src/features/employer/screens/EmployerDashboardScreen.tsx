@@ -23,6 +23,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
+import { BgcPromoCard } from '../../bgc/components/BgcPromoCard';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import type { EmployerTypeKey } from '../../../core/api/endpoints/pricingApi';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
@@ -49,6 +50,11 @@ import { apiClient } from '../../../core/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmployerSubscriptionModal } from '../../payment/components/EmployerSubscriptionModal';
 import { EmployerPromoSlider } from '../../../shared/components/ui/EmployerPromoSlider';
+import { FadeInView, CountUpText, PulseView, ShimmerSweep } from '../../../shared/components/motion';
+import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import { LivePulseCard } from '../components/LivePulseCard';
+import { CategoryChipsRow } from '../components/CategoryChipsRow';
+import { OffersBanner } from '../components/OffersBanner';
 import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
@@ -581,8 +587,13 @@ const RequirementCarousel = React.memo(({
 
   if (isLoading) {
     return (
-      <View style={rsc.loadWrap}>
-        <ActivityIndicator color="#7C3AED" size="large" />
+      <View style={rsc.skelWrap}>
+        <Skeleton height={150} borderRadius={18} />
+        <View style={rsc.skelDots}>
+          <Skeleton width={22} height={6} borderRadius={3} />
+          <Skeleton width={6} height={6} borderRadius={3} />
+          <Skeleton width={6} height={6} borderRadius={3} />
+        </View>
       </View>
     );
   }
@@ -693,6 +704,8 @@ const rsc = StyleSheet.create({
   closeTxt:      { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
   // Empty / loading states
   loadWrap:      { paddingVertical: 40, alignItems: 'center' },
+  skelWrap:      { paddingVertical: 14, paddingHorizontal: 4 },
+  skelDots:      { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 12 },
   emptyWrap:     { padding: 28, alignItems: 'center', gap: 8 },
   emptyIcon:     { fontSize: 36, lineHeight: 44 },
   emptyTitle:    { fontSize: 14, fontWeight: '800', textAlign: 'center' },
@@ -1083,7 +1096,7 @@ const SubscriptionStatusWidget = React.memo(({
         <View style={[ssw.statBox, { backgroundColor: cBoxBg, borderColor: cBoxBdr }]}>
           <View style={ssw.statTop}>
             <Ionicons name="call" size={15} color="#FFFFFF" style={ssw.statEmoji} />
-            <AppText style={[ssw.statNum, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1}>{remainingContacts}</AppText>
+            <CountUpText value={remainingContacts} duration={700} style={[ssw.statNum, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} adjustsFontSizeToFit numberOfLines={1} />
           </View>
           <AppText style={[ssw.statLabel, { color: cBoxTxt }]} maxFontSizeMultiplier={1.2} numberOfLines={1}>
             {isLowContacts && remainingContacts === 0 ? t('ssw_noContacts') : t('ssw_contactsLeft')}
@@ -1136,9 +1149,12 @@ const SubscriptionStatusWidget = React.memo(({
           </View>
         </View>
 
-        <View style={ssw.expCta}>
-          <AppText style={ssw.expCtaTxt} maxFontSizeMultiplier={1.2}>{t('ssw_renewNow')}{'   →'}</AppText>
-        </View>
+        <PulseView scaleTo={1.035}>
+          <View style={ssw.expCta}>
+            <AppText style={ssw.expCtaTxt} maxFontSizeMultiplier={1.2}>{t('ssw_renewNow')}{'   →'}</AppText>
+          </View>
+        </PulseView>
+        <ShimmerSweep tint="rgba(255,217,138,0.22)" />
       </TouchableOpacity>
     );
   }
@@ -1725,6 +1741,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   const renderHeader = useMemo(() => (
     <View>
       {/* ── Subscription Status Widget (always shown once profile loaded) ── */}
+      <FadeInView>
       <SubscriptionStatusWidget
         isSubscribed={isSubscribed}
         isExpired={isExpired}
@@ -1739,6 +1756,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         onPost={handlePost}
         workerCountLabel={totalWorkersDisplay}
       />
+      </FadeInView>
 
       {/* ── Free contacts banner (gifted unlocks remaining) ──
           Hidden for subscribed employers: free contacts apply only when there's
@@ -1763,6 +1781,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
       )}
 
       {/* ── Quick Action Cards ── */}
+      <FadeInView delay={90}>
       <View style={styles.qaRow}>
         {/* Post Requirement */}
         <TouchableOpacity onPress={handlePost} activeOpacity={0.88} style={[styles.qaCard, styles.qaCardBlue]}>
@@ -1778,9 +1797,11 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </View>
           </View>
           {/* Big number */}
-          <AppText style={styles.qaCount} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-            {reqQuery.isLoading ? '—' : String(openCount)}
-          </AppText>
+          {reqQuery.isLoading ? (
+            <AppText style={styles.qaCount} maxFontSizeMultiplier={1.2} numberOfLines={1}>—</AppText>
+          ) : (
+            <CountUpText value={openCount} style={styles.qaCount} maxFontSizeMultiplier={1.2} numberOfLines={1} />
+          )}
           {/* Title + arrow */}
           <View style={styles.qaTitleRow}>
             <AppText style={[styles.qaTitle, styles.qaTitleFlex]} numberOfLines={2}>{t('postRequirement')}</AppText>
@@ -1806,7 +1827,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
             </View>
           </View>
           {/* Big number — full digits (e.g. "6,70,695+"); shrink to fit the tile */}
-          <AppText style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{totalWorkersDisplay}</AppText>
+          <CountUpText value={config.stats.workerCount ?? 0} suffix="+" style={[styles.qaCount, styles.qaCountGreen]} maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} />
           {/* Title + arrow */}
           <View style={styles.qaTitleRow}>
             <AppText style={[styles.qaTitle, styles.qaTitleGreen, styles.qaTitleFlex]} numberOfLines={2}>{t('browseWorkers')}</AppText>
@@ -1819,10 +1840,25 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </TouchableOpacity>
       </View>
 
+      </FadeInView>
+
+      {/* ── Live marketplace pulse + category shortcuts + offers (all self-hide when empty) ── */}
+      <FadeInView delay={180}>
+        <LivePulseCard />
+        <CategoryChipsRow
+          onSelect={(value) => navigation.navigate('WorkerSearch', { workType: value })}
+          onViewAll={handleWorkerSearchNavigate}
+        />
+        <OffersBanner />
+      </FadeInView>
+
       {/* ── Needs Attention — only for employers with an ACTIVE subscription ──
           (Profile Strength card lives on the My Profile page; the header avatar
           still shows the completeness %.) */}
       {isSubscribed && <NeedsAttentionCard items={attentionItems} />}
+
+      {/* Police Verification advertisement — self-hides unless SuperAdmin enabled it */}
+      <BgcPromoCard onPress={() => navigation.navigate('BgcHome')} />
 
       {/* ── Nearby Workers — hidden when the employer has an active (open) requirement ── */}
       {openCount === 0 && (
@@ -1850,8 +1886,14 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         </AppText>
 
         {nearbyQuery.isLoading ? (
-          <View style={nws.loadWrap}>
-            <ActivityIndicator color="#ea580c" size="small" />
+          <View style={nws.skelRow}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={nws.skelTile}>
+                <Skeleton width={56} height={56} borderRadius={28} />
+                <Skeleton width={64} height={11} borderRadius={6} style={{ marginTop: 8 }} />
+                <Skeleton width={44} height={9} borderRadius={5} style={{ marginTop: 5 }} />
+              </View>
+            ))}
           </View>
         ) : displayedNearby.length === 0 ? (
           <View style={nws.emptyWrap}>
@@ -2356,6 +2398,8 @@ const nws = StyleSheet.create({
   sub:          { fontSize: 11, lineHeight: 16, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 6 },
   viewAllTxt:   { fontSize: 12, fontWeight: '700', color: '#2563eb' },
   loadWrap:     { paddingVertical: 28, alignItems: 'center' },
+  skelRow:      { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 18, paddingHorizontal: 12 },
+  skelTile:     { alignItems: 'center' },
   emptyWrap:    { paddingVertical: 28, paddingHorizontal: 20, alignItems: 'center', gap: 10 },
   emptyTxt:     { fontSize: 13, color: '#64748b', textAlign: 'center' },
   browseBtn:    { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#ea580c' },

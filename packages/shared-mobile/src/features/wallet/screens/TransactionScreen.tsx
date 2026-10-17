@@ -67,6 +67,7 @@ const METHOD_TKEY: Record<string, string> = {
   debit: 'tx_method_debit',
   subscription: 'tx_method_subscription',
   verifiedbadge: 'tx_method_verifiedbadge',
+  bgc: 'tx_method_bgc',
 };
 const humanize = (s: string): string =>
   s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

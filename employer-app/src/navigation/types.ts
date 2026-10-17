@@ -85,6 +85,9 @@ export type EmployerStackParamList = {
   CallHistory: undefined;
   // Viewed worker contacts history
   ViewedContacts: undefined;
+  BgcHome: undefined;
+  BgcEnroll: undefined;
+  BgcOrders: undefined;
   // Document hub (per requirement)
   DocumentHub: { requirementId: string; requirementTitle?: string };
   // Wallet / Transactions
@@ -92,7 +95,7 @@ export type EmployerStackParamList = {
   // Subscription + payment flow
   Subscription: { agentId?: string } | undefined;
   PlanPricing: undefined;
-  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string };
+  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: string; purpose?: 'bgc' };
   TopupWebView: { url: string; merchantOrderId: string };
   PdfViewer: { url: string; title?: string };
   RequirementInvitations: { requirementId: string; requirementTitle?: string };

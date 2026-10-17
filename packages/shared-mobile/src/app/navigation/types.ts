@@ -93,7 +93,7 @@ export type RootStackParamList = {
   SwitchAccount: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   Subscription: { agentId?: string } | undefined;
-  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: keyof RootStackParamList };
+  PaymentWebView: { url: string; merchantOrderId: string; returnTo?: keyof RootStackParamList; purpose?: 'bgc' };
   TopupWebView: { url: string; merchantOrderId: string };
   Shortlist: undefined;
   EmployerPipeline: undefined;
@@ -103,6 +103,9 @@ export type RootStackParamList = {
   RequirementCalendar: undefined;
   CallHistory: undefined;
   ViewedContacts: undefined;
+  BgcHome: undefined;
+  BgcEnroll: undefined;
+  BgcOrders: undefined;
   DocumentHub: { requirementId: string; requirementTitle?: string };
   PdfViewer: { url: string; title?: string };
   Invitations: undefined;

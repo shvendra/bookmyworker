@@ -19,6 +19,7 @@ import { useAuth } from '../../../state/auth/AuthContext';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { useAppTheme } from '../../../core/theme';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
+import { FadeInView, CountUpText, PulseView, ShimmerSweep } from '../../../shared/components/motion';
 import { apiClient } from '../../../core/api/client';
 import { paymentApi } from '../../../core/api/endpoints/paymentApi';
 import type { CouponMeta } from '../../../core/api/endpoints/paymentApi';
@@ -281,9 +282,11 @@ const PlanCard = React.memo(({
 
       {/* Tier badge — subtle, no full fill */}
       {showBadge && (
-        <View style={[pc.badge, { backgroundColor: C.primaryTint, borderColor: C.primaryBorder }]}>
-          <AppText style={[pc.badgeTxt, { color: C.primary }]}>{badgeText}</AppText>
-        </View>
+        <PulseView scaleTo={1.07} period={1500} style={pc.badgePulse}>
+          <View style={[pc.badge, { backgroundColor: C.primaryTint, borderColor: C.primaryBorder }]}>
+            <AppText style={[pc.badgeTxt, { color: C.primary }]}>{badgeText}</AppText>
+          </View>
+        </PulseView>
       )}
 
       {/* Header row — premium icon tile + plan name + price */}
@@ -301,11 +304,13 @@ const PlanCard = React.memo(({
           )}
           <AppText style={[pc.priceTxt, { color: C.ink }]}>₹{plan.price}</AppText>
           {plan.discount && (
-            <View style={[pc.discountPill, { backgroundColor: C.greenLight, borderColor: C.greenBorder }]}>
-              <AppText style={[pc.discountTxt, { color: C.green }]}>
-                {t('pricingOffLabel', { pct: plan.discount })}
-              </AppText>
-            </View>
+            <PulseView scaleTo={1.08} period={1600}>
+              <View style={[pc.discountPill, { backgroundColor: C.greenLight, borderColor: C.greenBorder }]}>
+                <AppText style={[pc.discountTxt, { color: C.green }]}>
+                  {t('pricingOffLabel', { pct: plan.discount })}
+                </AppText>
+              </View>
+            </PulseView>
           )}
         </View>
       </View>
@@ -333,7 +338,7 @@ const PlanCard = React.memo(({
       {!isAgent && (
         <View style={pc.statsRow}>
           <View style={[pc.statChip, { backgroundColor: C.chipBg }]}>
-            <AppText style={[pc.statVal, { color: C.ink }]}>{plan.contacts}</AppText>
+            <CountUpText value={Number(plan.contacts) || 0} duration={900} style={[pc.statVal, { color: C.ink }]} />
             <AppText style={[pc.statKey, { color: C.body }]}>{t('jp_contactsLabel')}</AppText>
           </View>
           <View style={[pc.statChip, { backgroundColor: C.chipBg }]}>
@@ -357,26 +362,29 @@ const PlanCard = React.memo(({
       </View>
 
       {/* CTA — filled for recommended, outline for the rest */}
-      <TouchableOpacity
-        style={[
-          pc.btn,
-          isRecommended
-            ? { backgroundColor: C.primary, borderColor: C.primary }
-            : { backgroundColor: C.surface, borderColor: C.primary },
-          isLoading && { opacity: 0.7 },
-        ]}
-        onPress={() => onBuy(plan)}
-        disabled={isLoading}
-        activeOpacity={0.85}
-      >
-        {isLoading ? (
-          <ActivityIndicator color={isRecommended ? C.white : C.primary} size="small" />
-        ) : (
-          <AppText style={[pc.btnTxt, { color: isRecommended ? C.white : C.primary }]}>
-            {isSubscribed ? t('pricingRenewUpgrade') : t('pricingGetStarted')}
-          </AppText>
-        )}
-      </TouchableOpacity>
+      <PulseView active={isRecommended && !isLoading} scaleTo={1.03} period={1700}>
+        <TouchableOpacity
+          style={[
+            pc.btn,
+            isRecommended
+              ? { backgroundColor: C.primary, borderColor: C.primary }
+              : { backgroundColor: C.surface, borderColor: C.primary },
+            isLoading && { opacity: 0.7 },
+          ]}
+          onPress={() => onBuy(plan)}
+          disabled={isLoading}
+          activeOpacity={0.85}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={isRecommended ? C.white : C.primary} size="small" />
+          ) : (
+            <AppText style={[pc.btnTxt, { color: isRecommended ? C.white : C.primary }]}>
+              {isSubscribed ? t('pricingRenewUpgrade') : t('pricingGetStarted')}
+            </AppText>
+          )}
+          {isRecommended && !isLoading && <ShimmerSweep />}
+        </TouchableOpacity>
+      </PulseView>
     </View>
   );
 });
@@ -415,7 +423,8 @@ const pc = StyleSheet.create({
   benefitRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   checkMark:   { fontSize: 13, fontWeight: '900', lineHeight: 18, marginTop: 1 },
   benefitTxt:  { flex: 1, fontSize: 13, fontWeight: '500', lineHeight: 18 },
-  btn:         { borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  btn:         { borderRadius: 12, borderWidth: 1.5, paddingVertical: 13, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  badgePulse:  { alignSelf: 'flex-start' },
   btnTxt:      { fontSize: 15, fontWeight: '800' },
 });
 
@@ -635,15 +644,18 @@ export const SubscriptionScreen = (): React.JSX.Element => {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Hero — clean, premium, CRM-style ── */}
+        <FadeInView distance={16}>
         <View style={s.hero}>
           <AppText style={s.heroTitle}>{t('pricingHeroTitle')}</AppText>
           <AppText style={s.heroSub}>
             {isAgent ? t('pricingHeroSubAgent') : t('pricingHeroSubEmp')}
           </AppText>
         </View>
+        </FadeInView>
 
         {/* ── Active subscription ── */}
         {isSubscribed && (
+          <FadeInView delay={100}>
           <View style={s.activeBanner}>
             <View style={s.activeDot} />
             <View style={{ flex: 1 }}>
@@ -659,12 +671,13 @@ export const SubscriptionScreen = (): React.JSX.Element => {
                 <ActivityIndicator size="small" color={C.primary} />
               ) : (
                 <>
-                  <AppText style={s.contactsNum}>{remainingContacts}</AppText>
+                  <CountUpText value={remainingContacts} duration={800} style={s.contactsNum} />
                   <AppText style={s.contactsLabel}>{t('pricingContactsLeft')}</AppText>
                 </>
               )}
             </View>
           </View>
+          </FadeInView>
         )}
 
         {/* ── Upgrade/advanced-features upsell box removed for a cleaner, CRM-style page ──
@@ -730,9 +743,9 @@ export const SubscriptionScreen = (): React.JSX.Element => {
         <AppText style={s.sectionTitle}>{t('pricingPlansHeading')}</AppText>
 
         {/* ── Plan cards ── */}
-        {plans.map((plan) => (
+        {plans.map((plan, i) => (
+          <FadeInView key={plan.id} delay={160 + i * 120} distance={26}>
           <PlanCard
-            key={plan.id}
             plan={plan}
             isSubscribed={isSubscribed}
             isAgent={isAgent}
@@ -742,6 +755,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
             appliedCoupon={appliedCoupon}
             t={t as (key: string, opts?: Record<string, unknown>) => string}
           />
+          </FadeInView>
         ))}
 
         {/* ── Top-up — subscribed employers only ── */}

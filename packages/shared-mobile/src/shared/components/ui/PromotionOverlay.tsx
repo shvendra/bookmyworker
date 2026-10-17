@@ -41,7 +41,8 @@ const CARD_WIDTH = Math.min(280, Dimensions.get('window').width - 40);
 // Once someone explicitly closes a promotion (the ✕ button, not the
 // auto-rotate timer), it should never come back for them on this device —
 // persisted so it survives app restarts, not just this session.
-const DISMISSED_KEY = 'bmw_dismissed_promotions';
+export const PROMOTION_DISMISSED_KEY = 'bmw_dismissed_promotions';
+const DISMISSED_KEY = PROMOTION_DISMISSED_KEY;
 const dismissAdId = async (id: string | undefined, current: string[]): Promise<string[]> => {
   if (!id || current.includes(id)) return current;
   const next = [...current, id];

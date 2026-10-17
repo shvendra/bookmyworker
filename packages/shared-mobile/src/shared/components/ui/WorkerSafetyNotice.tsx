@@ -31,7 +31,7 @@ export const WorkerSafetyNotice: React.FC<WorkerSafetyNoticeProps> = ({ style })
   return (
     <View style={[styles.box, style]}>
       <AppText style={styles.icon}>⚠️</AppText>
-      <AppText variant="caption" color="#92400E" style={styles.text}>
+      <AppText variant="caption" weight="600" color="#92400E" style={styles.text}>
         {t('wp_safetyNotice')}
       </AppText>
       <Pressable

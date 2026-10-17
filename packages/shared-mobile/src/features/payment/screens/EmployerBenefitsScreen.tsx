@@ -28,6 +28,7 @@ import {
 import type { EmployerPlansConfig } from '../../../core/api/endpoints/pricingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
+import { FadeInView, CountUpText, PulseView, ShimmerSweep, FloatView, AnimatedBar } from '../../../shared/components/motion';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -256,9 +257,10 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Hero status card ── */}
+        <FadeInView distance={18}>
         <View style={[s.hero, { backgroundColor: isDark ? BRAND_DARK : BRAND }]}>
-          <View style={s.heroDecor1} />
-          <View style={s.heroDecor2} />
+          <FloatView style={s.heroDecor1} distance={9} period={4200} />
+          <FloatView style={s.heroDecor2} distance={7} period={3600} delay={600} />
           <View style={s.heroTopRow}>
             <View style={{ flex: 1 }}>
               <AppText style={s.heroLabel}>👑 {t('eb_currentPlan')}</AppText>
@@ -276,7 +278,9 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 { label: t('eb_postsLeft'),    value: isActive ? remainingPosts : '—' },
               ].map((stat) => (
                 <View key={stat.label} style={s.heroStatBox}>
-                  <AppText style={s.heroStatVal}>{stat.value}</AppText>
+                  {typeof stat.value === 'number'
+                    ? <CountUpText value={stat.value} duration={800} style={s.heroStatVal} />
+                    : <AppText style={s.heroStatVal}>{stat.value}</AppText>}
                   <AppText style={s.heroStatLabel}>{stat.label}</AppText>
                 </View>
               ))}
@@ -290,13 +294,15 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 <AppText style={s.usageLabel}>{t('eb_remaining', { count: remainingContacts })}</AppText>
               </View>
               <View style={s.usageTrack}>
-                <View style={[s.usageFill, { width: `${usedPct}%`, backgroundColor: usedPct < 20 ? '#F87171' : '#FFFFFF' }]} />
+                <AnimatedBar percent={usedPct} style={[s.usageFill, { backgroundColor: usedPct < 20 ? '#F87171' : '#FFFFFF' }]} />
               </View>
             </View>
           )}
         </View>
+        </FadeInView>
 
         {/* ── Tier progression ── */}
+        <FadeInView delay={120}>
         <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <AppText style={[s.sectionLabel, { color: theme.colors.mutedText }]}>{t('eb_progression')}</AppText>
           <View style={s.tierRow}>
@@ -307,6 +313,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               return (
                 <React.Fragment key={pk}>
                   <View style={s.tierStep}>
+                    <PulseView active={active} scaleTo={1.14} period={1900}>
                     <View style={[
                       s.tierDot,
                       done ? { backgroundColor: BRAND, borderColor: BRAND } : { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border },
@@ -314,6 +321,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                     ]}>
                       <AppText style={[s.tierDotTxt, { color: done ? WHITE : theme.colors.mutedText }]}>{passed ? '✓' : i + 1}</AppText>
                     </View>
+                    </PulseView>
                     <AppText numberOfLines={2} style={[s.tierName, { color: active ? theme.colors.text : theme.colors.mutedText, fontWeight: active ? '800' : '500' }]}>
                       {t(TYPE_NAME_KEY[pk])}
                     </AppText>
@@ -326,13 +334,14 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
             })}
           </View>
         </View>
+        </FadeInView>
 
         {/* ── Plan comparison ── */}
         <AppText style={[s.sectionLabel, { color: theme.colors.mutedText, marginHorizontal: 16, marginTop: 6 }]}>
           {t('eb_comparison')}
         </AppText>
 
-        {PLAN_ORDER.map((pk) => {
+        {PLAN_ORDER.map((pk, cardIdx) => {
           const idx = PLAN_ORDER.indexOf(pk);
           const isCurrent = pk === typeKey;
           const isUpgrade = idx > currentIdx;
@@ -350,9 +359,12 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
             : featureBenefits;
           const lim1m = planData.limits['1m'];
           const fromPrice = priceFor(pk, '1m');
+          // The plan we nudge toward: your own tier while you have no active plan, otherwise the next tier up.
+          const isRecommended = isActive ? idx === currentIdx + 1 : isCurrent;
 
           return (
-            <View key={pk} style={[
+            <FadeInView key={pk} delay={220 + cardIdx * 110} distance={24}>
+            <View style={[
               s.planCard,
               { backgroundColor: theme.colors.card, borderColor: isCurrent ? BRAND : theme.colors.border },
               isCurrent && s.planCardCurrent,
@@ -369,11 +381,16 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 {isCurrent && (
                   <View style={s.currentBadge}><AppText style={s.currentBadgeTxt}>{t('eb_current')}</AppText></View>
                 )}
+                {isRecommended && !isCurrent && (
+                  <PulseView scaleTo={1.07} period={1500}>
+                    <View style={s.recoBadge}><AppText style={s.recoBadgeTxt} numberOfLines={1}>{`⭐ ${t('eb_recommended')}`}</AppText></View>
+                  </PulseView>
+                )}
               </View>
 
               <View style={s.planStatsRow}>
                 <View style={[s.planStat, { backgroundColor: theme.colors.surface1 }]}>
-                  <AppText style={[s.planStatVal, { color: BRAND }]}>{lim1m.contacts}</AppText>
+                  <CountUpText value={Number(lim1m.contacts) || 0} duration={900} style={[s.planStatVal, { color: BRAND }]} />
                   <AppText style={[s.planStatKey, { color: theme.colors.mutedText }]}>{t('jp_contactsLabel')}</AppText>
                 </View>
                 <View style={[s.planStat, { backgroundColor: theme.colors.surface1 }]}>
@@ -396,24 +413,28 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                   <AppText style={[s.planBtnTxt, { color: theme.colors.mutedText }]}>{t('eb_included')}</AppText>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={[s.planBtn, { backgroundColor: BRAND }]}
-                  activeOpacity={0.85}
-                  onPress={() => openModal(pk)}
-                >
-                  <AppText style={s.planBtnTxt}>
-                    {isUpgrade ? t('eb_upgrade') : isActive ? t('eb_renew') : t('eb_choose')} · ₹{fromPrice}+
-                  </AppText>
-                </TouchableOpacity>
+                <PulseView active={isRecommended} scaleTo={1.03} period={1700} style={s.planBtnWrap}>
+                  <TouchableOpacity
+                    style={[s.planBtn, s.planBtnClip, { backgroundColor: BRAND }]}
+                    activeOpacity={0.85}
+                    onPress={() => openModal(pk)}
+                  >
+                    <AppText style={s.planBtnTxt}>
+                      {isUpgrade ? t('eb_upgrade') : isActive ? t('eb_renew') : t('eb_choose')} · ₹{fromPrice}+
+                    </AppText>
+                    {isRecommended && <ShimmerSweep />}
+                  </TouchableOpacity>
+                </PulseView>
               )}
             </View>
+            </FadeInView>
           );
         })}
 
         {/* ── Top-tier message ── */}
         {isTopTier && (
           <View style={[s.topTier, { backgroundColor: isDark ? theme.colors.card : '#F0FDF4', borderColor: isDark ? theme.colors.border : '#BBF7D0' }]}>
-            <AppText style={{ fontSize: 28, marginBottom: 6 }}>🏆</AppText>
+            <PulseView scaleTo={1.12} period={2000}><AppText style={{ fontSize: 28, marginBottom: 6 }}>🏆</AppText></PulseView>
             <AppText style={[s.topTierTitle, { color: theme.colors.text }]}>{t('eb_topTierTitle')}</AppText>
             <AppText style={[s.topTierDesc, { color: theme.colors.mutedText }]}>{t('eb_topTierDesc')}</AppText>
           </View>
@@ -621,6 +642,10 @@ const s = StyleSheet.create({
   benefitTick:     { fontSize: 13, fontWeight: '900', lineHeight: 18 },
   benefitTxt:      { flex: 1, fontSize: 12.5, fontWeight: '500', lineHeight: 18 },
   planBtn:         { marginHorizontal: 14, marginBottom: 14, borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  planBtnClip:     { overflow: 'hidden', marginHorizontal: 0, marginBottom: 0 },
+  planBtnWrap:     { marginHorizontal: 14, marginBottom: 14 },
+  recoBadge:       { backgroundColor: '#FEF3C7', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#FCD34D' },
+  recoBadgeTxt:    { color: '#92400E', fontSize: 10.5, fontWeight: '800', letterSpacing: 0.3 },
   planBtnDisabled: { backgroundColor: 'transparent', borderWidth: 1.5 },
   planBtnTxt:      { color: WHITE, fontSize: 14, fontWeight: '800' },
 

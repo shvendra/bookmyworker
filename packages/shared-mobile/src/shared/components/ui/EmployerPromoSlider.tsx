@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
+import { PulseView, ShimmerSweep } from '../motion';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_H = 172;
@@ -156,13 +157,15 @@ export const EmployerPromoSlider = ({ onPress }: EmployerPromoSliderProps): Reac
                 <AppText style={s.sub} numberOfLines={2}>{t(slide.subKey)}</AppText>
 
                 {/* CTA button */}
-                <TouchableOpacity
-                  onPress={onPress}
-                  style={[s.cta, { backgroundColor: slide.accent, shadowColor: slide.accent }]}
-                  activeOpacity={0.88}
-                >
-                  <AppText style={[s.ctaTxt, { color: slide.bg1 }]}>{t('empHireNowBtn')}{'  →'}</AppText>
-                </TouchableOpacity>
+                <PulseView scaleTo={1.05} style={s.ctaPulse}>
+                  <TouchableOpacity
+                    onPress={onPress}
+                    style={[s.cta, { backgroundColor: slide.accent, shadowColor: slide.accent }]}
+                    activeOpacity={0.88}
+                  >
+                    <AppText style={[s.ctaTxt, { color: slide.bg1 }]}>{t('empHireNowBtn')}{'  →'}</AppText>
+                  </TouchableOpacity>
+                </PulseView>
               </View>
 
               {/* Right: emoji bubble */}
@@ -176,6 +179,7 @@ export const EmployerPromoSlider = ({ onPress }: EmployerPromoSliderProps): Reac
                 </View>
               </View>
             </View>
+            <ShimmerSweep />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -200,6 +204,7 @@ const s = StyleSheet.create({
   wrapper:     { marginBottom: 6 },
 
   slide:       { borderRadius: 22, overflow: 'hidden', position: 'relative' },
+  ctaPulse:    { alignSelf: 'flex-start' },
   fill:        { ...StyleSheet.absoluteFillObject },
   fillRight:   { ...StyleSheet.absoluteFillObject, opacity: 0.5, left: '35%' },
 

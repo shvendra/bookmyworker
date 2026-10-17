@@ -44,7 +44,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
   const { t } = useTranslation('employer');
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
-  const { url, merchantOrderId } = route.params;
+  const { url, merchantOrderId, purpose } = route.params;
   const insets = useSafeAreaInsets();
   const { updateProfile, state: authState } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -55,6 +55,20 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
   const handleDone = (status: string, amount: string): void => {
     if (resolved.current) return;
     resolved.current = true;
+
+    if (purpose === 'bgc') {
+      // Background Verification order — not a subscription: refresh the orders
+      // list and use verification-specific wording.
+      void queryClient.invalidateQueries({ queryKey: ['bgc-orders'] });
+      const done = status === 'completed';
+      showAlert(
+        done ? t('bgc_paySuccessTitle') : status === 'failed' ? t('jp_paymentFailed') : t('jp_payPendingTitle'),
+        done ? t('bgc_paySuccessBody') : status === 'failed' ? t('bgc_payFailedBody') : t('jp_payBeingProcessed'),
+        [{ text: t('jp_ok'), onPress: () => { if (navigation.canGoBack()) navigation.goBack(); } }],
+        { cancelable: false },
+      );
+      return;
+    }
 
     if (status === 'completed') {
       // Refresh auth session + invalidate dashboard query cache so subscription

@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { useAuth } from '../../../state/auth/AuthContext';
+import { useBgcConfig } from '../../../core/api/endpoints/bgcApi';
 import { apiClient } from '../../../core/api/client';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
@@ -121,6 +122,8 @@ export const ProfileScreen = (): React.JSX.Element => {
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const user = state.session?.user;
+  const { config: bgcConfig } = useBgcConfig(user?.role === 'employer');
+  const bgcEnabled = bgcConfig.enabled === true;
   const availableRoles = state.session?.availableRoles ?? [];
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [savingLang, setSavingLang] = useState(false);
@@ -598,6 +601,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="eye-outline" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
+          )}
+          {user?.role === 'employer' && bgcEnabled && (
+            <MenuItem icon="shield-checkmark-outline" label={t('bgc_title', { ns: 'employer' })} onPress={() => navigation.navigate('BgcHome')} />
           )}
           {user?.role === 'employer' && (
             <MenuItem
