@@ -1354,9 +1354,18 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     const p = config.promotions;
     if (!p?.festivalMode || !p.festivalImageUrl) return;
     if (festivalShownThisSession) return;
-    festivalShownThisSession = true;
-    const tmr = setTimeout(() => setShowFestival(true), 1200);
-    return () => clearTimeout(tmr);
+    // Open only once the banner image is really downloaded — otherwise the dialog shows as an
+    // empty dark box. A failed/slow load just skips the popup (and retries next dashboard visit).
+    let cancelled = false;
+    let tmr: ReturnType<typeof setTimeout> | undefined;
+    Image.prefetch(p.festivalImageUrl)
+      .then((ok) => {
+        if (cancelled || !ok || festivalShownThisSession) return;
+        festivalShownThisSession = true;
+        tmr = setTimeout(() => { if (!cancelled) setShowFestival(true); }, 600);
+      })
+      .catch(() => { /* never block the dashboard */ });
+    return () => { cancelled = true; if (tmr) clearTimeout(tmr); };
   }, [config.promotions]);
 
   const REQ_TABS: Array<{ label: string; value: ReqTab }> = [
@@ -1844,7 +1853,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
       {/* ── Live marketplace pulse + category shortcuts + offers (all self-hide when empty) ── */}
       <FadeInView delay={180}>
-        <LivePulseCard />
+        <LivePulseCard onPress={handleWorkerSearchNavigate} />
         <CategoryChipsRow
           onSelect={(value) => navigation.navigate('WorkerSearch', { workType: value })}
           onViewAll={handleWorkerSearchNavigate}

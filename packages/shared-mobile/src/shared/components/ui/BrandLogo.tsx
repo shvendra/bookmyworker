@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, ImageStyle } from 'react-native';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 
-const STATIC_LOGO = require('../../../../assets/logo.png');
+const STATIC_LOGO = require('../../../../assets/logo-app.png');
 
 interface BrandLogoProps {
   style?: ImageStyle;

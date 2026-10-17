@@ -84,7 +84,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
   <View style={styles.brandRow}>
     <View style={styles.logoBox}>
       <Image
-        source={require('../../../../packages/shared-mobile/assets/logo.png')}
+        source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
         style={styles.logoImg}
         resizeMode="contain"
       />

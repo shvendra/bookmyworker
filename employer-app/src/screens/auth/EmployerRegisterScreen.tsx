@@ -208,7 +208,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
           <View style={styles.orangeStrip} />
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
-              <Image source={require('../../../../packages/shared-mobile/assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
+              <Image source={require('../../../../packages/shared-mobile/assets/logo-app.png')} style={styles.logoImg} resizeMode="contain" />
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
@@ -267,7 +267,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
               <Image
-                source={require('../../../../packages/shared-mobile/assets/logo.png')}
+                source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
                 style={styles.logoImg}
                 resizeMode="contain"
               />
@@ -397,7 +397,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         <View style={styles.brandRow}>
           <View style={styles.logoBox}>
             <Image
-              source={require('../../../../packages/shared-mobile/assets/logo.png')}
+              source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
               style={styles.logoImg}
               resizeMode="contain"
             />

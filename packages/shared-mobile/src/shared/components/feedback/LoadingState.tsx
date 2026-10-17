@@ -3,7 +3,7 @@ import { ActivityIndicator, Animated, Image, StyleSheet, View } from 'react-nati
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
 
-const LOGO = require('../../../../assets/logo.png') as number;
+const LOGO = require('../../../../assets/logo-app.png') as number;
 
 const BRAND  = '#1037A4';
 const ORANGE = '#F97316';

@@ -28,7 +28,7 @@ export const FestivalWishesModal = ({
             <AppText style={styles.closeTxt}>✕</AppText>
           </TouchableOpacity>
 
-          <Image source={{ uri: festivalImageUrl }} style={styles.image} resizeMode="contain" />
+          <Image source={{ uri: festivalImageUrl }} style={styles.image} resizeMode="contain" onError={onClose} />
         </View>
       </View>
     </Modal>
