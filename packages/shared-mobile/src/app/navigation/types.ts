@@ -5,7 +5,7 @@ export type RootStackParamList = {
   // ── Auth ──────────────────────────────────────────────────────
   Welcome: undefined;
   Login: { roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app' } | undefined;
-  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app' };
+  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app'; otpChannel?: 'whatsapp' | 'sms' };
   Register: undefined;
   RegisterOtp: {
     phone: string;
@@ -36,6 +36,8 @@ export type RootStackParamList = {
     resumeName?: string;
     // Set when finishing a Google sign-up — RegisterOtp finalizes via google/register.
     googleTicket?: string;
+    // Channel the person picked for the OTP (only when SuperAdmin allows user choice).
+    otpChannel?: 'whatsapp' | 'sms';
   };
   ForgotPassword: { roleHint?: AppRole } | undefined;
   // ── Onboarding ────────────────────────────────────────────────

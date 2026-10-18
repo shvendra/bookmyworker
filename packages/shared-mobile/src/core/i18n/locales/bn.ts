@@ -1149,4 +1149,8 @@ export const translation = {
   otpSmsPlaceholder: "SMS-এ পাওয়া OTP লিখুন",
   otpTrustBadge2Sms: "💬 SMS এর মাধ্যমে পাঠানো",
   registerTrustBadge2Sms: "💬 SMS OTP",
+  otpChoiceTitle: "OTP কীভাবে পেতে চান?",
+  otpTrySms: "এর বদলে SMS-এ পাঠান",
+  otpTryWhatsApp: "এর বদলে WhatsApp-এ পাঠান",
+  otpUnavailable: "OTP সাময়িকভাবে পাওয়া যাচ্ছে না। অনুগ্রহ করে পাসওয়ার্ড দিয়ে লগইন করুন অথবা কিছুক্ষণ পরে চেষ্টা করুন।",
 } as const;

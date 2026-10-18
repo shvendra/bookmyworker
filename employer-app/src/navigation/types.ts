@@ -6,7 +6,7 @@ export type EmployerStackParamList = {
   IntentSelect: undefined;
   Welcome: undefined;
   Login: { roleHint?: 'employer'; appContext?: 'employer-app' } | undefined;
-  OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app' };
+  OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app'; otpChannel?: 'whatsapp' | 'sms' };
   Register: undefined;
   RegisterOtp: {
     phone: string;
@@ -25,6 +25,8 @@ export type EmployerStackParamList = {
     address?: string;
     // Set when finishing a Google sign-up — RegisterOtp finalizes via google/register.
     googleTicket?: string;
+    // Channel the person picked for the OTP (only when SuperAdmin allows user choice).
+    otpChannel?: 'whatsapp' | 'sms';
   };
   ForgotPassword: { roleHint?: 'employer' } | undefined;
   // Onboarding

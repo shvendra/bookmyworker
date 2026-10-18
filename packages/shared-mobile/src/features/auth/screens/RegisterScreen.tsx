@@ -12,7 +12,9 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { useTranslation } from 'react-i18next';
-import { useOtpChannel } from '../hooks/useOtpChannel';
+import { useOtpChoice } from '../hooks/useOtpChannel';
+import { otpErrorMessage } from '../utils/otpMode';
+import { OtpChannelPicker, OtpOtherChannelLink, OtpUnavailableNotice } from '../components/OtpChannelPicker';
 import { getSubCatLabel, getWorkTypeLabel } from '../../../shared/utils/labelUtils';
 import { DIPLOMA_GRADUATE_SUBTYPE, categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCategories';
 import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
@@ -52,7 +54,10 @@ const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
 export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t, i18n } = useTranslation();
-  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
+  // WhatsApp or SMS per SuperAdmin; in 'user' mode the person picks (default WhatsApp).
+  const { channel: otpChannel, canChoose, alternate, unavailable, setChannel, sendArg } = useOtpChoice();
+  // After a failed send the person can switch to the other channel (only offered while that channel is up).
+  const [sendFailed, setSendFailed] = useState(false);
   const toast = useToast();
   const { signIn } = useAuth();
   // SuperAdmin toggle — when false, registration skips the WhatsApp OTP step and
@@ -159,8 +164,13 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
         await registerDirectly(values);
         return;
       }
-      await authService.requestOtp(values.phone, undefined);
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(values.phone, undefined, undefined, delivery)
+        : authService.requestOtp(values.phone, undefined));
+      setSendFailed(false);
       navigation.navigate(ROUTES.AUTH.REGISTER_OTP, {
+        ...(delivery ? { otpChannel: delivery.channel } : {}),
         phone: values.phone, role,
         name: values.name, password: values.password,
         state: values.state, district: values.district, block: values.block,
@@ -177,7 +187,8 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
         resumeName: resumeName ?? undefined,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send OTP. Please try again.', 'Error');
+      setSendFailed(true);
+      toast.error(otpErrorMessage(error, 'Failed to send OTP. Please try again.'), 'Error');
     } finally {
       setIsLoading(false);
       submitting.current = false;
@@ -527,6 +538,12 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
           ? 'An OTP will be sent to your mobile by SMS to verify your number.'
           : 'An OTP will be sent to your mobile via WhatsApp to verify your number.'}
       </AppText>
+
+      {registrationOtpEnabled && unavailable && <OtpUnavailableNotice />}
+      {registrationOtpEnabled && !unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
+      {registrationOtpEnabled && !unavailable && !canChoose && sendFailed && alternate && (
+        <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); }} />
+      )}
 
       <AppButton title="Continue to OTP" onPress={onSubmit} loading={isLoading} style={styles.submitBtn} />
 

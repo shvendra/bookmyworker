@@ -2,7 +2,15 @@
 // without a react-query provider. `authFlags` is mutable so tests can flip the
 // SuperAdmin OTP toggle; default is enabled, matching the real DEFAULTS, so
 // existing flows keep the OTP path.
-export const __authFlags = { registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp' };
+export const __authFlags: Record<string, unknown> & { registrationOtpEnabled: boolean; loginOtpEnabled: boolean } = {
+  registrationOtpEnabled: true,
+  loginOtpEnabled: true,
+  otpChannel: 'whatsapp',
+  otpPrimary: 'whatsapp',
+  otpAlternate: null,
+  otpCanChoose: false,
+  otpUnavailable: false,
+};
 
 const config = {
   stats: {
@@ -22,6 +30,10 @@ export const __resetAppConfig = (): void => {
   __authFlags.registrationOtpEnabled = true;
   __authFlags.loginOtpEnabled = true;
   __authFlags.otpChannel = 'whatsapp';
+  __authFlags.otpPrimary = 'whatsapp';
+  __authFlags.otpAlternate = null;
+  __authFlags.otpCanChoose = false;
+  __authFlags.otpUnavailable = false;
   __appConfig.isLoading = false;
 };
 

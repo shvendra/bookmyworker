@@ -9,7 +9,7 @@ export type AgentStackParamList = {
   // Auth
   Welcome: undefined;
   Login: { roleHint?: AppRole; appContext?: 'agent-app' } | undefined;
-  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'agent-app' };
+  OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'agent-app'; otpChannel?: 'whatsapp' | 'sms' };
   Register: undefined;
   RegisterOtp: {
     phone: string;
@@ -38,6 +38,8 @@ export type AgentStackParamList = {
     agentType?: string;
     resumeUri?: string;
     resumeName?: string;
+    // Channel the person picked for the OTP (only when SuperAdmin allows user choice).
+    otpChannel?: 'whatsapp' | 'sms';
   };
   ForgotPassword: { roleHint?: AppRole } | undefined;
   // Onboarding

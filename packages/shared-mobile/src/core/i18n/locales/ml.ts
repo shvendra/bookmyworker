@@ -1149,4 +1149,8 @@ export const translation = {
   otpSmsPlaceholder: "SMS-ൽ ലഭിച്ച OTP നൽകുക",
   otpTrustBadge2Sms: "💬 SMS വഴി അയച്ചു",
   registerTrustBadge2Sms: "💬 SMS OTP",
+  otpChoiceTitle: "OTP എങ്ങനെ വേണം?",
+  otpTrySms: "പകരം SMS വഴി അയക്കൂ",
+  otpTryWhatsApp: "പകരം WhatsApp-ൽ അയക്കൂ",
+  otpUnavailable: "OTP താൽക്കാലികമായി ലഭ്യമല്ല. പാസ്‌വേഡ് ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യുക അല്ലെങ്കിൽ കുറച്ച് കഴിഞ്ഞ് ശ്രമിക്കുക.",
 } as const;

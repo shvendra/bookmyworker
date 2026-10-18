@@ -1169,4 +1169,8 @@ export const translation = {
   otpSmsPlaceholder: "Enter the OTP received on SMS",
   otpTrustBadge2Sms: "💬 Sent via SMS",
   registerTrustBadge2Sms: "💬 SMS OTP",
+  otpChoiceTitle: "Get your OTP via",
+  otpTrySms: "Send via SMS instead",
+  otpTryWhatsApp: "Send via WhatsApp instead",
+  otpUnavailable: "OTP is temporarily unavailable. Please log in with your password or try again later.",
 } as const;

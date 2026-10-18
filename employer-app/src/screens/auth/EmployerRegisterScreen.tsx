@@ -18,6 +18,9 @@ import { useTranslation } from 'react-i18next';
 
 import { useAppTheme } from '../../../../packages/shared-mobile/src/core/theme';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
+import { useOtpChoice } from '../../../../packages/shared-mobile/src/features/auth/hooks/useOtpChannel';
+import { otpErrorMessage } from '../../../../packages/shared-mobile/src/features/auth/utils/otpMode';
+import { OtpChannelPicker, OtpOtherChannelLink, OtpUnavailableNotice } from '../../../../packages/shared-mobile/src/features/auth/components/OtpChannelPicker';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
@@ -54,6 +57,10 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
   // employer is stuck on an "OTP disabled" error).
   const { config } = useAppConfig();
   const registrationOtpEnabled = config.authFlags.registrationOtpEnabled;
+  // WhatsApp or SMS per SuperAdmin; in 'user' mode the person picks (default WhatsApp).
+  const { channel: otpChannel, canChoose, alternate, unavailable, setChannel, sendArg } = useOtpChoice();
+  // After a failed send the person can switch to the other channel (only offered while that channel is up).
+  const [sendFailed, setSendFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTypes, setSelectedTypes] = useState<Record<EmployerTypeKey, boolean>>({
@@ -116,8 +123,13 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         await signIn(gSession);
         return;
       }
-      await authService.requestOtp(phone, undefined);
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(phone, undefined, undefined, delivery)
+        : authService.requestOtp(phone, undefined));
+      setSendFailed(false);
       navigation.navigate('RegisterOtp', {
+        ...(delivery ? { otpChannel: delivery.channel } : {}),
         phone,
         role: 'Employer',
         name: googleName || 'Employer',
@@ -126,7 +138,8 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         googleTicket,
       });
     } catch (error) {
-      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
+      setSendFailed(true);
+      showAlert(t('alertError'), otpErrorMessage(error, t('au_failedSendOtp')));
     } finally {
       setIsLoading(false);
     }
@@ -180,8 +193,13 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         await registerDirectly(values);
         return;
       }
-      await authService.requestOtp(values.phone, undefined);
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(values.phone, undefined, undefined, delivery)
+        : authService.requestOtp(values.phone, undefined));
+      setSendFailed(false);
       navigation.navigate('RegisterOtp', {
+        ...(delivery ? { otpChannel: delivery.channel } : {}),
         phone: values.phone,
         role: 'Employer',
         name: values.name,
@@ -189,7 +207,8 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         employerType: JSON.stringify(selectedTypes),
       });
     } catch (error) {
-      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
+      setSendFailed(true);
+      showAlert(t('alertError'), otpErrorMessage(error, t('au_failedSendOtp')));
     } finally {
       setIsLoading(false);
     }
@@ -243,6 +262,11 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
                   maxLength={10}
                 />
               </View>
+              {registrationOtpEnabled && unavailable && <OtpUnavailableNotice />}
+              {registrationOtpEnabled && !unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
+              {registrationOtpEnabled && !unavailable && !canChoose && sendFailed && alternate && (
+                <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); }} />
+              )}
               <AppButton title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')} onPress={handleGoogleContinue} loading={isLoading} size="lg" fullWidth style={styles.submitBtn} />
             </View>
           </ScrollView>
@@ -480,6 +504,12 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
                 )}
               />
             </View>
+
+            {registrationOtpEnabled && unavailable && <OtpUnavailableNotice />}
+            {registrationOtpEnabled && !unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
+            {registrationOtpEnabled && !unavailable && !canChoose && sendFailed && alternate && (
+              <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); }} />
+            )}
 
             <AppButton
               title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')}

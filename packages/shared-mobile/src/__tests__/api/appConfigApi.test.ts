@@ -21,16 +21,16 @@ describe('appConfigApi.fetchAppConfig — authFlags', () => {
   it('defaults both flags to enabled when settings omit the auth object', async () => {
     mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: {} });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp' });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null, otpCanChoose: false, otpUnavailable: false });
   });
 
   it('maps explicit false values from settings.auth', async () => {
     mock.onGet('/api/v1/settings/public').reply(200, {
       success: true,
-      data: { auth: { registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp' } },
+      data: { auth: { registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null, otpCanChoose: false, otpUnavailable: false } },
     });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp' });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null, otpCanChoose: false, otpUnavailable: false });
   });
 
   it('treats only an explicit false as disabled', async () => {
@@ -39,13 +39,28 @@ describe('appConfigApi.fetchAppConfig — authFlags', () => {
       data: { auth: { loginOtpEnabled: false } },
     });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: false, otpChannel: 'whatsapp' });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: false, otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null, otpCanChoose: false, otpUnavailable: false });
   });
 
-  it('reads the OTP channel: only an explicit "sms" selects SMS', async () => {
+  it('reads the OTP mode (older backend: only an explicit "sms" / "user" counts)', async () => {
     mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { auth: { otpChannel: 'sms' } } });
-    expect((await fetchAppConfig()).authFlags.otpChannel).toBe('sms');
+    expect((await fetchAppConfig()).authFlags).toMatchObject({ otpChannel: 'sms', otpPrimary: 'sms', otpAlternate: null });
+    mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { auth: { otpChannel: 'user' } } });
+    expect((await fetchAppConfig()).authFlags).toMatchObject({ otpChannel: 'user', otpCanChoose: true, otpAlternate: 'sms' });
     mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { auth: { otpChannel: 'voice' } } });
     expect((await fetchAppConfig()).authFlags.otpChannel).toBe('whatsapp');
+  });
+
+  it('reads the live OTP availability the server reports', async () => {
+    mock.onGet('/api/v1/settings/public').reply(200, {
+      success: true,
+      data: { auth: { otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: 'sms', otpCanChoose: false, otpUnavailable: false } },
+    });
+    expect((await fetchAppConfig()).authFlags).toMatchObject({ otpPrimary: 'whatsapp', otpAlternate: 'sms' });
+    mock.onGet('/api/v1/settings/public').reply(200, {
+      success: true,
+      data: { auth: { otpChannel: 'whatsapp', otpPrimary: null, otpAlternate: null, otpCanChoose: false, otpUnavailable: true } },
+    });
+    expect((await fetchAppConfig()).authFlags).toMatchObject({ otpPrimary: null, otpAlternate: null, otpUnavailable: true });
   });
 });

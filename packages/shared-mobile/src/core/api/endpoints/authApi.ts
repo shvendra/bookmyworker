@@ -4,10 +4,15 @@ import type { AppLanguage, AppRole, UserProfile } from '../../../shared/types/do
 
 export type AppContext = 'employer-app' | 'agent-app';
 
+/** The person's channel pick. `alternate: true` marks "Try another way" (the server honours it in fixed modes only
+ *  when that other channel is usable). Omit entirely to keep the legacy request. */
+export interface OtpDelivery { channel: 'whatsapp' | 'sms'; alternate?: boolean }
+
 export interface RequestOtpPayload {
   phone: string;
   roleHint?: AppRole;
   appContext?: AppContext;
+  delivery?: OtpDelivery;
 }
 
 export interface VerifyOtpPayload {
@@ -113,6 +118,7 @@ export const requestOtp = async (payload: RequestOtpPayload): Promise<{ message:
     phone: payload.phone,
     role: toBackendRole(payload.roleHint),
     ...(payload.appContext ? { appContext: payload.appContext } : {}),
+    ...(payload.delivery ?? {}),
   });
   const body = response.data as { message?: string };
   return { message: body.message ?? 'OTP sent successfully' };
@@ -266,8 +272,13 @@ export const sendPasswordResetOtp = async (payload: {
   phone?: string;
   email?: string;
   role: string;
+  delivery?: OtpDelivery;
 }): Promise<void> => {
-  await apiClient.post('/api/v1/otp/send-otp-user', { phone: payload.phone, role: payload.role });
+  await apiClient.post('/api/v1/otp/send-otp-user', {
+    phone: payload.phone,
+    role: payload.role,
+    ...(payload.delivery ?? {}),
+  });
 };
 
 export const verifyPasswordResetOtp = async (payload: {

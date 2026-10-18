@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
+import { useOtpChoice, otpKey, otpChannelWord, type OtpChannel } from '../hooks/useOtpChannel';
+import { OtpOtherChannelLink, OtpUnavailableNotice } from '../components/OtpChannelPicker';
 import { applyOtpInput } from '../utils/otpInput';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
@@ -38,7 +39,8 @@ const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { t } = useTranslation();
-  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
+  // Channel chosen on the previous screen (user-choice mode) carries over; otherwise SuperAdmin's channel.
+  const { channel: otpChannel, alternate, unavailable, setChannel, sendArg } = useOtpChoice(route.params.otpChannel);
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -171,11 +173,16 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     void submitOtp(digits.join(''));
   };
 
-  const handleResend = async (): Promise<void> => {
+  // `via` = the other channel when the person taps "Send via SMS/WhatsApp instead" (user-choice mode only).
+  const handleResend = async (via?: OtpChannel): Promise<void> => {
     if (countdown > 0) return;
+    const delivery = sendArg(via);
     setResendLoading(true);
     try {
-      await authService.requestOtp(route.params.phone, route.params.roleHint, route.params.appContext);
+      await (delivery
+        ? authService.requestOtp(route.params.phone, route.params.roleHint, route.params.appContext, delivery)
+        : authService.requestOtp(route.params.phone, route.params.roleHint, route.params.appContext));
+      if (via) setChannel(via);
       startCountdown();
       setDigits(Array(OTP_LENGTH).fill(''));
       setTimeout(() => { inputRefs.current[0]?.focus(); setFocused(0); }, 100);
@@ -337,6 +344,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
             )}
 
             {/* Resend */}
+            {unavailable && <OtpUnavailableNotice />}
             <View style={styles.resendRow}>
               {countdown > 0 ? (
                 <AppText variant="caption" color={theme.colors.mutedText} center>
@@ -346,11 +354,20 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
                   </AppText>
                 </AppText>
               ) : (
-                <Pressable onPress={handleResend} disabled={resendLoading}>
-                  <AppText variant="caption" color={theme.colors.primary} style={styles.resendLink}>
-                    {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
-                  </AppText>
-                </Pressable>
+                <>
+                  <Pressable onPress={() => { void handleResend(); }} disabled={resendLoading}>
+                    <AppText variant="caption" color={theme.colors.primary} style={styles.resendLink}>
+                      {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
+                    </AppText>
+                  </Pressable>
+                  {alternate && (
+                    <OtpOtherChannelLink
+                      channel={otpChannel}
+                      onPress={() => { void handleResend(alternate); }}
+                      disabled={resendLoading}
+                    />
+                  )}
+                </>
               )}
             </View>
           </Animated.View>

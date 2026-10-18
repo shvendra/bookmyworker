@@ -517,3 +517,102 @@ describe('EmployerRegisterScreen — registration OTP disabled', () => {
     });
   });
 });
+
+describe('EmployerRegisterScreen — OTP channel (modes, "try another way", outage)', () => {
+  const fill = () => {
+    fireEvent.changeText(screen.getByPlaceholderText('companyNamePlaceholder'), 'Acme Co');
+    fireEvent.changeText(screen.getByPlaceholderText('9876543210'), '9876543210');
+    fireEvent.changeText(screen.getByPlaceholderText('minSixChars'), 'secret1');
+    fireEvent.changeText(screen.getByPlaceholderText('reEnterPassword'), 'secret1');
+  };
+  const setFlags = (f: Record<string, unknown>) => Object.assign(__authFlags, f);
+  afterEach(() => {
+    setFlags({ otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null, otpCanChoose: false, otpUnavailable: false });
+  });
+
+  it('default (WhatsApp, nothing else usable): no picker, no link, legacy requestOtp call', async () => {
+    renderScreen();
+    goToStep2();
+    expect(screen.queryByTestId('otp-channel-picker')).toBeNull();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(authService.requestOtp).toHaveBeenCalledWith('9876543210', undefined));
+  });
+
+  it("user mode: picker shown, WhatsApp is the default pick and travels to the OTP screen", async () => {
+    setFlags({ otpChannel: 'user', otpPrimary: 'whatsapp', otpAlternate: 'sms', otpCanChoose: true });
+    const nav = renderScreen();
+    goToStep2();
+    expect(screen.getByTestId('otp-channel-picker')).toBeTruthy();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(authService.requestOtp).toHaveBeenCalledWith('9876543210', undefined, undefined, { channel: 'whatsapp' }));
+    expect(nav.navigate).toHaveBeenCalledWith('RegisterOtp', expect.objectContaining({ otpChannel: 'whatsapp' }));
+  });
+
+  it('user mode: choosing SMS sends the OTP by SMS', async () => {
+    setFlags({ otpChannel: 'user', otpPrimary: 'whatsapp', otpAlternate: 'sms', otpCanChoose: true });
+    const nav = renderScreen();
+    goToStep2();
+    fireEvent.press(screen.getByTestId('otp-channel-sms'));
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(authService.requestOtp).toHaveBeenCalledWith('9876543210', undefined, undefined, { channel: 'sms', alternate: true }));
+    expect(nav.navigate).toHaveBeenCalledWith('RegisterOtp', expect.objectContaining({ otpChannel: 'sms' }));
+  });
+
+  it('WhatsApp mode with SMS up: no link until a send FAILS, then "try another way" re-sends via SMS (flagged alternate)', async () => {
+    setFlags({ otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: 'sms' });
+    authService.requestOtp.mockRejectedValueOnce(new Error('provider down'));
+    renderScreen();
+    goToStep2();
+    fill();
+    expect(screen.queryByTestId('otp-other-channel')).toBeNull();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(screen.getByTestId('otp-other-channel')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('otp-other-channel'));
+    authService.requestOtp.mockResolvedValue(undefined);
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(authService.requestOtp).toHaveBeenLastCalledWith('9876543210', undefined, undefined, { channel: 'sms', alternate: true }));
+  });
+
+  it('a DOWN alternate is never offered: after a failure there is no "try another way"', async () => {
+    setFlags({ otpChannel: 'whatsapp', otpPrimary: 'whatsapp', otpAlternate: null });
+    authService.requestOtp.mockRejectedValueOnce(new Error('provider down'));
+    renderScreen();
+    goToStep2();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(showAlert).toHaveBeenCalled());
+    expect(screen.queryByTestId('otp-other-channel')).toBeNull();
+    expect(screen.queryByTestId('otp-channel-picker')).toBeNull();
+  });
+
+  it('SMS mode with WhatsApp up: the other way offered is WhatsApp', async () => {
+    setFlags({ otpChannel: 'sms', otpPrimary: 'sms', otpAlternate: 'whatsapp' });
+    authService.requestOtp.mockRejectedValueOnce(new Error('sms down'));
+    renderScreen();
+    goToStep2();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(screen.getByText('otpTryWhatsApp')).toBeTruthy());
+  });
+
+  it('both channels down: only the "OTP temporarily unavailable" notice — no picker, no link', async () => {
+    setFlags({ otpChannel: 'whatsapp', otpPrimary: null, otpAlternate: null, otpUnavailable: true });
+    renderScreen();
+    goToStep2();
+    expect(screen.getByTestId('otp-unavailable')).toBeTruthy();
+    expect(screen.queryByTestId('otp-channel-picker')).toBeNull();
+    expect(screen.queryByTestId('otp-other-channel')).toBeNull();
+  });
+
+  it("shows the server's own words when the OTP request is refused", async () => {
+    authService.requestOtp.mockRejectedValueOnce({ response: { data: { message: 'OTP service is temporarily unavailable.' } } });
+    renderScreen();
+    goToStep2();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(showAlert).toHaveBeenCalledWith('alertError', 'OTP service is temporarily unavailable.'));
+  });
+});

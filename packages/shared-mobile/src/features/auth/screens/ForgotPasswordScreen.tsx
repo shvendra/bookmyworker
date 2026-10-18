@@ -16,7 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
+import { useOtpChoice, otpKey, otpChannelWord, type OtpChannel } from '../hooks/useOtpChannel';
+import { OtpChannelPicker, OtpOtherChannelLink, OtpUnavailableNotice } from '../components/OtpChannelPicker';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppInput } from '../../../shared/components/ui/AppInput';
@@ -63,7 +64,10 @@ const STEPS_NUMS: Step[] = [1, 2, 3];
 export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const lockedRole = toBackendRole(route.params?.roleHint);
   const { t } = useTranslation();
-  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
+  // WhatsApp or SMS wording per SuperAdmin; in 'user' mode the person picks (default WhatsApp).
+  const { channel: otpChannel, canChoose, alternate, unavailable, setChannel, sendArg } = useOtpChoice();
+  // After a failed first send the person can switch to the other channel (only offered while that channel is up).
+  const [sendFailed, setSendFailed] = useState(false);
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 
@@ -137,22 +141,28 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
     try {
       phoneRef.current = values.phone;
       roleRef.current  = values.role;
-      await sendPasswordResetOtp({ phone: values.phone, role: values.role });
+      const delivery = sendArg();
+      await sendPasswordResetOtp({ phone: values.phone, role: values.role, ...(delivery ? { delivery } : {}) });
+      setSendFailed(false);
       startCountdown();
       animateStep(2);
     } catch (e) {
+      setSendFailed(true);
       setError(e instanceof Error ? e.message : t('au_failedSendOtp'));
     } finally {
       setLoading(false);
     }
   });
 
-  const handleResend = async (): Promise<void> => {
+  // `via` = the other channel when the person taps "Send via SMS/WhatsApp instead" (user-choice mode only).
+  const handleResend = async (via?: OtpChannel): Promise<void> => {
     if (countdown > 0) return;
+    const delivery = sendArg(via);
     setResendLoading(true);
     setError(null);
     try {
-      await sendPasswordResetOtp({ phone: phoneRef.current, role: roleRef.current });
+      await sendPasswordResetOtp({ phone: phoneRef.current, role: roleRef.current, ...(delivery ? { delivery } : {}) });
+      if (via) setChannel(via);
       startCountdown();
       step2Form.reset({ otp: '' });
     } catch (e) {
@@ -327,14 +337,21 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   </View>
                 ) : null}
 
+                {unavailable && <OtpUnavailableNotice />}
+                {!unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={loading} />}
+
                 <AppButton
                   title={t(otpKey(otpChannel, 'sendOtpViaWhatsApp'))}
                   onPress={handleStep1}
                   loading={loading}
+                  disabled={unavailable}
                   size="lg"
                   fullWidth
                   style={s.ctaBtn}
                 />
+                {!unavailable && sendFailed && alternate && (
+                  <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); setError(null); }} />
+                )}
               </>
             )}
 
@@ -397,11 +414,20 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                       </AppText>
                     </AppText>
                   ) : (
-                    <TouchableOpacity onPress={handleResend} disabled={resendLoading} activeOpacity={0.7}>
-                      <AppText variant="caption" color={theme.colors.primary} style={s.resendLink}>
-                        {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
-                      </AppText>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity onPress={() => { void handleResend(); }} disabled={resendLoading} activeOpacity={0.7}>
+                        <AppText variant="caption" color={theme.colors.primary} style={s.resendLink}>
+                          {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
+                        </AppText>
+                      </TouchableOpacity>
+                      {alternate && (
+                        <OtpOtherChannelLink
+                          channel={otpChannel}
+                          onPress={() => { void handleResend(alternate); }}
+                          disabled={resendLoading}
+                        />
+                      )}
+                    </>
                   )}
                 </View>
               </>

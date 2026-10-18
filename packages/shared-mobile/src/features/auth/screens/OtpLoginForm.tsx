@@ -5,7 +5,8 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
 import { useTranslation } from 'react-i18next';
-import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
+import { useOtpChoice, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
+import { OtpChannelPicker, OtpOtherChannelLink, OtpUnavailableNotice } from '../components/OtpChannelPicker';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppInput } from '../../../shared/components/ui/AppInput';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -26,7 +27,10 @@ interface Props {
 
 export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React.JSX.Element => {
   const { t } = useTranslation();
-  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
+  // WhatsApp or SMS wording per SuperAdmin; in 'user' mode the person picks (default WhatsApp).
+  const { channel: otpChannel, canChoose, alternate, unavailable, setChannel, sendArg } = useOtpChoice();
+  // After a failed send the person can switch to the other channel (only offered while that channel is up).
+  const [sendFailed, setSendFailed] = useState(false);
   const { theme } = useAppTheme();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,11 +45,17 @@ export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      await authService.requestOtp(values.phone, roleHint, appContext);
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(values.phone, roleHint, appContext, delivery)
+        : authService.requestOtp(values.phone, roleHint, appContext));
+      setSendFailed(false);
       toast.success(`OTP sent to +91 ${values.phone}`, 'OTP Sent');
-      navigation.navigate(ROUTES.AUTH.OTP_VERIFICATION, { phone: values.phone, roleHint, appContext });
+      navigation.navigate(ROUTES.AUTH.OTP_VERIFICATION, { phone: values.phone, roleHint, appContext, ...(delivery ? { otpChannel: delivery.channel } : {}) });
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unable to send OTP. Please try again.';
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? (error instanceof Error ? error.message : 'Unable to send OTP. Please try again.');
+      setSendFailed(true);
       setErrorMessage(msg);
       toast.error(msg, 'Failed to Send OTP');
     } finally {
@@ -84,14 +94,21 @@ export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React
         </View>
       ) : null}
 
+      {unavailable && <OtpUnavailableNotice />}
+      {!unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
+
       <AppButton
         title={t(otpKey(otpChannel, 'sendOtpViaWhatsApp'))}
         onPress={onSubmit}
         loading={isLoading}
+        disabled={unavailable}
         size="lg"
         fullWidth
         style={styles.cta}
       />
+      {!unavailable && sendFailed && alternate && (
+        <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); setErrorMessage(null); }} />
+      )}
     </>
   );
 };

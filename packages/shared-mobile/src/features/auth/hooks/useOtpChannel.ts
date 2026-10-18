@@ -1,35 +1,37 @@
+import { useState } from 'react';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
+import {
+  parseOtpFlags, resolveOtpUi, otpSendArg, otpKey, otpChannelWord, otherChannel,
+  type OtpChannel, type OtpMode, type OtpSend,
+} from '../utils/otpMode';
 
-export type OtpChannel = 'whatsapp' | 'sms';
+export { otpKey, otpChannelWord, otherChannel };
+export type { OtpChannel, OtpMode, OtpSend };
 
 /**
- * Which single channel delivers OTPs right now (SuperAdmin → Settings → Authentication & OTP).
- * Wording only — the server picks the real channel. Defaults to WhatsApp (today's behaviour) whenever the
- * config is missing, still loading, or says anything other than an explicit 'sms'.
+ * Everything one OTP screen needs (SuperAdmin → Settings → Authentication & OTP, plus live channel health):
+ *  - `channel`      channel in use: SuperAdmin's default, or the person's pick / "try another way"
+ *  - `canChoose`    "user chooses" mode and both channels work → show <OtpChannelPicker/>
+ *  - `alternate`    the OTHER channel when it is usable → offer "Try another way"; null when it is down
+ *  - `unavailable`  neither channel works → show "OTP temporarily unavailable", offer nothing
+ *  - `sendArg(via)` what to pass to the send call (undefined keeps the legacy payload)
+ * WhatsApp is the default until the person (or SuperAdmin's failover) says otherwise. `initial` carries a choice made
+ * on a previous screen.
  */
-export function useOtpChannel(): OtpChannel {
+export function useOtpChoice(initial?: OtpChannel) {
   const { config } = useAppConfig();
-  return config?.authFlags?.otpChannel === 'sms' ? 'sms' : 'whatsapp';
+  const flags = parseOtpFlags(config?.authFlags);
+  const [override, setOverride] = useState<OtpChannel | null>(initial ?? null);
+  const ui = resolveOtpUi(flags, override);
+  return {
+    mode: flags.otpChannel,
+    ...ui,
+    setChannel: (c: OtpChannel): void => setOverride(c),
+    sendArg: (via?: OtpChannel): OtpSend | undefined => otpSendArg(ui, override, via),
+  };
 }
 
-// WhatsApp-worded i18n key → its SMS-worded twin. The WhatsApp keys (and their translations) are untouched.
-const SMS_KEY: Record<string, string> = {
-  forgotTrustBadge2: 'forgotTrustBadge2Sms',
-  resendOtpBtn: 'resendOtpBtnSms',
-  forgotPasswordDesc: 'forgotPasswordDescSms',
-  otpViaWhatsApp: 'otpViaSms',
-  sendOtpViaWhatsApp: 'sendOtpViaSms',
-  enterWhatsAppOtp: 'enterSmsOtp',
-  checkWhatsApp: 'checkSms',
-  otpWhatsAppPlaceholder: 'otpSmsPlaceholder',
-  otpTrustBadge2: 'otpTrustBadge2Sms',
-  registerTrustBadge2: 'registerTrustBadge2Sms',
-};
-
-/** The i18n key to use for `whatsappKey` under the given channel (unchanged for WhatsApp). */
-export function otpKey(channel: OtpChannel, whatsappKey: string): string {
-  return channel === 'sms' ? (SMS_KEY[whatsappKey] ?? whatsappKey) : whatsappKey;
+/** Wording-only channel (no picker). */
+export function useOtpChannel(): OtpChannel {
+  return useOtpChoice().channel;
 }
-
-/** "WhatsApp" / "SMS" — the word to show inline in OTP copy. */
-export const otpChannelWord = (channel: OtpChannel): string => (channel === 'sms' ? 'SMS' : 'WhatsApp');

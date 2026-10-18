@@ -1,4 +1,4 @@
-import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, googleStart as googleStartApi, googleRegister as googleRegisterApi, type RegisterPayload, type AppContext } from '../../../core/api/endpoints/authApi';
+import { requestOtp, verifyOtp, registerUser, verifyOtpOnly, switchRoleApi, loginWithPassword as loginWithPasswordApi, googleStart as googleStartApi, googleRegister as googleRegisterApi, type RegisterPayload, type AppContext, type OtpDelivery } from '../../../core/api/endpoints/authApi';
 import { registerForPushNotifications } from '../../../core/notifications/pushService';
 import { notificationApi } from '../../../core/api/endpoints/notificationApi';
 import type { AuthSession } from '../../../state/auth/authTypes';
@@ -33,8 +33,8 @@ const mockUser = (phone: string): UserProfile => ({
 });
 
 export const authService = {
-  requestOtp: async (phone: string, roleHint?: AppRole, appContext?: AppContext): Promise<{ message: string }> =>
-    requestOtp({ phone, roleHint, appContext }),
+  requestOtp: async (phone: string, roleHint?: AppRole, appContext?: AppContext, delivery?: OtpDelivery): Promise<{ message: string }> =>
+    requestOtp({ phone, roleHint, appContext, ...(delivery ? { delivery } : {}) }),
 
   verifyOtp: async ({ phone, otp, roleHint, appContext }: { phone: string; otp: string; roleHint?: AppRole; appContext?: AppContext }): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();

@@ -25,6 +25,9 @@ import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthC
 import { useAppConfig } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import { workerApi } from '../../../../packages/shared-mobile/src/core/api/endpoints/workerApi';
 import { AppButton } from '../../../../packages/shared-mobile/src/shared/components/ui/AppButton';
+import { useOtpChoice } from '../../../../packages/shared-mobile/src/features/auth/hooks/useOtpChannel';
+import { otpErrorMessage } from '../../../../packages/shared-mobile/src/features/auth/utils/otpMode';
+import { OtpChannelPicker, OtpOtherChannelLink, OtpUnavailableNotice } from '../../../../packages/shared-mobile/src/features/auth/components/OtpChannelPicker';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
@@ -72,6 +75,10 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   // user is stuck on an "OTP disabled" error).
   const { config } = useAppConfig();
   const registrationOtpEnabled = config.authFlags.registrationOtpEnabled;
+  // WhatsApp or SMS per SuperAdmin; in 'user' mode the person picks (default WhatsApp).
+  const { channel: otpChannel, canChoose, alternate, unavailable, setChannel, sendArg } = useOtpChoice();
+  // After a failed send the person can switch to the other channel (only offered while that channel is up).
+  const [sendFailed, setSendFailed] = useState(false);
 
   const [step, setStep]               = useState<1 | 2>(1);
   const [role, setRole]               = useState<Role | null>(null);
@@ -162,8 +169,13 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
         await registerDirectly(values, savedLang ?? undefined);
         return;
       }
-      await authService.requestOtp(values.phone, undefined);
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(values.phone, undefined, undefined, delivery)
+        : authService.requestOtp(values.phone, undefined));
+      setSendFailed(false);
       navigation.navigate('RegisterOtp', {
+        ...(delivery ? { otpChannel: delivery.channel } : {}),
         phone: values.phone,
         alternate: values.alternate || undefined,
         role,
@@ -176,7 +188,8 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
         resumeName: resumeName ?? undefined,
       });
     } catch (error) {
-      showAlert(t('alertError'), error instanceof Error ? error.message : t('regOtpFailed'));
+      setSendFailed(true);
+      showAlert(t('alertError'), otpErrorMessage(error, t('regOtpFailed')));
     } finally {
       setIsLoading(false);
     }
@@ -517,6 +530,12 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
                 )}
               />
             </View>
+
+            {registrationOtpEnabled && unavailable && <OtpUnavailableNotice />}
+            {registrationOtpEnabled && !unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
+            {registrationOtpEnabled && !unavailable && !canChoose && sendFailed && alternate && (
+              <OtpOtherChannelLink channel={otpChannel} onPress={() => { setChannel(alternate); setSendFailed(false); }} />
+            )}
 
             <AppButton
               title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')}
