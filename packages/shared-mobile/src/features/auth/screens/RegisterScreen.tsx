@@ -12,6 +12,7 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { FormSelect } from '../../../shared/components/forms/FormSelect';
 import { LocationSelector } from '../../../shared/components/forms/LocationSelector';
 import { useTranslation } from 'react-i18next';
+import { useOtpChannel } from '../hooks/useOtpChannel';
 import { getSubCatLabel, getWorkTypeLabel } from '../../../shared/utils/labelUtils';
 import { DIPLOMA_GRADUATE_SUBTYPE, categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCategories';
 import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
@@ -51,6 +52,7 @@ const SALARY_TYPE_OPTIONS = ['Fixed', 'Ranged'];
 export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t, i18n } = useTranslation();
+  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
   const toast = useToast();
   const { signIn } = useAuth();
   // SuperAdmin toggle — when false, registration skips the WhatsApp OTP step and
@@ -521,7 +523,9 @@ export const RegisterScreen = ({ navigation }: Props): React.JSX.Element => {
       <FormInput control={control} name="referredBy" label="Referred By (Agent Mobile)" placeholder="Agent's 10-digit number" keyboardType="phone-pad" maxLength={10} />
 
       <AppText variant="caption" color={theme.colors.mutedText} style={styles.otpNotice}>
-        An OTP will be sent to your mobile via WhatsApp to verify your number.
+        {otpChannel === 'sms'
+          ? 'An OTP will be sent to your mobile by SMS to verify your number.'
+          : 'An OTP will be sent to your mobile via WhatsApp to verify your number.'}
       </AppText>
 
       <AppButton title="Continue to OTP" onPress={onSubmit} loading={isLoading} style={styles.submitBtn} />

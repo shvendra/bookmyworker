@@ -3,7 +3,7 @@
 // real "round to k/M" formatter closely enough for label assertions.
 // `authFlags` is mutable so tests can flip the SuperAdmin OTP toggle. Default is
 // enabled, matching the real DEFAULTS, so existing flows keep the OTP path.
-export const __authFlags = { registrationOtpEnabled: true, loginOtpEnabled: true };
+export const __authFlags = { registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp' };
 
 const config = {
   stats: {
@@ -22,6 +22,7 @@ export const __appConfig = { isLoading: false };
 export const __resetAppConfig = (): void => {
   __authFlags.registrationOtpEnabled = true;
   __authFlags.loginOtpEnabled = true;
+  __authFlags.otpChannel = 'whatsapp';
   __appConfig.isLoading = false;
 };
 

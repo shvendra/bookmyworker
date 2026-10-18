@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../../state/auth/AuthContext';
 import i18n from '../../../core/i18n';
@@ -39,6 +40,7 @@ const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { t } = useTranslation();
+  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -279,7 +281,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
               </AppText>
               <AppText variant="body" color={theme.colors.mutedText} style={s.subText}>
                 {t('otpCodeSentPrefix')}{' '}
-                <AppText variant="body" color="#25D366" style={{ fontWeight: '700' }}>WhatsApp</AppText>
+                <AppText variant="body" color={otpChannel === 'sms' ? theme.colors.primary : '#25D366'} style={{ fontWeight: '700' }}>{otpChannelWord(otpChannel)}</AppText>
                 {' '}{t('otpCodeSentTo')}{'\n'}
                 <AppText variant="bodyMd" color={theme.colors.text}>+91 {params.phone}</AppText>
               </AppText>
@@ -371,7 +373,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
               ) : (
                 <Pressable onPress={resendOtp} disabled={resendLoading}>
                   <AppText variant="caption" color={theme.colors.primary} style={s.resendLink}>
-                    {resendLoading ? t('sending') : `↩ ${t('resendOtpBtn')}`}
+                    {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
                   </AppText>
                 </Pressable>
               )}
@@ -380,7 +382,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
           {/* Trust row */}
           <View style={s.trustRow}>
-            {[t('registerTrustBadge1'), t('registerTrustBadge2'), t('registerTrustBadge3')].map((item) => (
+            {[t('registerTrustBadge1'), t(otpKey(otpChannel, 'registerTrustBadge2')), t('registerTrustBadge3')].map((item) => (
               <View key={item} style={[s.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>

@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { AppInput } from '../../../shared/components/ui/AppInput';
@@ -62,6 +63,7 @@ const STEPS_NUMS: Step[] = [1, 2, 3];
 export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.Element => {
   const lockedRole = toBackendRole(route.params?.roleHint);
   const { t } = useTranslation();
+  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 
@@ -277,7 +279,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                     {t('verifyIdentity')}
                   </AppText>
                   <AppText variant="body" color={theme.colors.mutedText} style={s.cardSubtitle}>
-                    {t('forgotPasswordDesc')}
+                    {t(otpKey(otpChannel, 'forgotPasswordDesc'))}
                   </AppText>
                 </View>
 
@@ -316,7 +318,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                 )}
 
                 <View style={[s.infoNote, { backgroundColor: '#E8F5E9' }]}>
-                  <AppText style={s.infoNoteText}>💬 {t('otpViaWhatsApp')}</AppText>
+                  <AppText style={s.infoNoteText}>💬 {t(otpKey(otpChannel, 'otpViaWhatsApp'))}</AppText>
                 </View>
 
                 {error ? (
@@ -326,7 +328,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                 ) : null}
 
                 <AppButton
-                  title={t('sendOtpViaWhatsApp')}
+                  title={t(otpKey(otpChannel, 'sendOtpViaWhatsApp'))}
                   onPress={handleStep1}
                   loading={loading}
                   size="lg"
@@ -344,11 +346,11 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                     <AppText style={s.iconEmoji}>💬</AppText>
                   </View>
                   <AppText variant="heading" color={theme.colors.text} style={s.cardTitle}>
-                    {t('enterWhatsAppOtp')}
+                    {t(otpKey(otpChannel, 'enterWhatsAppOtp'))}
                   </AppText>
                   <AppText variant="body" color={theme.colors.mutedText} style={s.cardSubtitle}>
                     {t('otpCodeSentPrefix')}{' '}
-                    <AppText variant="body" color="#25D366" style={{ fontWeight: '700' }}>WhatsApp</AppText>
+                    <AppText variant="body" color={otpChannel === 'sms' ? theme.colors.primary : '#25D366'} style={{ fontWeight: '700' }}>{otpChannelWord(otpChannel)}</AppText>
                     {' '}{t('otpCodeSentTo')}{'\n'}
                     <AppText variant="body" color={theme.colors.text} style={{ fontWeight: '700' }}>
                       +91 {phoneRef.current}
@@ -356,15 +358,15 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   </AppText>
                 </View>
 
-                <View style={[s.whatsappChip, { backgroundColor: '#DCF8C6' }]}>
-                  <AppText style={s.whatsappChipText}>📲 {t('checkWhatsApp')}</AppText>
+                <View style={[s.whatsappChip, { backgroundColor: otpChannel === 'sms' ? '#E0ECFF' : '#DCF8C6' }]}>
+                  <AppText style={s.whatsappChipText}>📲 {t(otpKey(otpChannel, 'checkWhatsApp'))}</AppText>
                 </View>
 
                 <FormInput
                   control={step2Form.control}
                   name="otp"
                   label={t('sixDigitOtpLabel')}
-                  placeholder={t('otpWhatsAppPlaceholder')}
+                  placeholder={t(otpKey(otpChannel, 'otpWhatsAppPlaceholder'))}
                   keyboardType="number-pad"
                   maxLength={6}
                 />
@@ -395,7 +397,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   ) : (
                     <TouchableOpacity onPress={handleResend} disabled={resendLoading} activeOpacity={0.7}>
                       <AppText variant="caption" color={theme.colors.primary} style={s.resendLink}>
-                        {resendLoading ? t('sending') : `↩ ${t('resendOtpBtn')}`}
+                        {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
                       </AppText>
                     </TouchableOpacity>
                   )}
@@ -484,7 +486,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
 
           {/* Trust badges */}
           <View style={s.trustRow}>
-            {[t('forgotTrustBadge1'), t('forgotTrustBadge2'), t('forgotTrustBadge3')].map((badge) => (
+            {[t('forgotTrustBadge1'), t(otpKey(otpChannel, 'forgotTrustBadge2')), t('forgotTrustBadge3')].map((badge) => (
               <View key={badge} style={[s.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{badge}</AppText>
               </View>

@@ -21,16 +21,16 @@ describe('appConfigApi.fetchAppConfig — authFlags', () => {
   it('defaults both flags to enabled when settings omit the auth object', async () => {
     mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: {} });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: true });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp' });
   });
 
   it('maps explicit false values from settings.auth', async () => {
     mock.onGet('/api/v1/settings/public').reply(200, {
       success: true,
-      data: { auth: { registrationOtpEnabled: false, loginOtpEnabled: true } },
+      data: { auth: { registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp' } },
     });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: false, loginOtpEnabled: true });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: false, loginOtpEnabled: true, otpChannel: 'whatsapp' });
   });
 
   it('treats only an explicit false as disabled', async () => {
@@ -39,6 +39,13 @@ describe('appConfigApi.fetchAppConfig — authFlags', () => {
       data: { auth: { loginOtpEnabled: false } },
     });
     const cfg = await fetchAppConfig();
-    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: false });
+    expect(cfg.authFlags).toEqual({ registrationOtpEnabled: true, loginOtpEnabled: false, otpChannel: 'whatsapp' });
+  });
+
+  it('reads the OTP channel: only an explicit "sms" selects SMS', async () => {
+    mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { auth: { otpChannel: 'sms' } } });
+    expect((await fetchAppConfig()).authFlags.otpChannel).toBe('sms');
+    mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { auth: { otpChannel: 'voice' } } });
+    expect((await fetchAppConfig()).authFlags.otpChannel).toBe('whatsapp');
   });
 });

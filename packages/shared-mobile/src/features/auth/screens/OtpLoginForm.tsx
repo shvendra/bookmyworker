@@ -5,6 +5,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
 import { useTranslation } from 'react-i18next';
+import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppInput } from '../../../shared/components/ui/AppInput';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -25,6 +26,7 @@ interface Props {
 
 export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React.JSX.Element => {
   const { t } = useTranslation();
+  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
   const { theme } = useAppTheme();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +85,7 @@ export const OtpLoginForm = ({ navigation, roleHint, appContext }: Props): React
       ) : null}
 
       <AppButton
-        title={t('sendOtpViaWhatsApp')}
+        title={t(otpKey(otpChannel, 'sendOtpViaWhatsApp'))}
         onPress={onSubmit}
         loading={isLoading}
         size="lg"

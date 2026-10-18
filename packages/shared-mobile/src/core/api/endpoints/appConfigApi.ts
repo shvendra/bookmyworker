@@ -57,9 +57,12 @@ export interface AppConfig {
   // SuperAdmin-controlled auth toggles. Both default ON.
   //  registrationOtpEnabled=false → signup skips the WhatsApp OTP step.
   //  loginOtpEnabled=false        → hide the "login with OTP" option.
+  //  otpChannel = which single channel delivers OTPs ('whatsapp' default | 'sms') — wording only; the
+  //  server decides the real channel and already reports the effective one.
   authFlags: {
     registrationOtpEnabled: boolean;
     loginOtpEnabled:        boolean;
+    otpChannel:             'whatsapp' | 'sms';
   };
   // SuperAdmin master switch for the coupon-code feature. OFF by default —
   // the checkout coupon input only renders once this is explicitly true.
@@ -132,7 +135,7 @@ const DEFAULTS: AppConfig = {
   },
   promotions: { festivalMode: false, festivalImageUrl: '' },
   promotionAds: [],
-  authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true },
+  authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true, otpChannel: 'whatsapp' },
   couponsEnabled: false,
   helpCenter: { categories: [], subCategories: [], topics: [] },
   supportAvailability: { chatStartHour: 9, chatEndHour: 18 },
@@ -199,6 +202,8 @@ export async function fetchAppConfig(): Promise<AppConfig> {
       // Treat anything other than an explicit `false` as enabled (safe default).
       registrationOtpEnabled: auth.registrationOtpEnabled !== false,
       loginOtpEnabled:        auth.loginOtpEnabled !== false,
+      // Only an explicit 'sms' switches the wording; anything else stays WhatsApp (today's behaviour).
+      otpChannel:             auth.otpChannel === 'sms' ? 'sms' : 'whatsapp',
     },
     // Opposite default from authFlags on purpose: coupons are OFF unless the
     // SuperAdmin explicitly turns them on (treat anything but `true` as off).

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -36,6 +37,7 @@ const BOX_SIZE = Math.floor((W - 104 - (OTP_LENGTH - 1) * 10) / OTP_LENGTH);
 
 export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.Element => {
   const { t } = useTranslation();
+  const otpChannel = useOtpChannel(); // WhatsApp or SMS wording, per SuperAdmin setting
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -231,7 +233,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
               </AppText>
               <AppText variant="body" color={theme.colors.mutedText} center style={styles.subText}>
                 {t('otpCodeSentPrefix')}{' '}
-                <AppText variant="bodyMd" color="#25D366">WhatsApp</AppText>
+                <AppText variant="bodyMd" color={otpChannel === 'sms' ? theme.colors.primary : '#25D366'}>{otpChannelWord(otpChannel)}</AppText>
                 {' '}{t('otpCodeSentTo')}{'\n'}
                 <AppText variant="bodyMd" color={theme.colors.text}>+91 {route.params.phone}</AppText>
               </AppText>
@@ -347,7 +349,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
               ) : (
                 <Pressable onPress={handleResend} disabled={resendLoading}>
                   <AppText variant="caption" color={theme.colors.primary} style={styles.resendLink}>
-                    {resendLoading ? t('sending') : `↩ ${t('resendOtpBtn')}`}
+                    {resendLoading ? t('sending') : `↩ ${t(otpKey(otpChannel, 'resendOtpBtn'))}`}
                   </AppText>
                 </Pressable>
               )}
@@ -356,7 +358,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
           {/* Trust row */}
           <View style={styles.trustRow}>
-            {[t('otpTrustBadge1'), t('otpTrustBadge2'), t('otpTrustBadge3')].map((item) => (
+            {[t('otpTrustBadge1'), t(otpKey(otpChannel, 'otpTrustBadge2')), t('otpTrustBadge3')].map((item) => (
               <View key={item} style={[styles.trustBadge, { backgroundColor: theme.colors.primaryLight }]}>
                 <AppText variant="micro" color={theme.colors.primary}>{item}</AppText>
               </View>
