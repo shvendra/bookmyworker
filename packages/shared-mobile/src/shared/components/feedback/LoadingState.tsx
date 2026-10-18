@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, StyleSheet, View } from 'react-native';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../ui/AppText';
-
-const LOGO = require('../../../../assets/logo-app.png') as number;
+import { BrandMark } from '../ui/BrandMark';
 
 const BRAND  = '#1037A4';
 const ORANGE = '#F97316';
@@ -78,7 +77,7 @@ const AppSplash = ({ text }: { text?: string }): React.JSX.Element => {
 
       <Animated.View style={[splash.logoWrap, { transform: [{ scale: logoScale }] }]}>
         <View style={splash.logoBox}>
-          <Image source={LOGO} style={splash.logoImg} resizeMode="contain" />
+          <BrandMark style={splash.logoImg} />
         </View>
       </Animated.View>
 

@@ -19,6 +19,7 @@ import { AppText } from '../../../../packages/shared-mobile/src/shared/component
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import type { AppLanguage } from '../../../../packages/shared-mobile/src/shared/types/domain';
 import type { AgentStackParamList } from '../../navigation/types';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 
 export const AGENT_LANG_KEY = 'bmw_agent_lang';
 
@@ -121,11 +122,7 @@ export const LanguageSelectScreen = ({ navigation }: Props): React.JSX.Element =
           {/* Logo — same style as login page */}
           <View style={styles.logoRow}>
             <View style={styles.logoBox}>
-              <Image
-                source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-                style={styles.logoImg}
-                resizeMode="contain"
-              />
+              <BrandMark style={styles.logoImg} />
             </View>
             <AppText style={styles.brandName}>BookMyWorker<Trademark onDark size={22} /></AppText>
           </View>

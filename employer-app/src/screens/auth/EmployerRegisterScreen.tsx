@@ -33,6 +33,7 @@ import {
   type RegisterStep2Values,
 } from '../../../../packages/shared-mobile/src/features/auth/validation/authSchemas';
 import type { EmployerStackParamList } from '../../navigation/types';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 
 type Props = NativeStackScreenProps<EmployerStackParamList, 'Register'>;
 type EmployerTypeKey = 'individual' | 'contractor' | 'agency' | 'industry';
@@ -227,7 +228,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
           <View style={styles.orangeStrip} />
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
-              <Image source={require('../../../../packages/shared-mobile/assets/logo-app.png')} style={styles.logoImg} resizeMode="contain" />
+              <BrandMark style={styles.logoImg} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
@@ -290,11 +291,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
 
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
-              <Image
-                source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-                style={styles.logoImg}
-                resizeMode="contain"
-              />
+              <BrandMark style={styles.logoImg} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>
@@ -420,11 +417,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
 
         <View style={styles.brandRow}>
           <View style={styles.logoBox}>
-            <Image
-              source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+            <BrandMark style={styles.logoImg} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText style={styles.brandName} color="#FFFFFF">BookMyWorker<Trademark onDark size={19} /></AppText>

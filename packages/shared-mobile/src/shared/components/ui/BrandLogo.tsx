@@ -1,8 +1,7 @@
 import React from 'react';
 import { Image, ImageStyle } from 'react-native';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
-
-const STATIC_LOGO = require('../../../../assets/logo-app.png');
+import { BrandMark } from './BrandMark';
 
 interface BrandLogoProps {
   style?: ImageStyle;
@@ -11,6 +10,7 @@ interface BrandLogoProps {
 
 export const BrandLogo = ({ style, resizeMode = 'contain' }: BrandLogoProps): React.JSX.Element => {
   const { config } = useAppConfig();
-  const source = config.brand.appLogo ? { uri: config.brand.appLogo } : STATIC_LOGO;
-  return <Image source={source} style={style} resizeMode={resizeMode} />;
+  // SuperAdmin-set logo (network) when present; otherwise the built-in mark, which always draws.
+  if (config.brand.appLogo) return <Image source={{ uri: config.brand.appLogo }} style={style} resizeMode={resizeMode} />;
+  return <BrandMark style={style} />;
 };

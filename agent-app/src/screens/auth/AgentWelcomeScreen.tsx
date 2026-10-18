@@ -22,6 +22,7 @@ import {
 } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import type { AgentStackParamList } from '../../navigation/types';
 import { useTranslation } from 'react-i18next';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 type Props = NativeStackScreenProps<AgentStackParamList, 'Welcome'>;
 
 const { width: W } = Dimensions.get('window');
@@ -83,11 +84,7 @@ export const AgentWelcomeScreen = ({ navigation }: Props): React.JSX.Element => 
   {/* Brand row */}
   <View style={styles.brandRow}>
     <View style={styles.logoBox}>
-      <Image
-        source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-        style={styles.logoImg}
-        resizeMode="contain"
-      />
+      <BrandMark style={styles.logoImg} />
     </View>
   </View>
 

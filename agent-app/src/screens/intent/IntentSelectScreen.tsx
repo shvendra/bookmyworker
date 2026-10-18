@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../../packages/shared-mobile/src/shared/components/ui/AppText';
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import type { AgentStackParamList } from '../../navigation/types';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 
 const BRAND = '#1037A4';
 // The Employer app on the Play Store — where "I'm hiring workers" users belong.
@@ -73,11 +74,7 @@ export const IntentSelectScreen = ({ navigation }: Props): React.JSX.Element => 
         <View style={styles.circleBottomLeft} />
         <View style={styles.logoRow}>
           <View style={styles.logoBox}>
-            <Image
-              source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+            <BrandMark style={styles.logoImg} />
           </View>
           <AppText style={styles.brandName}>BookMyWorker<Trademark onDark size={22} /></AppText>
         </View>

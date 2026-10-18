@@ -1,3 +1,4 @@
+import { AVATAR_FEMALE_URI, AVATAR_MALE_URI } from '../../../shared/components/ui/avatarData';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -31,8 +32,8 @@ import {
 
 // Gender-based placeholder avatars — shown only when a worker has not
 // uploaded a real photo.
-const AVATAR_FEMALE = require('../../../../assets/avatar-female.png');
-const AVATAR_MALE = require('../../../../assets/avatar-male.png');
+const AVATAR_FEMALE = { uri: AVATAR_FEMALE_URI };
+const AVATAR_MALE = { uri: AVATAR_MALE_URI };
 
 // ─── Call Outcome Picker ──────────────────────────────────────────────────────
 export const CallOutcomePicker = ({

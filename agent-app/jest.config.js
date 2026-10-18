@@ -74,6 +74,8 @@ module.exports = {
     '.*shared-mobile/src/shared/components/ui/Trademark$':
       '<rootDir>/src/__tests__/__mocks__/shared/ui.tsx',
 
+    '.*shared-mobile/src/shared/components/ui/BrandMark$':
+      '<rootDir>/src/__tests__/__mocks__/shared/brandMark.tsx',
     // ── OTP channel hook + picker (SuperAdmin "user chooses WhatsApp or SMS"): test doubles that keep the real
     //    pure rules (utils/otpMode). Must precede the broad features catch-all below.
     '.*shared-mobile/src/features/auth/utils/otpMode$':

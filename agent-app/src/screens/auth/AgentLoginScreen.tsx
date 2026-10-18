@@ -21,6 +21,7 @@ import { OtpLoginForm } from '../../../../packages/shared-mobile/src/features/au
 import { PasswordLoginForm } from '../../../../packages/shared-mobile/src/features/auth/screens/PasswordLoginForm';
 import { useAppConfig, formatStat } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import type { AgentStackParamList } from '../../navigation/types';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'Login'>;
 
@@ -70,11 +71,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
         {/* brand row: logo + name */}
         <View style={styles.brandRow}>
           <View style={styles.logoBox}>
-            <Image
-              source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+            <BrandMark style={styles.logoImg} />
           </View>
          
         </View>

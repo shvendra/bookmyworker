@@ -38,6 +38,7 @@ import {
 import { WORKER_QUALIFICATION_TIERS } from '../../../../packages/shared-mobile/src/shared/data/workerQualificationTiers';
 import { DIPLOMA_GRADUATE_SUBTYPE } from '../../../../packages/shared-mobile/src/shared/data/supportStaffCategories';
 import type { AgentStackParamList } from '../../navigation/types';
+import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'Register'>;
 type Role = 'Agent' | 'SelfWorker';
@@ -219,11 +220,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
-              <Image
-                source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-                style={styles.logoImg}
-                resizeMode="contain"
-              />
+              <BrandMark style={styles.logoImg} />
             </View>
           </View>
 
@@ -452,11 +449,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
         <View style={styles.brandRow}>
           <View style={styles.logoBox}>
-            <Image
-              source={require('../../../../packages/shared-mobile/assets/logo-app.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+            <BrandMark style={styles.logoImg} />
           </View>
           <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn} activeOpacity={0.7}>
