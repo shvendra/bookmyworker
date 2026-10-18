@@ -369,6 +369,8 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   placeholder={t(otpKey(otpChannel, 'otpWhatsAppPlaceholder'))}
                   keyboardType="number-pad"
                   maxLength={6}
+                  autoComplete="sms-otp"
+                  textContentType="oneTimeCode"
                 />
 
                 {error ? (

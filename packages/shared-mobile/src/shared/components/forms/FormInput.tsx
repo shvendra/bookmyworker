@@ -6,7 +6,7 @@ import {
   type Path,
   type RegisterOptions,
 } from 'react-hook-form';
-import { type KeyboardTypeOptions, type StyleProp, type ViewStyle } from 'react-native';
+import { type KeyboardTypeOptions, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { AppInput } from '../ui/AppInput';
 
 interface FormInputProps<T extends FieldValues> {
@@ -19,6 +19,9 @@ interface FormInputProps<T extends FieldValues> {
   multiline?: boolean;
   numberOfLines?: number;
   maxLength?: number;
+  /** Autofill hints, e.g. autoComplete="sms-otp" + textContentType="oneTimeCode" for OTP fields. */
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
   style?: StyleProp<ViewStyle>;
   rules?: RegisterOptions<T, Path<T>>;
 }
@@ -33,6 +36,8 @@ export const FormInput = <T extends FieldValues>({
   multiline,
   numberOfLines,
   maxLength,
+  autoComplete,
+  textContentType,
   style,
   rules,
 }: FormInputProps<T>): React.JSX.Element => (
@@ -52,6 +57,8 @@ export const FormInput = <T extends FieldValues>({
         multiline={multiline}
         numberOfLines={numberOfLines}
         maxLength={maxLength}
+        autoComplete={autoComplete}
+        textContentType={textContentType}
         errorText={error?.message}
         style={style}
       />

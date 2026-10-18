@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useOtpChannel, otpKey, otpChannelWord } from '../hooks/useOtpChannel';
+import { applyOtpInput } from '../utils/otpInput';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -86,22 +87,17 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
     ]).start();
   };
 
+  // Handles typing, paste, and the keyboard's one-tap "123456" OTP suggestion / autofill: a multi-digit
+  // value is spread across the boxes (see applyOtpInput) and a complete code is submitted automatically.
   const handleDigit = (index: number, val: string): void => {
-    const ch = val.slice(-1);
-    if (!/^\d$/.test(ch) && ch !== '') return;
-    const next = [...digits];
-    next[index] = ch;
-    setDigits(next);
+    const r = applyOtpInput(digits, index, val, OTP_LENGTH);
+    setDigits(r.digits);
     setErrorMessage(null);
-    if (ch && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-      setFocused(index + 1);
+    if (/\d/.test(val)) {
+      inputRefs.current[r.focusIndex]?.focus();
+      setFocused(r.focusIndex);
     }
-    // Auto-submit when last digit entered
-    if (ch && index === OTP_LENGTH - 1) {
-      const full = [...next].join('');
-      if (full.length === OTP_LENGTH) void submitOtp(full);
-    }
+    if (r.complete) void submitOtp(r.digits.join(''));
   };
 
   const handleKeyPress = (index: number, key: string): void => {
@@ -278,7 +274,10 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
                       onKeyPress={({ nativeEvent }) => handleKeyPress(i, nativeEvent.key)}
                       onFocus={() => setFocused(i)}
                       keyboardType="number-pad"
-                      maxLength={1}
+                      autoComplete="sms-otp"
+                      textContentType="oneTimeCode"
+                      importantForAutofill="yes"
+                      maxLength={OTP_LENGTH}
                       style={[
                         styles.boxInput,
                         {
