@@ -21,6 +21,7 @@ import { workforceMasterApi } from '../../../core/api/endpoints/workforceMasterA
 import { workforceRequirementsApi, type DurationType, type Urgency } from '../../../core/api/endpoints/workforceRequirementsApi';
 import { AddSiteSheet } from './AddSiteSheet';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { HelpNote, HowItWorksCard } from '../components/WorkforceUi';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'NewWorkforceRequirement'>;
 
@@ -213,6 +214,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
                 errorText={errors.siteId?.message}
               />
             )}
+            <HelpNote text={t('wf_note_site')} />
             <TouchableOpacity onPress={() => setAddSiteVisible(true)} activeOpacity={0.8} style={styles.addSiteBtn}>
               <AppText variant="label" color={theme.colors.primary}>{`+ ${t('wf_add_site_cta')}`}</AppText>
             </TouchableOpacity>
@@ -242,6 +244,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
                 errorText={errors.workTypeId?.message}
               />
             )}
+            <HelpNote text={t('wf_note_worktype')} />
             {workTypeId ? (
               <FormSelect
                 label={t('wf_sub_work_type_label')}
@@ -287,6 +290,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
               label={t('wf_number_of_workers_label')}
               keyboardType="number-pad"
             />
+            <HelpNote text={t('wf_note_workers')} />
             <FormInput
               control={control}
               name="shiftTiming"
@@ -306,6 +310,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
                 />
               )}
             />
+            <HelpNote text={t('wf_note_urgency')} />
             <Controller
               control={control}
               name="durationType"
@@ -319,6 +324,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
                 />
               )}
             />
+            <HelpNote text={t('wf_note_duration')} />
             <Controller
               control={control}
               name="startDate"
@@ -367,6 +373,7 @@ export const NewWorkforceRequirementScreen = ({ navigation }: Props): React.JSX.
             />
           </View>
 
+          <HelpNote text={t('wf_note_submit')} />
           <AppButton
             title={mutation.isPending ? t('wf_submitting') : t('wf_submit_requirement_cta')}
             onPress={onSubmit}

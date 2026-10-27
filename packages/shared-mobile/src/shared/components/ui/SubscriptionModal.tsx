@@ -34,7 +34,7 @@ const FILE_BASE = ENV.API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = 90;
 
-type PlanId = '1m' | '6m' | '12m';
+type PlanId = '1m' | '3m' | '6m' | '12m';
 
 interface Plan {
   id: PlanId;
@@ -181,6 +181,15 @@ export const SubscriptionModal = ({
       ...sharedBenefits,
     ];
     const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : 'more';
+    if (id === '3m') {
+      const x = contacts1m > 0 ? String(Math.round((contacts / contacts1m) * 10) / 10) : 'more';
+      return [
+        `${contacts} contacts — ${x}× more reach than monthly`,
+        'Lower cost-per-contact than paying month by month',
+        ...boostLine,
+        ...sharedBenefits,
+      ];
+    }
     if (id === '6m') return [
       `${contacts} contacts — ${mul}× more reach than monthly`,
       'Better cost-per-contact vs paying month by month',
@@ -202,6 +211,13 @@ export const SubscriptionModal = ({
       posts:    typePlan.limits['1m'].posts,
       boosts:   boostFor('1m'),
       benefits: makePlanBenefits('1m', typePlan.limits['1m'].contacts, typePlan.limits['1m'].posts),
+    },
+    {
+      id: '3m',  label: 'Quarterly Plan',   duration: '3 Months',
+      contacts: typePlan.limits['3m'].contacts,
+      posts:    typePlan.limits['3m'].posts,
+      boosts:   boostFor('3m'),
+      benefits: makePlanBenefits('3m', typePlan.limits['3m'].contacts, typePlan.limits['3m'].posts),
     },
     {
       id: '6m',  label: 'Half-Yearly Plan', duration: '6 Months',

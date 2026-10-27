@@ -19,6 +19,7 @@ import {
   type PayModel,
 } from '../../../core/api/endpoints/workforceRequirementsApi';
 import { DeploymentsSection } from '../components/DeploymentsSection';
+import { FillBar, HelpNote, HowItWorksCard, LifecycleDots, NextStepCard, STATUS_TONE } from '../components/WorkforceUi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkforceRequirementDetail'>;
@@ -169,6 +170,32 @@ export const WorkforceRequirementDetailScreen = ({ route, navigation }: Props): 
           {req.urgency === 'Urgent' ? <Badge label={t('wf_urgency_urgent')} variant="danger" outlined /> : null}
         </View>
 
+        <LifecycleDots status={req.status} labels={[t('wf_life_1'), t('wf_life_2'), t('wf_life_3'), t('wf_life_4'), t('wf_life_5')]} />
+        <NextStepCard
+          tone={STATUS_TONE[req.status] ?? '#64748B'}
+          title={t(`wf_next_${req.status}_title`)}
+          text={t(`wf_next_${req.status}_text`)}
+        />
+        {['Approved', 'PartiallyFulfilled', 'Fulfilled'].includes(req.status) ? (
+          <AppCard style={styles.noticeCard}>
+            <FillBar
+              value={req.deployedCount ?? 0}
+              total={req.numberOfWorkers}
+              label={t('wf_progress_label', { done: req.deployedCount ?? 0, total: req.numberOfWorkers })}
+            />
+          </AppCard>
+        ) : null}
+        <HowItWorksCard
+          id="detail"
+          title={t('wf_help_detail_title')}
+          defaultOpen={false}
+          steps={[
+            { title: t('wf_step_review_t'), text: t('wf_help_detail_review_d'), who: t('wf_who_bmw') },
+            { title: t('wf_step_confirm_t'), text: t('wf_help_detail_confirm_d'), who: t('wf_who_you') },
+            { title: t('wf_step_start_t'), text: t('wf_help_detail_work_d') },
+          ]}
+        />
+
         {req.status === 'Rejected' && req.rejectionReason ? (
           <AppCard style={[styles.noticeCard, { backgroundColor: theme.colors.dangerLight }]}>
             <AppText variant="labelSm" color={theme.colors.danger} style={styles.noticeLabel}>
@@ -241,6 +268,7 @@ export const WorkforceRequirementDetailScreen = ({ route, navigation }: Props): 
 
         <DeploymentsSection requirementId={id} />
 
+        {canCancel ? <HelpNote text={t('wf_note_cancel')} /> : null}
         {canCancel ? (
           <AppButton
             title={t('wf_cancel_requirement_cta')}

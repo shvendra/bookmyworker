@@ -45,9 +45,10 @@ function resolveTypeKey(raw: EmployerTypeRaw): TypeKey {
   return keys.find((k) => s.includes(k)) ?? 'individual';
 }
 
-function resolveDuration(subType?: string): '1m' | '6m' | '12m' | null {
+function resolveDuration(subType?: string): '1m' | '3m' | '6m' | '12m' | null {
   switch (subType) {
     case 'Monthly':     return '1m';
+    case 'Quarterly':   return '3m';
     case 'Half-Yearly': return '6m';
     case 'Yearly':      return '12m';
     default:            return null;

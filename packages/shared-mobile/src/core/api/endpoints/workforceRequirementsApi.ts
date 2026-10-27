@@ -50,6 +50,8 @@ export interface PrivateWorkforceRequirement {
   assignedAccountManagerId?: string | PopulatedRef;
   agreedBillingRate?: number;
   agreedBillingPayModel?: PayModel;
+  /** Workers currently Active on this requirement (server-computed). */
+  deployedCount?: number;
   rejectionReason?: string;
   createdByUserId?: string;
   createdAt?: string;

@@ -19,6 +19,7 @@ import {
 } from '../../../core/api/endpoints/clientInvoicesApi';
 import { paymentSubmissionsApi } from '../../../core/api/endpoints/paymentSubmissionsApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { HowItWorksCard } from '../components/WorkforceUi';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'MyWorkforceInvoices'>;
 
@@ -186,14 +187,26 @@ export const MyInvoicesScreen = ({ navigation }: Props): React.JSX.Element => {
             />
           }
           ListHeaderComponent={
-            ledger ? (
+            <View>
+              <HowItWorksCard
+                id="invoices"
+                title={t('wf_help_inv_title')}
+                defaultOpen={false}
+                steps={[
+                  { title: t('wf_help_inv_1_t'), text: t('wf_help_inv_1_d'), who: t('wf_who_bmw') },
+                  { title: t('wf_help_inv_2_t'), text: t('wf_help_inv_2_d'), who: t('wf_who_bmw') },
+                  { title: t('wf_help_inv_3_t'), text: t('wf_help_inv_3_d'), who: t('wf_who_you') },
+                ]}
+              />
+            {ledger ? (
               <View style={styles.ledgerRow}>
                 <LedgerTile label={t('wf_ledger_invoiced')} value={ledger.totalInvoiced} color={theme.colors.text} />
                 <LedgerTile label={t('wf_ledger_verified_paid')} value={ledger.totalVerifiedPaid} color={theme.colors.success} />
                 <LedgerTile label={t('wf_ledger_outstanding')} value={ledger.totalOutstanding} color={theme.colors.warning} />
                 <LedgerTile label={t('wf_ledger_credit_balance')} value={ledger.creditBalance} color={theme.colors.primary} />
               </View>
-            ) : null
+            ) : null}
+            </View>
           }
           ListEmptyComponent={
             <EmptyState icon="🧾" title={t('wf_invoices_empty')} description={t('wf_invoices_empty_body')} />

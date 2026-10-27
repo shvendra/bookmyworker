@@ -3,7 +3,7 @@ import { apiClient } from '../client';
 export const GST_RATE = 0.18;
 
 export interface SubscriptionPlanId {
-  id: '1m' | '6m' | '12m';
+  id: '1m' | '3m' | '6m' | '12m';
 }
 
 export interface InitTransactionPayload {

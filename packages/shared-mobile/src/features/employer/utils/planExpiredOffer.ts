@@ -1,7 +1,7 @@
 import type { EmployerTypeKey, PricingConfig } from '../../../core/api/endpoints/pricingApi';
 
 const PRIORITY: EmployerTypeKey[] = ['industry', 'agency', 'contractor', 'individual'];
-const PLAN_IDS = ['1m', '6m', '12m'] as const;
+const PLAN_IDS = ['1m', '3m', '6m', '12m'] as const;
 
 /** Highest tier the employer holds — mirrors the CRM (industry > agency > contractor > individual). */
 export function highestEmployerType(raw: unknown): EmployerTypeKey {
@@ -16,7 +16,7 @@ export function highestEmployerType(raw: unknown): EmployerTypeKey {
 }
 
 /**
- * The biggest "% off" across the 1m / 6m / 12m plans for this employer's tier (price vs MRP),
+ * The biggest "% off" across the 1m / 3m / 6m / 12m plans for this employer's tier (price vs MRP),
  * or null when there is no real discount — exactly the number the CRM's plan-expired dialog shows.
  */
 export function maxDiscountPct(

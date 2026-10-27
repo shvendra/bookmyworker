@@ -32,7 +32,7 @@ import { FadeInView, CountUpText, PulseView, ShimmerSweep, FloatView, AnimatedBa
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
-type PlanId = '1m' | '6m' | '12m';
+type PlanId = '1m' | '3m' | '6m' | '12m';
 
 const BRAND = '#1037A4';
 const BRAND_DARK = '#0B2570';
@@ -53,14 +53,15 @@ const TYPE_NAME_KEY: Record<EmployerTypeKey, string> = {
 };
 const DURATIONS: { id: PlanId; labelKey: string; accessKey: string }[] = [
   { id: '1m',  labelKey: 'pricingPlanMonthly',    accessKey: 'pricing1MonthAccess' },
+  { id: '3m',  labelKey: 'pricingPlanQuarterly',   accessKey: 'pricing3MonthAccess' },
   { id: '6m',  labelKey: 'pricingPlanHalfYearly',  accessKey: 'pricing6MonthAccess' },
   { id: '12m', labelKey: 'pricingPlanYearly',      accessKey: 'pricing12MonthAccess' },
 ];
 const FALLBACK_PRICING: Record<EmployerTypeKey, Record<string, number>> = {
-  individual: { '1m': 199, '6m': 999,  '12m': 1999 },
-  contractor: { '1m': 599, '6m': 2900, '12m': 4999 },
-  agency:     { '1m': 599, '6m': 2900, '12m': 4999 },
-  industry:   { '1m': 999, '6m': 3999, '12m': 5999 },
+  individual: { '1m': 199, '3m': 899,  '6m': 999,  '12m': 1999 },
+  contractor: { '1m': 599, '3m': 1999, '6m': 2900, '12m': 4999 },
+  agency:     { '1m': 599, '3m': 2599, '6m': 2900, '12m': 4999 },
+  industry:   { '1m': 999, '3m': 3299, '6m': 3999, '12m': 5999 },
 };
 const EMPLOYER_PRIORITY: EmployerTypeKey[] = ['industry', 'agency', 'contractor', 'individual'];
 

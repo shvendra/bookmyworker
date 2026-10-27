@@ -18,6 +18,7 @@ import {
   type PrivateWorkforceRequirement,
   type RequirementStatus,
 } from '../../../core/api/endpoints/workforceRequirementsApi';
+import { FillBar, HowItWorksCard } from '../components/WorkforceUi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'MyWorkforceRequirements'>;
@@ -86,6 +87,14 @@ const RequirementRow = React.memo(({ item, onPress }: RowProps): React.JSX.Eleme
       <AppText variant="body" color={theme.colors.textSecondary} numberOfLines={1} style={styles.metaRow}>
         {workTypeName} · {t('wf_workers_count', { count: item.numberOfWorkers })}
       </AppText>
+      <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={2} style={styles.nextLine}>
+        {t(`wf_next_${item.status}_title`)}
+      </AppText>
+      {['Approved', 'PartiallyFulfilled', 'Fulfilled'].includes(item.status) ? (
+        <View style={styles.fill}>
+          <FillBar value={item.deployedCount ?? 0} total={item.numberOfWorkers} />
+        </View>
+      ) : null}
       <View style={styles.cardFooterRow}>
         {item.urgency === 'Urgent' ? (
           <Badge label={t('wf_urgency_urgent')} variant="danger" size="sm" outlined />
@@ -119,6 +128,37 @@ export const MyWorkforceRequirementsScreen = ({ navigation }: Props): React.JSX.
   });
 
   const requirements = requirementsQuery.data ?? [];
+
+  const openCount = requirements.filter((r) => ['Submitted', 'UnderReview', 'Approved', 'PartiallyFulfilled'].includes(r.status)).length;
+  const workingCount = requirements.reduce((a, r) => a + (r.deployedCount ?? 0), 0);
+  const waitingCount = requirements.filter((r) => r.status === 'Approved').length;
+  const listHeader = (
+    <View>
+      <View style={styles.kpiRow}>
+        {[
+          { v: openCount, l: t('wf_kpi_open'), c: '#2563EB' },
+          { v: workingCount, l: t('wf_kpi_working'), c: '#16A34A' },
+          { v: waitingCount, l: t('wf_kpi_waiting'), c: '#D97706' },
+        ].map((k) => (
+          <AppCard key={k.l} style={styles.kpi}>
+            <AppText variant="numeric" color={k.c}>{k.v}</AppText>
+            <AppText variant="micro" color={theme.colors.mutedText} numberOfLines={2}>{k.l}</AppText>
+          </AppCard>
+        ))}
+      </View>
+      <HowItWorksCard
+        id="list"
+        title={t('wf_help_list_title')}
+        intro={t('wf_help_list_intro')}
+        steps={[
+          { title: t('wf_step_submit_t'), text: t('wf_step_submit_d'), who: t('wf_who_you') },
+          { title: t('wf_step_review_t'), text: t('wf_step_review_d'), who: t('wf_who_bmw') },
+          { title: t('wf_step_confirm_t'), text: t('wf_step_confirm_d'), who: t('wf_who_you') },
+          { title: t('wf_step_start_t'), text: t('wf_step_start_d'), who: t('wf_who_bmw') },
+        ]}
+      />
+    </View>
+  );
 
   const goToNew = (): void => navigation.navigate('NewWorkforceRequirement');
   const goToDetail = (id: string): void => navigation.navigate('WorkforceRequirementDetail', { id });
@@ -165,6 +205,7 @@ export const MyWorkforceRequirementsScreen = ({ navigation }: Props): React.JSX.
           data={requirements}
           keyExtractor={(item: PrivateWorkforceRequirement) => item._id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={listHeader}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={requirementsQuery.isFetching} onRefresh={() => void requirementsQuery.refetch()} />
@@ -190,7 +231,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pwr: { flex: 1 },
-  metaRow: { marginBottom: 8 },
+  metaRow: { marginBottom: 4 },
+  nextLine: { marginBottom: 8 },
+  fill: { marginBottom: 10 },
+  kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  kpi: { flex: 1, paddingVertical: 12, paddingHorizontal: 10 },
   cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',

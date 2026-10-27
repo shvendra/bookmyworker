@@ -6,18 +6,18 @@ export interface PricingConfig {
   gstPercentage: number;
   verifiedBadge: { agent: number; worker: number };
   subscription: {
-    individual: { '1m': number; '6m': number; '12m': number };
-    contractor:  { '1m': number; '6m': number; '12m': number };
-    agency:      { '1m': number; '6m': number; '12m': number };
-    industry:    { '1m': number; '6m': number; '12m': number };
+    individual: { '1m': number; '3m': number; '6m': number; '12m': number };
+    contractor:  { '1m': number; '3m': number; '6m': number; '12m': number };
+    agency:      { '1m': number; '3m': number; '6m': number; '12m': number };
+    industry:    { '1m': number; '3m': number; '6m': number; '12m': number };
     agent:       { '1m': number; '6m': number; '12m': number };
   };
   // Original (MRP/strikethrough) prices — display only, never used in payment logic
   subscriptionMrp: {
-    individual: { '1m': number; '6m': number; '12m': number };
-    contractor:  { '1m': number; '6m': number; '12m': number };
-    agency:      { '1m': number; '6m': number; '12m': number };
-    industry:    { '1m': number; '6m': number; '12m': number };
+    individual: { '1m': number; '3m': number; '6m': number; '12m': number };
+    contractor:  { '1m': number; '3m': number; '6m': number; '12m': number };
+    agency:      { '1m': number; '3m': number; '6m': number; '12m': number };
+    industry:    { '1m': number; '3m': number; '6m': number; '12m': number };
     agent:       { '1m': number; '6m': number; '12m': number };
   };
   topup: { contacts50: number; contacts100: number };
@@ -50,7 +50,7 @@ export interface PlanFeatures {
 }
 
 export interface EmployerPlanConfig {
-  limits:   { '1m': PlanLimits; '6m': PlanLimits; '12m': PlanLimits };
+  limits:   { '1m': PlanLimits; '3m': PlanLimits; '6m': PlanLimits; '12m': PlanLimits };
   features: PlanFeatures;
 }
 
@@ -66,17 +66,17 @@ const PRICING_DEFAULTS: PricingConfig = {
   gstPercentage: 18,
   verifiedBadge: { agent: 999, worker: 49 },
   subscription: {
-    individual: { '1m': 199,  '6m': 999,  '12m': 1999 },
-    contractor:  { '1m': 599,  '6m': 2900, '12m': 4999 },
-    agency:      { '1m': 599,  '6m': 2900, '12m': 4999 },
-    industry:    { '1m': 999,  '6m': 3999, '12m': 5999 },
+    individual: { '1m': 199,  '3m': 899,  '6m': 999,  '12m': 1999 },
+    contractor:  { '1m': 599,  '3m': 1999, '6m': 2900, '12m': 4999 },
+    agency:      { '1m': 599,  '3m': 2599, '6m': 2900, '12m': 4999 },
+    industry:    { '1m': 999,  '3m': 3299, '6m': 3999, '12m': 5999 },
     agent:       { '1m': 299,  '6m': 1499, '12m': 2499 },
   },
   subscriptionMrp: {
-    individual: { '1m': 498,  '6m': 1998,  '12m': 2999 },
-    contractor:  { '1m': 1499, '6m': 5800,  '12m': 9999 },
-    agency:      { '1m': 1499, '6m': 5800,  '12m': 9999 },
-    industry:    { '1m': 2499, '6m': 7999,  '12m': 11999 },
+    individual: { '1m': 498,  '3m': 1199, '6m': 1998,  '12m': 2999 },
+    contractor:  { '1m': 1499, '3m': 2199, '6m': 5800,  '12m': 9999 },
+    agency:      { '1m': 1499, '3m': 2799, '6m': 5800,  '12m': 9999 },
+    industry:    { '1m': 2499, '3m': 3399, '6m': 7999,  '12m': 11999 },
     agent:       { '1m': 599,  '6m': 2999,  '12m': 4999 },
   },
   topup: { contacts50: 199, contacts100: 349 },
@@ -86,6 +86,7 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
   individual: {
     limits: {
       '1m':  { contacts: 50,   posts: 10  },
+      '3m':  { contacts: 125,  posts: 15  },
       '6m':  { contacts: 250,  posts: 25  },
       '12m': { contacts: 500,  posts: 50  },
     },
@@ -101,6 +102,7 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
   contractor: {
     limits: {
       '1m':  { contacts: 150,  posts: 40  },
+      '3m':  { contacts: 350,  posts: 60  },
       '6m':  { contacts: 700,  posts: 80  },
       '12m': { contacts: 1500, posts: 150 },
     },
@@ -116,6 +118,7 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
   agency: {
     limits: {
       '1m':  { contacts: 200,  posts: 30  },
+      '3m':  { contacts: 500,  posts: 45  },
       '6m':  { contacts: 1000, posts: 60  },
       '12m': { contacts: 2000, posts: 100 },
     },
@@ -131,6 +134,7 @@ export const EMPLOYER_PLANS_DEFAULTS: EmployerPlansConfig = {
   industry: {
     limits: {
       '1m':  { contacts: 400,  posts: 999 },
+      '3m':  { contacts: 1000, posts: 999 },
       '6m':  { contacts: 2000, posts: 999 },
       '12m': { contacts: 4000, posts: 999 },
     },
@@ -152,14 +156,23 @@ function mergePricing(remote?: Partial<PricingConfig>): PricingConfig {
     ...PRICING_DEFAULTS,
     ...remote,
     verifiedBadge: { ...PRICING_DEFAULTS.verifiedBadge, ...remote.verifiedBadge },
+    // per-type deep merge, so a type the server sends without a "3m" row still gets the built-in 3m price
     subscription: {
       ...PRICING_DEFAULTS.subscription,
       ...remote.subscription,
+      individual: { ...PRICING_DEFAULTS.subscription.individual, ...remote.subscription?.individual },
+      contractor: { ...PRICING_DEFAULTS.subscription.contractor, ...remote.subscription?.contractor },
+      agency:     { ...PRICING_DEFAULTS.subscription.agency,     ...remote.subscription?.agency },
+      industry:   { ...PRICING_DEFAULTS.subscription.industry,   ...remote.subscription?.industry },
       agent: { ...PRICING_DEFAULTS.subscription.agent, ...remote.subscription?.agent },
     },
     subscriptionMrp: {
       ...PRICING_DEFAULTS.subscriptionMrp,
       ...remote.subscriptionMrp,
+      individual: { ...PRICING_DEFAULTS.subscriptionMrp.individual, ...remote.subscriptionMrp?.individual },
+      contractor: { ...PRICING_DEFAULTS.subscriptionMrp.contractor, ...remote.subscriptionMrp?.contractor },
+      agency:     { ...PRICING_DEFAULTS.subscriptionMrp.agency,     ...remote.subscriptionMrp?.agency },
+      industry:   { ...PRICING_DEFAULTS.subscriptionMrp.industry,   ...remote.subscriptionMrp?.industry },
       agent: { ...PRICING_DEFAULTS.subscriptionMrp.agent, ...remote.subscriptionMrp?.agent },
     },
   };
@@ -176,6 +189,7 @@ function mergeEmployerPlans(remote?: Partial<EmployerPlansConfig>): EmployerPlan
     merged[key] = {
       limits: {
         '1m':  { ...def.limits['1m'],  ...(rem.limits?.['1m']  ?? {}) },
+        '3m':  { ...def.limits['3m'],  ...(rem.limits?.['3m']  ?? {}) },
         '6m':  { ...def.limits['6m'],  ...(rem.limits?.['6m']  ?? {}) },
         '12m': { ...def.limits['12m'], ...(rem.limits?.['12m'] ?? {}) },
       },
@@ -223,17 +237,17 @@ export type BoostTier = 'individual' | 'contractor' | 'agency' | 'industry';
 export interface BoostConfig {
   enabled: boolean;
   durationDays: number;
-  allowance: Record<BoostTier, { '1m': number; '6m': number; '12m': number }>;
+  allowance: Record<BoostTier, { '1m': number; '3m': number; '6m': number; '12m': number }>;
 }
 
 export const BOOST_DEFAULTS: BoostConfig = {
   enabled: true,
   durationDays: 30,
   allowance: {
-    individual: { '1m': 1, '6m': 6, '12m': 12 },
-    contractor: { '1m': 2, '6m': 12, '12m': 24 },
-    agency: { '1m': 3, '6m': 18, '12m': 36 },
-    industry: { '1m': 4, '6m': 24, '12m': 48 },
+    individual: { '1m': 1, '3m': 3, '6m': 6, '12m': 12 },
+    contractor: { '1m': 2, '3m': 6, '6m': 12, '12m': 24 },
+    agency: { '1m': 3, '3m': 9, '6m': 18, '12m': 36 },
+    industry: { '1m': 4, '3m': 12, '6m': 24, '12m': 48 },
   },
 };
 

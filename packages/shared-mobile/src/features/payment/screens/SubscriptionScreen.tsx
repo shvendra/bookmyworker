@@ -43,10 +43,10 @@ interface FreshProfile {
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const FALLBACK_PRICING: Record<EmployerTypeKey, Record<string, number>> = {
-  individual: { '1m': 199,  '6m': 999,  '12m': 1999 },
-  contractor: { '1m': 599,  '6m': 2900, '12m': 4999 },
-  agency:     { '1m': 599,  '6m': 2900, '12m': 4999 },
-  industry:   { '1m': 999,  '6m': 3999, '12m': 5999 },
+  individual: { '1m': 199,  '3m': 899,  '6m': 999,  '12m': 1999 },
+  contractor: { '1m': 599,  '3m': 1999, '6m': 2900, '12m': 4999 },
+  agency:     { '1m': 599,  '3m': 2599, '6m': 2900, '12m': 4999 },
+  industry:   { '1m': 999,  '3m': 3299, '6m': 3999, '12m': 5999 },
 };
 const AGENT_FALLBACK: Record<string, number> = { '1m': 299, '6m': 1499, '12m': 2499 };
 const EMPLOYER_PRIORITY: EmployerTypeKey[] = ['industry', 'agency', 'contractor', 'individual'];
@@ -130,6 +130,10 @@ function buildDurationBenefits(planId: PlanId, contacts: number, posts: number, 
     t('jp_benefitPostsThisMonth', { posts: postsLabel }),
   ];
   const mul = contacts1m > 0 ? Math.round(contacts / contacts1m) : t('jp_more');
+  if (planId === '3m') {
+    const x = contacts1m > 0 ? String(Math.round((contacts / contacts1m) * 10) / 10) : t('jp_more');   // 2.5×, not a rounded-up 3×
+    return [t('jp_benefitMoreReach', { contacts, mul: x }), t('jp_benefitBetterCpc')];
+  }
   if (planId === '6m') return [
     t('jp_benefitMoreReach', { contacts, mul }),
     t('jp_benefitBetterCpc'),
@@ -140,7 +144,7 @@ function buildDurationBenefits(planId: PlanId, contacts: number, posts: number, 
   ];
 }
 
-type PlanId = '1m' | '6m' | '12m';
+type PlanId = '1m' | '3m' | '6m' | '12m';
 
 function buildPlans(
   employerType: EmployerTypeKey,
@@ -165,8 +169,8 @@ function buildPlans(
     const boosts = boostAllow ? (Number(boostAllow[id]) || 0) : 0;
     return {
       id, tier,
-      labelKey:  id === '1m' ? 'pricingPlanMonthly' : id === '6m' ? 'pricingPlanHalfYearly' : 'pricingPlanYearly',
-      accessKey: id === '1m' ? 'pricing1MonthAccess' : id === '6m' ? 'pricing6MonthAccess' : 'pricing12MonthAccess',
+      labelKey:  ({ '1m': 'pricingPlanMonthly', '3m': 'pricingPlanQuarterly', '6m': 'pricingPlanHalfYearly', '12m': 'pricingPlanYearly' } as const)[id],
+      accessKey: ({ '1m': 'pricing1MonthAccess', '3m': 'pricing3MonthAccess', '6m': 'pricing6MonthAccess', '12m': 'pricing12MonthAccess' } as const)[id],
       price:    p[id]!,
       mrp:      m[id] ?? 0,
       discount: calcDiscount(m[id] ?? 0, p[id]!),
@@ -182,7 +186,7 @@ function buildPlans(
     };
   };
 
-  return [makePlan('1m', 'basic'), makePlan('6m', 'popular'), makePlan('12m', 'premium')];
+  return [makePlan('1m', 'basic'), makePlan('3m', 'basic'), makePlan('6m', 'popular'), makePlan('12m', 'premium')];
 }
 
 function buildAgentPlans(
