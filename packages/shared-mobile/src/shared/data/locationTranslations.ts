@@ -30,6 +30,16 @@ export const stateTranslations: Record<string, LangMap> = {
     ta: 'பீஹார்', te: 'బీహార్', kn: 'ಬಿಹಾರ್',
     ml: 'ബിഹാർ', bn: 'বিহার', or: 'ବିହାର', pa: 'ਬਿਹਾਰ',
   },
+  'Andaman and Nicobar Islands (UT)': {
+    hi: 'अंडमान और निकोबार द्वीप समूह', mr: 'अंदमान आणि निकोबार बेटे', gu: 'આંદામાન અને નિકોબાર ટાપુઓ',
+    ta: 'அந்தமான் நிக்கோபார் தீவுகள்', te: 'అండమాన్ మరియు నికోబార్ దీవులు', kn: 'ಅಂಡಮಾನ್ ಮತ್ತು ನಿಕೋಬಾರ್ ದ್ವೀಪಗಳು',
+    ml: 'ആൻഡമാൻ നിക്കോബാർ ദ്വീപുകൾ', bn: 'আন্দামান ও নিকোবর দ্বীপপুঞ্জ', or: 'ଆଣ୍ଡାମାନ ଓ ନିକୋବର ଦ୍ୱୀପପୁଞ୍ଜ', pa: 'ਅੰਡੇਮਾਨ ਅਤੇ ਨਿਕੋਬਾਰ ਟਾਪੂ',
+  },
+  'Ladakh (UT)': {
+    hi: 'लद्दाख', mr: 'लडाख', gu: 'લદ્દાખ',
+    ta: 'லடாக்', te: 'లడఖ్', kn: 'ಲಡಾಖ್',
+    ml: 'ലഡാക്ക്', bn: 'লাদাখ', or: 'ଲଦାଖ', pa: 'ਲੱਦਾਖ',
+  },
   'Chandigarh (UT)': {
     hi: 'चंडीगढ़', mr: 'चंदीगड', gu: 'ચંડીગઢ',
     ta: 'சண்டிகர்', te: 'చండీగఢ్', kn: 'ಚಂಡೀಗಢ',
@@ -1026,6 +1036,21 @@ export const districtTranslations: Record<string, LangMap> = {
   'Purulia':           { hi: 'पुरुलिया',          bn: 'পুরুলিয়া' },
   'South 24 Parganas': { hi: 'दक्षिण 24 परगना',  bn: 'দক্ষিণ চব্বিশ পরগনা' },
   'Uttar Dinajpur':    { hi: 'उत्तर दिनाजपुर',   bn: 'উত্তর দিনাজপুর' },
+  'Chhatrapati Sambhajinagar': { hi: 'छत्रपति संभाजीनगर', mr: 'छत्रपती संभाजीनगर' },
+  'Dharashiv': { hi: 'धाराशिव', mr: 'धाराशिव' },
+  'Ahilyanagar': { hi: 'अहिल्यानगर', mr: 'अहिल्यानगर' },
+  'Narmadapuram': { hi: 'नर्मदापुरम' },
+  'Gurugram': { hi: 'गुरुग्राम', pa: 'ਗੁਰੂਗ੍ਰਾਮ' },
+  'Nuh': { hi: 'नूंह', pa: 'ਨੂੰਹ' },
+  'Bengaluru South': { hi: 'बेंगलुरु दक्षिण', kn: 'ಬೆಂಗಳೂರು ದಕ್ಷಿಣ' },
+  'Sribhumi': { hi: 'श्रीभूमि', bn: 'শ্রীভূমি' },
+  'Ananthapuramu': { hi: 'अनंतपुरमु', te: 'అనంతపురము' },
+  'Annamayya': { hi: 'अन्नमय्या', te: 'అన్నమయ్య' },
+  'Hanumakonda': { hi: 'हनुमाकोंडा', te: 'హనుమకొండ' },
+  'Warangal': { hi: 'वारंगल', te: 'వరంగల్' },
+  'Gyalshing': { hi: 'ग्यालशिंग' },
+  'Mangan': { hi: 'मंगन' },
+  'Namchi': { hi: 'नामची' },
 };
 
 // Block / Tehsil translations (Hindi).
