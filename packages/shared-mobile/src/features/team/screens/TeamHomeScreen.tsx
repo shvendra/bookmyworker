@@ -39,6 +39,11 @@ export const TeamHomeScreen = ({ navigation }: Props): React.JSX.Element => {
       default: break; // dashboard is shown right here
     }
   };
+  const logout = (): void =>
+    Alert.alert('Log out?', 'You will need to enter an OTP again to sign back in.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', onPress: () => { void signOut(); } },
+    ]);
   const leave = (): void =>
     Alert.alert(`Leave ${team?.company}'s team?`, 'You lose access right away. Your employer will see that you left, and has to add you again if you want to come back.', [
       { text: 'Cancel', style: 'cancel' },
@@ -82,7 +87,7 @@ export const TeamHomeScreen = ({ navigation }: Props): React.JSX.Element => {
 
         <View style={s.btnRow}>
           <AppButton title="Leave team" variant="ghost" onPress={leave} style={s.flex} />
-          <AppButton title="Logout" variant="outline" onPress={signOut} style={s.flex} />
+          <AppButton title="Logout" variant="outline" onPress={logout} style={s.flex} />
         </View>
       </ScrollView>
     </View>
