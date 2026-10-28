@@ -37,7 +37,8 @@ export const groupPermissions = <T extends { group?: string }>(catalog: T[]): { 
   return groups;
 };
 
-export type TeamModuleKey = 'dashboard' | 'post' | 'requirements' | 'calendar' | 'workers' | 'attendance';
+export type TeamModuleKey = 'dashboard' | 'post' | 'requirements' | 'calendar' | 'workers' | 'attendance' | 'analytics';
+/** `label` / `desc` are the English fallbacks; screens show t(`team_mod_<key>`) / t(`team_mod_<key>_desc`). */
 export interface TeamModule { key: TeamModuleKey; label: string; desc: string; emoji: string; any: string[] }
 /** What a member can open in the app. Same rules as the CRM portal; the server enforces them again on every call. */
 export const TEAM_MODULES: TeamModule[] = [
@@ -47,5 +48,18 @@ export const TEAM_MODULES: TeamModule[] = [
   { key: 'calendar', label: 'Requirement Calendar', desc: 'Requirements by date', emoji: '🗓️', any: ['calendar:view'] },
   { key: 'workers', label: 'Find Workers', desc: 'Search and call workers', emoji: '🔎', any: ['workers:search'] },
   { key: 'attendance', label: 'Worker Attendance', desc: 'View and mark attendance', emoji: '✅', any: ['attendance:view'] },
+  { key: 'analytics', label: 'Hiring Analytics', desc: 'Hiring funnel and reports', emoji: '📈', any: ['analytics:view'] },
 ];
 export const teamModulesFor = (permissions: string[] = []): TeamModule[] => TEAM_MODULES.filter((m) => m.any.some((p) => permissions.includes(p)));
+
+/** Translation keys for a server permission such as "workers:call" (the server's English text stays as the fallback). */
+export const permKey = (key: string): string => `team_perm_${key.replace(/[^a-z]+/gi, '_')}`;
+export const groupKey = (name: string): string => `team_group_${name.toLowerCase()}`;
+
+/** Friendly, translated text for a refusal from the team gateway (null when the error is something else). */
+export const teamDeniedText = (err: unknown, t: (k: string) => string): string | null => {
+  const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+  if (code === 'TEAM_NO_PERMISSION') return t('team_err_no_permission');
+  if (code === 'TEAM_NOT_ALLOWED') return t('team_err_not_allowed');
+  return null;
+};

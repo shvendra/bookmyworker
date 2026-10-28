@@ -2,6 +2,7 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -17,6 +18,7 @@ interface Stats { totalJobs: number; totalApplications: number; hiredWorkers: nu
 /** A team member's home: only the modules their employer has switched on, plus the dashboard summary when allowed. */
 export const TeamHomeScreen = ({ navigation }: Props): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const { state, signOut } = useAuth();
   const team = state.session?.team;
@@ -36,30 +38,31 @@ export const TeamHomeScreen = ({ navigation }: Props): React.JSX.Element => {
       case 'attendance': navigation.navigate('TeamRequirements', { mode: 'attendance' }); break;
       case 'calendar': navigation.navigate('RequirementCalendar'); break;
       case 'workers': navigation.navigate('WorkerSearch'); break;
+      case 'analytics': navigation.navigate('EmployerAnalytics'); break;
       default: break; // dashboard is shown right here
     }
   };
   const logout = (): void =>
-    Alert.alert('Log out?', 'You will need to enter an OTP again to sign back in.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', onPress: () => { void signOut(); } },
+    Alert.alert(t('team_logout_title'), t('team_logout_msg'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('team_logout'), onPress: () => { void signOut(); } },
     ]);
   const leave = (): void =>
-    Alert.alert(`Leave ${team?.company}'s team?`, 'You lose access right away. Your employer will see that you left, and has to add you again if you want to come back.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => { void teamApi.leave().then(() => signOut(), (e: Error) => Alert.alert('Could not leave', e.message || 'Please try again.')); } },
+    Alert.alert(t('team_leave_title', { company: team?.company ?? '' }), t('team_leave_msg'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('team_leave'), style: 'destructive', onPress: () => { void teamApi.leave().then(() => signOut(), (e: Error) => Alert.alert(t('team_leave_fail'), e.message || t('team_try_again'))); } },
     ]);
 
-  const tiles: [string, number | undefined][] = [['Requirements', stats?.totalJobs], ['Responses', stats?.totalApplications], ['Hired', stats?.hiredWorkers], ['Completed', stats?.completedJobs]];
+  const tiles: [string, number | undefined][] = [[t('team_tile_requirements'), stats?.totalJobs], [t('team_tile_responses'), stats?.totalApplications], [t('team_tile_hired'), stats?.hiredWorkers], [t('team_tile_completed'), stats?.completedJobs]];
   const actions = modules.filter((m) => m.key !== 'dashboard');
 
   return (
     <View style={[s.root, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24, gap: 14 }}>
         <View>
-          <AppText variant="caption" color={theme.colors.primary} style={s.kicker}>TEAM</AppText>
+          <AppText variant="caption" color={theme.colors.primary} style={s.kicker}>{t('team_kicker')}</AppText>
           <AppText variant="heading" color={theme.colors.text}>{team?.company}</AppText>
-          <AppText variant="caption" color={theme.colors.mutedText}>Signed in as {team?.memberName}</AppText>
+          <AppText variant="caption" color={theme.colors.mutedText}>{t('team_signed_in_as', { name: team?.memberName ?? '' })}</AppText>
         </View>
 
         {canDashboard && (
@@ -73,21 +76,21 @@ export const TeamHomeScreen = ({ navigation }: Props): React.JSX.Element => {
           </View>
         )}
 
-        {!modules.length && <AppText variant="body" color={theme.colors.mutedText}>You don't have any permission yet. Ask {team?.company} to give you access.</AppText>}
+        {!modules.length && <AppText variant="body" color={theme.colors.mutedText}>{t('team_no_perm', { company: team?.company ?? '' })}</AppText>}
         {actions.map((m) => (
           <Pressable key={m.key} onPress={() => go(m.key)} style={[s.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
             <AppText variant="heading" color={theme.colors.text}>{m.emoji}</AppText>
             <View style={s.flex}>
-              <AppText variant="label" color={theme.colors.text}>{m.label}</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText}>{m.desc}</AppText>
+              <AppText variant="label" color={theme.colors.text}>{t(`team_mod_${m.key}`, { defaultValue: m.label })}</AppText>
+              <AppText variant="caption" color={theme.colors.mutedText}>{t(`team_mod_${m.key}_desc`, { defaultValue: m.desc })}</AppText>
             </View>
             <AppText variant="label" color={theme.colors.mutedText}>›</AppText>
           </Pressable>
         ))}
 
         <View style={s.btnRow}>
-          <AppButton title="Leave team" variant="ghost" onPress={leave} style={s.flex} />
-          <AppButton title="Logout" variant="outline" onPress={logout} style={s.flex} />
+          <AppButton title={t('team_leave')} variant="ghost" onPress={leave} style={s.flex} />
+          <AppButton title={t('team_logout')} variant="outline" onPress={logout} style={s.flex} />
         </View>
       </ScrollView>
     </View>

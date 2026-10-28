@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
@@ -13,6 +14,7 @@ import { WorkerSearchScreen } from '../../search/screens/WorkerSearchScreen';
  */
 export const TeamWorkerSearchScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { state } = useAuth();
@@ -25,16 +27,16 @@ export const TeamWorkerSearchScreen = (): React.JSX.Element => {
         {canSearch ? <WorkerSearchScreen /> : (
           <View style={s.empty}>
             <AppText variant="body" color={theme.colors.mutedText} center>
-              You don't have any permission yet. Ask {team?.company} to enable "Find workers" for you.
+              {t('team_ws_noperm', { company: team?.company ?? '' })}
             </AppText>
           </View>
         )}
       </View>
       <View style={[s.bar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: insets.bottom + 8 }]}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={10}><AppText variant="label" color={theme.colors.primary}>← Home</AppText></Pressable>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={10}><AppText variant="label" color={theme.colors.primary}>← {t('team_home')}</AppText></Pressable>
         <View style={s.who}>
           <AppText variant="label" color={theme.colors.text} numberOfLines={1}>{team?.company}</AppText>
-          <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>Team · {team?.memberName}</AppText>
+          <AppText variant="caption" color={theme.colors.mutedText} numberOfLines={1}>{t('team_member_line', { name: team?.memberName ?? '' })}</AppText>
         </View>
       </View>
     </View>

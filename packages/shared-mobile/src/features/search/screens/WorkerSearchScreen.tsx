@@ -25,6 +25,8 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
+import { useTeamWorkerActivity } from '../../team/useTeamWorkerActivity';
+import { teamDeniedText } from '../../team/teamEligibility';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
 import { requestReviewOnce } from '../../../core/review/storeReview';
 import { hapticSuccess } from '../../../core/haptics';
@@ -281,6 +283,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     [data],
   );
   const activeFilterCount = countActive(appliedFilters);
+  const [teamActivity, refreshTeamActivity] = useTeamWorkerActivity(useMemo(() => allAgents.map((a) => a._id), [allAgents]), true);
 
   // Client-side search filter. Deferring the query keeps each keystroke smooth:
   // typing updates the input immediately while the (potentially large) list
@@ -325,7 +328,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     try {
       setLoadingUnlock((p) => ({ ...p, [agentId]: true }));
       const res = await workerApi.unlockNumber(agentId);
-      if (res.phone) { setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone })); hapticSuccess(); }
+      if (res.phone) { setUnlockedPhones((p) => ({ ...p, [agentId]: res.phone })); hapticSuccess(); setTimeout(() => refreshTeamActivity(agentId), 600); }
       if (res.alternate) setUnlockedAlternates((p) => ({ ...p, [agentId]: res.alternate! }));
       // Contact consumed → refresh the count everywhere (search header, dashboard,
       // plan features). Mirrors WorkerProfileScreen / PaymentWebViewScreen.
@@ -339,7 +342,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         setIsLimitExhausted(true);
         navigation.navigate('Subscription');
       } else {
-        toast.error(msg ?? t('ws_unlock_failed_msg'), t('ws_unlock_failed_title'));
+        toast.error(teamDeniedText(err, t) ?? msg ?? t('ws_unlock_failed_msg'), t('ws_unlock_failed_title'));
       }
     } finally {
       setLoadingUnlock((p) => ({ ...p, [agentId]: false }));
@@ -347,11 +350,14 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   };
 
   const handleSaveRemark = async (agentId: string, status: string): Promise<void> => {
+    const prevStatus = callStatus[agentId] ?? '';
+    const prevTime = remarkTimes[agentId];
     setCallStatus((p) => ({ ...p, [agentId]: status }));
     setRemarkTimes((p) => ({ ...p, [agentId]: new Date() }));
     setSavingRemark((p) => ({ ...p, [agentId]: true }));
     try {
       await workerApi.saveWorkerRemark(agentId, status);
+      refreshTeamActivity(agentId);
       hapticSuccess();
       void qc.invalidateQueries({ queryKey: ['worker-remarks'] });
       // Notify the worker about the call outcome update
@@ -361,8 +367,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
       // → happy moment. Ask for a review once. Negative/neutral outcomes skip.
       const outcomeColor = getOutcomeColor(status);
       if (outcomeColor === OUTCOME_GREEN || outcomeColor === OUTCOME_BLUE) void requestReviewOnce();
-    } catch {
-      toast.error(t('ws_outcome_save_failed_msg'), t('ws_save_failed_title'));
+    } catch (err: unknown) {
+      // Put the card back to what it was — never leave a status on screen that was not saved.
+      setCallStatus((p) => ({ ...p, [agentId]: prevStatus }));
+      setRemarkTimes((p) => { const n = { ...p }; if (prevTime) n[agentId] = prevTime; else delete n[agentId]; return n; });
+      toast.error(teamDeniedText(err, t) ?? t('ws_outcome_save_failed_msg'), t('ws_save_failed_title'));
     } finally {
       setSavingRemark((p) => ({ ...p, [agentId]: false }));
     }
@@ -667,6 +676,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               onPress={onOpenProfile}
               onDialCall={onDialCallStable}
               outcomeOpenSignal={outcomeOpen[item._id] ?? 0}
+              teamActivity={teamActivity[item._id]}
             />
           )}
           ListFooterComponent={

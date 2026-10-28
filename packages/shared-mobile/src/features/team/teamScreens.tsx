@@ -8,6 +8,7 @@ import { RequirementDetailScreen } from '../jobs/screens/RequirementDetailScreen
 import { WorkerProfileScreen } from '../search/screens/WorkerProfileScreen';
 import { EmployerAttendanceScreen } from '../employer/screens/EmployerAttendanceScreen';
 import { RequirementCalendarScreen } from '../employer/screens/RequirementCalendarScreen';
+import { EmployerAnalyticsScreen } from '../employer/screens/EmployerAnalyticsScreen';
 
 /**
  * Every screen a signed-in TEAM MEMBER can reach (the same stack is used by the employer app and the shared navigator).
@@ -25,6 +26,7 @@ export const renderTeamScreens = (Stack: any): React.JSX.Element => (
     <Stack.Screen name="RequirementDetail" component={RequirementDetailScreen} options={{ animation: 'slide_from_right' }} />
     <Stack.Screen name="EmployerAttendance" component={EmployerAttendanceScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
     <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+    <Stack.Screen name="EmployerAnalytics" component={EmployerAnalyticsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
     <Stack.Screen name="Notifications" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
     <Stack.Screen name="Subscription" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
   </>

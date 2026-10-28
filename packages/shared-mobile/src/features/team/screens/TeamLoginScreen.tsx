@@ -2,6 +2,7 @@ import { type NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -20,6 +21,7 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const toast = useToast();
+  const { t } = useTranslation('employer');
 
   const [linkText, setLinkText] = useState(route.params?.slug ?? '');
   const [company, setCompany] = useState<string | null>(null);
@@ -50,62 +52,62 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
 
   const sendOtp = async (): Promise<void> => {
     setBusy(true);
-    try { await teamApi.sendOtp(slug, ident.trim()); setSent(true); toast.success('OTP sent'); }
-    catch (e) { toast.error((e as Error).message || 'Could not send the OTP.'); }
+    try { await teamApi.sendOtp(slug, ident.trim()); setSent(true); toast.success(t('team_otp_sent')); }
+    catch (e) { toast.error((e as Error).message || t('team_otp_fail')); }
     finally { setBusy(false); }
   };
   const login = async (): Promise<void> => {
     setBusy(true);
     try { await signIn(await loginAsTeamMember(slug, ident.trim(), otp)); }
-    catch (e) { toast.error((e as Error).message || 'Login failed.'); setBusy(false); }
+    catch (e) { toast.error((e as Error).message || t('team_login_fail')); setBusy(false); }
   };
 
   return (
     <KeyboardAvoidingView style={[s.root, { backgroundColor: theme.colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[s.body, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-        <AppText variant="caption" color={theme.colors.primary} style={s.kicker}>TEAM LOGIN</AppText>
-        <AppText variant="heading" color={theme.colors.text}>{company ?? 'Log in to your company team'}</AppText>
+        <AppText variant="caption" color={theme.colors.primary} style={s.kicker}>{t('team_login_kicker')}</AppText>
+        <AppText variant="heading" color={theme.colors.text}>{company ?? t('team_login_title')}</AppText>
         <AppText variant="body" color={theme.colors.mutedText} style={s.sub}>
-          {company ? (active ? 'Enter your mobile number or email to continue.' : 'Team login is not available for this company right now.') : 'Paste the team link your employer sent you (or its code).'}
+          {company ? (active ? t('team_login_sub_enter') : t('team_login_sub_inactive')) : t('team_login_sub_paste')}
         </AppText>
 
         <TextInput
           value={linkText} onChangeText={(v) => { setLinkText(v); setSent(false); setOtp(''); }} editable={!sent}
-          autoCapitalize="none" autoCorrect={false} placeholder="Team link or code" placeholderTextColor={theme.colors.mutedText}
+          autoCapitalize="none" autoCorrect={false} placeholder={t('team_link_ph')} placeholderTextColor={theme.colors.mutedText}
           style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
         />
-        {checking && <AppText variant="caption" color={theme.colors.mutedText}>Checking…</AppText>}
-        {!!linkText && !slug && <AppText variant="caption" color={theme.colors.danger ?? '#DC2626'}>That doesn't look like a team link.</AppText>}
-        {!!slug && !checking && !company && <AppText variant="caption" color={theme.colors.danger ?? '#DC2626'}>This team link is not valid.</AppText>}
+        {checking && <AppText variant="caption" color={theme.colors.mutedText}>{t('team_checking')}</AppText>}
+        {!!linkText && !slug && <AppText variant="caption" color={theme.colors.danger ?? '#DC2626'}>{t('team_err_not_link')}</AppText>}
+        {!!slug && !checking && !company && <AppText variant="caption" color={theme.colors.danger ?? '#DC2626'}>{t('team_err_invalid')}</AppText>}
 
         {!!company && active && (
           <>
             <TextInput
               value={ident} onChangeText={(v) => setIdent(v.trim().slice(0, 120))} editable={!sent}
-              keyboardType="email-address" autoCapitalize="none" autoCorrect={false} placeholder="Mobile number or email" placeholderTextColor={theme.colors.mutedText}
+              keyboardType="email-address" autoCapitalize="none" autoCorrect={false} placeholder={t('team_ident_ph')} placeholderTextColor={theme.colors.mutedText}
               style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
             />
             {sent && (
               <TextInput
                 value={otp} onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))} autoFocus
-                keyboardType="number-pad" maxLength={6} placeholder="OTP" placeholderTextColor={theme.colors.mutedText}
+                keyboardType="number-pad" maxLength={6} placeholder={t('team_otp_ph')} placeholderTextColor={theme.colors.mutedText}
                 style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
               />
             )}
             {!sent ? (
-              <AppButton title="Send OTP" onPress={() => void sendOtp()} loading={busy} disabled={busy || !identOk} fullWidth />
+              <AppButton title={t('team_send_otp')} onPress={() => void sendOtp()} loading={busy} disabled={busy || !identOk} fullWidth />
             ) : (
               <>
-                <AppButton title="Login" onPress={() => void login()} loading={busy} disabled={busy || otp.length < 4} fullWidth />
-                <AppButton title="Change / resend OTP" variant="ghost" onPress={() => { setSent(false); setOtp(''); }} fullWidth />
+                <AppButton title={t('team_login_btn')} onPress={() => void login()} loading={busy} disabled={busy || otp.length < 4} fullWidth />
+                <AppButton title={t('team_change_otp')} variant="ghost" onPress={() => { setSent(false); setOtp(''); }} fullWidth />
               </>
             )}
             <AppText variant="caption" color={theme.colors.mutedText} center style={s.note}>
-              Only people added by {company} can log in. This does not affect your personal BookMyWorker account.
+              {t('team_login_note', { company })}
             </AppText>
           </>
         )}
-        <AppButton title="Back to normal login" variant="ghost" onPress={() => navigation.goBack()} fullWidth />
+        <AppButton title={t('team_back_normal')} variant="ghost" onPress={() => navigation.goBack()} fullWidth />
       </ScrollView>
     </KeyboardAvoidingView>
   );

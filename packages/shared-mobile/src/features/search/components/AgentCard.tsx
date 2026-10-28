@@ -14,6 +14,7 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { TeamWorkerActivity } from '../../../core/api/endpoints/workerApi';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '../../../shared/components/ui/AppText';
@@ -197,6 +198,8 @@ export interface AgentCardProps {
   onDialCall: (w: { id: string; name: string; phone: string }) => void;
   /** Non-zero → auto-open this card's call-outcome picker (after "yes, we talked"). */
   outcomeOpenSignal: number;
+  /** What the employer's team members did on this worker (who viewed the number / set a call status, and when). */
+  teamActivity?: TeamWorkerActivity;
 }
 
 export const AgentCard = React.memo(({
@@ -218,6 +221,7 @@ export const AgentCard = React.memo(({
   onPress,
   onDialCall,
   outcomeOpenSignal,
+  teamActivity,
 }: AgentCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -349,6 +353,22 @@ export const AgentCard = React.memo(({
           <AppText style={[wc.lastContactTxt, { color: theme.colors.mutedText }]}>
             {t('ws_last_contact', { time: remarkTime ? timeAgoDate(remarkTime, t) : t('ws_recently') })}
           </AppText>
+        </View>
+      )}
+
+      {/* ── Team activity: what the other team members did on this worker ── */}
+      {(!!teamActivity?.views?.length || !!teamActivity?.calls?.length) && (
+        <View style={[wc.availRow, wc.teamCol, { borderTopColor: theme.colors.border }]}>
+          {!!teamActivity?.views?.length && (
+            <AppText style={wc.teamTxt}>
+              {'👁 '}{t('team_viewed_by', { list: teamActivity.views.map((v) => `${v.name}${v.count > 1 ? ` ×${v.count}` : ''}${v.at ? ` (${timeAgoDate(new Date(v.at), t)})` : ''}`).join(', ') })}
+            </AppText>
+          )}
+          {(teamActivity?.calls ?? []).slice(0, 3).map((c, i) => (
+            <AppText key={`${c.name}-${i}`} style={wc.teamTxt}>
+              {'📞 '}{t('team_call_line', { name: c.name, status: t(`ws_outcome_${c.status}`, { defaultValue: c.status.replace(/_/g, ' ') }), time: c.at ? timeAgoDate(new Date(c.at), t) : t('team_earlier') })}
+            </AppText>
+          ))}
         </View>
       )}
 
@@ -523,6 +543,8 @@ const wc = StyleSheet.create({
   availTxt:       { fontSize: 12, fontWeight: '600', color: GREEN },
   availSep:       { fontSize: 12 },
   lastContactTxt: { fontSize: 12 },
+  teamCol: { flexDirection: 'column', alignItems: 'flex-start', gap: 2 },
+  teamTxt: { fontSize: 12, fontWeight: '600', color: '#7C3AED' },
 
   // Skills
   skillsStrip:    { borderTopWidth: StyleSheet.hairlineWidth },

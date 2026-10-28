@@ -144,6 +144,11 @@ function mapAgentToWorkerProfile(u: RawAgent): WorkerProfile {
   };
 }
 
+export interface TeamWorkerActivity {
+  views?: Array<{ name: string; count: number; at?: string }>;
+  calls?: Array<{ name: string; status: string; at?: string }>;
+}
+
 export const workerApi = {
   getAllAgents: async (params: WorkerSearchParams) => {
     const response = await apiClient.get<GetAllAgentsResponse>('/api/v1/user/getAllAgents', {
@@ -204,6 +209,13 @@ export const workerApi = {
 
   saveWorkerRemark: async (workerId: string, status: string): Promise<void> => {
     await apiClient.post('/api/v1/user/worker-remark', { workerId, status });
+  },
+
+  /** What the employer's TEAM did on these workers (who viewed the number / set a call status, and when). Empty for accounts without a team. */
+  getTeamWorkerActivity: async (ids: string[]): Promise<Record<string, TeamWorkerActivity>> => {
+    if (!ids.length) return {};
+    const res = await apiClient.get<{ activity?: Record<string, TeamWorkerActivity> }>('/api/v1/user/team-worker-activity', { params: { workerIds: ids.join(',') } });
+    return res.data?.activity ?? {};
   },
 
   getWorkerRemarks: async (): Promise<Array<{ workerId: string; status: string }>> => {
