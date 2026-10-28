@@ -60,8 +60,7 @@ import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/fe
 import { EmployerAnalyticsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAnalyticsScreen';
 // Employer Team Access — a team member's own login + restricted app, and the owner's "My Team" screen
 import { TeamLoginScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamLoginScreen';
-import { TeamInfoScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamInfoScreen';
-import { TeamWorkerSearchScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamWorkerSearchScreen';
+import { renderTeamScreens } from '../../../packages/shared-mobile/src/features/team/teamScreens';
 import { MyTeamScreen } from '../../../packages/shared-mobile/src/features/team/screens/MyTeamScreen';
 import { EmployerAgreementScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAgreementScreen';
 import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
@@ -218,13 +217,8 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="TeamLogin" component={TeamLoginScreen} options={{ animation: 'slide_from_right' }} />
           </>
         ) : state.session?.team ? (
-          // ── Signed in as an employer's TEAM MEMBER: worker search only (+ a worker's profile) ──
-          <>
-            <Stack.Screen name="WorkerSearch" component={TeamWorkerSearchScreen} options={{ animation: 'none', headerShown: false }} />
-            <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="Notifications" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-            <Stack.Screen name="Subscription" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
-          </>
+          // ── Signed in as an employer's TEAM MEMBER: only the modules their employer allowed ──
+          renderTeamScreens(Stack)
         ) : (
           // ── Authenticated ─────────────────────────────────────────
           <>

@@ -1,5 +1,5 @@
 import { parseTeamSlug, routeForTeam, setTeamMode, isTeamMode } from '../../../core/team/teamMode';
-import { canHaveTeam, nextPermissions } from '../../../features/team/teamEligibility';
+import { canHaveTeam, nextPermissions, isRequiredByOther, teamModulesFor, groupPermissions } from '../../../features/team/teamEligibility';
 
 describe('team mode routing', () => {
   it('sends employer user/notification calls through the team gateway', () => {
@@ -8,13 +8,19 @@ describe('team mode routing', () => {
     expect(routeForTeam('/api/v1/notifications/call-outcome').kind).toBe('gateway');
     expect(routeForTeam('https://www.bookmyworkers.com/api/v1/user/getuser')).toEqual({ kind: 'gateway', url: 'https://www.bookmyworkers.com/api/v1/team-access/api/user/getuser' });
   });
+  it('routes the module endpoints (requirements, attendance, pipeline, dashboard…) through the gateway too — including a router root with a query', () => {
+    for (const r of ['application', 'attendance', 'mapping', 'employer', 'mobile', 'project-media']) {
+      expect(routeForTeam(`/api/v1/${r}/x/y`)).toEqual({ kind: 'gateway', url: `/api/v1/team-access/api/${r}/x/y` });
+    }
+    expect(routeForTeam('/api/v1/application?limit=50')).toEqual({ kind: 'gateway', url: '/api/v1/team-access/api/application?limit=50' });
+  });
   it('lets only the public boot endpoints go out as they are', () => {
     for (const u of ['/api/v1/settings/public', '/api/v1/settings/app-version?app=employer', '/api/v1/maintenance?app=employer', '/api/v1/team-access/login']) {
       expect(routeForTeam(u).kind).toBe('passthrough');
     }
   });
   it('blocks everything else locally (payments, requirements, employer, admin, settings writes…)', () => {
-    for (const u of ['/api/v1/payment/create', '/api/v1/job/post', '/api/v1/employer/x', '/api/v1/admin/users', '/api/v1/settings/pricing', '/api/v1/employer-team', '/api/v1/chat/rooms', '/somewhere/else']) {
+    for (const u of ['/api/v1/payment/create', '/api/v1/job/post', '/api/v1/employer-team/members', '/api/v1/activity/my', '/api/v1/chat/x', '/api/v1/admin/users', '/api/v1/settings/pricing', '/api/v1/employer-team', '/api/v1/chat/rooms', '/somewhere/else']) {
       expect(routeForTeam(u).kind).toBe('blocked');
     }
   });
@@ -50,7 +56,23 @@ describe('who can have a team / permission toggling', () => {
     expect(nextPermissions([], 'workers:call')).toEqual(['workers:call', 'workers:search']);
     expect(nextPermissions(['workers:search', 'workers:call'], 'workers:call')).toEqual(['workers:search']);
     expect(nextPermissions(['workers:search'], 'workers:search')).toEqual([]);
-    expect(nextPermissions(['workers:search', 'workers:status'], 'workers:search')).toEqual(['workers:status', 'workers:search']);
+    expect(nextPermissions(['workers:search', 'workers:status'], 'workers:search')).toEqual([]); // turning the read off turns the write off
+  });
+  it('module permissions: write brings read; read stays locked while the write is on', () => {
+    expect(nextPermissions([], 'attendance:mark').sort()).toEqual(['attendance:mark', 'attendance:view']);
+    expect(nextPermissions([], 'requirements:manage').sort()).toEqual(['requirements:manage', 'requirements:view']);
+    expect(nextPermissions([], 'requirements:post')).toEqual(['requirements:post']);
+    expect(isRequiredByOther(['attendance:view', 'attendance:mark'], 'attendance:view')).toBe(true);
+    expect(isRequiredByOther(['attendance:view'], 'attendance:view')).toBe(false);
+  });
+  it('a member sees only the modules their permissions open', () => {
+    expect(teamModulesFor(['workers:search']).map((m) => m.key)).toEqual(['workers']);
+    expect(teamModulesFor(['dashboard:view', 'requirements:post', 'attendance:view', 'attendance:mark']).map((m) => m.key)).toEqual(['dashboard', 'post', 'attendance']);
+    expect(teamModulesFor([])).toEqual([]);
+    expect(teamModulesFor(undefined)).toEqual([]);
+  });
+  it('groups the permission catalogue in order', () => {
+    expect(groupPermissions([{ group: 'A' }, { group: 'B' }, { group: 'A' }]).map((g) => [g.name, g.items.length])).toEqual([['A', 2], ['B', 1]]);
   });
 });
 

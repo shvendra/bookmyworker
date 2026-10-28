@@ -6,11 +6,12 @@ import { AppButton } from '../../../shared/components/ui/AppButton';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { useToast } from '../../../shared/state/toast/ToastContext';
-import { nextPermissions } from '../teamEligibility';
+import { nextPermissions, isRequiredByOther, groupPermissions } from '../teamEligibility';
 import { teamApi, teamLinkUrl, type TeamActivityRow, type TeamMember, type TeamOverview, type TeamPermission } from '../../../core/api/endpoints/teamApi';
 
 const ACTION_LABEL: Record<string, string> = {
-  login: 'Logged in', unlock_contact: "Viewed a worker's number", update_status: 'Updated a call status',
+  login: 'Logged in', post_requirement: 'Posted a requirement', update_requirement: 'Updated a requirement', hire_worker: 'Hired a worker', boost_requirement: 'Boosted a requirement',
+  shortlist_worker: 'Shortlisted a worker', update_pipeline: 'Moved a worker in the pipeline', invite_worker: 'Invited a worker', mark_attendance: 'Marked attendance', unlock_contact: "Viewed a worker's number", update_status: 'Updated a call status',
   member_added: 'Added to the team', permissions_changed: 'Permissions changed', member_removed: 'Removed by employer', member_left: 'Left the team',
   member_paused: 'Paused', member_resumed: 'Resumed', invite_sent: 'Invite email re-sent',
   admin_paused: 'Paused by BookMyWorker support', admin_resumed: 'Resumed by BookMyWorker support', admin_removed: 'Removed by BookMyWorker support',
@@ -53,7 +54,7 @@ const MemberDialog = ({ visible, member, catalog, onClose, onSaved }: DialogProp
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={s.scrim}>
-        <View style={[s.sheet, { backgroundColor: theme.colors.surface }]}>
+        <ScrollView style={s.sheetScroll} contentContainerStyle={[s.sheet, { backgroundColor: theme.colors.surface }]} keyboardShouldPersistTaps="handled">
           <AppText variant="heading" color={theme.colors.text}>{editing ? 'Edit team member' : 'Add team member'}</AppText>
           <TextInput value={name} onChangeText={setName} placeholder="Name" placeholderTextColor={theme.colors.mutedText}
             style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border }]} />
@@ -64,20 +65,25 @@ const MemberDialog = ({ visible, member, catalog, onClose, onSaved }: DialogProp
             placeholder="Email (login link is sent here)" placeholderTextColor={theme.colors.mutedText}
             style={[s.input, { color: theme.colors.text, borderColor: !email || validEmail(email) ? theme.colors.border : '#DC2626' }]} />
           <AppText variant="label" color={theme.colors.text}>What can they do? (changeable any time, per person)</AppText>
-          {catalog.map((p) => (
-            <View key={p.key} style={s.permRow}>
-              <View style={s.permText}>
-                <AppText variant="body" color={theme.colors.text}>{p.label}</AppText>
-                <AppText variant="caption" color={theme.colors.mutedText}>{p.desc}</AppText>
-              </View>
-              <Switch value={perms.includes(p.key)} disabled={p.key === 'workers:search' && perms.length > 1} onValueChange={() => setPerms((c) => nextPermissions(c, p.key))} />
+          {groupPermissions(catalog).map((g) => (
+            <View key={g.name} style={s.group}>
+              <AppText variant="caption" color={theme.colors.mutedText} style={s.groupName}>{g.name.toUpperCase()}</AppText>
+              {g.items.map((p) => (
+                <View key={p.key} style={s.permRow}>
+                  <View style={s.permText}>
+                    <AppText variant="body" color={theme.colors.text}>{p.label}</AppText>
+                    <AppText variant="caption" color={theme.colors.mutedText}>{p.desc}</AppText>
+                  </View>
+                  <Switch value={perms.includes(p.key)} disabled={isRequiredByOther(perms, p.key)} onValueChange={() => setPerms((c) => nextPermissions(c, p.key))} />
+                </View>
+              ))}
             </View>
           ))}
           <View style={s.btnRow}>
             <AppButton title="Cancel" variant="ghost" onPress={onClose} style={s.flex} />
             <AppButton title={editing ? 'Save' : 'Add & send link'} onPress={() => void save()} loading={saving} disabled={!valid || saving} style={s.flex} />
           </View>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -223,8 +229,11 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   actRow: { flexDirection: 'row', gap: 8, paddingTop: 6, borderTopWidth: StyleSheet.hairlineWidth },
   scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheetScroll: { maxHeight: '90%' },
   sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, gap: 10 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 16 },
+  group: { gap: 6, marginTop: 4 },
+  groupName: { letterSpacing: 1, fontWeight: '700' },
   permRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   permText: { flex: 1 },
 });

@@ -12,6 +12,9 @@ export type EmployerStackParamList = {
   TeamLogin: { slug?: string } | undefined;
   TeamInfo: undefined;
   MyTeam: undefined;
+  // Signed in as a team member: module home + requirement picker (opens a requirement, or its attendance)
+  TeamHome: undefined;
+  TeamRequirements: { mode: 'requirements' | 'attendance' };
   RegisterOtp: {
     phone: string;
     role: 'Employer';

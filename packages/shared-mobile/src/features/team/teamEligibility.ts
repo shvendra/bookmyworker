@@ -5,8 +5,47 @@ export const canHaveTeam = (employerType?: string | Record<string, boolean> | nu
   return s.includes('industry') || s.includes('agency') || s.includes('contractor');
 };
 
-/** "Find workers" is required for everything else — turning anything on turns it on, and it can't be turned off while others are on. */
-export const nextPermissions = (current: string[], key: string): string[] => {
-  const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-  return next.length > 0 && !next.includes('workers:search') ? [...next, 'workers:search'] : next;
+/** A write permission needs its read permission (mirror of backend utils/teamAccess.js PERMISSION_REQUIRES). */
+export const PERMISSION_REQUIRES: Record<string, string[]> = {
+  'workers:call': ['workers:search'],
+  'workers:status': ['workers:search'],
+  'requirements:manage': ['requirements:view'],
+  'attendance:mark': ['attendance:view'],
 };
+
+/** Toggle one permission: on brings what it needs; off also removes whatever needs it. */
+export const nextPermissions = (current: string[], key: string): string[] => {
+  if (current.includes(key)) {
+    const dependents = Object.entries(PERMISSION_REQUIRES).filter(([, deps]) => deps.includes(key)).map(([k]) => k);
+    return current.filter((k) => k !== key && !dependents.includes(k));
+  }
+  return Array.from(new Set([...current, key, ...(PERMISSION_REQUIRES[key] ?? [])]));
+};
+
+/** A read permission that another ticked permission depends on stays locked on. */
+export const isRequiredByOther = (current: string[], key: string): boolean =>
+  current.some((k) => k !== key && (PERMISSION_REQUIRES[k] ?? []).includes(key));
+
+export const groupPermissions = <T extends { group?: string }>(catalog: T[]): { name: string; items: T[] }[] => {
+  const groups: { name: string; items: T[] }[] = [];
+  for (const p of catalog) {
+    const name = p.group ?? 'Other';
+    let g = groups.find((x) => x.name === name);
+    if (!g) { g = { name, items: [] }; groups.push(g); }
+    g.items.push(p);
+  }
+  return groups;
+};
+
+export type TeamModuleKey = 'dashboard' | 'post' | 'requirements' | 'calendar' | 'workers' | 'attendance';
+export interface TeamModule { key: TeamModuleKey; label: string; desc: string; emoji: string; any: string[] }
+/** What a member can open in the app. Same rules as the CRM portal; the server enforces them again on every call. */
+export const TEAM_MODULES: TeamModule[] = [
+  { key: 'dashboard', label: 'Dashboard', desc: 'Requirement summary', emoji: '📊', any: ['dashboard:view'] },
+  { key: 'post', label: 'Post Requirement', desc: 'Post a new worker requirement', emoji: '➕', any: ['requirements:post'] },
+  { key: 'requirements', label: 'My Requirements', desc: 'View and manage requirements', emoji: '📋', any: ['requirements:view'] },
+  { key: 'calendar', label: 'Requirement Calendar', desc: 'Requirements by date', emoji: '🗓️', any: ['calendar:view'] },
+  { key: 'workers', label: 'Find Workers', desc: 'Search and call workers', emoji: '🔎', any: ['workers:search'] },
+  { key: 'attendance', label: 'Worker Attendance', desc: 'View and mark attendance', emoji: '✅', any: ['attendance:view'] },
+];
+export const teamModulesFor = (permissions: string[] = []): TeamModule[] => TEAM_MODULES.filter((m) => m.any.some((p) => permissions.includes(p)));

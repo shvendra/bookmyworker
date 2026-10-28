@@ -7,7 +7,7 @@ export const setTeamMode = (value: boolean): void => { active = value; };
 export const isTeamMode = (): boolean => active;
 
 /** Routers the team gateway re-mounts (must match backend routes/teamAccessRoutes.js). */
-const GATEWAY_ROUTERS = ['user', 'notifications'];
+const GATEWAY_ROUTERS = ['user', 'notifications', 'application', 'attendance', 'mapping', 'employer', 'mobile', 'project-media'];
 
 /** Public endpoints the app reads on every boot (maintenance / update gate, public settings): safe without any login. */
 const PASSTHROUGH = [/^\/api\/v1\/settings\/public/, /^\/api\/v1\/settings\/app-version/, /^\/api\/v1\/maintenance(\/|\?|$)/, /^\/api\/v1\/team-access\//];
@@ -21,7 +21,7 @@ export type TeamRoute =
 export const routeForTeam = (url: string): TeamRoute => {
   const path = url.replace(/^https?:\/\/[^/]+/i, '');
   if (PASSTHROUGH.some((re) => re.test(path))) return { kind: 'passthrough', url };
-  const m = path.match(/^\/api\/v1\/([^/?]+)(\/.*)?$/);
+  const m = path.match(/^\/api\/v1\/([^/?#]+)([/?#].*)?$/);
   if (m && GATEWAY_ROUTERS.includes(m[1])) {
     return { kind: 'gateway', url: url.replace(`/api/v1/${m[1]}`, `/api/v1/team-access/api/${m[1]}`) };
   }
