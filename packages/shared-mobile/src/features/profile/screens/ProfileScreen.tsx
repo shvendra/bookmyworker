@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { canHaveTeam } from '../../team/teamEligibility';
 import {
   ActivityIndicator,
   Image,
@@ -592,6 +593,9 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="receipt-outline" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
+          )}
+          {user?.role === 'employer' && empIsSubscribed && canHaveTeam(empProfile?.employerType) && (
+            <MenuItem icon="people-outline" label="My Team" onPress={() => navigation.navigate('MyTeam')} />
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="pulse-outline" label={t('profile_myActivity')} onPress={() => navigation.navigate('MyActivity')} />

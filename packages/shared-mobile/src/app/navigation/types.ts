@@ -7,6 +7,10 @@ export type RootStackParamList = {
   Login: { roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app' } | undefined;
   OtpVerification: { phone: string; roleHint?: AppRole; appContext?: 'employer-app' | 'agent-app'; otpChannel?: 'whatsapp' | 'sms' };
   Register: undefined;
+  // Employer Team Access — a team member's own login (company link/code + mobile + OTP) and the owner's team screen.
+  TeamLogin: { slug?: string } | undefined;
+  TeamInfo: undefined;
+  MyTeam: undefined;
   RegisterOtp: {
     phone: string;
     alternate?: string;

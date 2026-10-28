@@ -141,6 +141,16 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
             </AppText>
           </Pressable>
 
+          {/* Employer app only: staff of an employer log in here with the company's team link (separate from their own account). */}
+          {appContext === 'employer-app' && (
+            <Pressable style={styles.registerRow} onPress={() => navigation.navigate('TeamLogin')}>
+              <AppText variant="body" color={theme.colors.mutedText} center>
+                Team member of a company?{' '}
+                <AppText variant="body" color={theme.colors.primary} style={styles.registerLink}>Team login</AppText>
+              </AppText>
+            </Pressable>
+          )}
+
           {/* Trust badges — shrink-to-fit + wrap so they never clip at large font scales. */}
           <View style={styles.trustRow}>
             {[t('trustBadge1'), t('trustBadge2'), t('trustBadge3')].map((item) => (

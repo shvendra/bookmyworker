@@ -8,6 +8,10 @@ export type EmployerStackParamList = {
   Login: { roleHint?: 'employer'; appContext?: 'employer-app' } | undefined;
   OtpVerification: { phone: string; roleHint?: 'employer'; appContext?: 'employer-app'; otpChannel?: 'whatsapp' | 'sms' };
   Register: undefined;
+  // Employer Team Access
+  TeamLogin: { slug?: string } | undefined;
+  TeamInfo: undefined;
+  MyTeam: undefined;
   RegisterOtp: {
     phone: string;
     role: 'Employer';

@@ -11,6 +11,7 @@ export const saveAuthSession = async (session: AuthSession): Promise<void> => {
     onboardingCompleted: session.onboardingCompleted,
     availableRoles: session.availableRoles,
     defaultRole: session.defaultRole,
+    team: session.team,
   };
 
   await Promise.all([

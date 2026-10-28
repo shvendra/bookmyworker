@@ -3,6 +3,7 @@ import { ENV } from '../config/env';
 import { clearAuthSession, getAccessToken, saveRefreshedToken } from '../storage/authStorage';
 import { emitForceSignOut } from '../../state/auth/authEventBus';
 import { reportNetworkOk, reportNetworkDown } from '../query/connectivity';
+import { isTeamMode, routeForTeam } from '../team/teamMode';
 
 export interface ApiClientError extends Error {
   statusCode?: number;
@@ -117,6 +118,22 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 apiClient.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
+  // Signed in as an employer's TEAM MEMBER: employer calls go through the team gateway with the team token (never the normal
+  // Authorization header); anything the gateway does not offer is refused here as a 403 — NOT sent unauthenticated, which
+  // would come back 401 and sign the member out.
+  if (isTeamMode()) {
+    const route = routeForTeam(config.url ?? '');
+    if (route.kind === 'blocked') {
+      config.adapter = () => Promise.reject(new AxiosError(
+        'Not available for team accounts', 'ERR_BAD_REQUEST', config, null,
+        { status: 403, statusText: 'Forbidden', headers: {}, config, data: { success: false, code: 'TEAM_NOT_ALLOWED', message: 'This action is not available for team accounts.' } },
+      ));
+      return config;
+    }
+    config.url = route.url;
+    if (route.kind === 'gateway' && token) config.headers['X-Team-Token'] = token;
+    return config;
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

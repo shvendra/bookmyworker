@@ -14,6 +14,7 @@ import { apiClient } from '../../core/api/client';
 import { notificationApi } from '../../core/api/endpoints/notificationApi';
 import { registerForPushNotifications } from '../../core/notifications/pushService';
 import { socketService } from '../../core/realtime/socketService';
+import { setTeamMode } from '../../core/team/teamMode';
 import { authService } from '../../features/auth/services/authService';
 import type { AppLanguage, AppRole } from '../../shared/types/domain';
 import type { AuthContextValue, AuthSession, AuthState } from './authTypes';
@@ -39,6 +40,8 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
         session = null;
       }
       if (session) {
+        // Team-member session: the very first request must already go through the team gateway.
+        setTeamMode(!!session.team);
         setState({ status: 'authenticated', session });
         // Only apply DB language if one is saved — never reset to 'en' for users
         // who haven't had their language saved to the DB yet (e.g. mid-registration).
@@ -80,6 +83,7 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   useEffect(() => {
     const handler = (): void => {
+      setTeamMode(false);
       setState({ status: 'unauthenticated', session: null });
       queryClient.clear();
       resetToWelcome();
@@ -93,8 +97,11 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
 
   const signIn = useCallback(async (session: AuthSession): Promise<void> => {
     await saveAuthSession(session);
+    setTeamMode(!!session.team);
     setState({ status: 'authenticated', session });
-    // Register push token in background — never block the login flow
+    // Register push token in background — never block the login flow.
+    // (Not for a team member: push belongs to the employer's own device.)
+    if (session.team) return;
     void (async () => {
       try {
         const token = await registerForPushNotifications();
@@ -106,6 +113,7 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
   const signOut = useCallback((): void => {
     // 1. Clear queries first so no stale data lingers
     queryClient.clear();
+    const wasTeam = !!state.session?.team;
     // 2. Update auth state — this drives the conditional screen list in AppNavigator
     //    The AppNavigator's useEffect will call resetToWelcome() AFTER the screens
     //    are re-rendered with the auth screen set (so Welcome actually exists).
@@ -115,6 +123,12 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
     try { socketService.disconnect(); } catch {}
     // 4. Background cleanup — never blocks UI
     void (async () => {
+      // A team member never touches the employer's push token or session — only their own local login is cleared.
+      if (wasTeam) {
+        try { await clearAuthSession(); } catch {}
+        setTeamMode(false);
+        return;
+      }
       try { await clearAuthSession(); } catch {}
       try {
         await notificationApi.removeToken();
@@ -123,7 +137,7 @@ export const AuthProvider = ({ children }: React.PropsWithChildren): React.JSX.E
         await apiClient.post('/api/v1/user/logout');
       } catch {}
     })();
-  }, []);
+  }, [state.session?.team]);
 
   const patchSession = useCallback(
     async (updater: (session: AuthSession) => AuthSession): Promise<void> => {

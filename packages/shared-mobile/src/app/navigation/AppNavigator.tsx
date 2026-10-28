@@ -59,6 +59,10 @@ import { RequirementInvitationsScreen } from '../../features/employer/screens/Re
 import { RequirementCalendarScreen } from '../../features/employer/screens/RequirementCalendarScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../features/payment/screens/PaymentWebViewScreen';
 import { PdfViewerScreen } from '../../features/profile/screens/PdfViewerScreen';
+import { TeamLoginScreen } from '../../features/team/screens/TeamLoginScreen';
+import { TeamInfoScreen } from '../../features/team/screens/TeamInfoScreen';
+import { TeamWorkerSearchScreen } from '../../features/team/screens/TeamWorkerSearchScreen';
+import { MyTeamScreen } from '../../features/team/screens/MyTeamScreen';
 
 import type { RootStackParamList } from './types';
 
@@ -301,6 +305,15 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="TeamLogin" component={TeamLoginScreen} options={{ animation: 'slide_from_right' }} />
+          </>
+        ) : state.session?.team ? (
+          // ── Signed in as an employer's TEAM MEMBER: worker search only (+ a worker's profile) ──
+          <>
+            <Stack.Screen name="WorkerSearch" component={TeamWorkerSearchScreen} options={{ animation: 'none' }} />
+            <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Notifications" component={TeamInfoScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Subscription" component={TeamInfoScreen} options={{ animation: 'slide_from_right' }} />
           </>
         ) : (
           // ── Authenticated: tabs + inner screens in one flat stack ─
@@ -337,6 +350,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Invitations" component={InvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementInvitations" component={RequirementInvitationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyTeam" component={MyTeamScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}

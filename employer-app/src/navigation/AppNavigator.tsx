@@ -58,6 +58,11 @@ import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shar
 import { PipelineScreen } from '../../../packages/shared-mobile/src/features/employer/screens/PipelineScreen';
 import { EmployerAttendanceScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAttendanceScreen';
 import { EmployerAnalyticsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAnalyticsScreen';
+// Employer Team Access — a team member's own login + restricted app, and the owner's "My Team" screen
+import { TeamLoginScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamLoginScreen';
+import { TeamInfoScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamInfoScreen';
+import { TeamWorkerSearchScreen } from '../../../packages/shared-mobile/src/features/team/screens/TeamWorkerSearchScreen';
+import { MyTeamScreen } from '../../../packages/shared-mobile/src/features/team/screens/MyTeamScreen';
 import { EmployerAgreementScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerAgreementScreen';
 import { RequirementCalendarScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementCalendarScreen';
 import { CallHistoryScreen } from '../../../packages/shared-mobile/src/features/employer/screens/CallHistoryScreen';
@@ -210,6 +215,15 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="Register" component={EmployerRegisterScreen} />
             <Stack.Screen name="RegisterOtp" component={RegisterOtpScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} initialParams={{ roleHint: 'employer' }} />
+            <Stack.Screen name="TeamLogin" component={TeamLoginScreen} options={{ animation: 'slide_from_right' }} />
+          </>
+        ) : state.session?.team ? (
+          // ── Signed in as an employer's TEAM MEMBER: worker search only (+ a worker's profile) ──
+          <>
+            <Stack.Screen name="WorkerSearch" component={TeamWorkerSearchScreen} options={{ animation: 'none', headerShown: false }} />
+            <Stack.Screen name="WorkerProfile" component={WorkerProfileScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Notifications" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="Subscription" component={TeamInfoScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
           </>
         ) : (
           // ── Authenticated ─────────────────────────────────────────
@@ -265,6 +279,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="WorkforceRequirementDetail" component={WorkforceRequirementDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="MyWorkforceInvoices" component={MyInvoicesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="WorkforceInvoiceDetail" component={InvoiceDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="MyTeam" component={MyTeamScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen
               name="ChatRoom"
               options={{ animation: 'slide_from_right', headerShown: false }}
@@ -282,7 +297,7 @@ export const AppNavigator = (): React.JSX.Element => {
       </Stack.Navigator>
       {/* Floating promotion ad(s) — renders only when SuperAdmin has at least
           one active Promotion Ad, and only once logged in as an Employer. */}
-      {state.status === 'authenticated' && <PromotionOverlay target="employer_app" />}
+      {state.status === 'authenticated' && !state.session?.team && <PromotionOverlay target="employer_app" />}
     </NavigationContainer>
   );
 };

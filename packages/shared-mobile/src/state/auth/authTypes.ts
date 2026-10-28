@@ -1,11 +1,20 @@
 import type { AppLanguage, AppRole, AuthTokens, UserProfile } from '../../shared/types/domain';
 
+/** Set when the app is signed in as an employer's team member (not as the employer). */
+export interface TeamInfo {
+  company: string;
+  memberName: string;
+  permissions: string[];
+  slug: string;
+}
+
 export interface AuthSession {
   tokens: AuthTokens;
   user: UserProfile;
   onboardingCompleted: boolean;
   availableRoles?: string[];   // backend role strings e.g. ['Agent','Employer']
   defaultRole?: string;        // which role opens automatically on login
+  team?: TeamInfo;             // team-member session (Employer Team Access)
 }
 
 export interface AuthState {
