@@ -16,12 +16,15 @@ describe('teamApi', () => {
     mock.onPost('/api/v1/employer-team/members').reply(201, { member: { _id: 'm1' } });
     mock.onPut('/api/v1/employer-team/members/m1').reply(200, { member: { _id: 'm1' } });
     mock.onDelete('/api/v1/employer-team/members/m1').reply(200, {});
+    mock.onPost('/api/v1/employer-team/members/m1/invite').reply(200, {});
     mock.onPost('/api/v1/employer-team/link/rotate').reply(200, { link: { slug: 'new' } });
     mock.onGet('/api/v1/employer-team/activity').reply(200, { activity: [] });
     expect((await teamApi.getTeam()).company).toBe('Acme');
-    expect((await teamApi.addMember({ name: 'Ravi', phone: '9876543210', permissions: ['workers:search'] })).member._id).toBe('m1');
+    expect((await teamApi.addMember({ name: 'Ravi', phone: '9876543210', email: 'ravi@acme.com', permissions: ['workers:search'] })).member._id).toBe('m1');
     await teamApi.updateMember('m1', { status: 'suspended' });
     expect(JSON.parse(mock.history.put[0].data)).toEqual({ status: 'suspended' });
+    await teamApi.resendInvite('m1');
+    expect(mock.history.post.some((p) => p.url?.endsWith('/members/m1/invite'))).toBe(true);
     await teamApi.removeMember('m1');
     expect((await teamApi.rotateLink()).link.slug).toBe('new');
     expect((await teamApi.getActivity(10)).activity).toEqual([]);
@@ -36,7 +39,15 @@ describe('teamApi', () => {
     expect(r.token).toBe('T');
     const sent = mock.history.post.find((p) => p.url?.endsWith('/login'))!;
     expect(sent.headers?.['X-Team-Client']).toBe('app');
-    expect(Object.keys(JSON.parse(sent.data)).sort()).toEqual(['otp', 'phone', 'slug']);
+    expect(Object.keys(JSON.parse(sent.data)).sort()).toEqual(['identifier', 'otp', 'slug']);
+  });
+  it('login accepts an email as the id, and a member can leave', async () => {
+    mock.onPost('/api/v1/team-access/send-otp').reply(200, { message: 'x' });
+    mock.onPost('/api/v1/team-access/leave').reply(200, { success: true });
+    await teamApi.sendOtp('acme-4k2p', 'ravi@acme.com');
+    expect(JSON.parse(mock.history.post[0].data)).toEqual({ slug: 'acme-4k2p', identifier: 'ravi@acme.com' });
+    await teamApi.leave();
+    expect(mock.history.post.some((p) => p.url?.endsWith('/team-access/leave'))).toBe(true);
   });
   it('builds the shareable link', () => {
     expect(teamLinkUrl('acme-4k2p')).toBe('https://www.bookmyworkers.com/app/team/acme-4k2p');

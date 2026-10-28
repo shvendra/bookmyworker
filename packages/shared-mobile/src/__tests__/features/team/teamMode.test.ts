@@ -53,3 +53,13 @@ describe('who can have a team / permission toggling', () => {
     expect(nextPermissions(['workers:search', 'workers:status'], 'workers:search')).toEqual(['workers:status', 'workers:search']);
   });
 });
+
+import { isTeamIdentifier } from '../../../core/team/teamMode';
+describe('isTeamIdentifier (mobile number or email)', () => {
+  it('accepts a valid mobile number or email', () => {
+    for (const v of ['9876543210', '98765 43210', 'ravi@acme.com', ' Ravi.K@acme.co.in ']) expect(isTeamIdentifier(v)).toBe(true);
+  });
+  it('rejects half-typed or invalid ids', () => {
+    for (const v of ['', '12345', '5876543210', 'ravi@', 'ravi@acme', '@acme.com', 'a b@acme.com']) expect(isTeamIdentifier(v)).toBe(false);
+  });
+});

@@ -6,12 +6,12 @@ import type { AuthSession } from '../../../state/auth/authTypes';
 import type { UserProfile } from '../../../shared/types/domain';
 
 /**
- * Log in as an employer's team member (mobile + OTP, via the company link). Returns a ready session: the token is a TEAM token,
+ * Log in as an employer's team member (mobile number OR email + OTP, via the company link). Returns a ready session: the token is a TEAM token,
  * kept apart from any personal login, and `session.team` switches the whole app into team mode.
  * Nothing here touches the member's own BookMyWorker account.
  */
-export async function loginAsTeamMember(slug: string, phone: string, otp: string): Promise<AuthSession> {
-  const res = await teamApi.login(slug, phone, otp);
+export async function loginAsTeamMember(slug: string, identifier: string, otp: string): Promise<AuthSession> {
+  const res = await teamApi.login(slug, identifier, otp);
   const tokens = { accessToken: res.token, refreshToken: res.token, expiresAt: Date.now() + 60 * 60 * 1000 };
   const team = { company: res.company, memberName: res.member.name, permissions: res.member.permissions, slug };
   const placeholder: UserProfile = { id: 'team-member', fullName: res.member.name, phone: '', role: 'employer', kycStatus: 'pending', language: 'en' };

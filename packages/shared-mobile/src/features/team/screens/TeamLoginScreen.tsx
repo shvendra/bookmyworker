@@ -8,7 +8,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { teamApi } from '../../../core/api/endpoints/teamApi';
-import { parseTeamSlug } from '../../../core/team/teamMode';
+import { parseTeamSlug, isTeamIdentifier } from '../../../core/team/teamMode';
 import { loginAsTeamMember } from '../services/teamAuthService';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
@@ -25,12 +25,13 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
   const [company, setCompany] = useState<string | null>(null);
   const [active, setActive] = useState(true);
   const [checking, setChecking] = useState(false);
-  const [phone, setPhone] = useState('');
+  const [ident, setIdent] = useState(''); // mobile number or email
   const [otp, setOtp] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const slug = parseTeamSlug(linkText);
+  const identOk = isTeamIdentifier(ident);
 
   // Look the company up as soon as a valid link/code is entered, so the person sees WHICH company they are logging in to.
   useEffect(() => {
@@ -49,13 +50,13 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
 
   const sendOtp = async (): Promise<void> => {
     setBusy(true);
-    try { await teamApi.sendOtp(slug, phone); setSent(true); toast.success('OTP sent'); }
+    try { await teamApi.sendOtp(slug, ident.trim()); setSent(true); toast.success('OTP sent'); }
     catch (e) { toast.error((e as Error).message || 'Could not send the OTP.'); }
     finally { setBusy(false); }
   };
   const login = async (): Promise<void> => {
     setBusy(true);
-    try { await signIn(await loginAsTeamMember(slug, phone, otp)); }
+    try { await signIn(await loginAsTeamMember(slug, ident.trim(), otp)); }
     catch (e) { toast.error((e as Error).message || 'Login failed.'); setBusy(false); }
   };
 
@@ -65,7 +66,7 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
         <AppText variant="caption" color={theme.colors.primary} style={s.kicker}>TEAM LOGIN</AppText>
         <AppText variant="heading" color={theme.colors.text}>{company ?? 'Log in to your company team'}</AppText>
         <AppText variant="body" color={theme.colors.mutedText} style={s.sub}>
-          {company ? (active ? 'Enter your mobile number to continue.' : 'Team login is not available for this company right now.') : 'Paste the team link your employer sent you (or its code).'}
+          {company ? (active ? 'Enter your mobile number or email to continue.' : 'Team login is not available for this company right now.') : 'Paste the team link your employer sent you (or its code).'}
         </AppText>
 
         <TextInput
@@ -80,8 +81,8 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
         {!!company && active && (
           <>
             <TextInput
-              value={phone} onChangeText={(v) => setPhone(v.replace(/\D/g, '').slice(0, 10))} editable={!sent}
-              keyboardType="number-pad" maxLength={10} placeholder="Mobile number" placeholderTextColor={theme.colors.mutedText}
+              value={ident} onChangeText={(v) => setIdent(v.trim().slice(0, 120))} editable={!sent}
+              keyboardType="email-address" autoCapitalize="none" autoCorrect={false} placeholder="Mobile number or email" placeholderTextColor={theme.colors.mutedText}
               style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
             />
             {sent && (
@@ -92,15 +93,15 @@ export const TeamLoginScreen = ({ route, navigation }: Props): React.JSX.Element
               />
             )}
             {!sent ? (
-              <AppButton title="Send OTP" onPress={() => void sendOtp()} loading={busy} disabled={busy || phone.length !== 10} fullWidth />
+              <AppButton title="Send OTP" onPress={() => void sendOtp()} loading={busy} disabled={busy || !identOk} fullWidth />
             ) : (
               <>
                 <AppButton title="Login" onPress={() => void login()} loading={busy} disabled={busy || otp.length < 4} fullWidth />
-                <AppButton title="Change number / resend OTP" variant="ghost" onPress={() => { setSent(false); setOtp(''); }} fullWidth />
+                <AppButton title="Change / resend OTP" variant="ghost" onPress={() => { setSent(false); setOtp(''); }} fullWidth />
               </>
             )}
             <AppText variant="caption" color={theme.colors.mutedText} center style={s.note}>
-              Only numbers added by {company} can log in. This does not affect your personal BookMyWorker account.
+              Only people added by {company} can log in. This does not affect your personal BookMyWorker account.
             </AppText>
           </>
         )}

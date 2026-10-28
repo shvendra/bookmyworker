@@ -9,7 +9,14 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { nextPermissions } from '../teamEligibility';
 import { teamApi, teamLinkUrl, type TeamActivityRow, type TeamMember, type TeamOverview, type TeamPermission } from '../../../core/api/endpoints/teamApi';
 
-const ACTION_LABEL: Record<string, string> = { login: 'Logged in', unlock_contact: "Viewed a worker's number", update_status: 'Updated a call status' };
+const ACTION_LABEL: Record<string, string> = {
+  login: 'Logged in', unlock_contact: "Viewed a worker's number", update_status: 'Updated a call status',
+  member_added: 'Added to the team', permissions_changed: 'Permissions changed', member_removed: 'Removed by employer', member_left: 'Left the team',
+  member_paused: 'Paused', member_resumed: 'Resumed', invite_sent: 'Invite email re-sent',
+  admin_paused: 'Paused by BookMyWorker support', admin_resumed: 'Resumed by BookMyWorker support', admin_removed: 'Removed by BookMyWorker support',
+};
+const REMOVED_BY: Record<string, string> = { owner: 'Removed by you', self: 'Left on their own', admin: 'Removed by BookMyWorker support' };
+const validEmail = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 const whenText = (d?: string | null): string => (d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'Never');
 
 interface DialogProps { visible: boolean; member: TeamMember | null; catalog: TeamPermission[]; onClose: () => void; onSaved: () => void }
@@ -19,26 +26,30 @@ const MemberDialog = ({ visible, member, catalog, onClose, onSaved }: DialogProp
   const toast = useToast();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [perms, setPerms] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const editing = !!member;
 
   useEffect(() => {
-    if (visible) { setName(member?.name ?? ''); setPhone(member?.phone ?? ''); setPerms(member?.permissions ?? ['workers:search']); }
+    if (visible) { setName(member?.name ?? ''); setPhone(member?.phone ?? ''); setEmail(member?.email ?? ''); setPerms(member?.permissions ?? ['workers:search']); }
   }, [visible, member]);
 
   const save = async (): Promise<void> => {
     setSaving(true);
     try {
-      if (member) await teamApi.updateMember(member._id, { name, permissions: perms });
-      else await teamApi.addMember({ name, phone, permissions: perms });
-      toast.success(editing ? 'Team member updated' : 'Team member added');
+      if (member) await teamApi.updateMember(member._id, { name, email, permissions: perms });
+      else {
+        const r = await teamApi.addMember({ name, phone, email, permissions: perms });
+        if (r.emailSent === false) toast.error('Member added, but the invite email could not be sent. Use "Email link" to send it again.');
+      }
+      toast.success(editing ? 'Team member updated' : 'Team member added — login link emailed');
       onSaved();
     } catch (e) { toast.error((e as Error).message || 'Could not save'); }
     finally { setSaving(false); }
   };
 
-  const valid = name.trim().length >= 2 && perms.length > 0 && (editing || phone.length === 10);
+  const valid = name.trim().length >= 2 && perms.length > 0 && validEmail(email) && (editing || phone.length === 10);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={s.scrim}>
@@ -49,7 +60,10 @@ const MemberDialog = ({ visible, member, catalog, onClose, onSaved }: DialogProp
           <TextInput value={phone} onChangeText={(v) => setPhone(v.replace(/\D/g, '').slice(0, 10))} editable={!editing} keyboardType="number-pad" maxLength={10}
             placeholder="Mobile number" placeholderTextColor={theme.colors.mutedText}
             style={[s.input, { color: theme.colors.text, borderColor: theme.colors.border, opacity: editing ? 0.6 : 1 }]} />
-          <AppText variant="label" color={theme.colors.text}>What can they do?</AppText>
+          <TextInput value={email} onChangeText={(v) => setEmail(v.trim().slice(0, 120))} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+            placeholder="Email (login link is sent here)" placeholderTextColor={theme.colors.mutedText}
+            style={[s.input, { color: theme.colors.text, borderColor: !email || validEmail(email) ? theme.colors.border : '#DC2626' }]} />
+          <AppText variant="label" color={theme.colors.text}>What can they do? (changeable any time, per person)</AppText>
           {catalog.map((p) => (
             <View key={p.key} style={s.permRow}>
               <View style={s.permText}>
@@ -61,7 +75,7 @@ const MemberDialog = ({ visible, member, catalog, onClose, onSaved }: DialogProp
           ))}
           <View style={s.btnRow}>
             <AppButton title="Cancel" variant="ghost" onPress={onClose} style={s.flex} />
-            <AppButton title={editing ? 'Save' : 'Add member'} onPress={() => void save()} loading={saving} disabled={!valid || saving} style={s.flex} />
+            <AppButton title={editing ? 'Save' : 'Add & send link'} onPress={() => void save()} loading={saving} disabled={!valid || saving} style={s.flex} />
           </View>
         </View>
       </View>
@@ -101,11 +115,12 @@ export const MyTeamScreen = (): React.JSX.Element => {
   };
   const remove = (m: TeamMember): void =>
     confirm(`Remove ${m.name}?`, 'They lose access immediately. Their own personal account (if any) is not affected.', 'Remove', () => void run(() => teamApi.removeMember(m._id), 'Removed'), true);
+  const resend = (m: TeamMember): void => void run(() => teamApi.resendInvite(m._id), `Invite emailed to ${m.email}`);
   const rotate = (): void =>
     confirm('Make a new team link?', 'The old link stops working. Your members just need the new link to log in.', 'New link', () => void run(() => teamApi.rotateLink(), 'New link created'));
   const share = (): void => {
     if (!data?.link) return;
-    void Share.share({ message: `You have been added to ${data.company}'s team on BookMyWorker. Log in here with your mobile number: ${teamLinkUrl(data.link.slug)}` });
+    void Share.share({ message: `You have been added to ${data.company}'s team on BookMyWorker. Log in here with your mobile number or email: ${teamLinkUrl(data.link.slug)}` });
   };
 
   if (error) return <View style={[s.center, { backgroundColor: theme.colors.background }]}><AppText variant="body" color={theme.colors.mutedText} center>{error}</AppText><AppButton title="Retry" onPress={() => void load()} /></View>;
@@ -135,7 +150,7 @@ export const MyTeamScreen = (): React.JSX.Element => {
               <AppButton title="Share link" size="sm" onPress={share} style={s.flex} />
               <AppButton title="New link" size="sm" variant="outline" onPress={rotate} style={s.flex} />
             </View>
-            <AppText variant="caption" color={theme.colors.mutedText}>The page shows "{data.company}". Only numbers you add below can log in.</AppText>
+            <AppText variant="caption" color={theme.colors.mutedText}>The page shows "{data.company}". Only the numbers / emails you add below can log in.</AppText>
           </View>
         )}
 
@@ -149,9 +164,11 @@ export const MyTeamScreen = (): React.JSX.Element => {
           {data.members.map((m) => (
             <View key={m._id} style={[s.member, { borderTopColor: theme.colors.border }]}>
               <AppText variant="label" color={theme.colors.text}>{m.name}{m.status === 'suspended' ? '  ·  Paused' : ''}</AppText>
-              <AppText variant="caption" color={theme.colors.mutedText}>{m.phone} · Last login: {whenText(m.lastLoginAt)}</AppText>
+              <AppText variant="caption" color={theme.colors.mutedText}>{m.phone}{m.email ? ` · ${m.email}` : ' · (no email yet — tap Edit to add)'}</AppText>
+              <AppText variant="caption" color={theme.colors.mutedText}>Last login: {whenText(m.lastLoginAt)}</AppText>
               <AppText variant="caption" color={theme.colors.primary}>{m.permissions.map(permLabel).join(' · ')}</AppText>
               <View style={s.btnRow}>
+                {!!m.email && <AppButton title="Email link" size="xs" variant="outline" onPress={() => resend(m)} />}
                 <AppButton title="Edit" size="xs" variant="outline" onPress={() => setDialog({ visible: true, member: m })} />
                 <AppButton title={m.status === 'active' ? 'Pause' : 'Resume'} size="xs" variant="outline" onPress={() => pause(m)} />
                 <AppButton title="Remove" size="xs" variant="danger" onPress={() => remove(m)} />
@@ -160,8 +177,26 @@ export const MyTeamScreen = (): React.JSX.Element => {
           ))}
         </View>
 
+        {!!data.former?.length && (
+          <View style={[s.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+            <AppText variant="label" color={theme.colors.text}>Former members (history)</AppText>
+            {data.former.map((m) => (
+              <View key={m._id} style={[s.actRow, { borderTopColor: theme.colors.border }]}>
+                <View style={s.flex}>
+                  <AppText variant="caption" color={theme.colors.text}>{m.name}</AppText>
+                  <AppText variant="caption" color={theme.colors.mutedText}>{m.phone}{m.email ? ` · ${m.email}` : ''}</AppText>
+                </View>
+                <View>
+                  <AppText variant="caption" color={theme.colors.text}>{REMOVED_BY[m.removedBy ?? ''] ?? 'Removed'}</AppText>
+                  <AppText variant="caption" color={theme.colors.mutedText}>{whenText(m.removedAt)}</AppText>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={[s.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-          <AppText variant="label" color={theme.colors.text}>Recent team activity</AppText>
+          <AppText variant="label" color={theme.colors.text}>Team activity & history</AppText>
           {!activity.length && <AppText variant="caption" color={theme.colors.mutedText}>Nothing yet.</AppText>}
           {activity.map((a) => (
             <View key={a._id} style={[s.actRow, { borderTopColor: theme.colors.border }]}>

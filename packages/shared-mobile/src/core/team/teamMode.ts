@@ -35,3 +35,10 @@ export const parseTeamSlug = (input: string): string => {
   const slug = (m ? m[1] : text.split(/[\s?#]/)[0]).toLowerCase();
   return /^[a-z0-9][a-z0-9-]{2,80}$/.test(slug) ? slug : '';
 };
+
+/** A team login id: a 10-digit Indian mobile number or an email address. */
+export const isTeamIdentifier = (v: string): boolean => {
+  const t = v.trim();
+  if (t.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t);
+  return /^[6-9]\d{9}$/.test(t.replace(/\D/g, ''));
+};
