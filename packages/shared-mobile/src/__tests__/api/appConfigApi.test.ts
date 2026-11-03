@@ -64,3 +64,16 @@ describe('appConfigApi.fetchAppConfig — authFlags', () => {
     expect((await fetchAppConfig()).authFlags).toMatchObject({ otpPrimary: null, otpAlternate: null, otpUnavailable: true });
   });
 });
+
+describe('appConfigApi.fetchAppConfig — festival end time', () => {
+  it('reads the end time the server reports, and defaults to none', async () => {
+    mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { promotions: { festivalMode: true, festivalImageUrl: 'u', festivalEndsAt: '2026-11-03T18:29:00.000Z' } } });
+    let cfg = await fetchAppConfig();
+    expect(cfg.promotions).toEqual({ festivalMode: true, festivalImageUrl: 'u', festivalEndsAt: '2026-11-03T18:29:00.000Z' });
+
+    mock.reset();
+    mock.onGet('/api/v1/settings/public').reply(200, { success: true, data: { promotions: { festivalMode: true, festivalImageUrl: 'u' } } });
+    cfg = await fetchAppConfig();
+    expect(cfg.promotions.festivalEndsAt).toBeNull();
+  });
+});

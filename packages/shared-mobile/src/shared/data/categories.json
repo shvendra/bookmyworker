@@ -373,6 +373,13 @@
         "punjabilabel": "ਖੇਤ ਮਜ਼ਦੂਰ"
       },
       {
+        "label": "Farm Supervisor",
+        "hindilabel": "फार्म सुपरवाइज़र",
+        "marathilabel": "फार्म पर्यवेक्षक",
+        "gujaratilabel": "ફાર્મ સુપરવાઇઝર",
+        "value": "farm_supervisor"
+      },
+      {
         "label": "Farmer",
         "hindilabel": "किसान",
         "marathilabel": "शेतकरी",
@@ -758,6 +765,13 @@
         "banglalabel": "হুইল অ্যালাইনমেন্ট টেকনিশিয়ান",
         "odialabel": "ହ୍ୱିଲ ଆଲାଇନମେଣ୍ଟ ଟେକ୍ନିସିଆନ",
         "punjabilabel": "ਵ੍ਹੀਲ ਅਲਾਈਨਮੈਂਟ ਟੈਕਨੀਸ਼ੀਅਨ"
+      },
+      {
+        "label": "Workshop Supervisor",
+        "hindilabel": "वर्कशॉप सुपरवाइज़र",
+        "marathilabel": "वर्कशॉप पर्यवेक्षक",
+        "gujaratilabel": "વર્કશોપ સુપરવાઇઝર",
+        "value": "workshop_supervisor"
       }
     ]
   },
@@ -979,6 +993,13 @@
         "banglalabel": "সিভিল হেল্পার",
         "odialabel": "ସିଭିଲ ହେଲ୍ପର",
         "punjabilabel": "ਸਿਵਲ ਹੈਲਪਰ"
+      },
+      {
+        "label": "Construction Site Supervisor",
+        "hindilabel": "कंस्ट्रक्शन साइट सुपरवाइज़र",
+        "marathilabel": "बांधकाम साइट पर्यवेक्षक",
+        "gujaratilabel": "કન્સ્ટ્રક્શન સાઇટ સુપરવાઇઝર",
+        "value": "construction_site_supervisor"
       },
       {
         "label": "Electrician",
@@ -1806,6 +1827,13 @@
         "punjabilabel": "ਈਵੈਂਟ ਮਾਰਕੀਟਿੰਗ ਪ੍ਰਮੋਟਰ"
       },
       {
+        "label": "Event Supervisor",
+        "hindilabel": "इवेंट सुपरवाइज़र",
+        "marathilabel": "इव्हेंट पर्यवेक्षक",
+        "gujaratilabel": "ઇવેન્ટ સુપરવાઇઝર",
+        "value": "event_supervisor"
+      },
+      {
         "label": "Flower Decoration Worker",
         "hindilabel": "फूल सजावट कर्मी",
         "marathilabel": "फुलांची सजावट कामगार",
@@ -2009,6 +2037,13 @@
         "banglalabel": "হাসপাতাল ক্লিনার",
         "odialabel": "ଡାକ୍ତରଖାନା କ୍ଲିନର",
         "punjabilabel": "ਹਸਪਤਾਲ ਕਲੀਨਰ"
+      },
+      {
+        "label": "Hospital Support Supervisor",
+        "hindilabel": "अस्पताल सहायक सुपरवाइज़र",
+        "marathilabel": "रुग्णालय सहाय्यक पर्यवेक्षक",
+        "gujaratilabel": "હોસ્પિટલ સહાયક સુપરવાઇઝર",
+        "value": "hospital_support_supervisor"
       },
       {
         "label": "Medical Attendant",
@@ -2244,6 +2279,13 @@
         "punjabilabel": "ਫਰੰਟ ਆਫਿਸ ਐਗਜ਼ੀਕਿਊਟਿਵ"
       },
       {
+        "label": "Hospitality Supervisor",
+        "hindilabel": "हॉस्पिटैलिटी सुपरवाइज़र",
+        "marathilabel": "हॉस्पिटॅलिटी पर्यवेक्षक",
+        "gujaratilabel": "હોસ્પિટાલિટી સુપરવાઇઝર",
+        "value": "hospitality_supervisor"
+      },
+      {
         "label": "Hotel Receptionist",
         "hindilabel": "होटल रिसेप्शनिस्ट",
         "marathilabel": "हॉटेल रिसेप्शनिस्ट",
@@ -2475,6 +2517,13 @@
         "banglalabel": "বাসন মাজার লোক",
         "odialabel": "ବାସନ ଧୁଆ କର୍ମୀ",
         "punjabilabel": "ਭਾਂਡੇ ਧੋਣ ਵਾਲਾ"
+      },
+      {
+        "label": "Domestic Staff Supervisor",
+        "hindilabel": "घरेलू स्टाफ सुपरवाइज़र",
+        "marathilabel": "घरगुती कर्मचारी पर्यवेक्षक",
+        "gujaratilabel": "ઘરેલુ સ્ટાફ સુપરવાઇઝર",
+        "value": "domestic_staff_supervisor"
       },
       {
         "label": "Elderly Caregiver",
@@ -4297,6 +4346,13 @@
         "punjabilabel": "CCTV ਆਪਰੇਟਰ"
       },
       {
+        "label": "Facility & Housekeeping Supervisor",
+        "hindilabel": "फैसिलिटी और हाउसकीपिंग सुपरवाइज़र",
+        "marathilabel": "फॅसिलिटी आणि हाऊसकीपिंग पर्यवेक्षक",
+        "gujaratilabel": "ફેસિલિટી અને હાઉસકીપિંગ સુપરવાઇઝર",
+        "value": "facility_services_supervisor"
+      },
+      {
         "label": "Facility Cleaner",
         "hindilabel": "फैसिलिटी क्लीनर",
         "marathilabel": "फॅसिलिटी क्लीनर",
@@ -4393,6 +4449,13 @@
         "banglalabel": "সিকিউরিটি গার্ড",
         "odialabel": "ସିକ୍ୟୁରିଟି ଗାର୍ଡ",
         "punjabilabel": "ਸਕਿਉਰਿਟੀ ਗਾਰਡ"
+      },
+      {
+        "label": "Security Guard Supervisor",
+        "hindilabel": "सिक्योरिटी गार्ड सुपरवाइज़र",
+        "marathilabel": "सिक्युरिटी गार्ड पर्यवेक्षक",
+        "gujaratilabel": "સિક્યુરિટી ગાર્ડ સુપરવાઇઝર",
+        "value": "security_guard_supervisor"
       },
       {
         "label": "Sweeper",
@@ -4698,6 +4761,13 @@
         "punjabilabel": "ਸੋਲਰ ਪੈਨਲ ਟੈਕਨੀਸ਼ੀਅਨ"
       },
       {
+        "label": "Technical Supervisor",
+        "hindilabel": "टेक्निकल सुपरवाइज़र",
+        "marathilabel": "तांत्रिक पर्यवेक्षक",
+        "gujaratilabel": "ટેકનિકલ સુપરવાઇઝર",
+        "value": "technical_supervisor"
+      },
+      {
         "label": "Two-Wheeler Mechanic",
         "hindilabel": "टू-व्हीलर मैकेनिक",
         "marathilabel": "टू-व्हीलर मेकॅनिक",
@@ -4964,6 +5034,13 @@
         "banglalabel": "সোশ্যাল মিডিয়া ম্যানেজার",
         "odialabel": "ସୋସିଆଲ ମିଡିଆ ମ୍ୟାନେଜର",
         "punjabilabel": "ਸੋਸ਼ਲ ਮੀਡੀਆ ਮੈਨੇਜਰ"
+      },
+      {
+        "label": "Studio Supervisor",
+        "hindilabel": "स्टूडियो सुपरवाइज़र",
+        "marathilabel": "स्टुडिओ पर्यवेक्षक",
+        "gujaratilabel": "સ્ટુડિયો સુપરવાઇઝર",
+        "value": "studio_supervisor"
       },
       {
         "label": "Tailor",
@@ -7445,6 +7522,13 @@
         "banglalabel": "আনলোডিং শ্রমিক",
         "odialabel": "ଅନ୍‌ଲୋଡିଂ ଶ୍ରମିକ",
         "punjabilabel": "ਅਨਲੋਡਿੰਗ ਮਜ਼ਦੂਰ"
+      },
+      {
+        "label": "Warehouse & Logistics Supervisor",
+        "hindilabel": "वेयरहाउस और लॉजिस्टिक्स सुपरवाइज़र",
+        "marathilabel": "वेअरहाऊस आणि लॉजिस्टिक्स पर्यवेक्षक",
+        "gujaratilabel": "વેરહાઉસ અને લોજિસ્ટિક્સ સુપરવાઇઝર",
+        "value": "logistics_warehouse_supervisor"
       },
       {
         "label": "Warehouse Helper",

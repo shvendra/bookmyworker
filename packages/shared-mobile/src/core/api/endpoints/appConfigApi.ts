@@ -40,6 +40,8 @@ export interface AppConfig {
   promotions: {
     festivalMode:     boolean;
     festivalImageUrl: string;
+    /** ISO time the banner switches itself off (the server already reports festivalMode=false after it); null = no end time. */
+    festivalEndsAt:   string | null;
   };
   // Floating promotion ads (SuperAdmin-controlled, Settings → Promotion Ads).
   // Several can be active at once — the app rotates through them one at a
@@ -140,7 +142,7 @@ const DEFAULTS: AppConfig = {
     employerCount:    8000,
     requirementCount: 56000,
   },
-  promotions: { festivalMode: false, festivalImageUrl: '' },
+  promotions: { festivalMode: false, festivalImageUrl: '', festivalEndsAt: null },
   promotionAds: [],
   authFlags: { registrationOtpEnabled: true, loginOtpEnabled: true, ...DEFAULT_OTP_FLAGS },
   couponsEnabled: false,
@@ -193,6 +195,7 @@ export async function fetchAppConfig(): Promise<AppConfig> {
     promotions: {
       festivalMode:     Boolean(promo.festivalMode),
       festivalImageUrl: String(promo.festivalImageUrl ?? ''),
+      festivalEndsAt:   promo.festivalEndsAt ? String(promo.festivalEndsAt) : null,
     },
     promotionAds: (Array.isArray(d.promotionAds) ? d.promotionAds : [])
       .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')

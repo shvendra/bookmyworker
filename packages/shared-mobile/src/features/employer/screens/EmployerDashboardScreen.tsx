@@ -1356,6 +1356,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
   useEffect(() => {
     const p = config.promotions;
     if (!p?.festivalMode || !p.festivalImageUrl) return;
+    if (p.festivalEndsAt && new Date(p.festivalEndsAt).getTime() <= Date.now()) return; // end time passed
     if (festivalShownThisSession) return;
     // Open only once the banner image is really downloaded — otherwise the dialog shows as an
     // empty dark box. A failed/slow load just skips the popup (and retries next dashboard visit).
