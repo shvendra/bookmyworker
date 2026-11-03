@@ -69,6 +69,7 @@ import { BgcHomeScreen } from '../../../packages/shared-mobile/src/features/bgc/
 import { BgcEnrollScreen } from '../../../packages/shared-mobile/src/features/bgc/screens/BgcEnrollScreen';
 import { BgcOrdersScreen } from '../../../packages/shared-mobile/src/features/bgc/screens/BgcOrdersScreen';
 import { ViewedContactsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/ViewedContactsScreen';
+import { EmployerFeedbackScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerFeedbackScreen';
 import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 import { RequirementInvitationsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementInvitationsScreen';
@@ -262,6 +263,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="RequirementCalendar" component={RequirementCalendarScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="ViewedContacts" component={ViewedContactsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="EmployerFeedback" component={EmployerFeedbackScreen} options={{ animation: 'slide_from_bottom', headerShown: false }} />
             <Stack.Screen name="BgcHome" component={BgcHomeScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="BgcEnroll" component={BgcEnrollScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="BgcOrders" component={BgcOrdersScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

@@ -6,6 +6,8 @@ export const registerStep2Schema = z
   .object({
     name: z.string().min(1, 'Name is required'),
     phone: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit number'),
+    // Same as production: optional, but must be a real address when given.
+    email: z.string().email('Enter a valid email').optional().or(z.literal('')),
     password: z.string().min(6, 'Min 6 characters'),
     confirmPassword: z.string(),
   })

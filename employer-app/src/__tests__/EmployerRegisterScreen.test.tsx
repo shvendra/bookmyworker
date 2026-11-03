@@ -616,3 +616,60 @@ describe('EmployerRegisterScreen — OTP channel (modes, "try another way", outa
     await waitFor(() => expect(showAlert).toHaveBeenCalledWith('alertError', 'OTP service is temporarily unavailable.'));
   });
 });
+
+// The optional email: the welcome email with the user manual goes to it (the backend sends it when an Employer registers with an email).
+describe('EmployerRegisterScreen — optional email (welcome manual)', () => {
+  const fill = (email?: string) => {
+    fireEvent.changeText(screen.getByPlaceholderText('companyNamePlaceholder'), 'Acme Co');
+    fireEvent.changeText(screen.getByPlaceholderText('9876543210'), '9876543210');
+    if (email !== undefined) fireEvent.changeText(screen.getByPlaceholderText('emailPlaceholder'), email);
+    fireEvent.changeText(screen.getByPlaceholderText('minSixChars'), 'secret1');
+    fireEvent.changeText(screen.getByPlaceholderText('reEnterPassword'), 'secret1');
+  };
+
+  it('shows an optional email field on step 2', () => {
+    renderScreen();
+    goToStep2();
+    expect(screen.getByText('emailOptional')).toBeTruthy();
+    expect(screen.getByPlaceholderText('emailPlaceholder')).toBeTruthy();
+  });
+
+  it('passes the email to the OTP step so the account is created with it', async () => {
+    const nav = renderScreen();
+    goToStep2();
+    fill('  owner@acme.in ');
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(nav.navigate).toHaveBeenCalledWith('RegisterOtp', expect.objectContaining({ email: 'owner@acme.in' })));
+  });
+
+  it('sends no email at all when the field is left empty (it is optional)', async () => {
+    const nav = renderScreen();
+    goToStep2();
+    fill();
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(nav.navigate).toHaveBeenCalled());
+    expect((nav.navigate.mock.calls[0] as unknown[])[1]).not.toHaveProperty('email');
+  });
+
+  it('rejects an invalid email and does not request an OTP', async () => {
+    renderScreen();
+    goToStep2();
+    fill('not-an-email');
+    fireEvent.press(screen.getByText('sendOtpRegister'));
+    await waitFor(() => expect(screen.getByText('Enter a valid email')).toBeTruthy());
+    expect(authService.requestOtp).not.toHaveBeenCalled();
+  });
+
+  it('registers directly with the email when OTP is switched off', async () => {
+    __authFlags.registrationOtpEnabled = false;
+    try {
+      renderScreen();
+      goToStep2();
+      fill('owner@acme.in');
+      fireEvent.press(screen.getByText('createAccount'));
+      await waitFor(() => expect(authService.register).toHaveBeenCalledWith(expect.objectContaining({ email: 'owner@acme.in' })));
+    } finally {
+      __authFlags.registrationOtpEnabled = true;
+    }
+  });
+});

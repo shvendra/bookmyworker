@@ -46,6 +46,7 @@ import { Avatar } from '../../../shared/components/ui/Avatar';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { buildPhotoUrl } from '../../../core/config/env';
+import { useFeedbackNudge } from '../utils/useFeedbackNudge';
 import { apiClient } from '../../../core/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmployerSubscriptionModal } from '../../payment/components/EmployerSubscriptionModal';
@@ -1441,6 +1442,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
     if (!exp) return false;
     return new Date(exp).getTime() <= Date.now();
   })();
+
+  // Quarterly "How is BookMyWorker working for you?" — only for a running paid plan; the server decides whether they are due.
+  useFeedbackNudge(isSubscribed, () => navigation.navigate('EmployerFeedback', { fromPrompt: true }));
 
   const remainingContacts = profile?.remainingContacts ?? 0;
   // Gifted free contacts still available (SuperAdmin-configured). Shown as a

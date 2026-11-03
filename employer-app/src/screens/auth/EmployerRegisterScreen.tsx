@@ -152,7 +152,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
     formState: { errors },
   } = useForm<RegisterStep2Values>({
     resolver: zodResolver(registerStep2Schema),
-    defaultValues: { name: '', phone: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', phone: '', email: '', password: '', confirmPassword: '' },
   });
 
   const toggleType = (key: EmployerTypeKey): void =>
@@ -177,6 +177,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
       name: values.name,
       phone: values.phone,
       password: values.password,
+      email: values.email?.trim() || undefined,
       role: 'Employer',
       language: selectedLang,
       employerType: selectedTypes,
@@ -205,6 +206,7 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         role: 'Employer',
         name: values.name,
         password: values.password,
+        ...(values.email?.trim() ? { email: values.email.trim() } : {}),
         employerType: JSON.stringify(selectedTypes),
       });
     } catch (error) {
@@ -470,6 +472,20 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
                   <AppInput value={value} onChangeText={onChange} onBlur={onBlur}
                     placeholder="9876543210" keyboardType="phone-pad"
                     leadingIcon="+91" maxLength={10} errorText={errors.phone?.message} />
+                )}
+              />
+            </View>
+
+            {/* Optional: the welcome email with the user manual goes here (the website sign-up already asks for it). */}
+            <View style={styles.field}>
+              <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.label}>
+                {t('emailOptional')}
+              </AppText>
+              <Controller control={control} name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput value={value ?? ''} onChangeText={(v) => onChange(v.replace(/\s/g, ''))} onBlur={onBlur}
+                    placeholder={t('emailPlaceholder')} keyboardType="email-address" autoCapitalize="none"
+                    errorText={errors.email?.message} />
                 )}
               />
             </View>

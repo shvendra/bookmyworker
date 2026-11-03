@@ -31,6 +31,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { usePricingConfig } from '../../../core/api/endpoints/pricingApi';
 import { LANGUAGE_OPTIONS } from '../../../core/i18n/translations';
 import { useTranslation } from 'react-i18next';
+import { API_ORIGIN } from '../../../core/config/env';
 import type { AppLanguage, KycStatus } from '../../../shared/types/domain';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import i18n from '../../../core/i18n';
@@ -59,6 +60,9 @@ interface MenuItemProps {
   right?: React.ReactNode;
   isLast?: boolean;
 }
+
+// The employer user guide is hosted with the website (same PDF as the CRM's "User Guide" menu item).
+export const EMPLOYER_GUIDE_URL = `${API_ORIGIN}/app/BookMyWorker-Employer-Guide.pdf`;
 
 const MenuItem = ({ icon, label, onPress, danger = false, badge, right, isLast = false }: MenuItemProps): React.JSX.Element => {
   const { theme } = useAppTheme();
@@ -605,6 +609,16 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="eye-outline" label={t('profile_viewedContacts')} onPress={() => navigation.navigate('ViewedContacts')} />
+          )}
+          {user?.role === 'employer' && empIsSubscribed && (
+            <MenuItem icon="chatbubble-ellipses-outline" label={t('fb_menu', { ns: 'employer' })} onPress={() => navigation.navigate('EmployerFeedback')} />
+          )}
+          {user?.role === 'employer' && (
+            <MenuItem
+              icon="book-outline"
+              label={t('guide_menu', { ns: 'employer' })}
+              onPress={() => navigation.navigate('PdfViewer', { url: EMPLOYER_GUIDE_URL, title: t('guide_menu', { ns: 'employer' }) })}
+            />
           )}
           {user?.role === 'employer' && bgcEnabled && (
             <MenuItem icon="shield-checkmark-outline" label={t('bgc_title', { ns: 'employer' })} onPress={() => navigation.navigate('BgcHome')} />
