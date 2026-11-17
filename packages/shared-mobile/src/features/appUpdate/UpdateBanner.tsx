@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../core/theme';
+import { bannerTopPadding } from './bannerLayout';
 import { AppText } from '../../shared/components/ui/AppText';
 
 interface UpdateBannerProps {
@@ -9,6 +11,8 @@ interface UpdateBannerProps {
   updateUrl: string;
   /** Optional in-app update (Play flow). Resolve true if it started; false/absent → open the store link. */
   onStartInAppUpdate?: () => Promise<boolean>;
+  /** Called when the person closes the strip, so the host can give the screen's top inset back. */
+  onDismiss?: () => void;
 }
 
 /**
@@ -16,13 +20,16 @@ interface UpdateBannerProps {
  * the app when the installed version is behind `latestVersion` but not below the
  * hard `minVersion`. Dismissal is per app-session (re-appears next cold start).
  */
-export const UpdateBanner = ({ latestVersion, updateUrl, onStartInAppUpdate }: UpdateBannerProps): React.JSX.Element | null => {
+export const UpdateBanner = ({ latestVersion, updateUrl, onStartInAppUpdate, onDismiss }: UpdateBannerProps): React.JSX.Element | null => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
   return (
-    <View style={[styles.wrap, { backgroundColor: theme.colors.primary }]}>
+    // The app draws edge-to-edge, so the strip must start BELOW the status bar (clock / battery / notch) — otherwise it
+    // sits on top of them, as it did on the login screen.
+    <View testID="update-banner" style={[styles.wrap, { backgroundColor: theme.colors.primary, paddingTop: bannerTopPadding(insets.top) }]}>
       <View style={styles.textCol}>
         <AppText variant="labelSm" color="#FFFFFF" style={styles.title}>
           Update available{latestVersion ? ` · v${latestVersion}` : ''}
@@ -43,7 +50,7 @@ export const UpdateBanner = ({ latestVersion, updateUrl, onStartInAppUpdate }: U
       >
         <AppText variant="labelSm" color={theme.colors.primary} style={styles.ctaTxt}>Update</AppText>
       </Pressable>
-      <Pressable onPress={() => setDismissed(true)} style={styles.close} hitSlop={12}>
+      <Pressable testID="update-banner-close" onPress={() => { setDismissed(true); onDismiss?.(); }} style={styles.close} hitSlop={12}>
         <AppText variant="labelSm" color="rgba(255,255,255,0.9)">✕</AppText>
       </Pressable>
     </View>
@@ -54,7 +61,7 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingBottom: 8,
     paddingLeft: 14,
     paddingRight: 8,
     gap: 10,

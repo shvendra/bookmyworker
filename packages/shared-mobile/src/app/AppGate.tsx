@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { queryClient } from '../core/query/queryClient';
 import { forceOnlineRecheck } from '../core/query/connectivity';
 import { useConnectivity } from '../core/query/useConnectivity';
@@ -9,6 +10,12 @@ import { useAppUpdate } from '../features/appUpdate/useAppUpdate';
 import type { AppSurface } from '../features/appUpdate/appUpdateApi';
 import { UpdateBanner } from '../features/appUpdate/UpdateBanner';
 import { startInAppUpdate } from '../features/appUpdate/inAppUpdate';
+import {
+  loadDismissedVersion, saveDismissedVersion, shouldShowUpdateStrip,
+  loadDialogMemory, saveDialogMemory, shouldShowUpdateDialog, type DialogMemory,
+} from '../features/appUpdate/dismissStore';
+import { UpdateDialog } from '../features/appUpdate/UpdateDialog';
+import { useAuth } from '../state/auth/AuthContext';
 import { FullScreenNotice } from '../shared/components/feedback/FullScreenNotice';
 
 interface AppGateProps {
@@ -35,6 +42,48 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
   const maintenance = useMaintenance(app);
   const update = useAppUpdate(app as AppSurface);
   const [retrying, setRetrying] = useState(false);
+  const { state: authState } = useAuth();
+  const authenticated = authState.status === 'authenticated';
+  // Update dialog (Update / Later) after sign-in — at most once per day for a version, and again at once for a newer one.
+  const [dialogMemory, setDialogMemory] = useState<DialogMemory | null>(null);
+  const [dialogShown, setDialogShown] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void loadDialogMemory(app).then((m) => { if (alive) setDialogMemory(m); });
+    return () => { alive = false; };
+  }, [app]);
+  useEffect(() => {
+    if (shouldShowUpdateDialog({ status: update.status, authenticated, latestVersion: update.latestVersion, memory: dialogMemory, now: Date.now(), shownThisRun: dialogShown })) {
+      setDialogShown(true);
+      setDialogOpen(true);
+      void saveDialogMemory(app, { version: update.latestVersion, at: Date.now() });
+    }
+  }, [update.status, update.latestVersion, authenticated, dialogMemory, dialogShown, app]);
+  const [updateStripClosed, setUpdateStripClosed] = useState(false);
+  // Which version's strip was closed before (null = still reading storage). Closing it once means it stays away for that version.
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadDismissedVersion(app).then((v) => { if (alive) setDismissedVersion(v); });
+    return () => { alive = false; };
+  }, [app]);
+
+  const updateDialog = (
+    <UpdateDialog
+      visible={dialogOpen && update.status === 'optional'}
+      latestVersion={update.latestVersion}
+      message={update.message}
+      onUpdate={() => {
+        setDialogOpen(false);
+        void (async () => {
+          const started = await startInAppUpdate(false).catch(() => false);
+          if (!started && update.updateUrl) await Linking.openURL(update.updateUrl);
+        })();
+      }}
+      onLater={() => setDialogOpen(false)}
+    />
+  );
 
   // Mandatory update: try the in-app (Play) flow automatically, once, so the user
   // updates without leaving the app. If it can't start, the blocking screen's
@@ -113,18 +162,33 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
   }
 
   // Optional update → app runs normally, with a dismissible strip up top.
-  if (update.status === 'optional') {
+  if (shouldShowUpdateStrip({ status: update.status, latestVersion: update.latestVersion, dismissedVersion, closedNow: updateStripClosed })) {
+    // The strip now covers the status-bar area itself, so the screens below must not pad for it a second time:
+    // tell them the top inset is 0 while the strip is showing (they get it back the moment it is closed).
     return (
       <View style={{ flex: 1 }}>
         <UpdateBanner
           latestVersion={update.latestVersion}
           updateUrl={update.updateUrl}
           onStartInAppUpdate={() => startInAppUpdate(false)}
+          onDismiss={() => { setUpdateStripClosed(true); void saveDismissedVersion(app, update.latestVersion); }}
         />
-        <View style={{ flex: 1 }}>{children}</View>
+        <SafeAreaInsetsContext.Consumer>
+          {(insets) => (
+            <SafeAreaInsetsContext.Provider value={insets ? { ...insets, top: 0 } : insets}>
+              <View style={{ flex: 1 }}>{children}</View>
+            </SafeAreaInsetsContext.Provider>
+          )}
+        </SafeAreaInsetsContext.Consumer>
+        {updateDialog}
       </View>
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {updateDialog}
+    </>
+  );
 };
