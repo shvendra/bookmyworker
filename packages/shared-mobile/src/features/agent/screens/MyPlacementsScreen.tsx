@@ -275,6 +275,8 @@ export const MyPlacementsScreen = (): React.JSX.Element => {
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={placements}
           keyExtractor={(p) => p._id}
           renderItem={({ item }) => {

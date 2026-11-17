@@ -282,6 +282,8 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
         </View>
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={filtered}
           keyExtractor={(e) => e.workerId}
           contentContainerStyle={[sc.listContent, { paddingBottom: insets.bottom + 32 }]}

@@ -564,6 +564,8 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
       /* Main content */
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={filtered}
           keyExtractor={keyExtractor}
           renderItem={renderItem}

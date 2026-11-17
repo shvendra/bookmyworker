@@ -39,6 +39,9 @@ export const translation = {
   selectTypeBeforeGoogle: "Google से आगे बढ़ने के लिए ऊपर अपना एम्प्लॉयर प्रकार चुनें",
   orLabel: "या",
   continueWithGoogle: "Google के साथ जारी रखें",
+  googleSelectRoleFirst: "Google से आगे बढ़ने के लिए ऊपर नौकरी चाहने वाला या एजेंट चुनें",
+  googleNoAccount: "इस Google खाते से कोई अकाउंट नहीं मिला। कृपया पहले रजिस्टर करें।",
+  googleSignInUnavailable: "Google साइन-इन अभी उपलब्ध नहीं है। कृपया अपने मोबाइल नंबर से आगे बढ़ें।",
   lp_tapHint: 'पिन लगाने के लिए कहीं भी टैप करें',
   profile_pendingVerification: 'प्रोफ़ाइल वेरिफिकेशन बाकी है',
   // -- Map location picker --

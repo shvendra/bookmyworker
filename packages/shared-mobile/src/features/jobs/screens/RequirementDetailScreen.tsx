@@ -33,6 +33,7 @@ import i18n from '../../../core/i18n';
 import { getLocationStr, getCategoryLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
+import { EditRequirementSheet, type EditRequirementValues } from '../components/EditRequirementSheet';
 import { ratingApi } from '../../../core/api/endpoints/ratingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
@@ -522,6 +523,18 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
     onError: () => toast.error(t('rd_closeFail'), t('rd_errorTitle')),
   });
 
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const editMutation = useMutation({
+    mutationFn: (values: EditRequirementValues) => requirementsApi.updateOwn(requirementId, values as never),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['requirement', requirementId] });
+      void queryClient.invalidateQueries({ queryKey: ['employer-requirements'] });
+      setShowEditSheet(false);
+      toast.success(t('er_saved'), t('er_savedTitle'));
+    },
+    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : t('er_saveFail'), t('rd_errorTitle')),
+  });
+
   const completeMutation = useMutation({
     mutationFn: () => requirementsApi.updateStatus(requirementId, 'Completed'),
     onSuccess: () => {
@@ -824,6 +837,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+
+      <EditRequirementSheet
+        visible={showEditSheet}
+        requirement={req as never}
+        saving={editMutation.isPending}
+        onClose={() => setShowEditSheet(false)}
+        onSave={(v) => editMutation.mutate(v)}
+      />
 
       {/* ── Verified Badge Modal (for agent gate CTA) ────────────── */}
       <VerifiedBadgeModal
@@ -1580,6 +1601,13 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {/* ── Action Buttons (employer only) ────────────────────────────── */}
         {!isAgentOrWorker && (
           <View style={pg.actionRow}>
+            {!isClosed && userRole === 'employer' && (
+              <TouchableOpacity style={pg.editBtn} onPress={() => setShowEditSheet(true)} activeOpacity={0.88} testID="edit-requirement-btn">
+                <AppText style={{ fontSize: 18 }}>{'✏️'}</AppText>
+                <AppText style={pg.editBtnTxt}>{t('er_editBtn')}</AppText>
+              </TouchableOpacity>
+            )}
+
             {!isClosed && (
               <TouchableOpacity
                 style={pg.attendanceBtn}
@@ -2023,6 +2051,8 @@ const pg = StyleSheet.create({
   documentsBtnTxt:   { color: '#B45309', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
   repostBtn:         { backgroundColor: BRAND_SOFT, borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#BFDBFE', ...CARD_SHADOW },
   repostBtnTxt:      { color: BRAND, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  editBtn:           { backgroundColor: '#EFF6FF', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#BFDBFE', ...CARD_SHADOW },
+  editBtnTxt:        { color: '#1D4ED8', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
   closeBtn:          { backgroundColor: '#FEF2F2', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#FECACA', ...CARD_SHADOW },
   closeBtnTxt:       { color: RED, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
   completeBtn:       { backgroundColor: '#ECFDF5', borderRadius: 18, paddingVertical: 17, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#6EE7B7', ...CARD_SHADOW },

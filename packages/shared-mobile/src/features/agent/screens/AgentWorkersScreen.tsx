@@ -188,6 +188,8 @@ export const AgentWorkersScreen = (): React.JSX.Element => {
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={workers}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => <WorkerCard worker={item} />}

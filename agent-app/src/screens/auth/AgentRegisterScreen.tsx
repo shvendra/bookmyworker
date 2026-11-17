@@ -39,6 +39,8 @@ import { WORKER_QUALIFICATION_TIERS } from '../../../../packages/shared-mobile/s
 import { DIPLOMA_GRADUATE_SUBTYPE } from '../../../../packages/shared-mobile/src/shared/data/supportStaffCategories';
 import type { AgentStackParamList } from '../../navigation/types';
 import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
+import { GoogleButton } from '../../../../packages/shared-mobile/src/features/auth/components/GoogleButton';
+import { isGoogleSignInAvailable, signInWithGoogle, googleSignInErrorKey } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'Register'>;
 type Role = 'Agent' | 'SelfWorker';
@@ -89,7 +91,13 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
   const [resumeName, setResumeName]   = useState<string | null>(null);
   const [isLoading, setIsLoading]     = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<RegisterStep2Values>({
+  // ── Continue with Google ──
+  const googleAvailable = isGoogleSignInAvailable();
+  const [googleBusy, setGoogleBusy]     = useState(false);
+  const [googleMode, setGoogleMode]     = useState(false);
+  const [googleTicket, setGoogleTicket] = useState('');
+
+  const { control, handleSubmit, getValues, setValue, formState: { errors } } = useForm<RegisterStep2Values>({
     resolver: zodResolver(registerStep2Schema),
     defaultValues: { name: '', phone: '', alternate: '', password: '', confirmPassword: '' },
   });
@@ -195,6 +203,77 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
       setIsLoading(false);
     }
   });
+
+  // Google: signs in an existing account, or (new person) continues to collect the mobile number. The role + type
+  // chosen on step 1 travel with the sign-up, exactly like a normal registration.
+  const handleGoogle = async (): Promise<void> => {
+    if (googleBusy) return;
+    if (!canContinue()) { showAlert(t('alertRequired'), t('googleSelectRoleFirst')); return; }
+    setGoogleBusy(true);
+    try {
+      const idToken = await signInWithGoogle();
+      if (!idToken) return; // cancelled / unavailable
+      const res = await authService.googleStart(idToken, 'agent-app');
+      if (res.loggedIn && res.session) { await signIn(res.session); return; }
+      if (res.needsPhone && res.googleTicket) {
+        setGoogleTicket(res.googleTicket);
+        if (res.name) setValue('name', res.name);
+        setGoogleMode(true);
+        setStep(2);
+      }
+    } catch (error) {
+      const key = googleSignInErrorKey(error);
+      showAlert(t('alertError'), key ? t(key) : (error instanceof Error ? error.message : t('regOtpFailed')));
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  const onSubmitGoogle = async (): Promise<void> => {
+    if (!role) return;
+    const { name, phone: rawPhone, alternate } = getValues();
+    const phone = (rawPhone || '').replace(/\D/g, '');
+    if (!name || !name.trim()) { showAlert(t('alertError'), t('enterFullName')); return; }
+    if (phone.length !== 10) { showAlert(t('alertError'), t('enterValidPhone') || 'Enter a valid 10-digit mobile number'); return; }
+    const alt = (alternate || '').replace(/\D/g, '');
+    setIsLoading(true);
+    try {
+      const savedLang = (await AsyncStorage.getItem(AGENT_LANG_KEY)) ?? i18n.language ?? 'en';
+      if (!registrationOtpEnabled) {
+        // OTP disabled by admin → create the account directly.
+        const gSession = await authService.googleRegister({
+          googleTicket, phone, name: name.trim(), appContext: 'agent-app', role,
+          workerSubType: workerSubType || undefined, agentType: agentType || undefined, alternate: alt || undefined, language: savedLang,
+        });
+        gSession.onboardingCompleted = false;
+        if (i18n.language !== savedLang) await i18n.changeLanguage(savedLang);
+        await signIn(gSession);
+        return;
+      }
+      const delivery = sendArg();
+      await (delivery
+        ? authService.requestOtp(phone, undefined, undefined, delivery)
+        : authService.requestOtp(phone, undefined));
+      setSendFailed(false);
+      navigation.navigate('RegisterOtp', {
+        ...(delivery ? { otpChannel: delivery.channel } : {}),
+        phone,
+        alternate: alt || undefined,
+        role,
+        name: name.trim(),
+        password: '', // not used for the Google flow
+        language: savedLang,
+        workerSubType: workerSubType || undefined,
+        agentType: agentType || undefined,
+        googleTicket,
+      });
+    } catch (error) {
+      setSendFailed(true);
+      showAlert(t('alertError'), otpErrorMessage(error, t('regOtpFailed')));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const isDark       = theme.mode === 'dark';
   const accentColor  = role === 'Agent' ? BRAND : ORANGE;
@@ -407,6 +486,15 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
             </>
           )}
 
+          {googleAvailable && (
+            <GoogleButton
+              onPress={() => void handleGoogle()}
+              busy={googleBusy}
+              disabled={!canContinue()}
+              hint={!canContinue() ? t('googleSelectRoleFirst') : undefined}
+            />
+          )}
+
           <AppText variant="body" color={theme.colors.mutedText} style={styles.loginRow}>
             {t('alreadyHaveAccount')}{' '}
             <AppText variant="body" color={BRAND} style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
@@ -452,7 +540,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
             <BrandMark style={styles.logoImg} />
           </View>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => { setStep(1); setGoogleMode(false); setGoogleTicket(''); }} style={styles.backBtn} activeOpacity={0.7}>
             <AppText style={styles.backArrow}>←</AppText>
           </TouchableOpacity>
         </View>
@@ -504,6 +592,12 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               />
             </View>
 
+            {googleMode ? (
+              <View style={{ marginBottom: 14, padding: 12, borderRadius: 12, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' }}>
+                <AppText variant="body" color="#16A34A" style={{ fontWeight: '600' }}>{t('empGoogleSignedIn')}</AppText>
+              </View>
+            ) : (
+              <>
             <View style={styles.formField}>
               <AppText variant="labelSm" color={theme.colors.textSecondary} style={styles.fieldLabel}>{t('passwordLabel')}</AppText>
               <Controller control={control} name="password"
@@ -524,6 +618,9 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
               />
             </View>
 
+              </>
+            )}
+
             {registrationOtpEnabled && unavailable && <OtpUnavailableNotice />}
             {registrationOtpEnabled && !unavailable && canChoose && <OtpChannelPicker channel={otpChannel} onChange={setChannel} disabled={isLoading} />}
             {registrationOtpEnabled && !unavailable && !canChoose && sendFailed && alternate && (
@@ -532,7 +629,7 @@ export const AgentRegisterScreen = ({ navigation }: Props): React.JSX.Element =>
 
             <AppButton
               title={registrationOtpEnabled ? t('sendOtpRegister') : t('createAccount')}
-              onPress={onSubmit}
+              onPress={googleMode ? () => void onSubmitGoogle() : onSubmit}
               loading={isLoading}
               size="lg"
               fullWidth

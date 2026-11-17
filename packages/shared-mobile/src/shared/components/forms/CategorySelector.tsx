@@ -166,6 +166,8 @@ export const CategorySelector = ({
 
             {mode === 'category' ? (
               <FlatList
+                // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+                removeClippedSubviews={false}
                 data={filteredCats}
                 keyExtractor={(item) => item.value}
                 keyboardShouldPersistTaps="handled"
@@ -200,6 +202,8 @@ export const CategorySelector = ({
               />
             ) : (
               <FlatList
+                // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+                removeClippedSubviews={false}
                 data={filteredSubs}
                 keyExtractor={(item) => item.value}
                 keyboardShouldPersistTaps="handled"

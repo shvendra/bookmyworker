@@ -119,6 +119,8 @@ export const BgcOrdersScreen = ({ navigation }: Props): React.JSX.Element => {
         <ErrorState onRetry={() => { void q.refetch(); }} />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           ListHeaderComponent={(
             <View>
               {kyc?.required && kyc.status === 'pending' && (

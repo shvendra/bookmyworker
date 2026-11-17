@@ -138,8 +138,12 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
           district: params.district,
           block: params.block,
           referredBy: params.referredBy,
+          // Agent app (Agent / SelfWorker): the server needs to know which app + role + type
+          ...(params.role === 'Agent' || params.role === 'SelfWorker'
+            ? { appContext: 'agent-app' as const, role: params.role, workerSubType: params.workerSubType, agentType: params.agentType, alternate: params.alternate, language: gLang }
+            : {}),
         });
-        gSession.onboardingCompleted = false; // fresh employer → KYC
+        gSession.onboardingCompleted = false; // fresh sign-up → onboarding
         if (i18n.language !== gLang) await i18n.changeLanguage(gLang);
         toast.success(t('accountCreated'), t('registrationSuccessful'));
         await signIn(gSession);

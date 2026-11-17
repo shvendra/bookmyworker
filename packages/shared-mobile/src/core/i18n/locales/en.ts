@@ -39,6 +39,9 @@ export const translation = {
   selectTypeBeforeGoogle: "Select your employer type above to continue with Google",
   orLabel: "or",
   continueWithGoogle: "Continue with Google",
+  googleSelectRoleFirst: "Choose job seeker or agent above to continue with Google",
+  googleNoAccount: "No account found for this Google account. Please register first.",
+  googleSignInUnavailable: "Google sign-in isn't available right now. Please continue with your mobile number.",
   // -- Map location picker --
   lp_title: 'Pick Location',
   lp_useGps: 'Use Current Location (GPS)',

@@ -244,6 +244,8 @@ export const RequirementPickerModal = ({
                 </View>
               ) : (
                 <FlatList
+                  // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+                  removeClippedSubviews={false}
                   data={requirements}
                   keyExtractor={(r) => r._id}
                   style={pm.list}

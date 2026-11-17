@@ -784,6 +784,8 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
         renderPlanLock()
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={mergedReqs}
           keyExtractor={item => String(item.req._id)}
           contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: insets.bottom + 32 }}

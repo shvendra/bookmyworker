@@ -183,6 +183,8 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
             </View>
           ) : (
             <FlatList
+              // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+              removeClippedSubviews={false}
               data={visibleWorkers}
               keyExtractor={(w) => w._id}
               style={s.list}

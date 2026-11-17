@@ -116,6 +116,8 @@ export const PickerModal = ({
 
           {/* Options */}
           <FlatList
+            // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+            removeClippedSubviews={false}
             data={[allLabel, ...shown]}
             keyExtractor={(item) => item}
             keyboardShouldPersistTaps="handled"

@@ -108,6 +108,8 @@ export const FormSelect = ({
             )}
 
             <FlatList
+              // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+              removeClippedSubviews={false}
               data={filtered}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (

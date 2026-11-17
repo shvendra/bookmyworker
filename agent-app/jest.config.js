@@ -51,6 +51,8 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/passthroughProvider.tsx',
     '.*shared-mobile/src/shared/state/alert/AppAlertContext$':
       '<rootDir>/src/__tests__/__mocks__/shared/appAlert.tsx',
+    '.*shared-mobile/src/core/auth/googleSignIn$':
+      '<rootDir>/src/__tests__/__mocks__/shared/googleSignIn.ts',
     '.*shared-mobile/src/features/auth/services/authService$':
       '<rootDir>/src/__tests__/__mocks__/shared/authService.ts',
     '.*shared-mobile/src/features/auth/validation/authSchemas$':
@@ -84,6 +86,10 @@ module.exports = {
       '<rootDir>/src/__tests__/__mocks__/shared/otpChannel.ts',
     '.*shared-mobile/src/features/auth/components/OtpChannelPicker$':
       '<rootDir>/src/__tests__/__mocks__/shared/otpChannelPicker.tsx',
+
+    // The shared Google button: a light test double (must precede the features catch-all).
+    '.*shared-mobile/src/features/auth/components/GoogleButton$':
+      '<rootDir>/src/__tests__/__mocks__/shared/googleButton.tsx',
 
     // ── shared-mobile: broad catch-alls for screens / navigators ───────────
     '.*shared-mobile/src/features/.*$':

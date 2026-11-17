@@ -90,6 +90,8 @@ export const AttendanceScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
       <ScreenHeader title="Attendance" />
     <FlatList
+      // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+      removeClippedSubviews={false}
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refetch()} />}

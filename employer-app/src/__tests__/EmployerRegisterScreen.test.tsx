@@ -256,6 +256,18 @@ describe('EmployerRegisterScreen — Google sign-in', () => {
     expect(screen.getByText('empGoogleSignedInNamed')).toBeTruthy();
   });
 
+  it('shows a calm message (not the raw SDK text) when Google reports DEVELOPER_ERROR', async () => {
+    (signInWithGoogle as jest.Mock).mockRejectedValueOnce(
+      Object.assign(new Error('DEVELOPER_ERROR: Follow troubleshooting instructions at https://react-native-google-signin.github.io/docs/troubleshooting'), { code: '10' }),
+    );
+    renderScreen();
+    fireEvent.press(screen.getByText('employerTypeAgency'));
+    fireEvent.press(screen.getByText('continueWithGoogle'));
+    await waitFor(() => {
+      expect(showAlert).toHaveBeenCalledWith('alertError', 'googleSignInUnavailable');
+    });
+  });
+
   it('does nothing when the Google sign-in is cancelled', async () => {
     (signInWithGoogle as jest.Mock).mockResolvedValueOnce(null);
     renderScreen();

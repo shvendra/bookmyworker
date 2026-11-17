@@ -2,6 +2,7 @@
 export const authService = {
   requestOtp: jest.fn().mockResolvedValue(undefined),
   googleStart: jest.fn().mockResolvedValue({ loggedIn: false }),
+  googleRegister: jest.fn().mockResolvedValue({ user: { role: 'SelfWorker', id: 'g1' }, onboardingCompleted: false }),
   // Used by the no-OTP (registration OTP disabled) direct-register path.
   register: jest.fn().mockResolvedValue(undefined),
   loginWithPassword: jest.fn().mockResolvedValue({

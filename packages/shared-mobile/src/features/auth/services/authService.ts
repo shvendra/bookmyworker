@@ -114,6 +114,7 @@ export const authService = {
   googleRegister: async (payload: {
     googleTicket: string; phone: string; name?: string;
     employerType?: unknown; state?: string; district?: string; block?: string; referredBy?: string;
+    appContext?: AppContext; role?: string; workerSubType?: string; agentType?: string; alternate?: string; language?: string;
   }): Promise<AuthSession> => {
     const pushToken = await registerForPushNotifications();
     const res = await googleRegisterApi(payload);
@@ -121,7 +122,7 @@ export const authService = {
     return {
       tokens: { accessToken: res.token, refreshToken: res.token, expiresAt: Date.now() + 24 * 60 * 60 * 1000 },
       user: res.user,
-      onboardingCompleted: false, // fresh employer → route to KYC
+      onboardingCompleted: false, // fresh sign-up → onboarding (KYC for employers, profile completion for workers/agents)
       availableRoles: res.availableRoles,
     };
   },

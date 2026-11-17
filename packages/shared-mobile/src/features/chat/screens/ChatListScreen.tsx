@@ -62,6 +62,8 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={roomList}
           keyExtractor={(item) => item.id}
           refreshControl={

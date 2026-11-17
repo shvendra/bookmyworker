@@ -46,6 +46,8 @@ export const TeamRequirementsScreen = ({ route, navigation }: Props): React.JSX.
         <View style={s.center}><ActivityIndicator /></View>
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={rows} keyExtractor={(r) => r._id} contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}
           ListEmptyComponent={<AppText variant="body" color={theme.colors.mutedText} center>{t('team_req_empty')}</AppText>}
           renderItem={({ item }) => (

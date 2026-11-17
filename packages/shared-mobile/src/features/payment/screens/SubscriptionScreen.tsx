@@ -100,6 +100,7 @@ function buildUpgradeBenefits(
   const curRank  = SCOPE_RANK[current.workerSearchScope] ?? 0;
   const nextRank = SCOPE_RANK[next.workerSearchScope] ?? 0;
   if (nextRank > curRank) {
+    if (next.workerSearchScope === 'district') items.push(t('pr_feat_searchDistrict'));
     if (next.workerSearchScope === 'state') items.push(t('pr_feat_searchState'));
     if (next.workerSearchScope === 'india') items.push(t('pr_feat_searchIndia'));
   }

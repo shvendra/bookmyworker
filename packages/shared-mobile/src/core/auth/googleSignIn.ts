@@ -48,3 +48,14 @@ export async function signInWithGoogle(): Promise<string | null> {
   // Supports both legacy ({ idToken }) and v13+ ({ data: { idToken } }) shapes.
   return result?.idToken ?? result?.data?.idToken ?? null;
 }
+
+// Google's "DEVELOPER_ERROR" (status 10) means this build's package name + signing key is not registered as an Android
+// OAuth client in Google Cloud (a configuration issue, not something the person can fix). Show a calm message instead of
+// the raw SDK text; returns the i18n key to show, or null to fall back to the error's own message.
+export function googleSignInErrorKey(error: unknown): 'googleSignInUnavailable' | null {
+  const e = error as { code?: string | number; message?: string } | null;
+  const code = String(e?.code ?? '');
+  const msg = String(e?.message ?? '');
+  if (code === '10' || /DEVELOPER_ERROR/i.test(msg) || /DEVELOPER_ERROR/i.test(code)) return 'googleSignInUnavailable';
+  return null;
+}

@@ -173,6 +173,8 @@ export const MyInvoicesScreen = ({ navigation }: Props): React.JSX.Element => {
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={invoices}
           keyExtractor={(item: ClientInvoice) => item._id}
           contentContainerStyle={styles.list}

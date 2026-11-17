@@ -177,6 +177,8 @@ export const ViewedContactsScreen = ({ navigation }: Props): React.JSX.Element =
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={items}
           keyExtractor={(it) => it._id}
           contentContainerStyle={[sc.listContent, { paddingBottom: insets.bottom + 32 }]}

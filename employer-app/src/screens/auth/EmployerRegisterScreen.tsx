@@ -25,7 +25,7 @@ import { AppText } from '../../../../packages/shared-mobile/src/shared/component
 import { Trademark } from '../../../../packages/shared-mobile/src/shared/components/ui/Trademark';
 import { AppInput } from '../../../../packages/shared-mobile/src/shared/components/ui/AppInput';
 import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
-import { isGoogleSignInAvailable, signInWithGoogle } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
+import { isGoogleSignInAvailable, signInWithGoogle, googleSignInErrorKey } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
 import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
 import { useAppConfig } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import {
@@ -96,7 +96,8 @@ export const EmployerRegisterScreen = ({ navigation }: Props): React.JSX.Element
         setGoogleMode(true);
       }
     } catch (error) {
-      showAlert(t('alertError'), error instanceof Error ? error.message : t('au_failedSendOtp'));
+      const key = googleSignInErrorKey(error);
+      showAlert(t('alertError'), key ? t(key) : (error instanceof Error ? error.message : t('au_failedSendOtp')));
     } finally {
       setGoogleBusy(false);
     }

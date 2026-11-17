@@ -34,6 +34,8 @@ export interface AppConfig {
     agentCount:       number;
     employerCount:    number;
     requirementCount: number;
+    /** SuperAdmin "Happy Customers" figure (Settings → Live Statistics). */
+    happyCustomers:   number;
   };
   // Festival wishes popup (SuperAdmin-controlled). festivalMode=false → off.
   // Deliberately image-only — the banner carries the whole greeting/design.
@@ -141,6 +143,7 @@ const DEFAULTS: AppConfig = {
     agentCount:       10000,
     employerCount:    8000,
     requirementCount: 56000,
+    happyCustomers:   21000,
   },
   promotions: { festivalMode: false, festivalImageUrl: '', festivalEndsAt: null },
   promotionAds: [],
@@ -191,6 +194,8 @@ export async function fetchAppConfig(): Promise<AppConfig> {
       agentCount:       ps.agents       ?? DEFAULTS.stats.agentCount,
       employerCount:    ps.employers    ?? DEFAULTS.stats.employerCount,
       requirementCount: ps.requirements ?? DEFAULTS.stats.requirementCount,
+      // Server value = Settings base + real employers; older servers only send the plain Settings figure.
+      happyCustomers:   Number(ps.happyCustomers) > 0 ? Number(ps.happyCustomers) : (Number((d as any).stats?.happyCustomers) > 0 ? Number((d as any).stats.happyCustomers) : DEFAULTS.stats.happyCustomers),
     },
     promotions: {
       festivalMode:     Boolean(promo.festivalMode),

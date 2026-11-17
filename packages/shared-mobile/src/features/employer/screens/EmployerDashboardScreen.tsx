@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Alert,
@@ -51,11 +52,12 @@ import { apiClient } from '../../../core/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmployerSubscriptionModal } from '../../payment/components/EmployerSubscriptionModal';
 import { EmployerPromoSlider } from '../../../shared/components/ui/EmployerPromoSlider';
-import { FadeInView, CountUpText, PulseView, ShimmerSweep } from '../../../shared/components/motion';
+import { FadeInView, CountUpText, PulseView, ShimmerSweep, useReduceMotion } from '../../../shared/components/motion';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { LivePulseCard } from '../components/LivePulseCard';
 import { CategoryChipsRow } from '../components/CategoryChipsRow';
 import { OffersBanner } from '../components/OffersBanner';
+import { HappyCustomersCard, isNeverSubscribed } from '../components/HappyCustomersCard';
 import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr, getWorkTypeLabel, getSubCatLabel, translateLocationString } from '../../../shared/utils/labelUtils';
@@ -571,6 +573,7 @@ const RequirementCarousel = React.memo(({
   requirements, onPress, onClose, closingId, isLoading, onPost, tab, allCount, t, themeColors, canInvite, onInvite,
   boostEnabled, boostRemaining, boostingId, onBoost,
 }: RequirementCarouselProps): React.JSX.Element => {
+  const focused = useIsFocused(); // pause auto-slide (and its re-renders) while another screen is on top
   const scrollRef = useRef<ScrollView>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const activeIdxRef = useRef(0);
@@ -580,14 +583,14 @@ const RequirementCarousel = React.memo(({
 
   // Auto-slide every 3.5 s
   useEffect(() => {
-    if (requirements.length <= 1) return;
+    if (requirements.length <= 1 || !focused) return;
     const timer = setInterval(() => {
       const next = (activeIdxRef.current + 1) % requirements.length;
       scrollRef.current?.scrollTo({ x: next * SNAP, animated: true });
       setActiveIdx(next);
     }, 3500);
     return () => clearInterval(timer);
-  }, [requirements.length, SNAP]);
+  }, [requirements.length, SNAP, focused]);
 
   if (isLoading) {
     return (
@@ -915,8 +918,24 @@ const NearbyWorkersSlider = React.memo(({
   const { t } = useTranslation('employer');
   const scrollRef = useRef<ScrollView>(null);
   const idxRef = useRef(0);
+  const reduceMotion = useReduceMotion();
+  const touchedRef = useRef(false);   // the person has scrolled/touched the rail → never nudge it again
+  const peekedRef = useRef(false);    // the nudge plays once per mount
 
-  // Calm, user-controlled rail — no auto-slide (keeps the first card aligned to the gutter).
+  // Calm rail, still user-controlled (no looping auto-slide). To show it can be swiped, the cards rise in one after
+  // another and the rail gives ONE small nudge to the left and glides back to the gutter — skipped under "Reduce motion",
+  // and cancelled the moment the person touches it.
+  useEffect(() => {
+    if (reduceMotion || peekedRef.current || workers.length < 2) return undefined;
+    peekedRef.current = true;
+    const t1 = setTimeout(() => {
+      if (!touchedRef.current) scrollRef.current?.scrollTo({ x: NEARBY_STEP * 0.45, animated: true });
+    }, 1100);
+    const t2 = setTimeout(() => {
+      if (!touchedRef.current) scrollRef.current?.scrollTo({ x: 0, animated: true });
+    }, 1900);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [reduceMotion, workers.length]);
 
   return (
     <ScrollView
@@ -927,12 +946,15 @@ const NearbyWorkersSlider = React.memo(({
       snapToInterval={NEARBY_STEP}
       decelerationRate="fast"
       snapToAlignment="start"
+      onScrollBeginDrag={() => { touchedRef.current = true; }}
       onMomentumScrollEnd={(e) => {
         idxRef.current = Math.round(e.nativeEvent.contentOffset.x / NEARBY_STEP);
       }}
     >
-      {workers.map((agent) => (
-        <WorkerSliderCard key={agent._id} agent={agent} onPress={onWorkerPress} />
+      {workers.map((agent, i) => (
+        <FadeInView key={agent._id} delay={150 + Math.min(i, 5) * 90} distance={10}>
+          <WorkerSliderCard agent={agent} onPress={onWorkerPress} />
+        </FadeInView>
       ))}
       {/* View-all tile at end */}
       <TouchableOpacity onPress={onViewAll} activeOpacity={0.82} style={[wsc.moreCard, { borderColor: theme.colors.borderStrong, backgroundColor: theme.colors.surface1 }]}>
@@ -985,6 +1007,7 @@ const SubscriptionStatusWidget = React.memo(({
 }: SubStatusProps): React.JSX.Element | null => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
+  const focused = useIsFocused();
   const [now, setNow] = useState(() => Date.now());
   const scrollRef = useRef<ScrollView>(null);
   const idxRef = useRef(0);
@@ -1001,14 +1024,14 @@ const SubscriptionStatusWidget = React.memo(({
 
   // Auto-advance the slider, looping back to the subscription card
   useEffect(() => {
-    if (!showSlider) return;
+    if (!showSlider || !focused) return;
     const id = setInterval(() => {
       const next = (idxRef.current + 1) % slideCount;
       idxRef.current = next;
       scrollRef.current?.scrollTo({ x: next * SSW_SLIDE_W, animated: true });
     }, SSW_AUTO_MS);
     return () => clearInterval(id);
-  }, [showSlider, slideCount]);
+  }, [showSlider, slideCount, focused]);
 
   if (!profileLoaded) return null;
 
@@ -1409,6 +1432,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
         user?: {
           isSubscribed?: boolean;
           subscriptionExpery?: string;
+          lastsubscriptionDate?: string | null;
           remainingContacts?: number;
           freeContactsRemaining?: number;
           status?: string;
@@ -1905,6 +1929,9 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           still shows the completeness %.) */}
       {isSubscribed && <NeedsAttentionCard items={attentionItems} />}
 
+      {/* Social proof — only for employers who have never taken a plan */}
+      {profileQuery.isSuccess && isNeverSubscribed(profile) && <HappyCustomersCard onViewPlans={handleSubscriptionNavigate} />}
+
       {/* Police Verification advertisement — self-hides unless SuperAdmin enabled it */}
       <BgcPromoCard onPress={() => navigation.navigate('BgcHome')} />
 
@@ -2284,6 +2311,8 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         )}
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={[]}
           style={styles.scroll}
           contentContainerStyle={styles.content}

@@ -159,6 +159,8 @@ export const MyActivityScreen = (): React.JSX.Element => {
         </View>
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={allItems}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}

@@ -180,6 +180,8 @@ export const LocationSelector = ({
             </View>
 
             <FlatList
+              // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+              removeClippedSubviews={false}
               data={activeList}
               keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"

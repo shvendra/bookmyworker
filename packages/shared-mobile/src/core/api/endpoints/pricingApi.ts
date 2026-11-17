@@ -212,6 +212,7 @@ export type FeatureTFn = (key: string, opts?: Record<string, unknown>) => string
  */
 export function buildFeatureBenefits(features: PlanFeatures, t: FeatureTFn): string[] {
   const items: string[] = [];
+  if (features.workerSearchScope === 'district') items.push(t('pr_feat_searchDistrict'));
   if (features.workerSearchScope === 'state') items.push(t('pr_feat_searchState'));
   if (features.workerSearchScope === 'india') items.push(t('pr_feat_searchIndia'));
   if (features.pipelineEnabled)  items.push(t('pr_feat_pipeline'));

@@ -61,6 +61,7 @@ function buildBenefitGroups(t: TFunc, features: PlanFeatures, contacts1m: number
     t('esm_accessContacts', { count: contacts1m }),
   ];
   // Scope line only when state/india — district is the default minimum
+  if (features.workerSearchScope === 'district') access.push(t('esm_accessDistrict'));
   if (features.workerSearchScope === 'state') access.push(t('esm_accessState'));
   if (features.workerSearchScope === 'india') access.push(t('esm_accessIndia'));
 

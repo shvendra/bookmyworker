@@ -22,6 +22,11 @@ import { PasswordLoginForm } from '../../../../packages/shared-mobile/src/featur
 import { useAppConfig, formatStat } from '../../../../packages/shared-mobile/src/core/api/endpoints/appConfigApi';
 import type { AgentStackParamList } from '../../navigation/types';
 import { BrandMark } from '../../../../packages/shared-mobile/src/shared/components/ui/BrandMark';
+import { showAlert } from '../../../../packages/shared-mobile/src/shared/state/alert/AppAlertContext';
+import { useAuth } from '../../../../packages/shared-mobile/src/state/auth/AuthContext';
+import { authService } from '../../../../packages/shared-mobile/src/features/auth/services/authService';
+import { GoogleButton } from '../../../../packages/shared-mobile/src/features/auth/components/GoogleButton';
+import { isGoogleSignInAvailable, signInWithGoogle, googleSignInErrorKey } from '../../../../packages/shared-mobile/src/core/auth/googleSignIn';
 
 type Props = NativeStackScreenProps<AgentStackParamList, 'Login'>;
 
@@ -35,6 +40,9 @@ export const AgentLoginScreen = ({ navigation, route }: Props): React.JSX.Elemen
   const { theme }  = useAppTheme();
   const insets     = useSafeAreaInsets();
   const { config } = useAppConfig();
+  const { signIn } = useAuth();
+  const googleAvailable = isGoogleSignInAvailable();
+  const [googleBusy, setGoogleBusy] = useState(false);
 const [mode, setMode] = useState<'otp' | 'password'>('password');
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -47,6 +55,26 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
   }, [fadeAnim, slideAnim]);
 
   const isDark = theme.mode === 'dark';
+
+  // Continue with Google: signs in an existing Worker / Agent account. A brand-new person is sent to Register
+  // (they must pick job seeker / agent and give a mobile number first).
+  const handleGoogleLogin = async (): Promise<void> => {
+    if (googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      const idToken = await signInWithGoogle();
+      if (!idToken) return; // cancelled / unavailable
+      const res = await authService.googleStart(idToken, 'agent-app');
+      if (res.loggedIn && res.session) { await signIn(res.session); return; }
+      showAlert(t('alertError'), t('googleNoAccount'));
+      navigation.navigate('Register');
+    } catch (error) {
+      const key = googleSignInErrorKey(error);
+      showAlert(t('alertError'), key ? t(key) : (error instanceof Error ? error.message : t('alertError')));
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const trustItems = [
     { icon: '👷', text: t('loginWorkersStat', { count: formatStat(config.stats.workerCount) }) },
@@ -151,6 +179,7 @@ const [mode, setMode] = useState<'otp' | 'password'>('password');
               ? <OtpLoginForm    key="otp"      navigation={navigation as any} roleHint={roleHint} appContext="agent-app" />
               : <PasswordLoginForm key="password" navigation={navigation as any} roleHint={roleHint} appContext="agent-app" />
             }
+            {googleAvailable && <GoogleButton onPress={() => void handleGoogleLogin()} busy={googleBusy} />}
           </Animated.View>
 
           {/* Register link */}

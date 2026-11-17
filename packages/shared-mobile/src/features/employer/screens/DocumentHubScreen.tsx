@@ -459,6 +459,8 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
         </View>
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={docs}
           keyExtractor={(d) => d._id}
           contentContainerStyle={[hs.listContent, { paddingBottom: insets.bottom + 32 }]}

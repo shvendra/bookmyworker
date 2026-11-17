@@ -76,6 +76,8 @@ const AgentCarousel = ({ agents }: { agents: RawAgent[] }): React.JSX.Element =>
   return (
     <View style={carStyles.wrap}>
       <FlatList
+        // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+        removeClippedSubviews={false}
         ref={listRef}
         data={agents}
         horizontal

@@ -202,6 +202,8 @@ export const MyWorkforceRequirementsScreen = ({ navigation }: Props): React.JSX.
         />
       ) : (
         <FlatList
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
           data={requirements}
           keyExtractor={(item: PrivateWorkforceRequirement) => item._id}
           contentContainerStyle={styles.list}

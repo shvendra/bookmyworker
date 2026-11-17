@@ -201,7 +201,7 @@ export const setDefaultRoleApi = async (role: string): Promise<void> => {
   await apiClient.post('/api/v1/user/set-default-role', { role });
 };
 
-// ── Google Sign-In (employer) ────────────────────────────────────────────────
+// ── Google Sign-In (employer + agent app) ────────────────────────────────────────────────
 export interface GoogleStartResult {
   loggedIn: boolean;
   needsPhone?: boolean;
@@ -229,6 +229,13 @@ export const googleRegister = async (payload: {
   district?: string;
   block?: string;
   referredBy?: string;
+  // Agent app sign-up (Agent / SelfWorker)
+  appContext?: AppContext;
+  role?: string;
+  workerSubType?: string;
+  agentType?: string;
+  alternate?: string;
+  language?: string;
 }): Promise<VerifyOtpResponse> => {
   const response = await apiClient.post('/api/v1/user/google/register', payload);
   const body = response.data as { token?: string; user?: BackendUser; availableRoles?: string[] };

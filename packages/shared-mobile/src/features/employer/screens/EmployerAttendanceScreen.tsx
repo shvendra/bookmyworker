@@ -524,6 +524,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
             </ScrollView>
           ) : (
             <FlatList
+              // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+              removeClippedSubviews={false}
               data={joinedWorkers}
               keyExtractor={(w) => w._id}
               contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
@@ -602,6 +604,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
             </View>
           ) : (
             <FlatList
+              // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+              removeClippedSubviews={false}
               data={summaryQuery.data?.summary ?? []}
               keyExtractor={(s) => s.mappingId}
               contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
@@ -661,6 +665,8 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
               </View>
             ) : (
               <FlatList
+                // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+                removeClippedSubviews={false}
                 data={historyDates}
                 keyExtractor={(d) => d}
                 contentContainerStyle={{ padding: 14, gap: 8 }}
