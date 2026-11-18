@@ -306,5 +306,9 @@ export function usePricingConfig() {
     boostConfig:   data.boostConfig,
     gstRate,
     isLoading: query.isLoading,
+    /** true only once the REAL SuperAdmin pricing has been fetched — until then `pricing` holds placeholder defaults that must
+     *  never be shown to a user as a price or charged (e.g. agent Verified Badge ₹999 vs the configured ₹99). */
+    isReady: query.isSuccess,
+    refetch: query.refetch,
   };
 }

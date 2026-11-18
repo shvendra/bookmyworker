@@ -403,7 +403,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { state } = useAuth();
   const { t } = useTranslation();
-  const { pricing } = usePricingConfig();
+  const { pricing, isReady: pricingReady } = usePricingConfig();
   const user = state.session?.user;
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const queryClient = useQueryClient();
@@ -736,7 +736,7 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
                 <Ionicons name="star" size={20} color="#FBBF24" style={styles.verifyBannerIcon} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <AppText variant="labelSm" color="#FFFFFF">{t('getVerifiedBadge')}</AppText>
-                  <AppText variant="caption" color="rgba(255,255,255,0.72)">Boost visibility — ₹{pricing.verifiedBadge.agent}</AppText>
+                  <AppText variant="caption" color="rgba(255,255,255,0.72)">Boost visibility{pricingReady ? ` — ₹${pricing.verifiedBadge.agent}` : ''}</AppText>
                 </View>
               </View>
               <AppText style={styles.verifyBannerArrow}>→</AppText>

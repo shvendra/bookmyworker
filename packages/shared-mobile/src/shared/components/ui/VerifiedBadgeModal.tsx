@@ -78,13 +78,16 @@ export const VerifiedBadgeModal = ({
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [loading, setLoading] = useState(false);
 
-  const { pricing, isLoading: priceLoading } = usePricingConfig();
+  const { pricing, isReady: priceReady, refetch: refetchPricing } = usePricingConfig();
+  const priceLoading = !priceReady;      // placeholder defaults are never shown or charged — wait for the real SuperAdmin fee
+  React.useEffect(() => { if (visible && !priceReady) void refetchPricing(); }, [visible, priceReady, refetchPricing]);
   const isAgent = userRole === 'agent';
   const price = isAgent ? pricing.verifiedBadge.agent : pricing.verifiedBadge.worker;
   const originalPrice = isAgent ? price * 5 : price * 10;
   const discount = t('vbOff', { percent: isAgent ? 80 : 90 });
 
   const handleGetVerified = async (): Promise<void> => {
+    if (!priceReady) return;
     try {
       setLoading(true);
       const response = await paymentApi.initiateVerifiedBadge({
@@ -202,8 +205,8 @@ export const VerifiedBadgeModal = ({
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button"
               onPress={() => void handleGetVerified()}
-              disabled={loading}
-              style={styles.verifyBtn}
+              disabled={loading || priceLoading}
+              style={[styles.verifyBtn, priceLoading ? { opacity: 0.55 } : null]}
               activeOpacity={0.85}
             >
               {loading ? (

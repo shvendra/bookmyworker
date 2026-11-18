@@ -138,7 +138,7 @@ export const ProfileScreen = (): React.JSX.Element => {
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 const [showDeleteSection, setShowDeleteSection] = useState(false);
-  const { pricing } = usePricingConfig();
+  const { pricing, isReady: pricingReady } = usePricingConfig();
 
   // Fetch user's certificates & labour licence for inline display on profile
   const showCerts = user?.role === 'worker' || user?.role === 'selfworker' || user?.role === 'agent';
@@ -432,9 +432,11 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               right={
                 <View style={styles.verifyBadgeBtn}>
                   <AppText style={styles.verifyBadgeBtnText}>
-                    {user?.role === 'agent'
-                      ? `₹${pricing.verifiedBadge.agent}`
-                      : `₹${pricing.verifiedBadge.worker}`}
+                    {!pricingReady
+                      ? '…'
+                      : user?.role === 'agent'
+                        ? `₹${pricing.verifiedBadge.agent}`
+                        : `₹${pricing.verifiedBadge.worker}`}
                   </AppText>
                 </View>
               }
