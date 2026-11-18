@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
+  FlatList,
   Modal,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
@@ -17,8 +19,7 @@ import { categoryValuesForWorkerTier } from '../../../shared/data/supportStaffCa
 import { indianStates } from '../../../shared/data/stateDistrict';
 import { getLocationDisplayName } from '../../../shared/data/locationTranslations';
 import i18n from '../../../core/i18n';
-import { DropField } from './DropField';
-import { PickerModal } from './PickerModal';
+import { useFilterResultCount } from '../hooks/useFilterResultCount';
 import {
   BRAND, BORDER, WHITE, SLATE,
   CATEGORIES,
@@ -38,6 +39,7 @@ export const FilterSheet = ({
   userDistrict,
   lockState = false,
   lockDistrict = false,
+  resetDistrict = '',
 }: {
   visible: boolean;
   initial: WorkerFilters;
@@ -47,6 +49,8 @@ export const FilterSheet = ({
   lockState?: boolean;
   /** Plan locks the district to the user's own (district scope only). */
   lockDistrict?: boolean;
+  /** District that Reset returns to (a district-plan employer's own; '' otherwise). */
+  resetDistrict?: string;
   onApply: (f: WorkerFilters) => void;
   onClose: () => void;
 }): React.JSX.Element => {
@@ -70,11 +74,9 @@ export const FilterSheet = ({
       }));
     }
   };
-  const [picker, setPicker] = useState<
-    'cat' | 'subcat' | 'state' | 'district' | 'tehsil' | null
-  >(null);
+  const [section, setSection] = useState<SectionKey>('state');
   const lastVisible = useRef(false);
-  if (visible && !lastVisible.current) setF(initial);
+  if (visible && !lastVisible.current) { setF(initial); setSection(lockState ? 'cat' : 'state'); }
   lastVisible.current = visible;
 
   const set = <K extends keyof WorkerFilters>(k: K, v: WorkerFilters[K]): void => {
@@ -145,15 +147,123 @@ export const FilterSheet = ({
     [availableCats, f.workerType],
   );
 
-  // Locked location is a plan constraint, not a user-chosen filter — exclude it
+  // The home state / locked location is a default, not a user-chosen filter — exclude it
   // from the "active filters" count so Reset visibly clears to zero.
   const activeCount =
     countActive(f)
-    - (lockState && f.state ? 1 : 0)
-    - (lockDistrict && f.district ? 1 : 0);
+    - ((lockState || f.state === userState) && f.state ? 1 : 0)
+    - ((lockDistrict || (!!resetDistrict && f.district === resetDistrict)) && f.district ? 1 : 0);
+
+  const resultCount = useFilterResultCount(f, visible);
 
   const handleReset = (): void =>
-    setF({ ...EMPTY_FILTERS, state: lockState ? userState : '', district: lockDistrict ? (userDistrict ?? '') : '' });
+    setF({ ...EMPTY_FILTERS, state: userState ?? '', district: lockDistrict ? (userDistrict ?? '') : resetDistrict });
+
+  // ── Two-pane layout: left rail = filter groups (with selected-count badges), right pane = that group's options ──
+  const listOf = (csv: string): string[] => (csv ? csv.split(',').map((x) => x.trim()).filter(Boolean) : []);
+  const sections: Array<{ key: SectionKey; label: string; icon: string; count: number; locked?: boolean }> = [
+    { key: 'state',    label: t('ws_state'),             icon: 'map-outline',        count: f.state ? 1 : 0, locked: lockState },
+    { key: 'district', label: t('ws_district'),          icon: 'location-outline',   count: listOf(f.district).length, locked: lockDistrict },
+    ...((oneDistrict || f.tehsil) ? [{ key: 'tehsil' as SectionKey, label: t('ws_tehsil_block'), icon: 'business-outline', count: f.tehsil ? 1 : 0 }] : []),
+    { key: 'cat',      label: t('ws_category'),          icon: 'briefcase-outline',  count: f.workerType ? 1 : 0 },
+    ...((f.workerType && subCatValues.length > 0) ? [{ key: 'subcat' as SectionKey, label: t('ws_sub_category'), icon: 'git-branch-outline', count: listOf(f.subCategory).length }] : []),
+    { key: 'ptype',    label: t('ws_professional_type'), icon: 'people-outline',     count: f.workerGroup ? 1 : 0 },
+    { key: 'gender',   label: t('ws_gender'),            icon: 'male-female-outline', count: f.gender ? 1 : 0 },
+    { key: 'age',      label: t('ws_age_range'),         icon: 'hourglass-outline',  count: (f.ageMin ? 1 : 0) + (f.ageMax ? 1 : 0) },
+    { key: 'qual',     label: t('ws_qualification'),     icon: 'school-outline',     count: f.qualification ? 1 : 0 },
+    { key: 'resume',   label: t('ws_has_resume'),        icon: 'document-text-outline', count: f.hasResume ? 1 : 0 },
+  ];
+  // The chosen section can disappear (e.g. Sub-category after clearing Category) → fall back to the first.
+  const activeSection: SectionKey = sections.some((x) => x.key === section) ? section : 'state';
+  const activeLabel = sections.find((x) => x.key === activeSection)?.label ?? '';
+
+  const radio = (key: keyof WorkerFilters) => (v: string): void => set(key, v as never);
+  const genderOpts = ['Male', 'Female', 'Other'];
+  const genderLabel = (v: string): string => (v === 'Male' ? t('ws_male') : v === 'Female' ? t('ws_female') : t('ws_other'));
+  const ptypeLabel = (v: string): string => (v === 'individual' ? t('ws_individual_worker') : t('ws_agent_group'));
+  const qualLabel = (v: string): string => (v === 'Diploma/Graduate' ? t('ws_diploma_graduate') : t('ws_school_iti'));
+
+  let pane: React.JSX.Element;
+  switch (activeSection) {
+    case 'state':
+      pane = (
+        <OptionList options={stateList} selected={f.state} onToggle={(v) => (lockState ? handleLockedAttempt() : set('state', v))}
+          allLabel={t('ws_all_states_opt')} labelFor={(n) => getLocationDisplayName(n, 'state', i18n.language)} searchable />
+      );
+      break;
+    case 'district':
+      pane = f.state ? (
+        <OptionList options={districtList} selected={f.district} multiple onToggle={(v) => (lockDistrict ? handleLockedAttempt() : toggleMulti('district')(v))}
+          allLabel={t('ws_all_districts_opt')} labelFor={(n) => getLocationDisplayName(n, 'district', i18n.language)} searchable />
+      ) : <PaneHint text={t('ws_select_state_first')} />;
+      break;
+    case 'tehsil':
+      pane = oneDistrict ? (
+        <OptionList options={tehsilList} selected={f.tehsil} onToggle={radio('tehsil')}
+          allLabel={t('ws_all_blocks_opt')} labelFor={(n) => getLocationDisplayName(n, 'block', i18n.language)} searchable />
+      ) : <PaneHint text={t('ws_select_district_first')} />;
+      break;
+    case 'cat':
+      pane = <OptionList options={catLabels} selected={f.workerType} onToggle={radio('workerType')} allLabel={t('ws_all_categories_opt')} labelFor={catDisplay} />;
+      break;
+    case 'subcat':
+      pane = <OptionList options={subCatValues} selected={f.subCategory} multiple onToggle={toggleMulti('subCategory')} allLabel={t('ws_all_sub_categories_opt')} labelFor={subcatDisplay} searchable />;
+      break;
+    case 'ptype':
+      pane = <OptionList options={['individual', 'group']} selected={f.workerGroup} onToggle={radio('workerGroup')} allLabel={t('ws_all_opt')} labelFor={ptypeLabel} />;
+      break;
+    case 'gender':
+      pane = <OptionList options={genderOpts} selected={f.gender} onToggle={radio('gender')} allLabel={t('ws_all_opt')} labelFor={genderLabel} />;
+      break;
+    case 'qual':
+      pane = <OptionList options={['10th/12th/ITI', 'Diploma/Graduate']} selected={f.qualification} onToggle={radio('qualification')} allLabel={t('ws_all_opt')} labelFor={qualLabel} />;
+      break;
+    case 'resume':
+      pane = (
+        <View style={{ padding: 4 }}>
+          <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: f.hasResume }} activeOpacity={0.8}
+            onPress={() => set('hasResume', !f.hasResume)}
+            style={[fsh.optRow, { borderColor: f.hasResume ? BRAND : theme.colors.border, backgroundColor: f.hasResume ? BRAND + '0F' : theme.colors.card }]}>
+            <View style={{ flex: 1 }}>
+              <AppText style={[fsh.optTxt, { color: f.hasResume ? BRAND : theme.colors.text }]}>{t('ws_has_resume')}</AppText>
+              <AppText style={[fsh.typeSub, { color: theme.colors.mutedText }]}>{t('ws_has_resume_sub')}</AppText>
+            </View>
+            <View style={[fsh.check, { borderColor: f.hasResume ? BRAND : theme.colors.border, backgroundColor: f.hasResume ? BRAND : 'transparent' }]}>
+              {f.hasResume && <AppText style={{ color: WHITE, fontSize: 11, fontWeight: '900' }}>✓</AppText>}
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+      break;
+    default: // age
+      pane = (
+        <View style={fsh.ageGrid}>
+          {([['ageMin', t('ws_from'), '18'], ['ageMax', t('ws_to'), '60']] as const).map(([k, lbl, ph]) => (
+            <View key={k} style={{ flex: 1 }}>
+              <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>{lbl}</AppText>
+              <View style={[fsh.ageBox, { borderColor: f[k] ? BRAND : theme.colors.border, backgroundColor: f[k] ? theme.colors.primaryLight : theme.colors.surface1 }]}>
+                <TextInput
+                  value={f[k]}
+                  onChangeText={(v: string) => set(k, v.replace(/\D/g, ''))}
+                  placeholder={ph}
+                  placeholderTextColor={SLATE}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  style={[fsh.ageBoxInput, { color: theme.colors.text }]}
+                />
+                <View style={[fsh.ageSuffixBox, { borderLeftColor: f[k] ? BRAND + '30' : theme.colors.border }]}>
+                  <AppText style={[fsh.ageSuffixTxt, { color: f[k] ? BRAND : theme.colors.mutedText }]}>{t('ws_yrs')}</AppText>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      );
+  }
+
+  const applyLabel = resultCount === null
+    ? (activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters'))
+    : resultCount === 0 ? t('ws_no_workers_match') : t('ws_show_workers', { count: resultCount });
 
   return (
     <Modal
@@ -176,10 +286,7 @@ export const FilterSheet = ({
           </View>
           <View style={fsh.headerActions}>
             {activeCount > 0 && (
-              <TouchableOpacity accessibilityRole="button"
-                onPress={handleReset}
-                style={fsh.resetBtn}
-              >
+              <TouchableOpacity accessibilityRole="button" onPress={handleReset} style={fsh.resetBtn}>
                 <AppText style={fsh.resetTxt}>{t('ws_reset')}</AppText>
               </TouchableOpacity>
             )}
@@ -189,340 +296,154 @@ export const FilterSheet = ({
           </View>
         </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={fsh.body}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={fsh.split}>
+          {/* ── Left rail: filter groups ─────────────────────────────────── */}
+          <View style={[fsh.rail, { borderRightColor: BORDER }]}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={fsh.railContent} showsVerticalScrollIndicator={false}>
+            {sections.map((sec) => {
+              const on = sec.key === activeSection;
+              return (
+                <TouchableOpacity
+                  key={sec.key}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  activeOpacity={0.8}
+                  onPress={() => setSection(sec.key)}
+                  style={[fsh.railItem, on && [fsh.railItemOn, { backgroundColor: theme.colors.card, borderColor: BRAND + '33' }]]}
+                >
+                  <Ionicons name={sec.icon as never} size={18} color={on ? BRAND : theme.colors.mutedText} />
+                  <AppText style={[fsh.railTxt, { color: on ? BRAND : theme.colors.text }]} numberOfLines={2}>{sec.label}</AppText>
+                  {sec.locked ? <Ionicons name="lock-closed" size={11} color={theme.colors.mutedText} />
+                    : sec.count > 0 ? <View style={fsh.badge}><AppText style={fsh.badgeTxt}>{sec.count}</AppText></View> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          </View>
 
-          {/* ── Location ──────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#FDECEF' }]}>
-                <AppText style={{ fontSize: 14 }}>📍</AppText>
-              </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_location')}</AppText>
-            </View>
-            {(lockState || lockDistrict) && (
-              <AppText style={[fsh.lockHint, { color: theme.colors.mutedText }]}>
-                🔒 {t('ws_scope_locked')}
-              </AppText>
+          {/* ── Right pane: options of the selected group ────────────────── */}
+          <View style={fsh.pane}>
+            <AppText style={[fsh.paneTitle, { color: theme.colors.text }]} numberOfLines={1}>{activeLabel}</AppText>
+            {(lockState || lockDistrict) && (activeSection === 'state' || activeSection === 'district') && (
+              <AppText style={[fsh.lockHint, { color: theme.colors.mutedText }]}>🔒 {t('ws_scope_locked')}</AppText>
             )}
-            <DropField
-              label={t('ws_state')}
-              value={f.state ? getLocationDisplayName(f.state, 'state', i18n.language) : ''}
-              placeholder={t('ws_all_states')}
-              onPress={() => (lockState ? handleLockedAttempt() : setPicker('state'))}
-              locked={lockState}
-            />
-            <DropField
-              label={t('ws_district')}
-              value={multiSummary(f.district, (n) => getLocationDisplayName(n, 'district', i18n.language))}
-              placeholder={f.state ? t('ws_select_district') : t('ws_select_state_first')}
-              onPress={() => {
-                if (lockDistrict) { handleLockedAttempt(); return; }
-                if (f.state) setPicker('district');
-              }}
-              disabled={!f.state}
-              locked={lockDistrict}
-            />
-            {(oneDistrict || f.tehsil) && (
-              <DropField
-                label={t('ws_tehsil_block')}
-                value={f.tehsil ? getLocationDisplayName(f.tehsil, 'block', i18n.language) : ''}
-                placeholder={oneDistrict ? t('ws_select_tehsil') : t('ws_select_district_first')}
-                onPress={() => oneDistrict && setPicker('tehsil')}
-                disabled={!oneDistrict}
-              />
-            )}
+            {/* keyed so each group gets its own list/search state */}
+            <View key={activeSection} style={{ flex: 1 }}>{pane}</View>
           </View>
+        </View>
 
-          {/* ── Work Type ─────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#F3EEE6' }]}>
-                <AppText style={{ fontSize: 14 }}>💼</AppText>
-              </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_work_type')}</AppText>
-            </View>
-            <DropField
-              label={t('ws_category')}
-              value={f.workerType ? catDisplay(f.workerType) : ''}
-              placeholder={t('ws_all_categories')}
-              onPress={() => setPicker('cat')}
-            />
-            {/* Sub-category — appears once a category is chosen; lists that
-                category's sub-skills (Support Staff sub-roles for Diploma/Graduate). */}
-            {f.workerType && subCatValues.length > 0 && (
-              <DropField
-                label={t('ws_sub_category')}
-                value={multiSummary(f.subCategory, subcatDisplay)}
-                placeholder={t('ws_all_sub_categories')}
-                onPress={() => setPicker('subcat')}
-              />
-            )}
-          </View>
-
-          {/* ── Professional Type ─────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#EBF8F0' }]}>
-                <AppText style={{ fontSize: 14 }}>🧑‍💼</AppText>
-              </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_professional_type')}</AppText>
-            </View>
-            <View style={fsh.typeGrid}>
-              {[
-                { label: t('ws_individual_worker'), sub: t('ws_single_professional'), val: 'individual', icon: '👤' },
-                { label: t('ws_agent_group'),       sub: t('ws_team_or_agency'),      val: 'group',      icon: '👥' },
-              ].map((opt) => {
-                const active = f.workerGroup === opt.val;
-                return (
-                  <TouchableOpacity accessibilityRole="button"
-                    key={opt.val}
-                    onPress={() => set('workerGroup', active ? '' : opt.val)}
-                    activeOpacity={0.8}
-                    style={[fsh.typeCard, {
-                      backgroundColor: active ? '#0F1626' : theme.colors.surface1,
-                      borderColor: active ? '#0F1626' : theme.colors.border,
-                    }]}
-                  >
-                    <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]}>{opt.sub}</AppText>
-                    {active && (
-                      <View style={fsh.typeCheck}>
-                        <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* ── Demographics ──────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#FDECEF' }]}>
-                <AppText style={{ fontSize: 14 }}>🎯</AppText>
-              </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_demographics')}</AppText>
-            </View>
-
-            {/* Gender */}
-            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>{t('ws_gender')}</AppText>
-            <View style={[fsh.chipRow, { marginBottom: 18 }]}>
-              {[
-                { value: 'Male',   label: t('ws_male'),   icon: '♂' },
-                { value: 'Female', label: t('ws_female'), icon: '♀' },
-                { value: 'Other',  label: t('ws_other'),  icon: '⚧' },
-              ].map((g) => {
-                const active = f.gender === g.value;
-                return (
-                  <TouchableOpacity accessibilityRole="button"
-                    key={g.value}
-                    onPress={() => set('gender', active ? '' : g.value)}
-                    activeOpacity={0.8}
-                    style={[fsh.genderChip, {
-                      backgroundColor: active ? BRAND : theme.colors.background,
-                      borderColor: active ? BRAND : BORDER,
-                    }]}
-                  >
-                    <AppText style={[fsh.genderIcon, { color: active ? WHITE : theme.colors.text }]}>{g.icon}</AppText>
-                    <AppText style={[fsh.genderChipTxt, { color: active ? WHITE : theme.colors.text }]}>{g.label}</AppText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Age Range */}
-            <AppText style={[fsh.fieldLabel, { color: theme.colors.mutedText }]}>{t('ws_age_range')}</AppText>
-            <View style={fsh.ageGrid}>
-              <View style={{ flex: 1 }}>
-                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>{t('ws_from')}</AppText>
-                <View style={[fsh.ageBox, {
-                  borderColor: f.ageMin ? BRAND : theme.colors.border,
-                  backgroundColor: f.ageMin ? theme.colors.primaryLight : theme.colors.surface1,
-                }]}>
-                  <TextInput
-                    value={f.ageMin}
-                    onChangeText={(v) => set('ageMin', v.replace(/\D/g, ''))}
-                    placeholder="18"
-                    placeholderTextColor={SLATE}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                    style={[fsh.ageBoxInput, { color: theme.colors.text }]}
-                  />
-                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMin ? BRAND + '30' : theme.colors.border }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMin ? BRAND : theme.colors.mutedText }]}>{t('ws_yrs')}</AppText>
-                  </View>
-                </View>
-              </View>
-              <View style={fsh.ageSep}>
-                <AppText style={{ color: theme.colors.mutedText, fontWeight: '700', fontSize: 18 }}>–</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={[fsh.ageColLabel, { color: theme.colors.mutedText }]}>{t('ws_to')}</AppText>
-                <View style={[fsh.ageBox, {
-                  borderColor: f.ageMax ? BRAND : theme.colors.border,
-                  backgroundColor: f.ageMax ? theme.colors.primaryLight : theme.colors.surface1,
-                }]}>
-                  <TextInput
-                    value={f.ageMax}
-                    onChangeText={(v) => set('ageMax', v.replace(/\D/g, ''))}
-                    placeholder="60"
-                    placeholderTextColor={SLATE}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                    style={[fsh.ageBoxInput, { color: theme.colors.text }]}
-                  />
-                  <View style={[fsh.ageSuffixBox, { borderLeftColor: f.ageMax ? BRAND + '30' : theme.colors.border }]}>
-                    <AppText style={[fsh.ageSuffixTxt, { color: f.ageMax ? BRAND : theme.colors.mutedText }]}>{t('ws_yrs')}</AppText>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* ── Qualification ─────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <View style={fsh.cardHeader}>
-              <View style={[fsh.cardIcon, { backgroundColor: '#FDF5E8' }]}>
-                <AppText style={{ fontSize: 14 }}>🎓</AppText>
-              </View>
-              <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_qualification')}</AppText>
-            </View>
-            <View style={fsh.typeGrid}>
-              {/* Only the two education tiers. Skilled/Unskilled are skill levels (not
-                  qualifications); the legacy ITI/Diploma & Graduate are migrated to these. */}
-              {[
-                { label: t('ws_school_iti'),       sub: t('ws_certificate_holders'), val: '10th/12th/ITI',   icon: '🎓' },
-                { label: t('ws_diploma_graduate'), sub: t('ws_bachelors_above'),     val: 'Diploma/Graduate', icon: '📜' },
-              ].map((opt) => {
-                const active = f.qualification === opt.val;
-                return (
-                  <TouchableOpacity accessibilityRole="button"
-                    key={opt.val}
-                    onPress={() => set('qualification', active ? '' : opt.val)}
-                    activeOpacity={0.8}
-                    style={[fsh.typeCard, {
-                      backgroundColor: active ? '#F97316' : theme.colors.surface1,
-                      borderColor: active ? '#F97316' : theme.colors.border,
-                    }]}
-                  >
-                    <AppText style={fsh.typeIcon}>{opt.icon}</AppText>
-                    <AppText style={[fsh.typeLabel, { color: active ? WHITE : theme.colors.text }]}>{opt.label}</AppText>
-                    <AppText style={[fsh.typeSub, { color: active ? 'rgba(255,255,255,0.65)' : theme.colors.mutedText }]}>{opt.sub}</AppText>
-                    {active && (
-                      <View style={fsh.typeCheck}>
-                        <AppText style={{ color: WHITE, fontSize: 9, fontWeight: '900' }}>✓</AppText>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* ── Has Resume ────────────────────────────────────────────────── */}
-          <View style={[fsh.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-            <TouchableOpacity
-              onPress={() => set('hasResume', !f.hasResume)}
-              activeOpacity={0.8}
-              style={fsh.cardHeader}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: f.hasResume }}
-            >
-              <View style={[fsh.cardIcon, { backgroundColor: '#EAF7EF' }]}>
-                <AppText style={{ fontSize: 14 }}>📄</AppText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={[fsh.cardTitle, { color: theme.colors.text }]}>{t('ws_has_resume')}</AppText>
-                <AppText style={[fsh.typeSub, { color: theme.colors.mutedText }]}>{t('ws_has_resume_sub')}</AppText>
-              </View>
-              <View style={[
-                fsh.resumeToggle,
-                { borderColor: f.hasResume ? '#16A34A' : theme.colors.border, backgroundColor: f.hasResume ? '#16A34A' : 'transparent' },
-              ]}>
-                {f.hasResume && <AppText style={{ color: WHITE, fontSize: 11, fontWeight: '900' }}>✓</AppText>}
-              </View>
-            </TouchableOpacity>
-          </View>
-
-        </ScrollView>
-
-        {/* ── Footer ────────────────────────────────────────────────────── */}
+        {/* ── Footer: live result count on the apply button ──────────────── */}
         <View style={[fsh.footer, { borderTopColor: BORDER, backgroundColor: theme.colors.background }]}>
           <TouchableOpacity accessibilityRole="button" onPress={onClose} style={[fsh.cancelBtn, { borderColor: theme.colors.border }]} activeOpacity={0.8}>
             <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>{t('ws_cancel')}</AppText>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
-            <AppText style={fsh.applyTxt}>
-              {activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters')}
-            </AppText>
+          <TouchableOpacity accessibilityRole="button" onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88} testID="filter-apply">
+            <AppText style={fsh.applyTxt} numberOfLines={1}>{applyLabel}</AppText>
           </TouchableOpacity>
         </View>
-
-        <PickerModal
-          visible={picker === 'cat'}
-          title={t('ws_work_category')}
-          options={catLabels}
-          selected={f.workerType}
-          onSelect={(v) => set('workerType', v)}
-          onClose={() => setPicker(null)}
-          allLabel={t('ws_all_categories_opt')}
-          labelFor={catDisplay}
-        />
-        <PickerModal
-          visible={picker === 'subcat'}
-          title={t('ws_sub_category')}
-          options={subCatValues}
-          selected={f.subCategory}
-          onSelect={toggleMulti('subCategory')}
-          onClose={() => setPicker(null)}
-          allLabel={t('ws_all_sub_categories_opt')}
-          labelFor={subcatDisplay}
-          multiple
-        />
-        <PickerModal
-          visible={picker === 'state'}
-          title={t('ws_state')}
-          options={stateList}
-          selected={f.state}
-          onSelect={(v) => set('state', v)}
-          onClose={() => setPicker(null)}
-          allLabel={t('ws_all_states_opt')}
-          labelFor={(name) => getLocationDisplayName(name, 'state', i18n.language)}
-        />
-        <PickerModal
-          visible={picker === 'district'}
-          title={t('ws_district_city')}
-          options={districtList}
-          selected={f.district}
-          onSelect={toggleMulti('district')}
-          onClose={() => setPicker(null)}
-          allLabel={t('ws_all_districts_opt')}
-          labelFor={(name) => getLocationDisplayName(name, 'district', i18n.language)}
-          multiple
-        />
-        <PickerModal
-          visible={picker === 'tehsil'}
-          title={t('ws_tehsil_block')}
-          options={tehsilList}
-          selected={f.tehsil}
-          onSelect={(v) => set('tehsil', v)}
-          onClose={() => setPicker(null)}
-          allLabel={t('ws_all_blocks_opt')}
-          labelFor={(name) => getLocationDisplayName(name, 'block', i18n.language)}
-        />
       </View>
     </Modal>
   );
 };
+
+type SectionKey = 'state' | 'district' | 'tehsil' | 'cat' | 'subcat' | 'ptype' | 'gender' | 'age' | 'qual' | 'resume';
+
+const PaneHint = ({ text }: { text: string }): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  return <AppText style={[fsh.paneHint, { color: theme.colors.mutedText }]}>{text}</AppText>;
+};
+
+/** Right-pane option list: radio (single) or checkbox (multiple) rows, with an optional search box. */
+const OptionList = ({
+  options, selected, onToggle, allLabel, labelFor, multiple = false, searchable = false,
+}: {
+  options: string[];
+  selected: string;
+  onToggle: (v: string) => void;
+  allLabel: string;
+  labelFor?: (v: string) => string;
+  multiple?: boolean;
+  searchable?: boolean;
+}): React.JSX.Element => {
+  const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
+  const [q, setQ] = useState('');
+  const display = (o: string): string => (labelFor ? labelFor(o) : o);
+  const picked = multiple ? selected.split(',').map((x) => x.trim()).filter(Boolean) : [];
+  const needle = q.trim().toLowerCase();
+  const shown = needle ? options.filter((o) => o.toLowerCase().includes(needle) || display(o).toLowerCase().includes(needle)) : options;
+  return (
+    <View style={{ flex: 1 }}>
+      {searchable && (
+        <View style={[fsh.searchWrap, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}>
+          <Ionicons name="search" size={16} color={theme.colors.mutedText} style={{ marginLeft: 10 }} />
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            placeholder={t('ws_search_placeholder')}
+            placeholderTextColor={SLATE}
+            style={[fsh.searchInput, { color: theme.colors.text }]}
+          />
+          {q.length > 0 && (
+            <TouchableOpacity accessibilityRole="button" onPress={() => setQ('')} style={{ paddingHorizontal: 8 }}>
+              <Ionicons name="close-circle" size={16} color={theme.colors.mutedText} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+      <FlatList
+        removeClippedSubviews={false}
+        data={needle ? shown : [allLabel, ...shown]}
+        keyExtractor={(item: string) => item}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 10, paddingBottom: 20 }}
+        renderItem={({ item }: { item: string }) => {
+          const isAll = !needle && item === allLabel;
+          const val = isAll ? '' : item;
+          const active = multiple ? (val === '' ? picked.length === 0 : picked.includes(val)) : selected === val;
+          return (
+            <TouchableOpacity
+              accessibilityRole={multiple ? 'checkbox' : 'radio'}
+              accessibilityState={{ checked: active }}
+              activeOpacity={0.8}
+              onPress={() => onToggle(val)}
+              style={[fsh.optRow, { borderColor: active ? BRAND : theme.colors.border, backgroundColor: active ? BRAND + '0F' : theme.colors.card }]}
+            >
+              <AppText style={[fsh.optTxt, { color: active ? BRAND : theme.colors.text }]} numberOfLines={2}>{isAll ? item : display(item)}</AppText>
+              <View style={[fsh.check, multiple ? null : fsh.radio, { borderColor: active ? BRAND : theme.colors.border, backgroundColor: active ? BRAND : 'transparent' }]}>
+                {active && <AppText style={{ color: WHITE, fontSize: 11, fontWeight: '900' }}>✓</AppText>}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+      />
+    </View>
+  );
+};
 const fsh = StyleSheet.create({
   root:          { flex: 1 },
+
+  // Two-pane body
+  split:         { flex: 1, flexDirection: 'row' },
+  // Rail is a full-height tinted column (reaches the footer); items are inset rounded tabs.
+  rail:          { width: 118, flexGrow: 0, alignSelf: 'stretch', backgroundColor: BRAND + '0D', borderRightWidth: StyleSheet.hairlineWidth },
+  railContent:   { paddingHorizontal: 10, paddingTop: 12, paddingBottom: 16, gap: 6 },
+  railItem:      { paddingVertical: 12, paddingHorizontal: 10, gap: 6, alignItems: 'flex-start', borderRadius: 12, borderWidth: 1, borderColor: 'transparent' },
+  railItemOn:    { elevation: 2, shadowColor: '#142250', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6 },
+  railTxt:       { fontSize: 12.5, fontWeight: '800', lineHeight: 16 },
+  badge:         { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  badgeTxt:      { color: '#fff', fontSize: 10.5, fontWeight: '900' },
+  pane:          { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  paneTitle:     { fontSize: 16, fontWeight: '900', marginBottom: 12 },
+  paneHint:      { fontSize: 13, fontWeight: '600', lineHeight: 19, marginTop: 6 },
+  searchWrap:    { flexDirection: 'row', alignItems: 'center', borderWidth: 1.2, borderRadius: 12, height: 44, marginBottom: 12 },
+  searchInput:   { flex: 1, paddingHorizontal: 8, fontSize: 13.5, fontWeight: '600' },
+  optRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.4, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  optTxt:        { flex: 1, fontSize: 13.5, fontWeight: '700' },
+  check:         { width: 22, height: 22, borderRadius: 6, borderWidth: 1.8, alignItems: 'center', justifyContent: 'center' },
+  radio:         { borderRadius: 11 },
+
 
   // Header
   header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth },

@@ -11,6 +11,10 @@ import { classifySubscriptionError, promptSubscription } from '../../features/pa
 const t = ((k: string) => k) as never;
 
 describe('classifySubscriptionError', () => {
+  it('maps OUT_OF_SCOPE (worker outside the plan area) to the scope issue', () => {
+    expect(classifySubscriptionError({ code: 'OUT_OF_SCOPE' })).toBe('scope');
+    expect(classifySubscriptionError({ response: { data: { code: 'OUT_OF_SCOPE' } } })).toBe('scope');
+  });
   it('maps backend codes (top-level or response.data)', () => {
     expect(classifySubscriptionError({ code: 'SUBSCRIPTION_EXPIRED' })).toBe('expired');
     expect(classifySubscriptionError({ response: { data: { code: 'SUBSCRIPTION_REQUIRED' } } })).toBe('required');

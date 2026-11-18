@@ -3,6 +3,8 @@ import { apiClient } from '../client';
 
 export interface LivePulseEvent {
   type: 'worker' | 'requirement';
+  /** Worker events only: the joined worker's id, so the row can open their profile. */
+  workerId?: string;
   /** Category value (e.g. "construction_project_workers") — localise with getWorkTypeLabel. */
   category: string;
   /** English fallback label from the server. */
@@ -31,6 +33,7 @@ export function normalizeLivePulse(raw: unknown): LivePulse | null {
     .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
     .map((e) => ({
       type: (e.type === 'requirement' ? 'requirement' : 'worker') as LivePulseEvent['type'],
+      workerId: e.type === 'requirement' ? undefined : (str(e.workerId) || undefined),
       category: str(e.category),
       categoryLabel: str(e.categoryLabel),
       place: str(e.place),

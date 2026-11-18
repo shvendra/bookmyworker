@@ -17,6 +17,8 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { queryClient } from '../../../core/query/queryClient';
 import type { MainStackParamList } from '../../../app/navigation/types';
+import { usePaymentGrace } from '../../../core/query/useConnectivity';
+import { beginPaymentGrace } from '../../../core/query/connectivity';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type RouteT = RouteProp<MainStackParamList, 'PaymentWebView'>;
@@ -45,6 +47,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
   const { url, merchantOrderId, purpose } = route.params;
+  usePaymentGrace();
   const insets = useSafeAreaInsets();
   const { updateProfile, state: authState } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -178,6 +181,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
           }
           // Non-http scheme (UPI deep links like phonepe://, gpay://, etc.)
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
+            beginPaymentGrace(); // UPI app hand-over: the app goes to background and comes back
             void Linking.openURL(reqUrl).catch(() => {
               showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });
@@ -216,6 +220,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<TopupRoute>();
   const { url } = route.params;
+  usePaymentGrace();
   const insets = useSafeAreaInsets();
   const { updateProfile } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -310,6 +315,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
             return false;
           }
           if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) {
+            beginPaymentGrace(); // UPI app hand-over: the app goes to background and comes back
             void Linking.openURL(reqUrl).catch(() => {
               showAlert(t('jp_appNotInstalled'), t('jp_upiNotInstalled'));
             });

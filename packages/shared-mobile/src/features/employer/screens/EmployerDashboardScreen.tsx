@@ -628,7 +628,7 @@ export const EmployerDashboardScreen = (): React.JSX.Element => {
 
       {/* ── Live marketplace pulse + category shortcuts + offers (all self-hide when empty) ── */}
       <FadeInView delay={180}>
-        <SafeBoundary scope="dashboard.livePulse"><LivePulseCard onPress={handleWorkerSearchNavigate} /></SafeBoundary>
+        <SafeBoundary scope="dashboard.livePulse"><LivePulseCard onPress={handleWorkerSearchNavigate} onWorkerPress={handleAgentTilePress} /></SafeBoundary>
         <SafeBoundary scope="dashboard.categoryChips">
           <CategoryChipsRow
             onSelect={(value) => navigation.navigate('WorkerSearch', { workType: value })}

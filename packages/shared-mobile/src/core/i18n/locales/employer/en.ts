@@ -249,6 +249,11 @@ export const employerTranslation = {
   pl_postsExhaustedDesc: "You have used all the job posts in your plan. Upgrade to post more requirements.",
   pl_scopeDistrict: "Your plan searches within your {{district}} district. Upgrade for wider reach.",
   pl_scopeState: "Your plan searches within your {{state}}. Upgrade for wider reach.",
+  pl_contactDistrict: "Your plan lets you contact workers in {{district}} district. You can browse everywhere — upgrade to contact more widely.",
+  pl_contactState: "Your plan lets you contact workers in {{state}}. You can browse everywhere — upgrade to contact more widely.",
+  pl_outsideArea: "Outside your plan area",
+  sub_scopeTitle: "Outside your plan area",
+  sub_scopeMsg: "Your plan lets you contact workers in your plan area only. You can browse workers everywhere — upgrade your plan to contact workers in other areas.",
   // ── Jobs/Payment/Chat sweep ──
   jp_ageGroup: 'Age Group',
   jp_phEg5: 'e.g. 5',
@@ -438,6 +443,9 @@ export const employerTranslation = {
   ws_bachelors_above: "Bachelor's & above",
   ws_cancel: 'Cancel',
   ws_apply_count: 'Apply  ·  {{count}}',
+  ws_all_opt: 'All',
+  ws_show_workers: 'Show {{count}} workers',
+  ws_no_workers_match: 'No workers match',
   ws_apply_filters: 'Apply Filters',
   // Picker modal
   ws_options_available: '{{count}} option available',

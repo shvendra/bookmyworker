@@ -114,6 +114,7 @@ export type RootStackParamList = {
   ViewedContacts: undefined;
   EmployerFeedback: { fromPrompt?: boolean } | undefined;
   EmployerHelp: undefined;
+  AgentHelp: undefined;
   BgcHome: undefined;
   BgcEnroll: undefined;
   BgcOrders: undefined;

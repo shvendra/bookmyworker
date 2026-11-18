@@ -68,6 +68,7 @@ export type AgentStackParamList = {
   Notifications: undefined;
   MyActivity: undefined;
   Support: undefined;
+  AgentHelp: undefined;
   TermsPrivacy: undefined;
   ChatRoom: { roomId: string; roomName: string; roomAvatar?: string };
   Profile: undefined;

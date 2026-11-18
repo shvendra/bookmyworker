@@ -200,6 +200,8 @@ export interface AgentCardProps {
   outcomeOpenSignal: number;
   /** What the employer's team members did on this worker (who viewed the number / set a call status, and when). */
   teamActivity?: TeamWorkerActivity;
+  /** Subscribed employer whose plan does not cover this worker's area: browsing is fine, contacting needs an upgrade. */
+  outOfScope?: boolean;
 }
 
 export const AgentCard = React.memo(({
@@ -222,6 +224,7 @@ export const AgentCard = React.memo(({
   onDialCall,
   outcomeOpenSignal,
   teamActivity,
+  outOfScope = false,
 }: AgentCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -464,6 +467,13 @@ export const AgentCard = React.memo(({
             <AppText style={wc.lockChevron}>›</AppText>
           </TouchableOpacity>
         ) : (
+          <>
+          {outOfScope && (
+            <View style={wc.scopeChip}>
+              <Ionicons name="lock-closed" size={12} color="#b45309" />
+              <AppText style={wc.scopeChipTxt}>{t('pl_outsideArea')}</AppText>
+            </View>
+          )}
           <TouchableOpacity accessibilityRole="button"
             onPress={isSubscribed ? handleUnlock : onSubscribe}
             disabled={loadingUnlock}
@@ -479,6 +489,7 @@ export const AgentCard = React.memo(({
               </>
             )}
           </TouchableOpacity>
+          </>
         )}
       </View>
 
@@ -510,6 +521,8 @@ export const AgentCard = React.memo(({
 AgentCard.displayName = 'AgentCard';
 
 const wc = StyleSheet.create({
+  scopeChip:    { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' },
+  scopeChipTxt: { fontSize: 11.5, fontWeight: '800', color: '#b45309' },
   card:           { borderRadius: 20, marginBottom: 14, overflow: 'hidden', elevation: 2, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 16, borderWidth: StyleSheet.hairlineWidth },
 
   infoRow:        { flexDirection: 'row', padding: 11, gap: 10 },

@@ -3,7 +3,9 @@ import { Linking, View } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { queryClient } from '../core/query/queryClient';
 import { forceOnlineRecheck } from '../core/query/connectivity';
-import { useConnectivity } from '../core/query/useConnectivity';
+import { useConnectivity, useWeakConnection } from '../core/query/useConnectivity';
+import { isInPaymentGrace } from '../core/query/connectivity';
+import { WeakConnectionBanner } from '../shared/components/feedback/WeakConnectionBanner';
 import { useMaintenance } from '../features/maintenance/useMaintenance';
 import type { MaintenanceSurface } from '../features/maintenance/maintenanceApi';
 import { useAppUpdate } from '../features/appUpdate/useAppUpdate';
@@ -29,7 +31,8 @@ interface AppGateProps {
  *      below the SuperAdmin-set minimum (a stale app hitting a changed API is
  *      how "my subscription / posts / saved workers disappeared" happens),
  *   2. a maintenance screen when this surface is under maintenance (and online),
- *   3. a full-screen "No internet" overlay when offline,
+ *   3. a full-screen "No internet" overlay when the phone itself is offline (never mid-payment); a connected-but-
+ *      server-unreachable state shows a slim banner once signed in (full screen only before sign-in),
  *   4. otherwise the app itself — with a slim "update available" strip on top
  *      when a newer (non-mandatory) version exists.
  *
@@ -39,6 +42,7 @@ interface AppGateProps {
  */
 export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
   const online = useConnectivity();
+  const weakNet = useWeakConnection();
   const maintenance = useMaintenance(app);
   const update = useAppUpdate(app as AppSurface);
   const [retrying, setRetrying] = useState(false);
@@ -135,31 +139,47 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
     );
   }
 
-  if (!online) {
-    const onRetry = async () => {
-      setRetrying(true);
-      try {
-        const ok = await forceOnlineRecheck();
-        if (ok) {
-          // Un-paused above; now actively refetch everything that was stuck.
-          await queryClient.refetchQueries();
-        }
-      } finally {
-        setRetrying(false);
+  const onRetry = async () => {
+    setRetrying(true);
+    try {
+      const ok = await forceOnlineRecheck();
+      if (ok) {
+        // Un-paused above; now actively refetch everything that was stuck.
+        await queryClient.refetchQueries();
       }
-    };
+    } finally {
+      setRetrying(false);
+    }
+  };
 
+  // Never block mid-payment (PhonePe / UPI hand-over): the payment screens hold a grace window.
+  const blockOffline = !online && !isInPaymentGrace();
+  // Connected but our server is unreachable: full screen only before sign-in; once signed in the app stays usable.
+  const blockWeak = weakNet && !authenticated && !isInPaymentGrace();
+
+  if (blockOffline || blockWeak) {
     return (
       <FullScreenNotice
-        emoji="📡"
-        title="No internet connection"
-        message="Please check your Wi-Fi or mobile data. We'll reconnect and reload automatically the moment you're back online."
+        emoji={blockOffline ? '📡' : '🌐'}
+        title={blockOffline ? 'No internet connection' : "Can't reach the server"}
+        message={
+          blockOffline
+            ? "Your phone isn't connected to the internet. Turn on Wi-Fi or mobile data — we'll reconnect and reload automatically."
+            : "You're connected, but this network isn't letting us reach BookMyWorker. Try switching between Wi-Fi and mobile data, then tap Try again."
+        }
         retrying={retrying}
         onRetry={onRetry}
-        hint="Waiting for the network…"
+        hint={
+          blockOffline
+            ? 'Waiting for the network…'
+            : 'Tip: some Wi-Fi networks and DNS settings block apps. Mobile data usually works. Your data and any payment are safe.'
+        }
       />
     );
   }
+
+  // Signed-in + weak connection: keep the app, add a slim non-blocking banner.
+  const weakBanner = weakNet && authenticated ? <WeakConnectionBanner onRetry={async () => { await onRetry(); }} /> : null;
 
   // Optional update → app runs normally, with a dismissible strip up top.
   if (shouldShowUpdateStrip({ status: update.status, latestVersion: update.latestVersion, dismissedVersion, closedNow: updateStripClosed })) {
@@ -181,6 +201,7 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
           )}
         </SafeAreaInsetsContext.Consumer>
         {updateDialog}
+        {weakBanner}
       </View>
     );
   }
@@ -189,6 +210,7 @@ export const AppGate = ({ app, children }: AppGateProps): React.JSX.Element => {
     <>
       {children}
       {updateDialog}
+      {weakBanner}
     </>
   );
 };

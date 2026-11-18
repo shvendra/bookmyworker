@@ -38,7 +38,6 @@ import { getJobTitle, getCategoryLabel, getLocationStr, isWorkerProfileComplete,
 import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { PromoBannerSlider } from '../../../shared/components/ui/PromoBannerSlider';
-import { HelpChatModal } from '../../../shared/components/ui/HelpChatModal';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import i18n from '../../../core/i18n';
 
@@ -385,7 +384,6 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [wageModalReq, setWageModalReq] = useState<RawRequirement | null>(null);
-  const [helpVisible, setHelpVisible] = useState(false);
   const sliderRef = useRef<ScrollView>(null);
   const autoScrollX = useRef(0);
   const scrollPaused = useRef(false);
@@ -551,11 +549,10 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
         rightIcon="🔔"
         onRightPress={() => navigation.navigate('Notifications')}
         rightIcon2="💬"
-        onRightPress2={() => setHelpVisible(true)}
+        onRightPress2={() => navigation.navigate('AgentHelp')}
         style={{ paddingBottom: 14 }}
       />
 
-      <HelpChatModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
 
       {/* ── Complete Profile Banner ── */}
       {!isWorkerProfileComplete(user ?? null) && (

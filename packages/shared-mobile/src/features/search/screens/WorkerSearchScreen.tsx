@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useDeferredValue,
   useMemo,
   useRef,
   useState,
@@ -19,7 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,6 +27,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useTeamWorkerActivity } from '../../team/useTeamWorkerActivity';
 import { teamDeniedText } from '../../team/teamEligibility';
 import { workerApi } from '../../../core/api/endpoints/workerApi';
+import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 import { requestReviewOnce } from '../../../core/review/storeReview';
 import { hapticSuccess } from '../../../core/haptics';
 import type { RawAgent } from '../../../core/api/endpoints/workerApi';
@@ -53,6 +53,8 @@ import {
   catDisplay, subcatDisplay,
   getOutcomeColor, OUTCOME_GREEN, OUTCOME_BLUE,
   countActive,
+  countNonLocationActive,
+  isOutsidePlanScope,
   type WorkerFilters,
 } from '../components/workerSearchShared';
 
@@ -98,40 +100,37 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
   const plan = usePlanFeatures();
   // Non-subscriber: unrestricted ALL-INDIA search (no location lock). Once the
   // employer subscribes, their plan tier's scope applies (district/state/india).
-  // 'india' = unrestricted ⇒ isScoped is false ⇒ no auto-lock and no scope banner.
+  // 'india' = unrestricted ⇒ isScoped is false ⇒ no scope banner / out-of-area chips. Scope limits CONTACTING, never browsing.
   const scope = plan.isSubscribed ? plan.workerSearchScope : 'india'; // 'district' | 'state' | 'india'
   // Only constrain when we actually know the user's location (graceful fallback).
   const districtScoped = scope === 'district' && !!userState && !!userDistrict;
   const stateScoped    = scope === 'state'    && !!userState;
   const isScoped       = districtScoped || stateScoped;
-  // Reset should keep the plan-locked location, but clear it when unrestricted.
-  const resetState    = isScoped ? userState : '';
+  // Everyone starts on (and Reset returns to) their own state; only plan-limited subscribers are LOCKED to it.
+  // Choosing "All States" in the filter shows all of India.
+  const resetState    = userState;
   const resetDistrict = districtScoped ? userDistrict : '';
 
   const [appliedFilters, setAppliedFilters] = useState<WorkerFilters>({
     ...EMPTY_FILTERS,
     workerType: initialCat,
-    // Only pre-seed the location when the plan actually scopes the search.
-    // Non-subscribers (and 'india'-tier subscribers) start unrestricted = all-India.
-    state: isScoped ? userState : '',
-    district: '',
+    // Start on the employer's own state (changeable; locked only for plan-scoped subscribers).
+    state: userState,
+    // District-plan employers start on their district (changeable — the plan only limits who they can CONTACT).
+    district: districtScoped ? userDistrict : '',
   });
 
-  // Auto-fill / lock the search location to the plan's allowed scope. Re-runs
-  // when the scope resolves (it is permissive 'india' until the profile loads).
-  useEffect(() => {
-    if (!isScoped) return;
-    setAppliedFilters((prev) => {
-      const nextState = userState;
-      const nextDistrict = districtScoped ? userDistrict : prev.district;
-      if (prev.state === nextState && (!districtScoped || prev.district === nextDistrict)) {
-        return prev;
-      }
-      return { ...prev, state: nextState, district: districtScoped ? nextDistrict : prev.district, tehsil: '' };
-    });
-  }, [isScoped, districtScoped, userState, userDistrict]);
   const [showFilters,      setShowFilters]      = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
+  // Server-side search: wait until typing pauses, and ignore 1-letter queries.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const v = searchQuery.trim();
+    const next = v.length >= 2 ? v : '';
+    if (next === '') { setDebouncedQuery(''); return undefined; }
+    const id = setTimeout(() => setDebouncedQuery(next), 400);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
 
   const [unlockedPhones,  setUnlockedPhones]  = useState<Record<string, string>>({});
   // Worker's optional secondary number per worker, revealed by the SAME unlock.
@@ -248,7 +247,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     fetchStatus,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['workers-infinite', appliedFilters],
+    queryKey: ['workers-infinite', appliedFilters, debouncedQuery],
     queryFn: ({ pageParam = 1 }: { pageParam: number }) =>
       workerApi.getAllAgents({
         workerType:    appliedFilters.workerType    || undefined,
@@ -262,10 +261,12 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         minAge:        appliedFilters.ageMin ? Number(appliedFilters.ageMin) : undefined,
         maxAge:        appliedFilters.ageMax ? Number(appliedFilters.ageMax) : undefined,
         hasResume:     appliedFilters.hasResume || undefined,
+        q:             debouncedQuery || undefined,
         page:          pageParam,
         limit:         PAGE_LIMIT,
       }),
     initialPageParam: 1,
+    placeholderData: keepPreviousData, // keep the old list on screen while a new search loads (no flicker)
     getNextPageParam: (lastPage, allPages) => {
       // Use server-reported totalPages when available (respects work-type filter count)
       if (lastPage.pages > 0) {
@@ -282,23 +283,18 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     () => data?.pages.flatMap((p) => p.rawAgents) ?? [],
     [data],
   );
-  const activeFilterCount = countActive(appliedFilters);
+  // The default home state (and a district-plan employer's default district) is not a "user-applied" filter.
+  const activeFilterCount = countActive({
+    ...appliedFilters,
+    state: appliedFilters.state === userState ? '' : appliedFilters.state,
+    district: districtScoped && appliedFilters.district === userDistrict ? '' : appliedFilters.district,
+  });
   const [teamActivity, refreshTeamActivity] = useTeamWorkerActivity(useMemo(() => allAgents.map((a) => a._id), [allAgents]), true);
 
   // Client-side search filter. Deferring the query keeps each keystroke smooth:
   // typing updates the input immediately while the (potentially large) list
   // re-filter runs at a lower priority instead of blocking every character.
-  const deferredQuery = useDeferredValue(searchQuery);
-  const filteredAgents = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase();
-    if (!q) return allAgents;
-    return allAgents.filter((a) => {
-      const name  = (a.name ?? '').toLowerCase();
-      const areas = (a.areasOfWork ?? []).join(' ').toLowerCase();
-      const dist  = (a.district ?? '').toLowerCase();
-      return name.includes(q) || areas.includes(q) || dist.includes(q);
-    });
-  }, [allAgents, deferredQuery]);
+  const filteredAgents = allAgents; // search is now done by the server (`q`), across ALL workers
 
   // Header quick-filter chips removed entirely (per request) — trade filtering is
   // done through the Filters sheet. The list shows all loaded results directly.
@@ -306,7 +302,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
   const handleApply = useCallback(
     (f: WorkerFilters): void => {
-      if (!isSubscribed && countActive(f) > 0) {
+      // Browsing by location (state / district / block) is free; the other filters still need a plan.
+      if (!isSubscribed && countNonLocationActive(f) > 0) {
         navigation.navigate('Subscription');
         return;
       }
@@ -337,7 +334,10 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response
         ?.data?.message;
-      if (msg === 'Contact limit exhausted') {
+      if (classifySubscriptionError(err) === 'scope') {
+        // Worker is outside the area the plan lets this employer contact → clear dialog with an Upgrade button.
+        promptSubscription('scope', t);
+      } else if (msg === 'Contact limit exhausted') {
         // Mirror CRM: set local exhausted flag and redirect immediately
         setIsLimitExhausted(true);
         navigation.navigate('Subscription');
@@ -507,8 +507,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <AppText style={scopeBanner.icon}>📍</AppText>
           <AppText style={[scopeBanner.txt, { color: theme.colors.text }]} numberOfLines={2}>
             {districtScoped
-              ? t('pl_scopeDistrict', { district: getLocationDisplayName(userDistrict, 'district', i18n.language) })
-              : t('pl_scopeState', { state: getLocationDisplayName(userState, 'state', i18n.language) })}
+              ? t('pl_contactDistrict', { district: getLocationDisplayName(userDistrict, 'district', i18n.language) })
+              : t('pl_contactState', { state: getLocationDisplayName(userState, 'state', i18n.language) })}
           </AppText>
           <AppText style={[scopeBanner.cta, { color: BRAND }]}>{t('pl_upgrade')}</AppText>
         </TouchableOpacity>
@@ -677,6 +677,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               onDialCall={onDialCallStable}
               outcomeOpenSignal={outcomeOpen[item._id] ?? 0}
               teamActivity={teamActivity[item._id]}
+              outOfScope={isSubscribed && isScoped && isOutsidePlanScope(scope, { state: userState, district: userDistrict }, item)}
             />
           )}
           ListFooterComponent={
@@ -697,8 +698,9 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         onClose={() => setShowFilters(false)}
         userState={userState}
         userDistrict={userDistrict}
-        lockState={isScoped}
-        lockDistrict={districtScoped}
+        lockState={false}
+        lockDistrict={false}
+        resetDistrict={resetDistrict}
       />
 
       <CallCheckSheet

@@ -13,7 +13,7 @@ import { agoText, eventMessage } from '../utils/livePulseText';
 const TICK_MS = 4200;
 
 /** One rotating activity line — slides/fades to the next event every few seconds. */
-const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }): React.JSX.Element | null => {
+const Ticker = ({ pulse, onPress, onWorkerPress }: { pulse: LivePulse; onPress?: () => void; onWorkerPress?: (workerId: string) => void }): React.JSX.Element | null => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const { t } = useTranslation('employer');
@@ -44,6 +44,8 @@ const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }):
     : '';
   const catText = label && label !== '—' ? label : e.categoryLabel;
   const isReq = e.type === 'requirement';
+  // A "new worker joined" row opens that worker's profile; anything else falls back to the generic action (worker search).
+  const open = !isReq && e.workerId && onWorkerPress ? () => onWorkerPress(e.workerId as string) : onPress;
 
   // Soft blue-tinted card; the icon colour carries the type (green = new worker, amber = new requirement).
   const tint = isReq ? '#B45309' : '#16A34A';
@@ -56,11 +58,15 @@ const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }):
   // as the ticker rotated between short and long messages.
   return (
     <Animated.View
-      style={[
-        s.tick,
-        { backgroundColor: cardBg, borderColor: cardBorder, opacity: p, transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [5, 0] }) }] },
-      ]}
+      style={{ opacity: p, transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [5, 0] }) }] }}
       accessibilityLiveRegion="polite"
+    >
+    <TouchableOpacity
+      accessibilityRole="button"
+      disabled={!open}
+      onPress={open}
+      activeOpacity={0.85}
+      style={[s.tick, { backgroundColor: cardBg, borderColor: cardBorder }]}
     >
       <View style={[s.tickIcon, { backgroundColor: tintBg }]}>
         <Ionicons name={isReq ? 'briefcase' : 'person-add'} size={16} color={tint} />
@@ -70,16 +76,12 @@ const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }):
         {eventMessage(e, catText, t as never)}
       </AppText>
       <AppText style={[s.agoTxt, { color: theme.colors.mutedText }]} numberOfLines={1} maxFontSizeMultiplier={1.1}>{agoText(e.at, t as never)}</AppText>
-      {onPress && (
-        <TouchableOpacity accessibilityRole="button"
-          onPress={onPress}
-          activeOpacity={0.8}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          style={[s.arrowBtn, { backgroundColor: isDark ? theme.colors.surface1 : '#FFFFFF', borderColor: cardBorder }]}
-        >
+      {open && (
+        <View style={[s.arrowBtn, { backgroundColor: isDark ? theme.colors.surface1 : '#FFFFFF', borderColor: cardBorder }]}>
           <Ionicons name="arrow-forward" size={15} color={isDark ? theme.colors.text : '#1E3A8A'} />
-        </TouchableOpacity>
+        </View>
       )}
+    </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -88,10 +90,10 @@ const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }):
  * Real, anonymised marketplace activity as one rotating line ("New worker joined in Rewa · Plumber · 3d ago").
  * Renders nothing while loading, on error, or when there is no activity — it never invents anything.
  */
-export const LivePulseCard = ({ enabled = true, onPress }: { enabled?: boolean; onPress?: () => void }): React.JSX.Element | null => {
+export const LivePulseCard = ({ enabled = true, onPress, onWorkerPress }: { enabled?: boolean; onPress?: () => void; onWorkerPress?: (workerId: string) => void }): React.JSX.Element | null => {
   const { data: pulse } = useLivePulse(enabled);
   if (!pulse || pulse.events.length === 0) return null;
-  return <Ticker pulse={pulse} onPress={onPress} />;
+  return <Ticker pulse={pulse} onPress={onPress} onWorkerPress={onWorkerPress} />;
 };
 
 const s = StyleSheet.create({

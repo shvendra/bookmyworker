@@ -8,8 +8,9 @@ import { showAlert } from '../../shared/state/alert/AppAlertContext';
  *  - expired:  had a plan, it has lapsed
  *  - limit:    plan's worker-profile quota is used up (top-up)
  *  - plan:     the action isn't part of the current plan (upgrade)
+ *  - scope:    the worker is outside the area the plan lets the employer contact (upgrade)
  */
-export type SubscriptionIssue = 'required' | 'expired' | 'limit' | 'plan';
+export type SubscriptionIssue = 'required' | 'expired' | 'limit' | 'plan' | 'scope';
 
 /**
  * Map an API error to a subscription issue, or null when the error is unrelated
@@ -23,6 +24,7 @@ export function classifySubscriptionError(err: unknown): SubscriptionIssue | nul
   if (code === 'SUBSCRIPTION_EXPIRED') return 'expired';
   if (code === 'SUBSCRIPTION_REQUIRED') return 'required';
   if (code === 'CONTACT_LIMIT') return 'limit';
+  if (code === 'OUT_OF_SCOPE') return 'scope';
   const status = e?.statusCode ?? (e as { response?: { status?: number } })?.response?.status;
   const msg = String(e?.message ?? e?.response?.data?.message ?? '').toLowerCase();
   if (status === 403) {
@@ -38,6 +40,7 @@ const KEYS: Record<SubscriptionIssue, { title: string; msg: string; btn: string 
   expired:  { title: 'sub_expiredTitle', msg: 'sub_expiredMsg', btn: 'sub_btnRenew' },
   limit:    { title: 'sub_limitTitle',   msg: 'sub_limitMsg',   btn: 'sub_btnTopup' },
   plan:     { title: 'sub_planTitle',    msg: 'sub_planMsg',    btn: 'sub_btnUpgrade' },
+  scope:    { title: 'sub_scopeTitle',   msg: 'sub_scopeMsg',   btn: 'sub_btnUpgrade' },
 };
 
 /** Open the Subscription (payment) screen from anywhere. */

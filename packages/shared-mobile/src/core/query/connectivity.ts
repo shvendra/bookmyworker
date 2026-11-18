@@ -40,7 +40,7 @@ let installed = false;
 
 const listeners = new Set<(online: boolean) => void>();
 
-const PROBE_TIMEOUT_MS = 5000;
+const PROBE_TIMEOUT_MS = 8000;
 const RECOVERY_POLL_MS = 4000;
 // How long a connectivity drop must persist before the app actually declares
 // itself offline and shows the overlay. Tuned to ride out a brief real-world
@@ -48,18 +48,15 @@ const RECOVERY_POLL_MS = 4000;
 // genuine outage feel slow to report.
 const OFFLINE_DEBOUNCE_MS = 10000;
 
-// A cheap reachability probe. ANY HTTP response (even 4xx/5xx) proves the network
-// is back; only a fetch rejection (no response at all) means still offline.
-async function isReachable(): Promise<boolean> {
+// Reachability probe. ANY HTTP response (even 4xx/5xx) proves the network is up; only a fetch
+// rejection / timeout (no response at all) counts as a failure. Two independent attempts (a slow
+// first handshake on a weak Wi-Fi must not be taken for "offline"): one failed try is never enough.
+async function probeOnce(path: string): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     try {
-      await fetch(`${API_ORIGIN}/api/v1/health`, {
-        method: 'GET',
-        cache: 'no-store',
-        signal: controller.signal,
-      });
+      await fetch(`${API_ORIGIN}${path}`, { method: 'GET', cache: 'no-store', signal: controller.signal });
       return true;
     } finally {
       clearTimeout(timer);
@@ -68,6 +65,22 @@ async function isReachable(): Promise<boolean> {
     return false;
   }
 }
+
+async function isReachable(): Promise<boolean> {
+  if (await probeOnce('/api/v1/health')) return true;
+  return probeOnce(`/api/v1/health?r=${Date.now()}`);
+}
+
+// What the OS itself says (NetInfo): true = a network interface (Wi-Fi/mobile) is connected,
+// false = airplane/no network, null = unknown (NetInfo missing or not reported yet).
+let osConnected: boolean | null = null;
+// "Weak": the OS says we are connected but our server could not be reached for a while. The app keeps
+// running (queries keep retrying) and shows a slim banner instead of blocking everything.
+let weak = false;
+const weakListeners = new Set<(weak: boolean) => void>();
+// While a payment is in progress (PhonePe WebView / UPI app hand-over) never block the app.
+let paymentGraceUntil = 0;
+const PAYMENT_GRACE_MS = 120000;
 
 function stopRecoveryPoll(): void {
   if (recoveryTimer) {
@@ -80,10 +93,10 @@ function scheduleRecoveryPoll(): void {
   if (recoveryTimer) return; // already polling
   recoveryTimer = setTimeout(async function tick() {
     recoveryTimer = null;
-    if (currentlyOnline) return;
+    if (currentlyOnline && !weak) return;
     if (await isReachable()) {
       setOnline(true);
-    } else if (!currentlyOnline) {
+    } else if (!currentlyOnline || weak) {
       recoveryTimer = setTimeout(tick, RECOVERY_POLL_MS);
     }
   }, RECOVERY_POLL_MS);
@@ -96,12 +109,22 @@ function cancelOfflineDebounce(): void {
   }
 }
 
+function setWeak(next: boolean): void {
+  if (weak === next) return;
+  weak = next;
+  if (next) scheduleRecoveryPoll();
+  weakListeners.forEach((fn) => {
+    try { fn(next); } catch { /* a listener must never break connectivity */ }
+  });
+}
+
 function setOnline(online: boolean): void {
   // Any genuine "online" signal (or an immediate, non-debounced "offline"
   // from setOnline(false) itself) cancels a pending debounced declaration —
   // otherwise a stale timer could flip things offline again moments after a
   // real recovery.
   cancelOfflineDebounce();
+  if (online) setWeak(false);
   if (online === currentlyOnline) return;
   currentlyOnline = online;
   // Flips React Query's online state. On a false→true transition this fires a
@@ -127,10 +150,20 @@ function setOnline(online: boolean): void {
  */
 function requestOffline(): void {
   if (!currentlyOnline || offlineDebounceTimer) return;
+  armOfflineTimer(OFFLINE_DEBOUNCE_MS);
+}
+
+function armOfflineTimer(ms: number): void {
   offlineDebounceTimer = setTimeout(() => {
     offlineDebounceTimer = null;
-    setOnline(false);
-  }, OFFLINE_DEBOUNCE_MS);
+    // Mid-payment: re-check once the grace window is over instead of blocking the payment flow.
+    const left = paymentGraceUntil - Date.now();
+    if (left > 0) { armOfflineTimer(left + 1000); return; }
+    // The OS says a network IS connected → the problem is the path to our server, not "no internet".
+    // Keep the app usable (banner) rather than a blocking full-screen.
+    if (osConnected === true) setWeak(true);
+    else setOnline(false);
+  }, ms);
 }
 
 /** The API client saw a server response → the network is up. */
@@ -145,6 +178,35 @@ export function reportNetworkOk(): void {
  */
 export function reportNetworkDown(): void {
   requestOffline();
+}
+
+/** Mark a payment as in progress: no blocking offline screen for the next couple of minutes. */
+export function beginPaymentGrace(ms: number = PAYMENT_GRACE_MS): void {
+  paymentGraceUntil = Math.max(paymentGraceUntil, Date.now() + ms);
+  // (a pending offline timer is kept: when it fires inside the window it re-arms itself for after the window)
+  // If the overlay is already up (a payment was started right as the net blipped), lift it.
+  if (!currentlyOnline) setOnline(true);
+}
+
+export function isInPaymentGrace(): boolean {
+  return Date.now() < paymentGraceUntil;
+}
+
+/** True when the device is connected but our server is not reachable (slim banner, app stays usable). */
+export function getWeak(): boolean {
+  return weak;
+}
+
+/** Why we are offline/weak, so the message can be specific. */
+export type ConnectionIssue = 'none' | 'no-network' | 'server-unreachable';
+export function getConnectionIssue(): ConnectionIssue {
+  if (!currentlyOnline) return 'no-network';
+  return weak ? 'server-unreachable' : 'none';
+}
+
+export function subscribeWeak(fn: (weak: boolean) => void): () => void {
+  weakListeners.add(fn);
+  return () => weakListeners.delete(fn);
 }
 
 /** Current connectivity, for first render of the overlay. */
@@ -167,8 +229,13 @@ export function subscribeOnline(fn: (online: boolean) => void): () => void {
 export async function forceOnlineRecheck(): Promise<boolean> {
   setOnline(true); // un-pause queries so a refetch can fire
   const ok = await isReachable();
-  if (!ok) setOnline(false); // genuinely offline → back to offline + resume polling
-  return ok;
+  if (ok) return true;
+  if (osConnected === true || isInPaymentGrace()) {
+    setWeak(true); // device is connected: keep the app usable, just flag the weak connection
+    return false;
+  }
+  setOnline(false); // genuinely offline → back to offline + resume polling
+  return false;
 }
 
 /**
@@ -191,6 +258,9 @@ export function installConnectivityManager(): void {
     NetInfo.addEventListener((state: { isConnected: boolean | null; isInternetReachable: boolean | null }) => {
       // Treat "unknown" (null) reachability as online; only an explicit false or
       // a disconnected interface counts as offline. Avoids false-offline flaps.
+      osConnected = state.isConnected === null || state.isConnected === undefined ? null : state.isConnected;
+      // Only a disconnected interface is a hard "offline". isInternetReachable === false while an interface
+      // IS connected usually means our probe was slow/blocked (weak Wi-Fi, DNS) → handled as "weak" below.
       const online = state.isConnected !== false && state.isInternetReachable !== false;
       // Recovery is instant; a drop only starts the debounce (see requestOffline).
       if (online) setOnline(true);
@@ -204,7 +274,12 @@ export function installConnectivityManager(): void {
     // Coming back to the app — verify connectivity so a network that recovered
     // while backgrounded refetches immediately.
     if (status === 'active') {
-      void isReachable().then((ok) => setOnline(ok));
+      void isReachable().then((ok) => {
+        if (ok) setOnline(true);
+        else if (isInPaymentGrace()) return; // returning from a payment / UPI app: never block
+        else if (osConnected === true) setWeak(true);
+        else setOnline(false);
+      });
     }
   });
 }

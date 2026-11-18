@@ -617,6 +617,8 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
   // Debounce search
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listRef = useRef<FlatList<RawRequirement>>(null);
+  const searchInputRef = useRef<TextInput>(null);
   const handleSearchChange = (text: string): void => {
     setSearch(text);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
@@ -811,30 +813,22 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
   const pageTitle = showLikedOnly ? t('likedJobs') : showMyInterests ? t('myApplicationsTab') : t('findWorkNearYou');
   const hasFilters = !!(selectedCategory || selectedSubCat);
+  const filterCount = (selectedCategory ? 1 : 0) + (selectedSubCat ? 1 : 0);
+  const focusSearch = (): void => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    setTimeout(() => searchInputRef.current?.focus(), 250);
+  };
 
-  return (
-    <View style={[styles.container, { backgroundColor: isDark ? theme.colors.background : '#F1F5F9' }]}>
-      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
-
-      {/* ── Green header ─────────────────────────────────────────── */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.headerTopRow}>
-          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
-            <AppText style={styles.backIcon}>←</AppText>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <AppText style={styles.headerTitle}>{pageTitle}</AppText>
-            <AppText style={styles.headerSub}>
-              {t('jobsFoundNearYou', { count: totalCount > 0 ? totalCount : requirements.length })}
-            </AppText>
-          </View>
-          {isFetching && !isFetchingNextPage && !isManualRefresh && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
-        </View>
-
+  // Search · Jobs/Projects tabs · sort chips: these scroll away with the list (the slim bar above stays fixed).
+  // Passed to the FlatList as an ELEMENT (not a component) so typing in the search box never remounts it.
+  const listHeader = (
+    // With the white filter-chip row above, give the search box its own breathing room (12px); otherwise the top bar's 12px bottom padding already provides it.
+    <View style={[styles.listHeader, !showLikedOnly && hasFilters && { paddingTop: 14 }]}>
         {/* Search bar */}
         <View style={styles.searchBar}>
           <Ionicons name="search" size={16} color="rgba(255,255,255,0.6)" style={styles.searchBarIcon} />
           <TextInput
+            ref={searchInputRef}
             value={search}
             onChangeText={handleSearchChange}
             placeholder={t('searchPlaceholder')}
@@ -845,16 +839,6 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           {search.length > 0 && (
             <TouchableOpacity accessibilityRole="button" onPress={() => { setSearch(''); setDebouncedSearch(''); }} hitSlop={8}>
               <AppText style={styles.searchBarClear}>✕</AppText>
-            </TouchableOpacity>
-          )}
-          {!showLikedOnly && (
-            <TouchableOpacity accessibilityRole="button"
-              onPress={() => setFilterSheetVisible(true)}
-              style={[styles.filterIconBtn, { backgroundColor: hasFilters ? '#F97316' : 'rgba(255,255,255,0.18)' }]}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="options" size={16} color="#FFFFFF" style={styles.filterIconText} />
-              {hasFilters && <View style={styles.filterActiveDot} />}
             </TouchableOpacity>
           )}
         </View>
@@ -903,6 +887,55 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             ))}
           </ScrollView>
         )}
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: isDark ? theme.colors.background : '#F1F5F9' }]}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+
+      {/* ── Slim fixed top bar: back · title · search · filter (always visible while the list scrolls) ── */}
+      <View style={[styles.header, styles.headerSlim, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
+            <AppText style={styles.backIcon}>←</AppText>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.headerTitle} numberOfLines={1}>{pageTitle}</AppText>
+            <AppText style={styles.headerSub} numberOfLines={1}>
+              {t('jobsFoundNearYou', { count: totalCount > 0 ? totalCount : requirements.length })}
+            </AppText>
+          </View>
+          {isFetching && !isFetchingNextPage && !isManualRefresh && <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />}
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('searchPlaceholder')}
+            onPress={focusSearch}
+            style={styles.barIconBtn}
+            activeOpacity={0.8}
+            hitSlop={6}
+          >
+            <Ionicons name="search" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+          {!showLikedOnly && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('applyFiltersBtn')}
+              onPress={() => setFilterSheetVisible(true)}
+              style={[styles.barIconBtn, { backgroundColor: hasFilters ? '#F97316' : 'rgba(255,255,255,0.18)' }]}
+              activeOpacity={0.8}
+              hitSlop={6}
+              testID="jobs-filter-btn"
+            >
+              <Ionicons name="options" size={18} color="#FFFFFF" />
+              {hasFilters && (
+                <View style={styles.filterCountBadge}>
+                  <AppText style={styles.filterCountTxt}>{filterCount}</AppText>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Active filter chips summary */}
@@ -931,63 +964,65 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         </View>
       )}
 
-      {/* Job list */}
-      {sortedRequirements.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <EmptyState
-            title={showLikedOnly ? t('noLikedJobsTitle') : postingTab === 'projects' ? t('proj_noProjectsTitle') : t('noJobsFound')}
-            message={
-              showLikedOnly
-                ? t('noLikedJobsMsg')
-                : postingTab === 'projects'
-                  ? t('proj_noProjectsMsg')
-                  : selectedCategory
-                    ? t('noJobsInArea')
-                    : t('noJobsYet')
-            }
-          />
-        </View>
-      ) : (
-        <FlatList
-          data={sortedRequirements}
-          keyExtractor={(item, i) => item._id || String(i)}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={10}
-          removeClippedSubviews={false}
-          refreshControl={<RefreshControl refreshing={isManualRefresh} onRefresh={handleRefresh} />}
-          onEndReached={() => {
-            if (showLikedOnly) {
-              if (likedQuery.hasNextPage && !likedQuery.isFetchingNextPage) void likedQuery.fetchNextPage();
-            } else {
-              if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
-            }
-          }}
-          onEndReachedThreshold={0.3}
-          renderItem={({ item }) => (
-            <ReqCard
-              req={item}
-              isAgent={isAgent}
-              isVerifiedAgent={isVerifiedAgent}
-              isSelfWorker={role === 'selfworker'}
-              alreadyInterested={isInterested(item)}
-              isLiked={likedIds.has(item._id)}
-              onInterest={handleInterest}
-              onLike={handleLike}
-              onCallPress={handleCallPress}
-            />
-          )}
-          ListFooterComponent={
-            (isFetchingNextPage || likedQuery.isFetchingNextPage) ? (
-              <View style={styles.loadMore}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              </View>
-            ) : null
+      {/* Job list (always mounted so the search box in the header keeps focus while results change) */}
+      <FlatList
+        ref={listRef}
+        ListHeaderComponent={listHeader}
+        keyboardShouldPersistTaps="handled"
+        data={sortedRequirements}
+        keyExtractor={(item, i) => item._id || String(i)}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={10}
+        removeClippedSubviews={false}
+        refreshControl={<RefreshControl refreshing={isManualRefresh} onRefresh={handleRefresh} />}
+        onEndReached={() => {
+          if (showLikedOnly) {
+            if (likedQuery.hasNextPage && !likedQuery.isFetchingNextPage) void likedQuery.fetchNextPage();
+          } else {
+            if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
           }
-        />
-      )}
+        }}
+        onEndReachedThreshold={0.3}
+        renderItem={({ item }) => (
+          <ReqCard
+            req={item}
+            isAgent={isAgent}
+            isVerifiedAgent={isVerifiedAgent}
+            isSelfWorker={role === 'selfworker'}
+            alreadyInterested={isInterested(item)}
+            isLiked={likedIds.has(item._id)}
+            onInterest={handleInterest}
+            onLike={handleLike}
+            onCallPress={handleCallPress}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <EmptyState
+              title={showLikedOnly ? t('noLikedJobsTitle') : postingTab === 'projects' ? t('proj_noProjectsTitle') : t('noJobsFound')}
+              message={
+                showLikedOnly
+                  ? t('noLikedJobsMsg')
+                  : postingTab === 'projects'
+                    ? t('proj_noProjectsMsg')
+                    : selectedCategory
+                      ? t('noJobsInArea')
+                      : t('noJobsYet')
+              }
+            />
+          </View>
+        }
+        ListFooterComponent={
+          (isFetchingNextPage || likedQuery.isFetchingNextPage) ? (
+            <View style={styles.loadMore}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            </View>
+          ) : null
+        }
+      />
 
       {/* Filter bottom sheet */}
       <Modal
@@ -1116,7 +1151,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 14,
   },
-  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerSlim: { paddingBottom: 12 },
+  barIconBtn: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
+  filterCountBadge: { position: 'absolute', top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 9, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: BRAND },
+  filterCountTxt: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', lineHeight: 13 },
+  // The scrolling part of the old header — fills the list's 12px padding so the blue band spans edge to edge.
+  listHeader: { backgroundColor: BRAND, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 16, marginHorizontal: -16, marginTop: -12, marginBottom: 16 },
+  emptyWrap: { minHeight: 320, justifyContent: 'center' },
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   backIcon: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
   headerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', lineHeight: 22 },
@@ -1126,7 +1168,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 14, paddingHorizontal: 14, minHeight: 46,
     gap: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
   },
   searchBarIcon: { fontSize: 16, lineHeight: 20 },
@@ -1143,7 +1185,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Sort chips ───────────────────────────────────────────────────────────────
-  sortChips: { flexDirection: 'row', gap: 8, paddingTop: 12, paddingBottom: 2 },
+  sortChips: { flexDirection: 'row', gap: 8, paddingTop: 12 },
   sortChip: {
     paddingHorizontal: 14, paddingVertical: 7,
     borderRadius: 999, borderWidth: 1.5,
@@ -1172,7 +1214,7 @@ const styles = StyleSheet.create({
   // ── Active filter chips ──────────────────────────────────────────────────────
   activeFiltersRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    paddingHorizontal: 14, paddingVertical: 8,
+    paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   activeChip: {
@@ -1218,11 +1260,11 @@ const styles = StyleSheet.create({
   sheetFooter: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 
   // ── List ────────────────────────────────────────────────────────────────────
-  list: { padding: 12, paddingBottom: 40 },
+  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
 
   // ── Card ────────────────────────────────────────────────────────────────────
   reqCard: {
-    marginBottom: 10, borderRadius: 16, borderWidth: 1,
+    marginBottom: 12, borderRadius: 16, borderWidth: 1,
     overflow: 'hidden',
     shadowColor: BRAND, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,

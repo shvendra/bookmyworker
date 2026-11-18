@@ -121,4 +121,56 @@ describe('connectivity — debounced offline declaration', () => {
     await jest.advanceTimersByTimeAsync(0);
     expect(connectivity.getOnline()).toBe(false);
   });
+
+  describe('weak connection + payment grace', () => {
+    const netInfoListener = (): ((st: { isConnected: boolean | null; isInternetReachable: boolean | null }) => void) => {
+      const NetInfo = jest.requireMock('@react-native-community/netinfo') as unknown as { default: { addEventListener: jest.Mock } };
+      return NetInfo.default.addEventListener.mock.calls[0][0] as (st: { isConnected: boolean | null; isInternetReachable: boolean | null }) => void;
+    };
+
+    beforeEach(async () => {
+      jest.resetModules();
+      jest.doMock('@react-native-community/netinfo', () => ({
+        default: { configure: jest.fn(), addEventListener: jest.fn() },
+      }));
+      connectivity = await import('../../../core/query/connectivity');
+      connectivity.installConnectivityManager();
+    });
+
+    it('OS connected but server unreachable → weak (app stays online), not offline', () => {
+      netInfoListener()({ isConnected: true, isInternetReachable: true });
+      netInfoListener()({ isConnected: true, isInternetReachable: false });
+      jest.advanceTimersByTime(10000);
+      expect(connectivity.getOnline()).toBe(true);
+      expect(connectivity.getWeak()).toBe(true);
+      expect(connectivity.getConnectionIssue()).toBe('server-unreachable');
+      connectivity.reportNetworkOk();
+      expect(connectivity.getWeak()).toBe(false);
+    });
+
+    it('OS disconnected → hard offline after the debounce', () => {
+      netInfoListener()({ isConnected: false, isInternetReachable: false });
+      jest.advanceTimersByTime(10000);
+      expect(connectivity.getOnline()).toBe(false);
+      expect(connectivity.getConnectionIssue()).toBe('no-network');
+    });
+
+    it('never goes offline during a payment grace window, and re-checks after it ends', () => {
+      netInfoListener()({ isConnected: false, isInternetReachable: false });
+      connectivity.beginPaymentGrace(30000);
+      expect(connectivity.isInPaymentGrace()).toBe(true);
+      jest.advanceTimersByTime(20000);
+      expect(connectivity.getOnline()).toBe(true);
+      jest.advanceTimersByTime(20000); // grace over, timer re-armed
+      expect(connectivity.getOnline()).toBe(false);
+    });
+
+    it('beginPaymentGrace lifts an already-shown offline state', () => {
+      connectivity.reportNetworkDown();
+      jest.advanceTimersByTime(10000);
+      expect(connectivity.getOnline()).toBe(false);
+      connectivity.beginPaymentGrace();
+      expect(connectivity.getOnline()).toBe(true);
+    });
+  });
 });

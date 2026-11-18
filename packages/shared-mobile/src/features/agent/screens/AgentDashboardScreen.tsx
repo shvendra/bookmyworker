@@ -40,7 +40,6 @@ import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/u
 import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 import { describeLoadError, firstQueryError } from '../../../shared/utils/describeLoadError';
 import { VerifiedBadgeModal } from '../../../shared/components/ui/VerifiedBadgeModal';
-import { HelpChatModal } from '../../../shared/components/ui/HelpChatModal';
 // Profile-completion nudge disabled for now — mandatory completion is enforced
 // via the post-OTP WorkerProfileCompletionScreen instead.
 // import { ProfileCompletionModal } from '../../../shared/components/ui/ProfileCompletionModal';
@@ -414,7 +413,6 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
   const role = normalizedRole || 'worker';
 
   const [badgeModalVisible, setBadgeModalVisible] = useState(false);
-  const [helpVisible, setHelpVisible] = useState(false);
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set());
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [wageModalReq, setWageModalReq] = useState<RawRequirement | null>(null);
@@ -643,12 +641,11 @@ export const AgentDashboardScreen = (): React.JSX.Element => {
         rightIcon="📬"
         onRightPress={() => navigation.navigate('Invitations')}
         rightIcon2="💬"
-        onRightPress2={() => setHelpVisible(true)}
+        onRightPress2={() => navigation.navigate('AgentHelp')}
         notifCount={unseenCount > 0 ? unseenCount : undefined}
         style={{ paddingBottom: 14 }}
       />
 
-      <HelpChatModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
 
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}

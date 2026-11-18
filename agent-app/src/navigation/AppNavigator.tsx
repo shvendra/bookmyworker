@@ -61,6 +61,7 @@ import { WorkerSearchScreen } from '../../../packages/shared-mobile/src/features
 import { AddWorkerScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AddWorkerScreen';
 import { AgentWorkersScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AgentWorkersScreen';
 import { MyPlacementsScreen } from '../../../packages/shared-mobile/src/features/agent/screens/MyPlacementsScreen';
+import { AgentHelpScreen } from '../../../packages/shared-mobile/src/features/agent/screens/AgentHelpScreen';
 import { ChatRoomScreen } from '../../../packages/shared-mobile/src/features/chat/screens/ChatRoomScreen';
 import { SubscriptionScreen } from '../../../packages/shared-mobile/src/features/payment/screens/SubscriptionScreen';
 import { PaymentWebViewScreen, TopupWebViewScreen } from '../../../packages/shared-mobile/src/features/payment/screens/PaymentWebViewScreen';
@@ -283,6 +284,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="MyActivity" component={MyActivityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+            <Stack.Screen name="AgentHelp" component={AgentHelpScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Support" component={SupportScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

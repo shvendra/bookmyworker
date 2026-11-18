@@ -314,3 +314,5 @@ export function countActive(f: WorkerFilters): number {
     f.hasResume,
   ].filter(Boolean).length;
 }
+
+export { countNonLocationActive, isOutsidePlanScope } from './workerFilterGate';

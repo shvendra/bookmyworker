@@ -25,6 +25,8 @@ export interface WorkerSearchParams {
   hasResume?: boolean;
   /** Backend `photoFirst`: workers WITH a profile photo are listed first, then the rest (never an empty list for lack of photos). */
   photoFirst?: boolean;
+  /** Free-text search (name / district / block / state / skill) — matched server-side across ALL workers. */
+  q?: string;
 }
 
 export interface RawAgent {
@@ -169,6 +171,7 @@ export const workerApi = {
         qualification: params.qualification || undefined,
         hasResume: params.hasResume ? 'true' : undefined,
         photoFirst: params.photoFirst ? 'true' : undefined,
+        q: params.q?.trim() ? params.q.trim() : undefined,
         page: params.page ?? 1,
         limit: params.limit ?? 25,
       },
@@ -196,7 +199,7 @@ export const workerApi = {
     alreadyHired?: boolean;  // true when worker has Joined status — contact is free
     usedFreeContact?: boolean;  // true when a gifted free contact was used (no charge)
     freeContactsRemaining?: number;  // free contacts left after this unlock
-    code?: 'SUBSCRIPTION_REQUIRED' | 'SUBSCRIPTION_EXPIRED' | 'CONTACT_LIMIT';
+    code?: 'SUBSCRIPTION_REQUIRED' | 'SUBSCRIPTION_EXPIRED' | 'CONTACT_LIMIT' | 'OUT_OF_SCOPE';
   }> => {
     const res = await apiClient.get<{
       phone?: string;
@@ -205,7 +208,7 @@ export const workerApi = {
       alreadyHired?: boolean;
       usedFreeContact?: boolean;
       freeContactsRemaining?: number;
-      code?: string;
+      code?: 'SUBSCRIPTION_REQUIRED' | 'SUBSCRIPTION_EXPIRED' | 'CONTACT_LIMIT' | 'OUT_OF_SCOPE';
     }>(`/api/v1/user/unlock-number/${agentId}`);
     return res.data;
   },
