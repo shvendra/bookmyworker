@@ -22,7 +22,7 @@ const longDate = (d?: string | null): string => (d ? new Date(d).toLocaleDateStr
 const Stars = ({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }): React.JSX.Element => (
   <View style={s.stars} accessibilityLabel={label}>
     {[1, 2, 3, 4, 5].map((n) => (
-      <TouchableOpacity key={n} onPress={() => onChange(value === n ? 0 : n)} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }} accessibilityLabel={`${label} ${n}`}>
+      <TouchableOpacity accessibilityRole="button" key={n} onPress={() => onChange(value === n ? 0 : n)} hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }} accessibilityLabel={`${label} ${n}`}>
         <AppText style={[s.star, { color: n <= value ? '#F59E0B' : '#CBD5E1' }]}>★</AppText>
       </TouchableOpacity>
     ))}
@@ -30,7 +30,7 @@ const Stars = ({ value, onChange, label }: { value: number; onChange: (n: number
 );
 
 const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }): React.JSX.Element => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.75} accessibilityState={{ selected: on }}
+  <TouchableOpacity accessibilityRole="button" onPress={onPress} activeOpacity={0.75} accessibilityState={{ selected: on }}
     style={[s.chip, on && { backgroundColor: BRAND, borderColor: BRAND }]}>
     <AppText style={[s.chipText, on && { color: '#fff' }]}>{label}</AppText>
   </TouchableOpacity>
@@ -121,7 +121,7 @@ export const EmployerFeedbackScreen = ({ navigation, route }: Props): React.JSX.
                 {OVERALL_OPTIONS.map((o) => {
                   const on = draft.overall === o.value;
                   return (
-                    <TouchableOpacity key={o.value} onPress={() => set({ overall: o.value })} accessibilityLabel={t(o.labelKey)} accessibilityState={{ selected: on }}
+                    <TouchableOpacity accessibilityRole="button" key={o.value} onPress={() => set({ overall: o.value })} accessibilityLabel={t(o.labelKey)} accessibilityState={{ selected: on }}
                       style={[s.face, on && { borderColor: o.color, backgroundColor: `${o.color}22` }]}>
                       <AppText style={[s.faceEmoji, !on && { opacity: 0.55 }]}>{o.emoji}</AppText>
                     </TouchableOpacity>
@@ -170,7 +170,7 @@ export const EmployerFeedbackScreen = ({ navigation, route }: Props): React.JSX.
               <Question title={t('fb_recommendQ')} hint={t('fb_recommendHint')}>
                 <View style={s.chips}>
                   {Array.from({ length: 11 }, (_, n) => (
-                    <TouchableOpacity key={n} onPress={() => set({ recommend: draft.recommend === n ? null : n })} accessibilityLabel={`${n}`}
+                    <TouchableOpacity accessibilityRole="button" key={n} onPress={() => set({ recommend: draft.recommend === n ? null : n })} accessibilityLabel={`${n}`}
                       style={[s.score, draft.recommend === n && { backgroundColor: BRAND, borderColor: BRAND }]}>
                       <AppText style={[s.chipText, draft.recommend === n && { color: '#fff' }]}>{n}</AppText>
                     </TouchableOpacity>
@@ -192,7 +192,7 @@ export const EmployerFeedbackScreen = ({ navigation, route }: Props): React.JSX.
         </ScrollView>
 
         <View style={[s.footer, { paddingBottom: insets.bottom + 12, borderTopColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity onPress={later} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={later} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <AppText style={[s.laterText, { color: theme.colors.mutedText }]}>{fromPrompt ? t('fb_later') : t('fb_cancel')}</AppText>
           </TouchableOpacity>
           <View style={s.footerRight}>

@@ -46,8 +46,8 @@ export const AppSheet = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <TouchableOpacity activeOpacity={1} style={styles.scrim} onPress={onClose}>
-        <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button" activeOpacity={1} style={styles.scrim} onPress={onClose}>
+        <TouchableOpacity accessibilityRole="button"
           activeOpacity={1}
           onPress={() => {}}
           style={[

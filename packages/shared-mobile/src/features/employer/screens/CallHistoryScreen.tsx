@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Linking,
   Modal,
@@ -16,12 +15,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
+import { ListSkeleton } from '../../../shared/components/ui/ListSkeleton';
+import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { useAppTheme } from '../../../core/theme';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../../core/api/client';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { formatSkillList } from '../../../shared/data/categoryLabels';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'CallHistory'>;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,7 +46,6 @@ interface CallHistoryEntry {
 // STATUS_META labels are built dynamically with t() inside components that need them
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const BRAND = '#1037A4';
 const NAVY  = '#0F172A';
 const SLATE = '#64748B';
 const WHITE = '#FFFFFF';
@@ -108,7 +109,7 @@ function WorkerCard({
     .filter(Boolean).join(', ');
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       style={[wc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
       activeOpacity={0.88}
@@ -261,7 +262,7 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
       {/* ── Filter chips ─────────────────────────────────────────────────── */}
       <View style={[sc.filterBar, { borderBottomColor: theme.colors.border }]}>
         {FILTER_OPTIONS.map((opt) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={opt.key}
             onPress={() => setFilter(opt.key as FilterKey)}
             style={[sc.chip, { backgroundColor: theme.colors.surface1 }, filter === opt.key && sc.chipActive]}
@@ -277,9 +278,13 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
       {callHistoryQuery.isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={BRAND} />
-        </View>
+        <ListSkeleton rows={5} />
+      ) : callHistoryQuery.isError && allEntries.length === 0 ? (
+        <ErrorState
+          title={t('loadFailedTitle', { defaultValue: 'Couldn’t load this page' })}
+          message={t('loadFailedBody', { defaultValue: 'Please check your internet connection and try again.' })}
+          onRetry={() => void callHistoryQuery.refetch()}
+        />
       ) : (
         <FlatList
           // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
@@ -303,7 +308,7 @@ export const CallHistoryScreen = ({ navigation }: Props): React.JSX.Element => {
               </AppText>
               <AppText style={[sc.emptySub, { color: theme.colors.mutedText }]}>{t('callNoHistoryDesc')}</AppText>
               {filter === 'all' && (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => navigation.navigate('WorkerSearch')}
                   style={sc.browseBtn}
                   activeOpacity={0.85}

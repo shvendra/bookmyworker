@@ -30,7 +30,7 @@ export const DropField = ({
   return (
     <View style={{ marginBottom: 12 }}>
       <AppText style={[df.label, { color: theme.colors.mutedText }]}>{label}</AppText>
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={onPress}
         disabled={isDisabled}
         activeOpacity={0.75}

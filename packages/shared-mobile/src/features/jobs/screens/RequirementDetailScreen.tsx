@@ -38,11 +38,11 @@ import { ratingApi } from '../../../core/api/endpoints/ratingApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'RequirementDetail'>;
 type ReqDetailNav = NativeStackNavigationProp<MainStackParamList>;
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const BRAND      = '#1037A4';
 const BRAND_MID  = '#1A56DB';
 const BRAND_SOFT = '#EBF1FF';
 const NAVY       = '#0F172A';
@@ -247,7 +247,7 @@ const AgentCard = ({
   return (
     <View style={ac.cardWrap}>
       {/* Main row — tap goes to profile */}
-      <TouchableOpacity onPress={onProfile} activeOpacity={0.88} style={ac.card}>
+      <TouchableOpacity accessibilityRole="button" onPress={onProfile} activeOpacity={0.88} style={ac.card}>
         {/* Avatar */}
         <View style={[ac.avatar, { backgroundColor: palette.bg }]}>
           <AppText style={[ac.initials, { color: palette.text }]}>{initials}</AppText>
@@ -268,7 +268,7 @@ const AgentCard = ({
 
         {/* Button area — does NOT propagate to onProfile */}
         {isContactBlocked ? (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => void handleReveal()}
             style={ac.lockedChip}
             activeOpacity={0.75}
@@ -277,7 +277,7 @@ const AgentCard = ({
             <AppText style={ac.lockedTxt}>{t('rd_check')}</AppText>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => void handleReveal()}
             style={[ac.viewBtn, unlocking && { opacity: 0.7 }]}
             activeOpacity={0.8}
@@ -299,7 +299,7 @@ const AgentCard = ({
             <AppText style={ac.phoneRevealedLabel}>{t('rd_contactNumber')}</AppText>
             <AppText style={ac.phoneRevealedNum}>📞 {unlockedPhone}</AppText>
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => void Linking.openURL(`tel:${unlockedPhone}`)}
             style={ac.callNowBtn}
             activeOpacity={0.85}
@@ -865,7 +865,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
         {/* Back row */}
         <View style={hero.navRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={hero.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()} style={hero.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <AppText style={hero.backArrow}>←</AppText>
           </TouchableOpacity>
           <AppText style={hero.navTitle} numberOfLines={1}>{t('rd_headerTitle')}</AppText>
@@ -1039,7 +1039,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 )}
                 {req.assignedAgentPhone && (
                   isSubscribed ? (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => void Linking.openURL(`tel:${req.assignedAgentPhone}`)}
                       style={pg.assignedCallRow}
                     >
@@ -1110,7 +1110,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
                       {pw.status === 'pending' && !showRejectInput && (
                         <View style={pws.actionBtns}>
-                          <TouchableOpacity
+                          <TouchableOpacity accessibilityRole="button"
                             style={pws.approveBtn}
                             onPress={() => respondProposalMutation.mutate({ workerKey, isPhone, status: 'approved' })}
                             disabled={respondProposalMutation.isPending}
@@ -1118,7 +1118,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           >
                             <AppText style={pws.approveTxt}>{t('rd_approve')}</AppText>
                           </TouchableOpacity>
-                          <TouchableOpacity
+                          <TouchableOpacity accessibilityRole="button"
                             style={pws.rejectBtn}
                             onPress={() => { setRejectReasonInputId(workerKey); setRejectReasonText(''); }}
                             activeOpacity={0.8}
@@ -1140,10 +1140,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                           autoFocus
                         />
                         <View style={pws.rejectConfirmRow}>
-                          <TouchableOpacity onPress={() => setRejectReasonInputId(null)} style={pws.rejectCancelChip} activeOpacity={0.8}>
+                          <TouchableOpacity accessibilityRole="button" onPress={() => setRejectReasonInputId(null)} style={pws.rejectCancelChip} activeOpacity={0.8}>
                             <AppText style={{ fontSize: 12, color: SLATE, fontWeight: '600' }}>{t('rd_cancel')}</AppText>
                           </TouchableOpacity>
-                          <TouchableOpacity
+                          <TouchableOpacity accessibilityRole="button"
                             style={pws.rejectConfirmBtn}
                             onPress={() => respondProposalMutation.mutate({ workerKey, isPhone, status: 'rejected', rejectionReason: rejectReasonText.trim() })}
                             disabled={respondProposalMutation.isPending}
@@ -1193,7 +1193,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   Joined: t('rd_filterJoined'),
                 };
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={f}
                     onPress={() => setPipelineFilter(f)}
                     style={[pl.chip, active
@@ -1240,7 +1240,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   <View style={pl.cardBody}>
                     {/* Top: avatar + name/skill (tap → profile) + status pill */}
                     <View style={pl.topRow}>
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         style={pl.identity}
                         onPress={openProfile}
                         disabled={!canOpenProfile}
@@ -1282,7 +1282,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     {/* Action bar: view profile (left) + status action (right) */}
                     <View style={[pl.actionBar, { borderTopColor: theme.colors.divider }]}>
                       {canOpenProfile ? (
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           style={[pl.viewProfileBtn, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
                           onPress={openProfile}
                           activeOpacity={0.75}
@@ -1294,7 +1294,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       <View style={pl.actionsRight}>
                         {m.status === 'Shortlisted' && (
                           <>
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               onPress={() => handleRemoveFromPipeline(m._id, m.workerName)}
                               disabled={removeShortlistMutation.isPending}
                               style={pl.secondaryBtn}
@@ -1302,7 +1302,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                             >
                               <AppText style={pl.secondaryTxt}>{t('rd_removeBtn')}</AppText>
                             </TouchableOpacity>
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               style={[pl.primaryBtn, { backgroundColor: '#7C3AED' }]}
                               onPress={() => handleAdvanceToSelected(m._id, m.workerName)}
                               disabled={advanceStatusMutation.isPending}
@@ -1314,7 +1314,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         )}
                         {m.status === 'Selected' && (
                           <>
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               onPress={() => handleRevertToShortlisted(m._id, m.workerName)}
                               disabled={revertStatusMutation.isPending}
                               style={pl.secondaryBtn}
@@ -1322,7 +1322,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                             >
                               <AppText style={[pl.secondaryTxt, { color: '#D97706' }]}>{i18n.t('pipelineUnselect', { ns: 'employer' })}</AppText>
                             </TouchableOpacity>
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               style={[pl.primaryBtn, { backgroundColor: GREEN }]}
                               onPress={() => setJoinTarget({ mappingId: m._id, workerName: m.workerName })}
                               activeOpacity={0.85}
@@ -1333,7 +1333,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         )}
                         {m.status === 'Joined' && (
                           <>
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               onPress={() => handleRevertToSelected(m._id, m.workerName)}
                               disabled={revertStatusMutation.isPending}
                               style={pl.secondaryBtn}
@@ -1357,7 +1357,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
         {/* ── Worker Invitations tracker (employer only) ──────────────── */}
         {isEmployer && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.navigate('RequirementInvitations', {
               requirementId: req._id,
               requirementTitle: req.workType,
@@ -1429,7 +1429,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                     <AppText style={[pg.subOverlaySub, { color: theme.colors.mutedText }]}>
                       {t('rd_noSubscriptionMsg')}
                     </AppText>
-                    <TouchableOpacity style={pg.subOverlayBtn} onPress={() => navigation.navigate('Subscription')} activeOpacity={0.85}>
+                    <TouchableOpacity accessibilityRole="button" style={pg.subOverlayBtn} onPress={() => navigation.navigate('Subscription')} activeOpacity={0.85}>
                       <AppText style={pg.subOverlayBtnTxt}>{t('rd_viewPlans')}  →</AppText>
                     </TouchableOpacity>
                   </View>
@@ -1494,7 +1494,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={[pg.interestDoneSub, { color: theme.colors.mutedText }]}>
                   {t('rd_verifiedBadgeRequiredSub')}
                 </AppText>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[pg.expressBtn, { backgroundColor: AMBER, marginTop: 8 }]}
                   onPress={() => setBadgeModalVisible(true)}
                   activeOpacity={0.85}
@@ -1527,7 +1527,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   keyboardType="number-pad"
                   returnKeyType="done"
                 />
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[pg.expressBtn, { backgroundColor: expressInterestMutation.isPending ? theme.colors.border : BRAND }]}
                   onPress={handleExpressInterest}
                   disabled={expressInterestMutation.isPending || !wageInput}
@@ -1559,7 +1559,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             <View style={[pg.section, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
               <View style={[pg.interestedHeader, { marginBottom: 8 }]}>
                 <SecHead title={t('rd_proposedWorkers')} accent={BRAND} />
-                <TouchableOpacity style={pws.proposeBtn} onPress={() => setShowProposeModal(true)} activeOpacity={0.85}>
+                <TouchableOpacity accessibilityRole="button" style={pws.proposeBtn} onPress={() => setShowProposeModal(true)} activeOpacity={0.85}>
                   <AppText style={pws.proposeBtnTxt}>{t('rd_proposeBtn')}</AppText>
                 </TouchableOpacity>
               </View>
@@ -1602,14 +1602,14 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
         {!isAgentOrWorker && (
           <View style={pg.actionRow}>
             {!isClosed && userRole === 'employer' && (
-              <TouchableOpacity style={pg.editBtn} onPress={() => setShowEditSheet(true)} activeOpacity={0.88} testID="edit-requirement-btn">
+              <TouchableOpacity accessibilityRole="button" style={pg.editBtn} onPress={() => setShowEditSheet(true)} activeOpacity={0.88} testID="edit-requirement-btn">
                 <AppText style={{ fontSize: 18 }}>{'✏️'}</AppText>
                 <AppText style={pg.editBtnTxt}>{t('er_editBtn')}</AppText>
               </TouchableOpacity>
             )}
 
             {!isClosed && (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={pg.attendanceBtn}
                 onPress={handleMarkAttendance}
                 activeOpacity={0.88}
@@ -1621,7 +1621,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             {!isClosed && (
               hasActiveWorkers ? (
                 /* Workers are Selected/Joined — only allow "Mark Completed", not close */
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={pg.completeBtn}
                   onPress={handleComplete}
                   disabled={completeMutation.isPending}
@@ -1634,7 +1634,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 </TouchableOpacity>
               ) : (
                 /* No active workers — allow closing */
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={pg.closeBtn}
                   onPress={handleClose}
                   disabled={closeMutation.isPending}
@@ -1650,7 +1650,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
 
             {/* Rate Workers button — shown when requirement is Closed/Completed */}
             {isClosed && (req?.proposedWorkers?.some((pw) => pw.status === 'approved') || (req?.intrestedAgents?.length ?? 0) > 0) && (
-              <TouchableOpacity style={pg.rateBtn} onPress={() => setShowRateModal(true)} activeOpacity={0.88}>
+              <TouchableOpacity accessibilityRole="button" style={pg.rateBtn} onPress={() => setShowRateModal(true)} activeOpacity={0.88}>
                 <AppText style={{ fontSize: 18 }}>{'⭐'}</AppText>
                 <AppText style={pg.rateBtnTxt}>{t('rd_rateYourWorkers')}</AppText>
               </TouchableOpacity>
@@ -1686,7 +1686,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 <AppText style={pw.fieldLabel}>{t('rd_rateTypeLabel')}</AppText>
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                   {(['Daily', 'Monthly'] as const).map((rt) => (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={rt}
                       onPress={() => setJoinRateType(rt)}
                       style={[pw.cancelBtn, joinRateType === rt && { backgroundColor: BRAND, borderColor: BRAND }]}
@@ -1698,10 +1698,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                 </View>
 
                 <View style={[pw.btnRow, { marginTop: 16 }]}>
-                  <TouchableOpacity style={pw.cancelBtn} onPress={() => setJoinTarget(null)} activeOpacity={0.8}>
+                  <TouchableOpacity accessibilityRole="button" style={pw.cancelBtn} onPress={() => setJoinTarget(null)} activeOpacity={0.8}>
                     <AppText style={pw.cancelTxt}>{t('rd_cancel')}</AppText>
                   </TouchableOpacity>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     style={[pw.submitBtn, (!joinRate || advanceStatusMutation.isPending) && { opacity: 0.55 }]}
                     disabled={!joinRate || advanceStatusMutation.isPending}
                     onPress={() => advanceStatusMutation.mutate({
@@ -1755,10 +1755,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
             />
 
             <View style={pw.btnRow}>
-              <TouchableOpacity style={pw.cancelBtn} onPress={() => setShowProposeModal(false)} activeOpacity={0.8}>
+              <TouchableOpacity accessibilityRole="button" style={pw.cancelBtn} onPress={() => setShowProposeModal(false)} activeOpacity={0.8}>
                 <AppText style={pw.cancelTxt}>{t('rd_cancel')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[pw.submitBtn, (proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10) && { opacity: 0.55 }]}
                 onPress={() => proposeWorkerMutation.mutate({ workerName: proposeWorkerName.trim(), workerPhone: proposeWorkerPhone.trim() })}
                 disabled={proposeWorkerMutation.isPending || !proposeWorkerName || proposeWorkerPhone.length < 10}
@@ -1782,7 +1782,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                   <AppText style={rm.headerTitle}>⭐ {t('rd_rateYourWorkers')}</AppText>
                   <AppText style={rm.headerSub}>{t('rd_rateHeaderSub')}</AppText>
                 </View>
-                <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.closeBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setShowRateModal(false)} style={rm.closeBtn}>
                   <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
                 </TouchableOpacity>
               </View>
@@ -1807,7 +1807,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                       {/* Star selector */}
                       <View style={rm.starsRow}>
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <TouchableOpacity key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
+                          <TouchableOpacity accessibilityRole="button" key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
                             <AppText style={[rm.star, { color: n <= stars ? '#F59E0B' : '#D1D5DB' }]}>★</AppText>
                           </TouchableOpacity>
                         ))}
@@ -1848,7 +1848,7 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
                         <>
                           <View style={rm.starsRow}>
                             {[1, 2, 3, 4, 5].map((n) => (
-                              <TouchableOpacity key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
+                              <TouchableOpacity accessibilityRole="button" key={n} onPress={() => setRatingStars((p) => ({ ...p, [key]: n }))} activeOpacity={0.7}>
                                 <AppText style={[rm.star, { color: n <= stars ? '#F59E0B' : '#D1D5DB' }]}>★</AppText>
                               </TouchableOpacity>
                             ))}
@@ -1874,10 +1874,10 @@ export const RequirementDetailScreen = ({ route, navigation }: Props): React.JSX
               </ScrollView>
 
               <View style={rm.footer}>
-                <TouchableOpacity onPress={() => setShowRateModal(false)} style={rm.cancelBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setShowRateModal(false)} style={rm.cancelBtn}>
                   <AppText style={rm.cancelTxt}>{t('rd_cancel')}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   disabled={ratingSaving || Object.keys(ratingStars).length === 0}
                   style={[rm.submitBtn, (ratingSaving || Object.keys(ratingStars).length === 0) && { opacity: 0.5 }]}
                   onPress={async () => {

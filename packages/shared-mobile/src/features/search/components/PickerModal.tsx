@@ -80,8 +80,8 @@ export const PickerModal = ({
     : options;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity activeOpacity={1} onPress={onClose} style={pm.scrim}>
-        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[pm.sheet, { backgroundColor: theme.colors.card, paddingBottom: (kbHeight > 0 ? 18 : insets.bottom + 18), marginBottom: kbHeight, maxHeight: screenH * 0.85 - kbHeight }]}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={1} onPress={onClose} style={pm.scrim}>
+        <TouchableOpacity accessibilityRole="button" activeOpacity={1} onPress={() => {}} style={[pm.sheet, { backgroundColor: theme.colors.card, paddingBottom: (kbHeight > 0 ? 18 : insets.bottom + 18), marginBottom: kbHeight, maxHeight: screenH * 0.85 - kbHeight }]}>
           <View style={[pm.grab, { backgroundColor: theme.colors.border }]} />
 
           {/* Header */}
@@ -92,7 +92,7 @@ export const PickerModal = ({
                 {t('ws_options_available', { count: options.length })}
               </AppText>
             </View>
-            <TouchableOpacity onPress={onClose} style={[pm.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={[pm.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
               <Ionicons name="close" size={17} color={theme.colors.mutedText} />
             </TouchableOpacity>
           </View>
@@ -108,7 +108,7 @@ export const PickerModal = ({
               style={[pm.searchInput, { color: theme.colors.text }]}
             />
             {q.length > 0 && (
-              <TouchableOpacity onPress={() => setQ('')} style={pm.searchClear}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setQ('')} style={pm.searchClear}>
                 <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
               </TouchableOpacity>
             )}
@@ -130,7 +130,7 @@ export const PickerModal = ({
                 ? (val === '' ? selectedList.length === 0 : selectedList.includes(val))
                 : selected === val;
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => {
                     if (multiple) {
                       onSelect(val);                       // parent toggles ('' clears)

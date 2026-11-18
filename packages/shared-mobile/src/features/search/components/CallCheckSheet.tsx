@@ -59,7 +59,7 @@ export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React
             </AppText>
           )}
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             activeOpacity={0.85}
             style={[styles.btn, { backgroundColor: C.primary }]}
             onPress={() => worker && onConnected(worker)}
@@ -68,7 +68,7 @@ export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React
             <AppText style={styles.btnTxt}>{t('ws_callcheck_yes')}</AppText>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             activeOpacity={0.85}
             style={[styles.btnOutline, { borderColor: C.border }]}
             onPress={() => setStep('wa')}
@@ -82,7 +82,7 @@ export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React
           <AppText style={[styles.title, { color: C.text }]}>{t('ws_callcheck_wa_title')}</AppText>
           <AppText style={[styles.sub, { color: C.mutedText }]}>{t('ws_callcheck_wa_sub')}</AppText>
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             activeOpacity={0.85}
             style={[styles.btn, { backgroundColor: '#25D366' }]}
             onPress={sendWhatsApp}
@@ -91,7 +91,7 @@ export const CallCheckSheet = ({ worker, onConnected, onDismiss }: Props): React
             <AppText style={styles.btnTxt}>{t('ws_callcheck_wa_btn')}</AppText>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             activeOpacity={0.85}
             style={[styles.btnOutline, { borderColor: C.border }]}
             onPress={onDismiss}

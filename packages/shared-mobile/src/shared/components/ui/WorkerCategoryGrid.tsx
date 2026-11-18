@@ -287,7 +287,7 @@ const HCatSlider = ({
         {WORK_CATEGORIES.map((cat, idx) => {
           const isActive = activeCategory === cat.value;
           return (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={cat.value}
               onPress={() => onCategoryPress(cat)}
               activeOpacity={0.88}
@@ -390,7 +390,7 @@ export const WorkerCategoryGrid = ({
           {row.map((cat) => {
             const isActive = activeCategory === cat.value;
             return (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={cat.label}
                 onPress={() => onCategoryPress(cat)}
                 activeOpacity={0.82}

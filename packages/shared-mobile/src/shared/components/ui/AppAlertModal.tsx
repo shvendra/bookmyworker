@@ -167,7 +167,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                 <>
                   {/* Cancel on left */}
                   {cancelBtn && (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       style={[styles.btn, styles.btnCancel, { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : '#F1F5F9' }]}
                       onPress={() => handleButton(cancelBtn)}
                       activeOpacity={0.7}
@@ -179,7 +179,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                   )}
                   {/* Action on right */}
                   {actionBtns.map((btn, i) => (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={i}
                       style={[
                         styles.btn,
@@ -199,7 +199,7 @@ export const AppAlertModal = ({ visible, config, onDismiss }: Props): React.JSX.
                   const isCancel = btn.style === 'cancel';
                   const isDestructive = btn.style === 'destructive';
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={i}
                       style={[
                         styles.btnStack,

@@ -33,6 +33,7 @@ import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 import { parseAreasOfWork, subcatDisplay } from '../../../shared/data/categoryLabels';
 
+import { BRAND } from '../../../core/theme/brand';
 const FILTERS = [
   { label: 'All', value: 'all' },
   { label: 'Verified', value: 'verified' },
@@ -154,7 +155,7 @@ export const MyWorkersScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title="My Workers" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}

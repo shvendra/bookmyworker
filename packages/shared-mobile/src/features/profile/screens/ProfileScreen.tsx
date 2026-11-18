@@ -38,6 +38,7 @@ import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 import { workerNeedsEducationDoc, hasEducationDoc } from '../../../shared/utils/workerProfileUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 type ProfileNav = NativeStackNavigationProp<MainStackParamList>;
 
 const kycStatusColor = (status: KycStatus, theme: ReturnType<typeof useAppTheme>['theme']) => {
@@ -67,7 +68,7 @@ export const EMPLOYER_GUIDE_URL = `${API_ORIGIN}/app/BookMyWorker-Employer-Guide
 const MenuItem = ({ icon, label, onPress, danger = false, badge, right, isLast = false }: MenuItemProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       activeOpacity={0.65}
       style={[
@@ -264,8 +265,8 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+    <View style={{ flex: 1, backgroundColor: BRAND }}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <VerifiedBadgeModal
         visible={verifiedModalVisible}
         onDismiss={() => setVerifiedModalVisible(false)}
@@ -282,7 +283,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
       >
       {/* Compact header — name/location/status on the LEFT, avatar + edit on the
           RIGHT. Horizontal layout keeps the hero short (no tall vertical stack). */}
-      <View style={[styles.profileHeader, { backgroundColor: '#1037A4', paddingTop: insets.top + 14, paddingBottom: 16 }]}>
+      <View style={[styles.profileHeader, { backgroundColor: BRAND, paddingTop: insets.top + 14, paddingBottom: 16 }]}>
         {/* Depth layer — matches GradientHeader */}
         <View style={styles.heroDepth} pointerEvents="none" />
         <View style={[styles.heroCircle, styles.heroCircle1]} pointerEvents="none" />
@@ -310,7 +311,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                   <AppText style={styles.verifiedBadgeTxt}>{t('employer:pf_verifiedBadge')}</AppText>
                 </View>
               ) : user?.kycStatus === 'rejected' ? (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => navigation.navigate('KycVerification')}
                   activeOpacity={0.85}
                   style={styles.rejectedPill}
@@ -328,7 +329,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           </View>
 
           {/* RIGHT — avatar with an edit-pencil badge (ring reflects KYC state) */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.navigate('EditProfile')}
             style={styles.avatarWrap}
             activeOpacity={0.85}
@@ -348,7 +349,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               }
             />
             <View style={styles.avatarEditBtn}>
-              <Ionicons name="pencil" size={11} color="#1037A4" />
+              <Ionicons name="pencil" size={11} color={BRAND} />
             </View>
           </TouchableOpacity>
         </View>
@@ -373,7 +374,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
 
         {/* Switch Account — only admin / superadmin have multiple roles */}
         {(user?.role === 'admin' || user?.role === 'superadmin') && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.navigate('SwitchAccount')}
             activeOpacity={0.8}
             style={[styles.switchCard, { backgroundColor: theme.colors.primary }, theme.shadow.md]}
@@ -449,7 +450,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               <AppText style={[certStyles.title, { color: theme.colors.text }]} numberOfLines={1}>
                 {user?.role === 'agent' ? t('cert_licencePageTitle') : t('cert_pageTitle')}
               </AppText>
-              <TouchableOpacity onPress={() => navigation.navigate('Certificates')} activeOpacity={0.7}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Certificates')} activeOpacity={0.7}>
                 <AppText style={[certStyles.manageBtn, { color: theme.colors.primary }]}>
                   {t('cert_view')} / {t('profile_editPublicProfile').split(' ')[0]} ›
                 </AppText>
@@ -460,7 +461,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             {(user?.role === 'worker' || user?.role === 'selfworker') && (
               <>
                 {certificates.length === 0 ? (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => navigation.navigate('Certificates')}
                     activeOpacity={0.8}
                     style={[certStyles.emptyRow, { borderColor: theme.colors.border }]}
@@ -477,7 +478,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                     contentContainerStyle={certStyles.thumbRow}
                   >
                     {certificates.map((cert, i) => (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         key={i}
                         onPress={() => void Linking.openURL(cert.url)}
                         activeOpacity={0.8}
@@ -496,7 +497,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                       </TouchableOpacity>
                     ))}
                     {/* Add more tile */}
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => navigation.navigate('Certificates')}
                       activeOpacity={0.8}
                       style={[certStyles.addThumb, { borderColor: theme.colors.primary + '60', backgroundColor: theme.colors.primary + '08' }]}
@@ -523,7 +524,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             {user?.role === 'agent' && (
               licenceUrl ? (
                 <View style={certStyles.licenceRow}>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => void Linking.openURL(licenceUrl)}
                     activeOpacity={0.8}
                     style={[certStyles.licencePreview, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}
@@ -540,7 +541,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => navigation.navigate('Certificates')}
                   activeOpacity={0.8}
                   style={[certStyles.emptyRow, { borderColor: theme.colors.border }]}
@@ -599,7 +600,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
             <MenuItem icon="receipt-outline" label={t('profile_paymentHistory')} onPress={() => navigation.navigate('Transactions')} />
           )}
           {user?.role === 'employer' && empIsSubscribed && canHaveTeam(empProfile?.employerType) && (
-            <MenuItem icon="people-outline" label="My Team" onPress={() => navigation.navigate('MyTeam')} />
+            <MenuItem icon="people-outline" label={t('x_myTeam', { ns: 'employer' })} onPress={() => navigation.navigate('MyTeam')} />
           )}
           {user?.role === 'employer' && (
             <MenuItem icon="pulse-outline" label={t('profile_myActivity')} onPress={() => navigation.navigate('MyActivity')} />
@@ -690,7 +691,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         </MenuSection>
 
         {/* Sign Out */}
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={handleSignOut}
           activeOpacity={0.82}
           style={[styles.signOutBtn, { backgroundColor: theme.colors.dangerLight, borderColor: theme.colors.danger }]}
@@ -712,7 +713,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
   ]}
 >
   <View style={{ width: '90%', maxWidth: 360 }}>
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       activeOpacity={0.8}
       onPress={() => setShowDeleteSection(!showDeleteSection)}
       style={[
@@ -769,7 +770,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
           },
         ]}
       >
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => setDeleteAccountModalVisible(true)}
           activeOpacity={0.75}
           style={[
@@ -842,7 +843,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
         transparent
         onRequestClose={() => setLangModalVisible(false)}
       >
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setLangModalVisible(false)}
@@ -863,7 +864,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
                 {LANGUAGE_OPTIONS.map((lang) => {
                   const isSelected = (user?.language ?? 'en') === lang.value;
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={lang.value}
                       onPress={() => void handleSelectLanguage(lang.value as AppLanguage)}
                       disabled={savingLang}
@@ -918,14 +919,14 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               {t('profile_signOutMessage')}
             </AppText>
             <View style={styles.signOutActions}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => setSignOutModalVisible(false)}
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                 activeOpacity={0.8}
               >
                 <AppText variant="label" color={theme.colors.text}>{t('cancel')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={confirmSignOut}
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.danger }]}
                 activeOpacity={0.8}
@@ -953,7 +954,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               {t('profile_deleteAccountMessage')}
             </AppText>
             <View style={styles.signOutActions}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => setDeleteAccountModalVisible(false)}
                 disabled={isDeletingAccount}
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: isDeletingAccount ? 0.5 : 1 }]}
@@ -961,7 +962,7 @@ const [showDeleteSection, setShowDeleteSection] = useState(false);
               >
                 <AppText variant="label" color={theme.colors.text}>{t('cancel')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => void confirmDeleteAccount()}
                 disabled={isDeletingAccount}
                 style={[styles.signOutActionBtn, { backgroundColor: theme.colors.danger, opacity: isDeletingAccount ? 0.7 : 1 }]}
@@ -996,7 +997,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', marginTop: 8 },
   heroDepth: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     opacity: 0.45,
   },
   heroCircle: { position: 'absolute', borderRadius: 999 },
@@ -1024,7 +1025,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#1037A4',
+    borderColor: BRAND,
   },
   avatarEditIcon: { fontSize: 12, lineHeight: 16 },
   // Pending verification pill
@@ -1237,7 +1238,7 @@ const styles = StyleSheet.create({
 const certStyles = StyleSheet.create({
   card: {
     borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 12,
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 },
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
   headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14 },

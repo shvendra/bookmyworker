@@ -29,6 +29,7 @@ import { showAlert } from '../../state/alert/AppAlertContext';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 
+import { BRAND } from '../../../core/theme/brand';
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface PickedLocation {
   address: string;        // human-readable display address
@@ -292,7 +293,7 @@ export const LocationPickerModal = ({
         {/* ── Header ────────────────────────────────────────────────────── */}
         <View style={[styles.header, { backgroundColor: c.card, borderBottomColor: c.border }]}>
           <AppText style={[styles.headerTitle, { color: c.text }]} numberOfLines={2}>{title ?? t('lp_title')}</AppText>
-          <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={[styles.closeBtn, { backgroundColor: c.surface1 }]}>
+          <TouchableOpacity accessibilityRole="button" onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={[styles.closeBtn, { backgroundColor: c.surface1 }]}>
             <AppText style={[styles.closeTxt, { color: c.text }]}>✕</AppText>
           </TouchableOpacity>
         </View>
@@ -311,7 +312,7 @@ export const LocationPickerModal = ({
             />
             {searching && <ActivityIndicator size="small" color={c.mutedText} style={{ marginRight: 10 }} />}
             {query.length > 0 && !searching && (
-              <TouchableOpacity onPress={() => { setQuery(''); setResults([]); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => { setQuery(''); setResults([]); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <AppText style={{ color: c.mutedText, paddingRight: 12, fontSize: 16 }}>✕</AppText>
               </TouchableOpacity>
             )}
@@ -321,7 +322,7 @@ export const LocationPickerModal = ({
           {results.length > 0 && (
             <View style={[styles.resultsCard, { backgroundColor: c.card, borderColor: c.border }]}>
               {results.slice(0, 6).map((item) => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={String(item.place_id)}
                   onPress={() => selectSearchResult(item)}
                   activeOpacity={0.75}
@@ -368,7 +369,7 @@ export const LocationPickerModal = ({
           )}
 
           {/* Floating GPS pill */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={handleGPS}
             disabled={gpsLoading}
             activeOpacity={0.85}
@@ -400,7 +401,7 @@ export const LocationPickerModal = ({
             {resolving && <ActivityIndicator size="small" color={c.mutedText} />}
           </View>
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={handleConfirm}
             disabled={!picked || resolving}
             activeOpacity={0.9}
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
   selPlaceholder: { fontSize: 13.5, fontWeight: '500', lineHeight: 19 },
   confirmBtn: {
     borderRadius: 16, paddingVertical: 16, alignItems: 'center',
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   confirmTxt: { color: '#fff', fontSize: 15.5, fontWeight: '800', letterSpacing: 0.2 },
 });

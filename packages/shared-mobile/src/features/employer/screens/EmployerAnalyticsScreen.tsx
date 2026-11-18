@@ -21,6 +21,7 @@ import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { getCategoryLabel } from '../../../shared/utils/labelUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 // ─── Data shapes ──────────────────────────────────────────────────────────────
@@ -35,7 +36,6 @@ interface AnalyticsData {
 }
 
 // ─── Colour palette (monochromatic blue family — professional, mirrors CRM) ─────
-const BRAND = '#1037A4';
 const BLUE  = '#2563EB';
 const GREEN = '#10B981';
 const PALETTE = ['#2563EB', '#3B82F6', '#60A5FA', '#1E3A8A', '#93C5FD', '#475569', '#64748B', '#1D4ED8'];
@@ -347,7 +347,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
                 </View>
               ))}
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={al.btn} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Subscription')} style={al.btn} activeOpacity={0.85}>
               <AppText style={al.btnTxt}>{t('pl_upgradeBtn')}</AppText>
             </TouchableOpacity>
           </View>
@@ -389,7 +389,7 @@ export const EmployerAnalyticsScreen = (): React.JSX.Element => {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
           <AppText style={{ fontSize: 18, fontWeight: '800', color: theme.colors.text }}>{t('couldntLoadAnalytics')}</AppText>
           <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', lineHeight: 20 }}>{t('checkConnectionRetry')}</AppText>
-          <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: BRAND, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refetch()} style={{ backgroundColor: BRAND, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }}>
             <AppText style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{t('retry')}</AppText>
           </TouchableOpacity>
         </View>

@@ -14,6 +14,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from '../../../shared/components/ui/AppText';
 
+import { BRAND } from '../../../core/theme/brand';
 const ROLE_META: Record<string, { label: string; icon: string; color: string; description: string }> = {
   Agent:      { label: 'Agent',       icon: '🤝', color: '#4361EE', description: 'Register workers, earn commissions' },
   Employer:   { label: 'Employer',    icon: '💼', color: '#7C3AED', description: 'Post requirements, hire workers' },
@@ -66,7 +67,7 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title="Switch Account" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -98,7 +99,7 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
           const busy = switching !== null || settingDefault !== null;
 
           return (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={backendRole}
               onPress={() => void handleSwitch(backendRole)}
               disabled={busy || isActive}
@@ -155,7 +156,7 @@ export const SwitchAccountScreen = (): React.JSX.Element => {
                 </AppText>
                 {/* Set as default button */}
                 {!isDefault && (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => void handleSetDefault(backendRole)}
                     disabled={busy}
                     style={[styles.setDefaultBtn, { borderColor: isActive ? 'rgba(255,255,255,0.4)' : meta.color + '55' }]}

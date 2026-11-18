@@ -16,6 +16,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { notificationApi, type NotificationPreferences } from '../../../core/api/endpoints/notificationApi';
 
+import { BRAND } from '../../../core/theme/brand';
 const DEFAULT_PREFS: NotificationPreferences = {
   newRequirement: true,
   expressedInterest: true,
@@ -96,7 +97,7 @@ export const NotificationPreferencesScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('notifPrefTitle')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}

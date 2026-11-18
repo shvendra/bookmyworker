@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { chatApi } from '../../../core/api/endpoints/chatApi';
 import { helpSearchApi } from '../../../core/api/endpoints/helpSearchApi';
 import { useAuth } from '../../../state/auth/AuthContext';
 import { AppText } from './AppText';
+import { ScreenHeader } from './GradientHeader';
 
 type HelpCategory = AppConfig['helpCenter']['categories'][number];
 type HelpSubCategory = AppConfig['helpCenter']['subCategories'][number];
@@ -73,6 +74,9 @@ function isChatLive(startHour: number, endHour: number): boolean {
 interface HelpChatModalProps {
   visible: boolean;
   onClose: () => void;
+  /** Render as a full page (own header + back arrow, no Modal). Used by the
+   *  Employer app's dedicated Help page; other roles keep the sheet. */
+  asPage?: boolean;
 }
 
 /**
@@ -87,7 +91,7 @@ interface HelpChatModalProps {
  * Center) — same data source as the CRM's own "Get Help" dialog and the
  * Support screen's topic browser.
  */
-export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.JSX.Element => {
+export const HelpChatModal = ({ visible, onClose, asPage = false }: HelpChatModalProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation('employer');
@@ -150,9 +154,11 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     chatApi.getSessionStatus(roomId).then((res) => {
       if (cancelled) return;
       if (res.active) {
-        onClose();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (navigation as any).navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
+        const nav = navigation as any;
+        if (asPage && nav.replace) { nav.replace('ChatRoom', { roomId, roomName: 'Support Chat' }); return; }
+        onClose();
+        nav.navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
       }
     });
     return () => { cancelled = true; };
@@ -215,6 +221,20 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     if (step === 'subcategories') { setStep('categories'); setCategory(null); return; }
   };
 
+  // Page mode: back arrow / Android back step up one level first, and only
+  // leave the page from the top-level category list.
+  const pageBack = (): void => { if (step === 'categories') handleClose(); else goBack(); };
+  useEffect(() => {
+    if (!asPage) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step === 'categories') return false;
+      goBack();
+      return true;
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asPage, step, subCatsForCategory.length]);
+
   const openAgentChat = async (): Promise<void> => {
     if (!chatLive) return;
     // Record exactly what was selected (and whether it satisfied) as a
@@ -225,16 +245,18 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
       questionText: topic?.questionEn ?? null,
       satisfied: topic ? satisfied : null,
     });
-    handleClose();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (navigation as any).navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
+    const nav = navigation as any;
+    if (asPage && nav.replace) { nav.replace('ChatRoom', { roomId, roomName: 'Support Chat' }); return; }
+    handleClose();
+    nav.navigate('ChatRoom', { roomId, roomName: 'Support Chat' });
   };
 
   const escalateRow = (
     <View style={styles.escalateWrap}>
       <AppText variant="label" color={theme.colors.mutedText} style={styles.escalateLabel}>{t('helpchat_stillNeedHelp')}</AppText>
 
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={() => void openAgentChat()}
         disabled={!chatLive}
         activeOpacity={0.7}
@@ -251,7 +273,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={() => void Linking.openURL(`mailto:${supportEmail}`)}
         activeOpacity={0.7}
         style={[styles.escalateCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -266,24 +288,27 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
     </View>
   );
 
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+  const content = (
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+        {asPage ? (
+          <ScreenHeader title={t('helpchat_title')} onBack={pageBack} />
+        ) : (
         <View style={[styles.header, { borderColor: theme.colors.border, paddingTop: insets.top + 10 }]}>
           {step !== 'categories' ? (
-            <TouchableOpacity onPress={goBack} style={styles.headerBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={goBack} style={styles.headerBtn}>
               <AppText style={styles.headerBtnTxt}>{`‹ ${t('helpchat_back')}`}</AppText>
             </TouchableOpacity>
           ) : <View style={styles.headerBtn} />}
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AppText variant="label">{t('helpchat_title')}</AppText>
           </View>
-          <TouchableOpacity onPress={handleClose} style={styles.headerBtn}>
+          <TouchableOpacity accessibilityRole="button" onPress={handleClose} style={styles.headerBtn}>
             <AppText style={styles.headerBtnTxt}>✕</AppText>
           </TouchableOpacity>
         </View>
+        )}
 
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, asPage && { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {step === 'categories' && (
             <>
               <View style={[styles.searchWrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
@@ -303,7 +328,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                     <AppText variant="body" color={theme.colors.mutedText} style={styles.emptyTxt}>{t('helpchat_noTopicsHere')}</AppText>
                   ) : (
                     searchResults.map((tp: HelpTopic, i: number) => (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         key={tp.categoryKey + i}
                         onPress={() => pickTopicFromSearch(tp)}
                         activeOpacity={0.7}
@@ -322,7 +347,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                   <AppText variant="title" style={styles.stepTitle}>{t('helpchat_selectCategory')}</AppText>
                   <View style={styles.grid}>
                     {activeCategories.map((cat: HelpCategory) => (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         key={cat.key}
                         onPress={() => pickCategory(cat)}
                         activeOpacity={0.75}
@@ -340,7 +365,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
               )}
 
               {showTalkDirectly && (
-                <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
                   <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
                 </TouchableOpacity>
               )}
@@ -353,7 +378,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
               <AppText variant="title" style={styles.stepTitle}>{t('helpchat_selectSubcategory')}</AppText>
               <View style={styles.grid}>
                 {subCatsForCategory.map((sub: HelpSubCategory) => (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={sub.key}
                     onPress={() => pickSubCategory(sub)}
                     activeOpacity={0.75}
@@ -374,7 +399,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                 <AppText variant="body" color={theme.colors.mutedText} style={styles.emptyTxt}>{t('helpchat_noTopicsHere')}</AppText>
               ) : (
                 topicsForStep.map((tp: HelpTopic, i: number) => (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={tp.categoryKey + i}
                     onPress={() => pickTopic(tp)}
                     activeOpacity={0.7}
@@ -388,7 +413,7 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                 ))
               )}
               {showTalkDirectly && (
-                <TouchableOpacity onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setShowEscalate((v) => !v)} style={styles.talkDirectlyBtn}>
                   <AppText variant="caption" color={theme.colors.primary} style={styles.talkDirectlyTxt}>{t('helpchat_talkDirectly')}</AppText>
                 </TouchableOpacity>
               )}
@@ -419,10 +444,10 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
                 <View style={styles.satisfyRow}>
                   <AppText variant="label" color={theme.colors.mutedText} style={styles.satisfyLabel}>{t('helpchat_wasHelpful')}</AppText>
                   <View style={styles.satisfyBtns}>
-                    <TouchableOpacity onPress={() => setSatisfied(true)} style={[styles.satisfyBtn, { borderColor: theme.colors.border }]}>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => setSatisfied(true)} style={[styles.satisfyBtn, { borderColor: theme.colors.border }]}>
                       <AppText variant="label">{t('helpchat_yesHelpful')}</AppText>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setSatisfied(false)} style={[styles.satisfyBtn, { borderColor: theme.colors.border }]}>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => setSatisfied(false)} style={[styles.satisfyBtn, { borderColor: theme.colors.border }]}>
                       <AppText variant="label">{t('helpchat_notHelpful')}</AppText>
                     </TouchableOpacity>
                   </View>
@@ -436,6 +461,12 @@ export const HelpChatModal = ({ visible, onClose }: HelpChatModalProps): React.J
           )}
         </ScrollView>
       </View>
+  );
+
+  if (asPage) return content;
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      {content}
     </Modal>
   );
 };

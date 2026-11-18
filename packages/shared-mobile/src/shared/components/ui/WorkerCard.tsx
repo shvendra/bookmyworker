@@ -130,7 +130,7 @@ interface WorkerCardMiniProps {
 export const WorkerCardMini = ({ worker, onPress }: WorkerCardMiniProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       activeOpacity={0.82}
       style={[

@@ -158,7 +158,7 @@ export const EmployerAgreementScreen = (): React.JSX.Element => {
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <ScreenHeader title={t('ag_title')} onBack={() => navigation.goBack()} />
-        <ScrollView
+        <ScrollView keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}
           refreshControl={
             <RefreshControl refreshing={statusQuery.isFetching} onRefresh={() => statusQuery.refetch()} tintColor={BRAND} />
@@ -177,7 +177,7 @@ export const EmployerAgreementScreen = (): React.JSX.Element => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('ag_title')} onBack={() => navigation.goBack()} />
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -220,7 +220,7 @@ export const EmployerAgreementScreen = (): React.JSX.Element => {
         ) : (
           <>
             {/* Agree checkbox */}
-            <TouchableOpacity style={s.checkRow} onPress={() => setChecked((v) => !v)} activeOpacity={0.75}>
+            <TouchableOpacity accessibilityRole="button" style={s.checkRow} onPress={() => setChecked((v) => !v)} activeOpacity={0.75}>
               <View
                 style={[
                   s.checkbox,
@@ -250,7 +250,7 @@ export const EmployerAgreementScreen = (): React.JSX.Element => {
             />
 
             {/* Accept */}
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => void handleAccept()}
               disabled={!canSubmit}
               style={[s.submitBtn, { backgroundColor: canSubmit ? BRAND : theme.colors.border }]}

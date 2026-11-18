@@ -1,3 +1,4 @@
+import { boundedScreenLayout } from '../../../packages/shared-mobile/src/shared/components/feedback/SafeBoundary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DarkTheme as NavigationDarkTheme,
@@ -231,7 +232,7 @@ export const AppNavigator = (): React.JSX.Element => {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }} screenLayout={boundedScreenLayout}>
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────
           <>

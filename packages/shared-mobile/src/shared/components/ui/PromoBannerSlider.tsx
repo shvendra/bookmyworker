@@ -93,7 +93,7 @@ export const PromoBannerSlider = ({ onCategoryPress, onPress }: PromoBannerSlide
         snapToAlignment="start"
       >
         {WORK_CATEGORIES.map((cat) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={cat.value}
             activeOpacity={0.92}
             onPress={() => handlePress(cat)}

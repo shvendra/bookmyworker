@@ -283,7 +283,7 @@ export const SubscriptionModal = ({
         {/* Header */}
         <View style={[styles.topBar, { borderBottomColor: theme.colors.border, paddingTop: insets.top + 14 }]}>
           <AppText variant="title" style={styles.title}>Unlock Full Access</AppText>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <AppText style={[styles.closeBtn, { color: theme.colors.mutedText }]}>✕</AppText>
           </TouchableOpacity>
         </View>
@@ -317,7 +317,7 @@ export const SubscriptionModal = ({
             const discount = calcDiscount(pMrp, pBase);
             const isActive = selectedPlan === p.id;
             return (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={p.id}
                 onPress={() => setSelectedPlan(p.id)}
                 style={[styles.planCard, {

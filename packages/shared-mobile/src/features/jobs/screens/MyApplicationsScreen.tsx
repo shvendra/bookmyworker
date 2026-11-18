@@ -17,6 +17,7 @@ import { useAppTheme } from '../../../core/theme';
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { Application } from '../../../shared/types/domain';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'MyApplications'>;
 
 const applicationStatusVariant = (status: Application['status']) => {
@@ -101,7 +102,7 @@ export const MyApplicationsScreen = ({ navigation }: Props): React.JSX.Element =
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('myApplicationsTab')} onBack={() => navigation.goBack()} />
 
       {isError || (fetchStatus === 'paused' && !data) ? (

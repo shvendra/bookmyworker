@@ -23,6 +23,7 @@ import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import { AppText } from '../../../shared/components/ui/AppText';
 import { Avatar } from '../../../shared/components/ui/Avatar';
 
+import { BRAND } from '../../../core/theme/brand';
 type TFunc = ReturnType<typeof useTranslation>['t'];
 
 interface EmployerSubscriptionModalProps {
@@ -163,7 +164,7 @@ export const EmployerSubscriptionModal = ({
     navigation.navigate('Subscription');
   };
 
-  const heroBg    = isDark ? '#07112A' : '#1037A4';
+  const heroBg    = isDark ? '#07112A' : BRAND;
   const heroText  = '#FFFFFF';
   const heroMuted = isDark ? 'rgba(241,245,249,0.60)' : 'rgba(255,255,255,0.72)';
 
@@ -297,10 +298,10 @@ export const EmployerSubscriptionModal = ({
 
           {/* ── Footer ── */}
           <View style={[styles.footer, { borderTopColor: theme.colors.divider, backgroundColor: theme.colors.card }]}>
-            <TouchableOpacity onPress={onDismiss} style={[styles.laterBtn, { borderColor: theme.colors.border }]} activeOpacity={0.7}>
+            <TouchableOpacity accessibilityRole="button" onPress={onDismiss} style={[styles.laterBtn, { borderColor: theme.colors.border }]} activeOpacity={0.7}>
               <AppText style={[styles.laterText, { color: theme.colors.mutedText }]}>{t('esm_later')}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleViewPlans} style={[styles.plansBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.88}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleViewPlans} style={[styles.plansBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.88}>
               <AppText style={styles.plansBtnText}>{t('esm_viewPlans')}</AppText>
             </TouchableOpacity>
           </View>

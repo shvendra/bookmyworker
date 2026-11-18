@@ -129,7 +129,7 @@ export const SmartMatchStrip = ({
               { backgroundColor: theme.colors.card, borderColor: theme.colors.border, shadowColor: theme.colors.shadow },
             ]}
           >
-            <TouchableOpacity activeOpacity={0.85} onPress={() => onView(m.workerId)}>
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.85} onPress={() => onView(m.workerId)}>
               <View style={styles.topRow}>
                 <Avatar name={m.name} uri={buildPhotoUrl(m.photo)} size={46} />
                 <View style={[styles.scoreBadge, { backgroundColor: badgeColor(m.matchScore) + '1A' }]}>
@@ -159,7 +159,7 @@ export const SmartMatchStrip = ({
 
             {/* Actions — Call (contact) + View (profile) */}
             <View style={[styles.actions, { borderTopColor: theme.colors.border }]}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[styles.callBtn, { backgroundColor: theme.colors.primary }]}
                 activeOpacity={0.85}
                 disabled={!!unlockingId}
@@ -169,7 +169,7 @@ export const SmartMatchStrip = ({
                   ? <ActivityIndicator color="#fff" size="small" />
                   : <Ionicons name="call" size={16} color="#fff" />}
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[styles.viewBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface ?? 'transparent' }]}
                 activeOpacity={0.85}
                 onPress={() => onView(m.workerId)}

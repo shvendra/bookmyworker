@@ -176,14 +176,14 @@ export const FilterSheet = ({
           </View>
           <View style={fsh.headerActions}>
             {activeCount > 0 && (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={handleReset}
                 style={fsh.resetBtn}
               >
                 <AppText style={fsh.resetTxt}>{t('ws_reset')}</AppText>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={onClose} style={fsh.closeBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={fsh.closeBtn}>
               <AppText style={fsh.closeTxt}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -279,7 +279,7 @@ export const FilterSheet = ({
               ].map((opt) => {
                 const active = f.workerGroup === opt.val;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={opt.val}
                     onPress={() => set('workerGroup', active ? '' : opt.val)}
                     activeOpacity={0.8}
@@ -321,7 +321,7 @@ export const FilterSheet = ({
               ].map((g) => {
                 const active = f.gender === g.value;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={g.value}
                     onPress={() => set('gender', active ? '' : g.value)}
                     activeOpacity={0.8}
@@ -403,7 +403,7 @@ export const FilterSheet = ({
               ].map((opt) => {
                 const active = f.qualification === opt.val;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={opt.val}
                     onPress={() => set('qualification', active ? '' : opt.val)}
                     activeOpacity={0.8}
@@ -455,10 +455,10 @@ export const FilterSheet = ({
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <View style={[fsh.footer, { borderTopColor: BORDER, backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity onPress={onClose} style={[fsh.cancelBtn, { borderColor: theme.colors.border }]} activeOpacity={0.8}>
+          <TouchableOpacity accessibilityRole="button" onPress={onClose} style={[fsh.cancelBtn, { borderColor: theme.colors.border }]} activeOpacity={0.8}>
             <AppText style={[fsh.cancelTxt, { color: theme.colors.text }]}>{t('ws_cancel')}</AppText>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => onApply(f)} style={fsh.applyBtn} activeOpacity={0.88}>
             <AppText style={fsh.applyTxt}>
               {activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters')}
             </AppText>

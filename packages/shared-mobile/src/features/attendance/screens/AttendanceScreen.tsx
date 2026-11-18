@@ -17,6 +17,7 @@ import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import type { AttendanceRecord } from '../../../shared/types/domain';
 
+import { BRAND } from '../../../core/theme/brand';
 const formatTime = (iso?: string): string => {
   if (!iso) return '—';
   try {
@@ -87,7 +88,7 @@ export const AttendanceScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title="Attendance" />
     <FlatList
       // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)

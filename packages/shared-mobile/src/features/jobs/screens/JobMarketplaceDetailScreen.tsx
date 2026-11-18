@@ -32,6 +32,7 @@ import { getJobTitle, getCategoryLabel, getLocationStr } from '../../../shared/u
 import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'JobMarketplaceDetail'>;
 
 // ── Locale helper ─────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ const WORK_VISUALS: Record<string, WorkVisual> = {
   'Hospitality & Service Workers':  { emoji: '🛎️', color: '#BE185D', bg: '#FCE7F3', gradFrom: '#EC4899', gradTo: '#BE185D' },
   'Construction & Project Workers': { emoji: '🏗️', color: '#92400E', bg: '#FEF3C7', gradFrom: '#F59E0B', gradTo: '#D97706' },
 };
-const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: '#1037A4', bg: '#EBF1FF', gradFrom: '#1A56DB', gradTo: '#1037A4' };
+const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: BRAND, bg: '#EBF1FF', gradFrom: '#1A56DB', gradTo: BRAND };
 
 const SUB_EMOJI: Array<{ pattern: RegExp; emoji: string }> = [
   { pattern: /clean|sweep|maid|janitor|housekeep|sanit/i, emoji: '🧹' },
@@ -118,8 +119,8 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: {
   const isDark = theme.mode === 'dark';
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={S.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[S.sheet, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+      <TouchableOpacity accessibilityRole="button" style={S.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity accessibilityRole="button" activeOpacity={1} style={[S.sheet, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
           <View style={S.sheetHandle} />
           <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 8 }}>
             <View style={S.phoneIconWrap}>
@@ -133,15 +134,15 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: {
             }]}>
               {loading ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <ActivityIndicator size="small" color="#1037A4" />
-                  <AppText style={{ fontSize: 14, color: '#1037A4', fontWeight: '600' }}>{t('fetchingContact')}</AppText>
+                  <ActivityIndicator size="small" color={BRAND} />
+                  <AppText style={{ fontSize: 14, color: BRAND, fontWeight: '600' }}>{t('fetchingContact')}</AppText>
                 </View>
               ) : error ? (
                 <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600', textAlign: 'center' }}>{error}</AppText>
               ) : phone ? (
                 <View style={{ alignItems: 'center', gap: 6 }}>
-                  <AppText style={{ fontSize: 11, fontWeight: '700', color: '#1037A4', letterSpacing: 1, textTransform: 'uppercase' }}>{t('mobileNumber')}</AppText>
-                  <AppText style={{ fontSize: 28, fontWeight: '900', color: '#1037A4', letterSpacing: 3 }}>{phone}</AppText>
+                  <AppText style={{ fontSize: 11, fontWeight: '700', color: BRAND, letterSpacing: 1, textTransform: 'uppercase' }}>{t('mobileNumber')}</AppText>
+                  <AppText style={{ fontSize: 28, fontWeight: '900', color: BRAND, letterSpacing: 3 }}>{phone}</AppText>
                 </View>
               ) : (
                 <AppText style={{ fontSize: 13, color: '#DC2626', fontWeight: '600' }}>{t('phoneUnavailable')}</AppText>
@@ -177,8 +178,8 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}>
-        <TouchableOpacity style={S.overlay} activeOpacity={1} onPress={onClose}>
-          <TouchableOpacity activeOpacity={1} style={[S.sheet, { backgroundColor: theme.colors.surface }]}>
+        <TouchableOpacity accessibilityRole="button" style={S.overlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity accessibilityRole="button" activeOpacity={1} style={[S.sheet, { backgroundColor: theme.colors.surface }]}>
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}>
               <View style={S.sheetHandle} />
@@ -366,14 +367,14 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
         <View style={[S.heroGrad, { paddingTop: insets.top + 8, backgroundColor: visual.gradFrom }]}>
           {/* Nav row */}
           <View style={S.navRow}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={S.navBtn} hitSlop={10}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()} style={S.navBtn} hitSlop={10}>
               <AppText style={S.navIcon}>←</AppText>
             </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={handleLike} style={[S.navBtn, { backgroundColor: isLiked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleLike} style={[S.navBtn, { backgroundColor: isLiked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
               <AppText style={{ fontSize: 18, lineHeight: 22 }}>{isLiked ? '❤️' : '🤍'}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { void handleShare(); }} style={[S.navBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => { void handleShare(); }} style={[S.navBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]} hitSlop={8}>
               <Ionicons name="share-social" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
@@ -465,7 +466,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
         borderTopColor: border,
         paddingBottom: Math.max(insets.bottom, 16),
       }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => { void handleShare(); }}
           style={[S.shareChip, { backgroundColor: isDark ? theme.colors.card : '#F1F5F9', borderColor: border }]}
           activeOpacity={0.75}
@@ -475,7 +476,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
         </TouchableOpacity>
 
         {req.employerSubscribed && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={handleCallPress}
             style={[S.contactChip, { backgroundColor: visual.bg, borderColor: visual.color + '44' }]}
             activeOpacity={0.75}
@@ -486,7 +487,7 @@ export const JobMarketplaceDetailScreen = ({ route, navigation }: Props): React.
         )}
 
         {isAgent && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => { if (!alreadyApplied) setWageModalOpen(true); }}
             activeOpacity={alreadyApplied ? 1 : 0.85}
             style={[S.applyGrad, { flex: 1, backgroundColor: alreadyApplied ? '#10B981' : visual.gradFrom }]}

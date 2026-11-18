@@ -26,6 +26,7 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { useToast } from '../../../shared/state/toast/ToastContext';
 
+import { BRAND } from '../../../core/theme/brand';
 const maskAccount = (acc?: string): string => {
   if (!acc) return '—';
   return acc.replace(/.(?=.{4})/g, '*');
@@ -232,7 +233,7 @@ export const PayoutScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title="Payout Summary" onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}

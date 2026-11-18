@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   ScrollView,
@@ -133,17 +134,18 @@ function PickerSheet({
   children: React.ReactNode;
 }): React.JSX.Element {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
           <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={onCancel} hitSlop={8}>
-              <AppText variant="body" color={theme.colors.mutedText}>Cancel</AppText>
+              <AppText variant="body" color={theme.colors.mutedText}>{t('jp_cancel')}</AppText>
             </TouchableOpacity>
             <AppText variant="label" style={{ flexShrink: 1, marginHorizontal: 8, textAlign: 'center' }}>{title}</AppText>
             <TouchableOpacity onPress={onDone} hitSlop={8}>
-              <AppText variant="body" color={theme.colors.primary}>Done</AppText>
+              <AppText variant="body" color={theme.colors.primary}>{t('done')}</AppText>
             </TouchableOpacity>
           </View>
 

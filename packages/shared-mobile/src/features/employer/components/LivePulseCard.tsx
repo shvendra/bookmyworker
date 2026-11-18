@@ -71,7 +71,7 @@ const Ticker = ({ pulse, onPress }: { pulse: LivePulse; onPress?: () => void }):
       </AppText>
       <AppText style={[s.agoTxt, { color: theme.colors.mutedText }]} numberOfLines={1} maxFontSizeMultiplier={1.1}>{agoText(e.at, t as never)}</AppText>
       {onPress && (
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onPress}
           activeOpacity={0.8}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}

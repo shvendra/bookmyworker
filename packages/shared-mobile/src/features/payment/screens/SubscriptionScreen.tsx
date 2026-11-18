@@ -32,6 +32,7 @@ import type { EmployerPlansConfig, PlanFeatures, BoostConfig } from '../../../co
 import type { MainStackParamList } from '../../../app/navigation/types';
 import type { EmployerTypeKey } from '../../../shared/types/domain';
 
+import { BRAND } from '../../../core/theme/brand';
 interface FreshProfile {
   isSubscribed?: boolean;
   subscriptionExpery?: string;
@@ -225,7 +226,7 @@ function buildAgentPlans(
 
 // ── Design tokens — restrained, professional palette (single brand accent) ─────
 const C = {
-  primary:     '#1037A4',   // brand blue — the one accent
+  primary:     BRAND,   // brand blue — the one accent
   primaryMid:  '#1A56DB',
   primaryTint: '#EEF3FF',   // very light blue surface
   primaryBorder: '#C7D6F5',
@@ -368,7 +369,7 @@ const PlanCard = React.memo(({
 
       {/* CTA — filled for recommended, outline for the rest */}
       <PulseView active={isRecommended && !isLoading} scaleTo={1.03} period={1700}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[
             pc.btn,
             isRecommended
@@ -646,7 +647,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor={C.primary} />
       <ScreenHeader title={t('pricingPageTitle')} onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Hero — clean, premium, CRM-style ── */}
         <FadeInView distance={16}>
@@ -710,7 +711,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
                   {t('cp_couponPctOff', { pct: appliedCoupon.discountPercent, defaultValue: `${appliedCoupon.discountPercent}% off every plan below` })}
                 </AppText>
               </View>
-              <TouchableOpacity onPress={handleRemoveCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity accessibilityRole="button" onPress={handleRemoveCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <AppText style={[s.couponRemoveTxt, { color: C.muted }]}>{t('cp_removeCoupon', { defaultValue: 'Remove' })}</AppText>
               </TouchableOpacity>
             </View>
@@ -726,7 +727,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
                   style={[s.couponInput, { color: C.ink, borderColor: C.line }]}
                   editable={!couponChecking}
                 />
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => void handleApplyCoupon()}
                   disabled={couponChecking || !couponInput.trim()}
                   style={[s.couponApplyBtn, { backgroundColor: C.primary, opacity: couponChecking || !couponInput.trim() ? 0.5 : 1 }]}
@@ -787,7 +788,7 @@ export const SubscriptionScreen = (): React.JSX.Element => {
                       <AppText style={s.topupTotal}>₹{total}</AppText>
                     </AppText>
                   </View>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     style={[s.topupBtn, isBusy && { opacity: 0.6 }]}
                     onPress={() => { void handleTopup(count); }}
                     disabled={isBusy}

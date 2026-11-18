@@ -125,7 +125,7 @@ export const EmployerPromoSlider = ({ onPress }: EmployerPromoSliderProps): Reac
         contentContainerStyle={{ gap: 0 }}
       >
         {SLIDES.map((slide) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={slide.id}
             activeOpacity={0.92}
             onPress={onPress}
@@ -158,7 +158,7 @@ export const EmployerPromoSlider = ({ onPress }: EmployerPromoSliderProps): Reac
 
                 {/* CTA button */}
                 <PulseView scaleTo={1.05} style={s.ctaPulse}>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={onPress}
                     style={[s.cta, { backgroundColor: slide.accent, shadowColor: slide.accent }]}
                     activeOpacity={0.88}
@@ -190,7 +190,7 @@ export const EmployerPromoSlider = ({ onPress }: EmployerPromoSliderProps): Reac
           const w = dotAnims[i].interpolate({ inputRange: [0, 1], outputRange: [6, 22] });
           const op = dotAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
           return (
-            <TouchableOpacity key={i} onPress={() => { goTo(i); restartTimer(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+            <TouchableOpacity accessibilityRole="button" key={i} onPress={() => { goTo(i); restartTimer(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
               <Animated.View style={[s.dot, { width: w, opacity: op, backgroundColor: theme.colors.primary }]} />
             </TouchableOpacity>
           );

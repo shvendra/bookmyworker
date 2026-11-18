@@ -8,6 +8,8 @@
 // so those failures are at least logged (and can later be forwarded to a crash
 // reporter such as Sentry from the single `report()` hook below).
 
+declare const __DEV__: boolean | undefined;
+
 type GlobalErrorHandler = (error: unknown, isFatal?: boolean) => void;
 
 interface ErrorUtilsLike {
@@ -36,8 +38,11 @@ export function installGlobalErrorHandlers(): void {
     const previous = errorUtils.getGlobalHandler?.();
     errorUtils.setGlobalHandler((error, isFatal) => {
       report('uncaught', error, { isFatal });
-      // Preserve default behaviour (dev red-box / production crash reporting).
-      previous?.(error, isFatal);
+      // DEV keeps the red-box. In a RELEASE build a stray error from a timer / callback / promise must not kill the
+      // whole app: render errors are already contained by the SafeBoundary / ScreenBoundary layers, so here we log it
+      // and downgrade it to non-fatal (the app keeps running instead of closing).
+      const dev = typeof __DEV__ !== 'undefined' && __DEV__ === true;
+      previous?.(error, dev ? isFatal : false);
     });
   }
 

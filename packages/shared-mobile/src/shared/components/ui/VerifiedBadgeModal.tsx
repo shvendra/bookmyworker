@@ -19,6 +19,7 @@ import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 import { Avatar } from './Avatar';
 
+import { BRAND } from '../../../core/theme/brand';
 interface VerifiedBadgeModalProps {
   visible: boolean;
   onDismiss: () => void;
@@ -192,14 +193,14 @@ export const VerifiedBadgeModal = ({
 
           {/* ── Action buttons ───────────────────────────────────── */}
           <View style={[styles.footer, { borderTopColor: theme.colors.divider }]}>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onDismiss}
               style={[styles.laterBtn, { borderColor: theme.colors.border }]}
               activeOpacity={0.75}
             >
               <AppText style={[styles.laterBtnText, { color: theme.colors.mutedText }]}>{t('vbMaybeLater')}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => void handleGetVerified()}
               disabled={loading}
               style={styles.verifyBtn}
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
 
   // ── Hero ──────────────────────────────────────────────────────────────────────
   hero: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingTop: 32, paddingBottom: 20, paddingHorizontal: 24,
     alignItems: 'center',
     overflow: 'hidden',

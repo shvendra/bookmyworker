@@ -22,6 +22,7 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 
+import { BRAND } from '../../../core/theme/brand';
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
@@ -83,7 +84,7 @@ const PlacementCard = React.memo(({
         </View>
         <View style={styles.detailItem}>
           <AppText style={[styles.detailLabel, { color: theme.colors.mutedText }]}>{t('pl_labelRate')}</AppText>
-          <AppText style={[styles.detailValue, { color: '#1037A4' }]}>
+          <AppText style={[styles.detailValue, { color: BRAND }]}>
             {fmtRate(item.agreedRate, item.rateType, t('day', 'day'), t('month', 'month'))}
           </AppText>
         </View>
@@ -113,11 +114,11 @@ const PlacementCard = React.memo(({
       {item.status === 'active' && (
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionBtn, styles.proofBtn, { borderColor: '#1037A4' }]}
+            style={[styles.actionBtn, styles.proofBtn, { borderColor: BRAND }]}
             onPress={() => onUploadProof(item._id)}
             activeOpacity={0.75}
           >
-            <AppText style={[styles.actionBtnText, { color: '#1037A4' }]}>
+            <AppText style={[styles.actionBtnText, { color: BRAND }]}>
               {item.proofFileUrl ? t('pl_updateProof') : t('pl_uploadProof')}
             </AppText>
           </TouchableOpacity>
@@ -219,7 +220,7 @@ export const MyPlacementsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F1F5F9' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -249,9 +250,9 @@ export const MyPlacementsScreen = (): React.JSX.Element => {
           <Pressable
             key={f.value}
             onPress={() => setFilter(f.value)}
-            style={[styles.filterTab, filter === f.value && { borderBottomColor: '#1037A4', borderBottomWidth: 2 }]}
+            style={[styles.filterTab, filter === f.value && { borderBottomColor: BRAND, borderBottomWidth: 2 }]}
           >
-            <AppText style={[styles.filterTabText, { color: filter === f.value ? '#1037A4' : theme.colors.mutedText }]}>
+            <AppText style={[styles.filterTabText, { color: filter === f.value ? BRAND : theme.colors.mutedText }]}>
               {f.label}
             </AppText>
           </Pressable>
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   header: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 18,
     paddingBottom: 18,
   },
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#1037A4',
+    shadowColor: BRAND,
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },

@@ -42,6 +42,7 @@ import { HelpChatModal } from '../../../shared/components/ui/HelpChatModal';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import i18n from '../../../core/i18n';
 
+import { BRAND } from '../../../core/theme/brand';
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = SCREEN_W - 40;
 
@@ -75,7 +76,7 @@ const WORK_VISUALS: Record<string, WorkVisual> = {
   'Specialized & Creative Workers':     { emoji: '🎨', color: '#581C87', bg: '#FAF5FF', accent: '#A855F7' },
   'Security & Facility Worker':         { emoji: '👮', color: '#0F172A', bg: '#F1F5F9', accent: '#475569' },
 };
-const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: '#1037A4', bg: '#EBF1FF', accent: '#3B82F6' };
+const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: BRAND, bg: '#EBF1FF', accent: '#3B82F6' };
 
 const SUB_EMOJI_RULES: Array<{ pattern: RegExp; emoji: string }> = [
   { pattern: /clean|sweep|maid|janitor|housekeep|sanit/i, emoji: '🧹' },
@@ -284,7 +285,7 @@ const ViewAllCard = ({ onPress }: { onPress: () => void }): React.JSX.Element =>
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[sliderCard.wrap, sliderCard.viewAllWrap, { backgroundColor: '#1037A4', width: CARD_W * 0.55 }]}
+      style={[sliderCard.wrap, sliderCard.viewAllWrap, { backgroundColor: BRAND, width: CARD_W * 0.55 }]}
     >
       <AppText style={sliderCard.viewAllEmoji}>📋</AppText>
       <AppText style={sliderCard.viewAllTitle}>{t('viewAllJobs')}</AppText>
@@ -536,7 +537,7 @@ export const WorkerDashboardScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       <GradientHeader
         subtitle={t(greetKey)}
@@ -816,15 +817,15 @@ const styles = StyleSheet.create({
     borderRadius: 20, borderWidth: 1,
     paddingHorizontal: 12, paddingVertical: 6,
   },
-  viewAllBtnText: { fontSize: 12, fontWeight: '700', color: '#1037A4' },
-  viewAllBtnArrow: { fontSize: 14, fontWeight: '800', color: '#1037A4' },
+  viewAllBtnText: { fontSize: 12, fontWeight: '700', color: BRAND },
+  viewAllBtnArrow: { fontSize: 14, fontWeight: '800', color: BRAND },
   sliderContent: { paddingHorizontal: 0, paddingBottom: 4, gap: 12, flexDirection: 'row', alignItems: 'stretch' },
   sliderSkeleton: { flexDirection: 'row', gap: 12 },
   sliderSkeletonCard: { width: CARD_W, height: 180, borderRadius: 20, opacity: 0.5 },
   sliderEmpty: { borderRadius: 20, padding: 28, alignItems: 'center', gap: 8 },
   sliderEmptyEmoji: { fontSize: 32, lineHeight: 38 },
   sliderEmptyTxt: { fontSize: 13, fontWeight: '500' },
-  sliderEmptyLink: { fontSize: 13, fontWeight: '700', color: '#1037A4', marginTop: 4 },
+  sliderEmptyLink: { fontSize: 13, fontWeight: '700', color: BRAND, marginTop: 4 },
 
   sectionFirst: { marginTop: 4, marginBottom: 10 },
   sectionGap: { marginTop: 20 },

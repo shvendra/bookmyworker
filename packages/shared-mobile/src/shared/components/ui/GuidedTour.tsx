@@ -114,7 +114,7 @@ export const GuidedTour = ({
           </View>
 
           {/* Title */}
-          <AppText variant="h3" color={textColor} style={styles.title}>
+          <AppText variant="subtitle" color={textColor} style={styles.title}>
             {step.title}
           </AppText>
 
@@ -143,7 +143,7 @@ export const GuidedTour = ({
           <View style={styles.btnRow}>
             {/* Skip (left) */}
             <Pressable onPress={dismiss} style={styles.skipBtn} hitSlop={8}>
-              <AppText variant="small" color={mutedColor}>
+              <AppText variant="label" color={mutedColor}>
                 {skipLabel}
               </AppText>
             </Pressable>
@@ -156,7 +156,7 @@ export const GuidedTour = ({
                   style={[styles.navBtn, styles.backBtn, { borderColor: primary + '40' }]}
                   hitSlop={8}
                 >
-                  <AppText variant="small" color={primary}>
+                  <AppText variant="label" color={primary}>
                     {backLabel}
                   </AppText>
                 </Pressable>
@@ -168,7 +168,7 @@ export const GuidedTour = ({
                 style={[styles.navBtn, styles.nextBtn, { backgroundColor: primary }]}
                 hitSlop={8}
               >
-                <AppText variant="small" color="#FFFFFF" style={{ fontWeight: '700' }}>
+                <AppText variant="label" color="#FFFFFF" style={{ fontWeight: '700' }}>
                   {isLast ? finishLabel : nextLabel}
                 </AppText>
               </Pressable>

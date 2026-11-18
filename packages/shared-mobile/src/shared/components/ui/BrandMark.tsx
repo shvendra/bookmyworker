@@ -2,7 +2,8 @@ import React from 'react';
 import { Image, StyleSheet, Text, View, type ImageStyle, type StyleProp } from 'react-native';
 import { BRAND_LOGO_DATA_URI } from './brandLogoData';
 
-const BRAND_BLUE = '#1037A4';
+import { BRAND } from '../../../core/theme/brand';
+const BRAND_BLUE = BRAND;
 const CREAM = '#FFF6E5';
 
 interface BrandMarkProps {

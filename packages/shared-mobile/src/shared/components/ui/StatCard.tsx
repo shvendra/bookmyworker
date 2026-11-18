@@ -93,7 +93,7 @@ export const StatCard = ({
 
   if (!onPress) return inner;
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={size === 'half' ? styles.touchHalf : undefined}>
+    <TouchableOpacity accessibilityRole="button" onPress={onPress} activeOpacity={0.8} style={size === 'half' ? styles.touchHalf : undefined}>
       {inner}
     </TouchableOpacity>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../../core/theme';
@@ -7,6 +8,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { AppCard } from '../../../shared/components/ui/AppCard';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 
+import { BRAND } from '../../../core/theme/brand';
 type Tab = 'terms' | 'privacy';
 
 const TERMS = [
@@ -114,6 +116,7 @@ function stripHtml(html: string): string {
 }
 
 export const TermsPrivacyScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const navigation = useNavigation();
   const { config } = useAppConfig();
@@ -129,8 +132,8 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
-      <ScreenHeader title="Terms & Privacy" onBack={() => navigation.goBack()} />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
+      <ScreenHeader title={t('x_termsPrivacyTitle')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
@@ -139,7 +142,7 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
       {/* Tab Switcher */}
       <View style={[styles.tabBar, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {(['terms', 'privacy'] as Tab[]).map((t) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={t}
             onPress={() => setTab(t)}
             activeOpacity={0.7}
@@ -169,8 +172,8 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
             {cmsTermsText}
           </AppText>
           {!!cmsTermsLink && (
-            <TouchableOpacity onPress={() => void Linking.openURL(cmsTermsLink)} style={styles.linkRow}>
-              <AppText variant="caption" color={theme.colors.primary}>View full Terms & Conditions ›</AppText>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(cmsTermsLink)} style={styles.linkRow}>
+              <AppText variant="caption" color={theme.colors.primary}>{t('x_viewFullTerms')} ›</AppText>
             </TouchableOpacity>
           )}
         </AppCard>
@@ -180,8 +183,8 @@ export const TermsPrivacyScreen = (): React.JSX.Element => {
             {cmsPrivacyText}
           </AppText>
           {!!cmsPrivacyLink && (
-            <TouchableOpacity onPress={() => void Linking.openURL(cmsPrivacyLink)} style={styles.linkRow}>
-              <AppText variant="caption" color={theme.colors.primary}>View full Privacy Policy ›</AppText>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(cmsPrivacyLink)} style={styles.linkRow}>
+              <AppText variant="caption" color={theme.colors.primary}>{t('x_viewFullPrivacy')} ›</AppText>
             </TouchableOpacity>
           )}
         </AppCard>

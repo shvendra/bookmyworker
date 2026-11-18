@@ -40,6 +40,7 @@ import {
 } from '../validation/authSchemas';
 import type { RootStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 type Step = 1 | 2 | 3;
 
@@ -206,7 +207,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
 
   return (
     <View style={[s.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* ── Brand + stepper strip ───────────────────────────────── */}
       <View style={[s.brandStrip, { paddingTop: insets.top + 12 }]}>
@@ -238,7 +239,7 @@ export const ForgotPasswordScreen = ({ navigation, route }: Props): React.JSX.El
                   <AppText style={[
                     s.stepCircleText,
                     step > st.num  && { color: '#fff' },
-                    step === st.num && { color: '#1037A4' },
+                    step === st.num && { color: BRAND },
                     step < st.num  && { color: 'rgba(255,255,255,0.45)' },
                   ]}>
                     {step > st.num ? '✓' : String(st.num)}
@@ -531,7 +532,7 @@ const s = StyleSheet.create({
 
   // ── Brand strip ───────────────────────────────────────────────────
   brandStrip: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 24,
     overflow: 'hidden',

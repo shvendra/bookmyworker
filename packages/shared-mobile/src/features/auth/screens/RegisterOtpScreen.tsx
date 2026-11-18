@@ -33,6 +33,7 @@ import { useToast } from '../../../shared/state/toast/ToastContext';
 import { otpSchema, type OtpFormValues } from '../validation/authSchemas';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<AuthStackParamList, 'RegisterOtp'>;
 
 const { width: W } = Dimensions.get('window');
@@ -244,7 +245,7 @@ export const RegisterOtpScreen = ({ route, navigation }: Props): React.JSX.Eleme
 
   return (
     <View style={[s.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Brand strip */}
       <View style={[s.brandStrip, { paddingTop: insets.top + 12 }]}>
@@ -419,7 +420,7 @@ const s = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 24,
     overflow: 'hidden',

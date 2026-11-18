@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
+  FlatList,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
@@ -21,10 +21,10 @@ import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'Shortlist'>;
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const BRAND      = '#1037A4';
 const BRAND_MID  = '#1A56DB';
 const BRAND_SOFT = '#EBF1FF';
 const NAVY       = '#0F172A';
@@ -79,7 +79,7 @@ function WorkerCard({
   const isVerified = worker.status === 'Verified' || worker.veryfiedBage === true;
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       activeOpacity={0.88}
       style={[wc.wrap, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -110,7 +110,7 @@ function WorkerCard({
         </View>
 
         {/* Remove button */}
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onRemove}
           style={wc.removeBtn}
           activeOpacity={0.75}
@@ -253,7 +253,7 @@ export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
         <View style={hdr.deco1} />
         <View style={hdr.deco2} />
         <View style={hdr.row}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.goBack()}
             style={hdr.backBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -279,27 +279,28 @@ export const ShortlistScreen = ({ navigation }: Props): React.JSX.Element => {
           <AppText style={{ marginTop: 12, fontSize: 13, color: theme.colors.mutedText }}>{t('shortlistLoading')}</AppText>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           style={{ flex: 1 }}
-          contentContainerStyle={sc.content}
+          contentContainerStyle={[sc.content, workers.length === 0 && { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
-        >
-          {workers.length === 0 ? (
-            <EmptyShortlist />
-          ) : (
-            workers.map((worker, idx) => (
-              <WorkerCard
-                key={worker._id}
-                worker={worker}
-                idx={idx}
-                onPress={() => navigation.navigate('WorkerProfile', { workerId: worker._id })}
-                onRemove={() => void handleRemove(worker._id)}
-                removing={removingId === worker._id}
-              />
-            ))
+          // Fabric: clipped-subview child indices desync during scroll → ReactViewGroup.drawChild IndexOutOfBounds (Play Console crash)
+          removeClippedSubviews={false}
+          data={workers}
+          keyExtractor={(w) => w._id}
+          initialNumToRender={8}
+          windowSize={9}
+          ListEmptyComponent={<EmptyShortlist />}
+          ListFooterComponent={<View style={{ height: insets.bottom + 24 }} />}
+          renderItem={({ item: worker, index: idx }) => (
+            <WorkerCard
+              worker={worker}
+              idx={idx}
+              onPress={() => navigation.navigate('WorkerProfile', { workerId: worker._id })}
+              onRemove={() => void handleRemove(worker._id)}
+              removing={removingId === worker._id}
+            />
           )}
-          <View style={{ height: insets.bottom + 24 }} />
-        </ScrollView>
+        />
       )}
     </View>
   );

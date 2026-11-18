@@ -24,6 +24,7 @@ import { PasswordLoginForm } from './PasswordLoginForm';
 import { useAppConfig } from '../../../core/api/endpoints/appConfigApi';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => {
@@ -56,7 +57,7 @@ export const LoginScreen = ({ navigation, route }: Props): React.JSX.Element => 
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F4F6FB' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Brand strip */}
       <View style={[styles.brandStrip, { paddingTop: insets.top + 16 }]}>
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 32,
     overflow: 'hidden',

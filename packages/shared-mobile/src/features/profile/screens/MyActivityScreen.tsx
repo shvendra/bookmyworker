@@ -16,6 +16,7 @@ import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+import { BRAND } from '../../../core/theme/brand';
 interface ActivityItem {
   _id: string;
   action: string;
@@ -150,7 +151,7 @@ export const MyActivityScreen = (): React.JSX.Element => {
 
   return (
     <View style={[s.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('activityTitle')} onBack={() => navigation.goBack()} />
 
       {query.isLoading ? (

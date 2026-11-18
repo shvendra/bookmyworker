@@ -30,6 +30,7 @@ import i18n from '../../../core/i18n';
 import { useTranslation } from 'react-i18next';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 const fmtDate = (d?: string): string => {
   if (!d) return '—';
@@ -333,7 +334,7 @@ const InvoiceModal = ({ txn, userName, userKyc, userAddress, companyAddress, sup
         <View style={[inv.actionBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <TouchableOpacity onPress={handleShare} disabled={busy !== null} style={[inv.btnGhost, busy !== null && inv.btnDisabled]} activeOpacity={0.85}>
             {busy === 'share'
-              ? <ActivityIndicator color="#1037A4" size="small" />
+              ? <ActivityIndicator color={BRAND} size="small" />
               : <AppText style={inv.btnGhostTxt} numberOfLines={1}>⬇  {t('jp_savePdf')}</AppText>}
           </TouchableOpacity>
           <TouchableOpacity onPress={handlePrint} disabled={busy !== null} style={[inv.btnPrimary, busy !== null && inv.btnDisabled]} activeOpacity={0.85}>
@@ -360,7 +361,7 @@ const inv = StyleSheet.create({
   sheet:      { backgroundColor: '#FFFFFF', borderRadius: 18, overflow: 'hidden', elevation: 8, shadowColor: '#0f2f8c', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.18, shadowRadius: 28 },
 
   // Header band
-  headerBand: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#1037A4', paddingHorizontal: 22, paddingVertical: 22, gap: 12 },
+  headerBand: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: BRAND, paddingHorizontal: 22, paddingVertical: 22, gap: 12 },
   headerLeft: { flex: 1.3 },
   brandName:  { fontSize: 22, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 },
   brandTag:   { fontSize: 10.5, color: 'rgba(255,255,255,0.78)', marginTop: 5, lineHeight: 15 },
@@ -393,7 +394,7 @@ const inv = StyleSheet.create({
   totRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 2 },
   totKey:     { fontSize: 12.5, color: '#64748B', fontWeight: '600', flexShrink: 1 },
   totVal:     { fontSize: 12.5, color: '#1E293B', fontWeight: '700' },
-  grand:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1037A4', borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, marginTop: 8 },
+  grand:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: BRAND, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, marginTop: 8 },
   grandKey:   { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
   grandVal:   { fontSize: 17, fontWeight: '900', color: '#FFFFFF', flexShrink: 1, textAlign: 'right' },
 
@@ -404,9 +405,9 @@ const inv = StyleSheet.create({
 
   // Action bar
   actionBar:  { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
-  btnGhost:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 14, borderWidth: 1.5, borderColor: '#1037A4', backgroundColor: '#FFFFFF' },
-  btnGhostTxt:{ fontSize: 14, fontWeight: '800', color: '#1037A4', letterSpacing: 0.2 },
-  btnPrimary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 14, backgroundColor: '#1037A4' },
+  btnGhost:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 14, borderWidth: 1.5, borderColor: BRAND, backgroundColor: '#FFFFFF' },
+  btnGhostTxt:{ fontSize: 14, fontWeight: '800', color: BRAND, letterSpacing: 0.2 },
+  btnPrimary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingVertical: 14, backgroundColor: BRAND },
   btnPrimaryTxt:{ fontSize: 14, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.2 },
   btnDisabled:{ opacity: 0.6 },
 });
@@ -531,7 +532,7 @@ export const TransactionScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('transactionsTitle')} onBack={() => navigation.goBack()} />
       <PaymentsTab />
     </View>

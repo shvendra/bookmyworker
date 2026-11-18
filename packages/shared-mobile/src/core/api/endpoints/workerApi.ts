@@ -23,6 +23,8 @@ export interface WorkerSearchParams {
   qualification?: string;
   /** When true, only return workers who have uploaded a resume (backend `hasResume`). */
   hasResume?: boolean;
+  /** Backend `photoFirst`: workers WITH a profile photo are listed first, then the rest (never an empty list for lack of photos). */
+  photoFirst?: boolean;
 }
 
 export interface RawAgent {
@@ -166,6 +168,7 @@ export const workerApi = {
         status: params.status || undefined,
         qualification: params.qualification || undefined,
         hasResume: params.hasResume ? 'true' : undefined,
+        photoFirst: params.photoFirst ? 'true' : undefined,
         page: params.page ?? 1,
         limit: params.limit ?? 25,
       },

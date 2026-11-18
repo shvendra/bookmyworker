@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -12,9 +13,11 @@ import { useAppTheme } from '../../../core/theme';
 import { AppText } from '../../../shared/components/ui/AppText';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type RouteT = RouteProp<MainStackParamList, 'PdfViewer'>;
 
 export const PdfViewerScreen = (): React.JSX.Element => {
+  const { t } = useTranslation('employer');
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -35,11 +38,11 @@ export const PdfViewerScreen = (): React.JSX.Element => {
           styles.header,
           {
             paddingTop: insets.top + 10,
-            backgroundColor: '#1037A4',
+            backgroundColor: BRAND,
           },
         ]}
       >
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -67,8 +70,8 @@ export const PdfViewerScreen = (): React.JSX.Element => {
       {loading && !error && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#1037A4" />
-            <AppText style={styles.loadingTxt}>Loading document…</AppText>
+            <ActivityIndicator size="large" color={BRAND} />
+            <AppText style={styles.loadingTxt}>{t('x_pdfLoading')}</AppText>
           </View>
         </View>
       )}
@@ -77,13 +80,13 @@ export const PdfViewerScreen = (): React.JSX.Element => {
       {error && (
         <View style={styles.errorOverlay}>
           <AppText style={styles.errorEmoji}>📄</AppText>
-          <AppText style={styles.errorTitle}>Could not load document</AppText>
-          <AppText style={styles.errorSub}>Please check your internet connection and try again.</AppText>
-          <TouchableOpacity
+          <AppText style={styles.errorTitle}>{t('x_pdfLoadFailedTitle')}</AppText>
+          <AppText style={styles.errorSub}>{t('loadFailedBody')}</AppText>
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => { setError(false); setLoading(true); }}
             style={styles.retryBtn}
           >
-            <AppText style={styles.retryTxt}>Retry</AppText>
+            <AppText style={styles.retryTxt}>{t('retry')}</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
   errorSub: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 18 },
   retryBtn: {
     marginTop: 8,
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 12,

@@ -1,6 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
+  Animated,
+  Easing,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -38,6 +40,7 @@ import type { MainStackParamList } from '../../../app/navigation/types';
 import categoriesRaw from '../../../shared/data/categories.json';
 import { SUPPORT_STAFF_CATEGORY_VALUES, HIDDEN_FROM_NON_SUPPORT } from '../../../shared/data/supportStaffCategories';
 
+import { BRAND } from '../../../core/theme/brand';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type RouteParams = NativeStackScreenProps<MainStackParamList, 'PostRequirement'>['route'];
 
@@ -225,7 +228,7 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
         <View style={styles.heroDeco2} />
         <View style={styles.heroDeco3} />
         {showBack && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={onBack}
             style={[styles.heroBack, { top: insets.top + 8 }]}
             activeOpacity={0.75}
@@ -262,7 +265,7 @@ const TypeSelectionStep = ({ onSelect, onBack, showBack }: TypeSelectionProps): 
       {/* ── Type Cards ───────────────────────────────────────────────────── */}
       <View style={styles.cardsWrap}>
         {REQ_TYPES.map((rt, idx) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={rt.value}
             onPress={() => onSelect(rt.value)}
             activeOpacity={0.78}
@@ -381,7 +384,7 @@ const Stepper = ({ label, required, value, onChange, min }: StepperProps): React
         {required && <AppText style={ps.stepperAsterisk}>*</AppText>}
       </View>
       <View style={[ps.stepperRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => set(num - 1)}
           disabled={atMin}
           activeOpacity={0.7}
@@ -392,7 +395,7 @@ const Stepper = ({ label, required, value, onChange, min }: StepperProps): React
         <View style={[ps.stepperValueBox, { borderColor: theme.colors.border }]}>
           <AppText style={[ps.stepperValueTxt, { color: theme.colors.text }]}>{num}</AppText>
         </View>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => set(num + 1)}
           activeOpacity={0.7}
           style={[ps.stepperBtn, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
@@ -674,7 +677,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
       {canPostProject && (
         <View style={ppl.modeToggleRow}>
           {(['requirement', 'project'] as const).map((m) => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={m}
               onPress={() => setPostingMode(m)}
               activeOpacity={0.8}
@@ -736,7 +739,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           <AppText style={[ps.typeBannerLabel, { color: theme.colors.primary }]}>{t(`type_${reqType}_label` as any)}</AppText>
           <AppText style={[ps.typeBannerDesc, { color: theme.colors.mutedText }]} numberOfLines={2}>{t(`type_${reqType}_desc` as any)}</AppText>
         </View>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onBack}
           activeOpacity={0.75}
           style={[ps.changeBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]}
@@ -823,7 +826,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
             keyboardType="number-pad"
             maxLength={6}
           />
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => setShowLocationPicker(true)}
             activeOpacity={0.8}
             style={[ps.mapBtn, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight }]}
@@ -1008,7 +1011,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
         <View style={[ps.sectionBody, { paddingBottom: 6 }]}>
           <View style={styles.flagsGrid}>
             {flagsForType(reqType).map((flag) => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={flag.key}
                 onPress={() => toggleFlag(flag.key)}
                 activeOpacity={0.8}
@@ -1057,7 +1060,7 @@ const RequirementFormStep = ({ reqType, onBack, initialWorkType, prefill }: Form
           <AppText style={ppl.upgradeIcon}>🚫</AppText>
           <AppText style={[ppl.upgradeTitle, { color: theme.colors.text }]}>{t('pl_postsExhaustedTitle')}</AppText>
           <AppText style={[ppl.upgradeSub, { color: theme.colors.mutedText }]}>{t('pl_postsExhaustedDesc')}</AppText>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.navigate('Subscription')}
             style={ppl.upgradeBtn}
             activeOpacity={0.85}
@@ -1104,7 +1107,7 @@ const SectionLabel = ({ label, theme }: { label: string; theme: ReturnType<typeo
 );
 
 // ─── Subscription Gate ────────────────────────────────────────────────────────
-const GATE_BRAND = '#1037A4';
+const GATE_BRAND = BRAND;
 const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element => {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
@@ -1115,6 +1118,36 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
     t('jp_gateBenefit3'),
     t('jp_gateBenefit4'),
   ];
+  // Premium motion (native-driver, looped): lock floats, CTA breathes + a
+  // light sweep glides across it, arrow nudges. Stops on unmount.
+  const float = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+  const sweep = useRef(new Animated.Value(0)).current;
+  const press = useRef(new Animated.Value(1)).current;
+  const [ctaW, setCtaW] = useState(300);
+  useEffect(() => {
+    const loops = [
+      Animated.loop(Animated.sequence([
+        Animated.timing(float, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])),
+      Animated.loop(Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])),
+      Animated.loop(Animated.sequence([
+        Animated.timing(sweep, { toValue: 1, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.delay(1100),
+        Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])),
+    ];
+    loops.forEach((l) => l.start());
+    return () => loops.forEach((l) => l.stop());
+  }, [float, pulse, sweep]);
+  const pressTo = (v: number): void => { Animated.spring(press, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 6 }).start(); };
+  const ctaScale = Animated.multiply(press, pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.025] }));
+  const sweepX = sweep.interpolate({ inputRange: [0, 1], outputRange: [-90, ctaW + 40] });
+  const arrowX = pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 5] });
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -1124,9 +1157,9 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
       <View style={[gate.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         {/* Premium icon + PRO badge */}
         <View style={gate.iconWrap}>
-          <View style={gate.iconCircle}>
+          <Animated.View style={[gate.iconCircle, { transform: [{ translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }] }]}>
             <AppText style={gate.iconEmoji}>🔒</AppText>
-          </View>
+          </Animated.View>
           <View style={gate.proPill}>
             <AppText style={gate.proTxt}>★ PRO</AppText>
           </View>
@@ -1147,16 +1180,28 @@ const SubscriptionGate = ({ onBack }: { onBack: () => void }): React.JSX.Element
           ))}
         </View>
 
-        {/* Primary CTA */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Subscription')}
-          style={gate.cta}
-          activeOpacity={0.9}
-        >
-          <AppText style={gate.ctaTxt}>{t('jp_viewPlansSubscribe')}  →</AppText>
-        </TouchableOpacity>
+        {/* Primary CTA — animated */}
+        <Animated.View style={[gate.ctaWrap, { transform: [{ scale: ctaScale }] }]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Subscription')}
+            onPressIn={() => pressTo(0.96)}
+            onPressOut={() => pressTo(1)}
+            onLayout={(e) => setCtaW(e.nativeEvent.layout.width)}
+            style={gate.cta}
+            activeOpacity={0.92}
+            accessibilityRole="button"
+          >
+            <Animated.View pointerEvents="none" style={[gate.shine, { transform: [{ translateX: sweepX }, { skewX: '-20deg' }] }]} />
+            <View style={gate.ctaRow}>
+              <AppText style={gate.ctaTxt}>{t('jp_viewPlansSubscribe')}</AppText>
+              <Animated.View style={{ transform: [{ translateX: arrowX }] }}>
+                <AppText style={gate.ctaTxt}>→</AppText>
+              </Animated.View>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
 
-        <TouchableOpacity onPress={onBack} style={gate.laterBtn} activeOpacity={0.7}>
+        <TouchableOpacity accessibilityRole="button" onPress={onBack} style={gate.laterBtn} activeOpacity={0.7}>
           <AppText style={[gate.laterTxt, { color: theme.colors.mutedText }]}>{t('jp_maybeLater')}</AppText>
         </TouchableOpacity>
       </View>
@@ -1170,9 +1215,9 @@ const gate = StyleSheet.create({
     borderRadius: 24, borderWidth: 1, paddingVertical: 28, paddingHorizontal: 22, alignItems: 'center',
     shadowColor: '#0F172A', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 5,
   },
-  iconWrap:    { marginBottom: 18, position: 'relative' },
-  iconCircle:  { width: 78, height: 78, borderRadius: 39, backgroundColor: '#EBF1FF', alignItems: 'center', justifyContent: 'center' },
-  iconEmoji:   { fontSize: 34 },
+  iconWrap:    { marginBottom: 20, marginTop: 4, position: 'relative' },
+  iconCircle:  { width: 84, height: 84, borderRadius: 42, backgroundColor: '#EBF1FF', alignItems: 'center', justifyContent: 'center' },
+  iconEmoji:   { fontSize: 34, lineHeight: 44, textAlign: 'center' },
   proPill:     {
     position: 'absolute', top: -4, right: -16,
     backgroundColor: '#F59E0B', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3,
@@ -1186,8 +1231,11 @@ const gate = StyleSheet.create({
   checkCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#16A34A', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkTick:   { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 16 },
   benefitTxt:  { flex: 1, fontSize: 14, fontWeight: '600', lineHeight: 19 },
+  ctaWrap:     { width: '100%', marginBottom: 4 },
+  ctaRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  shine:       { position: 'absolute', top: -10, bottom: -10, width: 46, backgroundColor: 'rgba(255,255,255,0.28)' },
   cta:         {
-    width: '100%', backgroundColor: GATE_BRAND, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 4,
+    width: '100%', backgroundColor: GATE_BRAND, borderRadius: 16, paddingVertical: 16, alignItems: 'center', overflow: 'hidden',
     shadowColor: GATE_BRAND, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   ctaTxt:      { color: '#fff', fontSize: 15.5, fontWeight: '800', letterSpacing: 0.2 },
@@ -1233,7 +1281,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
   if (isEmployer && !isSubscribed) {
     return (
       <View style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <ScreenHeader title={t('postRequirement')} onBack={goBack} />
         <SubscriptionGate onBack={goBack} />
       </View>
@@ -1242,8 +1290,8 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   if (!reqType) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <View style={{ flex: 1, backgroundColor: BRAND }}>
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <TypeSelectionStep
           onSelect={(type) => setReqType(type)}
           onBack={goBack}
@@ -1255,7 +1303,7 @@ export const PostRequirementScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={title} onBack={() => setReqType(null)} />
       <RequirementFormStep
         reqType={reqType}
@@ -1275,7 +1323,7 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingTop: 36,
     paddingBottom: 40,
     paddingHorizontal: 24,

@@ -113,6 +113,7 @@ export type RootStackParamList = {
   CallHistory: undefined;
   ViewedContacts: undefined;
   EmployerFeedback: { fromPrompt?: boolean } | undefined;
+  EmployerHelp: undefined;
   BgcHome: undefined;
   BgcEnroll: undefined;
   BgcOrders: undefined;

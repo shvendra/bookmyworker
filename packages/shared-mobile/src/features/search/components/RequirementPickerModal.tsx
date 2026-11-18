@@ -152,7 +152,7 @@ export const RequirementPickerModal = ({
               <AppText style={pm.headerTitle}>{t('wp_pmTitle', { action: t(meta.labelKey) })}</AppText>
               <AppText style={pm.headerSub}>{workerName}{workerPhone ? ` · ${workerPhone}` : ''}</AppText>
             </View>
-            <TouchableOpacity onPress={onClose} style={pm.closeBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={pm.closeBtn}>
               <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -166,7 +166,7 @@ export const RequirementPickerModal = ({
                 {/* Rate type toggle */}
                 <View style={pm.rateTypeRow}>
                   {(['Daily', 'Monthly'] as const).map((rt) => (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={rt}
                       onPress={() => setRateType(rt)}
                       style={[pm.rateTypeBtn, rateType === rt && { backgroundColor: meta.color, borderColor: meta.color }]}
@@ -201,10 +201,10 @@ export const RequirementPickerModal = ({
               </View>
 
               <View style={pm.footer}>
-                <TouchableOpacity onPress={() => setStep('pick')} style={pm.cancelBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setStep('pick')} style={pm.cancelBtn}>
                   <AppText style={pm.cancelTxt}>{t('wp_back')}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => void handleSave()}
                   disabled={saving || !agreedRate || parseFloat(agreedRate) <= 0}
                   style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || !agreedRate || parseFloat(agreedRate) <= 0) && { opacity: 0.5 }]}
@@ -234,7 +234,7 @@ export const RequirementPickerModal = ({
                   <AppText style={pm.emptyDesc}>
                     {t('wp_pmEmptyDesc')}
                   </AppText>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => { onClose(); navPicker.navigate('PostRequirement'); }}
                     style={[pm.postBtn, { backgroundColor: meta.color }]}
                     activeOpacity={0.85}
@@ -265,7 +265,7 @@ export const RequirementPickerModal = ({
                       ? (REQ_STATUS_KEY[r.status] ? t(REQ_STATUS_KEY[r.status]) : r.status)
                       : '';
                     return (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         onPress={() => toggle(r._id)}
                         disabled={isDisabled}
                         style={[pm.reqRow, isChk && { backgroundColor: meta.bg }, isDisabled && pm.reqRowDisabled]}
@@ -294,10 +294,10 @@ export const RequirementPickerModal = ({
               )}
 
               <View style={pm.footer}>
-                <TouchableOpacity onPress={onClose} style={pm.cancelBtn}>
+                <TouchableOpacity accessibilityRole="button" onPress={onClose} style={pm.cancelBtn}>
                   <AppText style={pm.cancelTxt}>{t('wp_cancel')}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={handleNext}
                   disabled={saving || selected.length === 0}
                   style={[pm.saveBtn, { backgroundColor: meta.color }, (saving || selected.length === 0) && { opacity: 0.5 }]}

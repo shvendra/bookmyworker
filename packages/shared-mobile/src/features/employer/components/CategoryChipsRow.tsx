@@ -50,7 +50,7 @@ export const CategoryChipsRow = ({ onSelect, onViewAll }: CategoryChipsRowProps)
     <View style={s.wrap}>
       <View style={s.head}>
         <AppText style={[s.title, { color: theme.colors.text }]} numberOfLines={1} maxFontSizeMultiplier={1.25}>{t('cc_title')}</AppText>
-        <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} hitSlop={8}>
+        <TouchableOpacity accessibilityRole="button" onPress={onViewAll} activeOpacity={0.7} hitSlop={8}>
           <AppText style={s.viewAll} maxFontSizeMultiplier={1.25}>{t('viewAll')}</AppText>
         </TouchableOpacity>
       </View>

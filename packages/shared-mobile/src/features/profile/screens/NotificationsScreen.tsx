@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { buildPhotoUrl } from '../../../core/config/env';
 
+import { BRAND } from '../../../core/theme/brand';
 // Replace underscores with spaces so work-type names display cleanly
 // e.g. "transport_logistics_workers" → "transport logistics workers"
 const cleanText = (text?: string): string =>
@@ -205,7 +206,7 @@ const NotifCard = ({ item, onPress, isLast }: NotifCardProps): React.JSX.Element
   const catLabel = catValueRaw ? subcatDisplay(String(catValueRaw)) : undefined;
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={() => { onPress(item._id); setExpanded((e) => !e); }}
       activeOpacity={0.75}
       style={[
@@ -329,7 +330,7 @@ export const NotificationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
         title={t('notificationsTitle')}
         onBack={() => navigation.goBack()}

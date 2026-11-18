@@ -11,8 +11,8 @@ import { bgcSlabPrice, bgcSlabRange, computeBgcQuote, useBgcConfig } from '../..
 import { bgcFmtCount, bgcInr } from '../bgcShared';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'BgcHome'>;
-const BRAND = '#1037A4';
 
 export const BgcHomeScreen = ({ navigation }: Props): React.JSX.Element => {
   const { t } = useTranslation('employer');

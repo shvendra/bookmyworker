@@ -8,6 +8,7 @@ import { AppCard } from '../../../shared/components/ui/AppCard';
 import { ScreenHeader } from '../../../shared/components/ui/GradientHeader';
 import { useAppConfig, type AppConfig } from '../../../core/api/endpoints/appConfigApi';
 
+import { BRAND } from '../../../core/theme/brand';
 const FAQ_KEYS = ['faq1', 'faq2', 'faq3', 'faq4', 'faq5', 'faq6', 'faq7', 'faq8'] as const;
 
 type HelpTopic = AppConfig['helpCenter']['topics'][number];
@@ -33,7 +34,7 @@ interface ContactCardProps {
 const ContactCard = ({ icon, title, subtitle, onPress, disabled }: ContactCardProps): React.JSX.Element => {
   const { theme } = useAppTheme();
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
       activeOpacity={0.7}
@@ -69,7 +70,7 @@ const HelpTopicRow = ({ topic }: { topic: HelpTopic }): React.JSX.Element => {
   };
 
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={handleToggle}
+    <TouchableOpacity accessibilityRole="button" activeOpacity={0.7} onPress={handleToggle}
       style={[styles.topicRow, { borderColor: theme.colors.border }]}>
       <View style={styles.topicHeaderRow}>
         <View style={{ flex: 1 }}>
@@ -135,7 +136,7 @@ export const SupportScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('sup_title')} onBack={() => navigation.goBack()} />
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -182,7 +183,7 @@ export const SupportScreen = (): React.JSX.Element => {
             {activeCategories.map((cat: HelpCategory) => {
               const selected = activeCategory === cat.key;
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={cat.key}
                   activeOpacity={0.7}
                   onPress={() => setActiveCategory(selected ? null : cat.key)}

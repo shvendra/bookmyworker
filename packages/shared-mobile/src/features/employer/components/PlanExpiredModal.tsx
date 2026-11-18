@@ -48,7 +48,7 @@ export const PlanExpiredModal = ({ visible, discountPct, onClose, onRenew }: Pla
               { width: CARD_W, backgroundColor: isDark ? '#1E293B' : '#FFFFFF', opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }] },
             ]}
           >
-            <TouchableOpacity onPress={onClose} style={[s.close, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9' }]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('pe_close')}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={[s.close, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9' }]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('pe_close')}>
               <Ionicons name="close" size={16} color={isDark ? '#CBD5E1' : '#64748B'} />
             </TouchableOpacity>
 
@@ -77,7 +77,7 @@ export const PlanExpiredModal = ({ visible, discountPct, onClose, onRenew }: Pla
             </View>
 
             <PulseView scaleTo={1.025} period={1800}>
-              <TouchableOpacity style={s.cta} activeOpacity={0.88} onPress={onRenew}>
+              <TouchableOpacity accessibilityRole="button" style={s.cta} activeOpacity={0.88} onPress={onRenew}>
                 <AppText style={s.ctaTxt} maxFontSizeMultiplier={1.2}>{t('pe_cta')}{'  →'}</AppText>
                 <ShimmerSweep />
               </TouchableOpacity>

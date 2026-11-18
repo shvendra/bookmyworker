@@ -6,6 +6,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import { ageString } from '../../../shared/utils/ageUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 export const C = {
   navy:      '#0f172a',
@@ -129,7 +130,7 @@ export const DocRow = ({ icon, iconBg, name, meta, onPress, isLast = false }: {
   const { theme } = useAppTheme();
   const { t } = useTranslation('employer');
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       activeOpacity={0.75}
       style={[dr.row, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}
@@ -154,15 +155,15 @@ const dr = StyleSheet.create({
   name:    { fontSize: 13, fontWeight: '700' },
   meta:    { fontSize: 11, color: C.slate, marginTop: 2 },
   pill:    { backgroundColor: '#EBF1FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  pillTxt: { fontSize: 11, fontWeight: '800', color: '#1037A4' },
+  pillTxt: { fontSize: 11, fontWeight: '800', color: BRAND },
 });
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 export const LoadingSkeleton = (): React.JSX.Element => {
   const pulse = C.slateLight;
   return (
-    <View style={{ flex: 1, backgroundColor: '#1037A4' }}>
-      <View style={{ paddingTop: 16, height: 240, backgroundColor: '#1037A4', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
+    <View style={{ flex: 1, backgroundColor: BRAND }}>
+      <View style={{ paddingTop: 16, height: 240, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24, gap: 10 }}>
         <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 140, height: 18, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ width: 100, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' }} />

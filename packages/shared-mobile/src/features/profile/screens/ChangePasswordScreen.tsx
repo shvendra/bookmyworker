@@ -15,6 +15,7 @@ import { FormInput } from '../../../shared/components/forms/FormInput';
 import { useAppTheme } from '../../../core/theme';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'ChangePassword'>;
 
 const changePasswordSchema = z.object({
@@ -72,7 +73,7 @@ export const ChangePasswordScreen = ({ navigation }: Props): React.JSX.Element =
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('profile_changePassword')} onBack={() => navigation.goBack()} />
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.colors.background }}

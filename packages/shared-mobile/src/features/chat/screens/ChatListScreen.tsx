@@ -13,6 +13,7 @@ import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 import { useTranslation } from 'react-i18next';
 import type { ChatRoom } from '../../../shared/types/domain';
 
+import { BRAND } from '../../../core/theme/brand';
 interface ChatListScreenProps {
   onOpenRoom?: (room: ChatRoom) => void;
 }
@@ -52,7 +53,7 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('chatTitle')} />
 
       {roomList.length === 0 ? (
@@ -74,7 +75,7 @@ export const ChatListScreen = ({ onOpenRoom }: ChatListScreenProps): React.JSX.E
             const name = item.participantNames[otherUserId] ?? t('jp_user');
             const avatarUri = item.participantImages?.[otherUserId];
             return (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[styles.roomItem, { borderBottomColor: theme.colors.border }]}
                 onPress={() => onOpenRoom?.(item)}
                 activeOpacity={0.7}

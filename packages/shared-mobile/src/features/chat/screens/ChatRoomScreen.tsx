@@ -27,6 +27,7 @@ import type { ChatMessage } from '../../../shared/types/domain';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 
+import { BRAND } from '../../../core/theme/brand';
 interface ChatRoomScreenProps {
   roomId: string;
   roomName: string;
@@ -359,7 +360,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={insets.top + 56}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
         title={headerTitle}
         onBack={hideBack && !onBack ? undefined : (onBack ?? (() => navigation.goBack()))}
@@ -406,7 +407,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
         }
         ListFooterComponent={
           hasOlderMessages ? (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => void handleLoadOlder()}
               disabled={loadingOlder}
               style={[styles.loadOlderBtn, { borderColor: theme.colors.border }]}
@@ -438,7 +439,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
 
       {/* Composer */}
       <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={handleAttach}
           disabled={uploadingMedia || sending || composerDisabled}
           style={[styles.attachBtn, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
@@ -464,7 +465,7 @@ export const ChatRoomScreen = ({ roomId, roomName, hideBack, onBack }: ChatRoomS
           blurOnSubmit={false}
           onSubmitEditing={() => void handleSend()}
         />
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => void handleSend()}
           disabled={!draft.trim() || sending || composerDisabled}
           style={[styles.sendBtn, {

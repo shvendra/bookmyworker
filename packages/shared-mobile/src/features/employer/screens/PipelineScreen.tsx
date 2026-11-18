@@ -169,14 +169,14 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
         <View style={wr.btnRow}>
           {worker.status === 'Shortlisted' && (
             <>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={onSelect} disabled={busy}
                 style={[wr.btn, { backgroundColor: BRAND }]}
                 activeOpacity={0.8}
               >
                 <AppText style={wr.btnWhite}>{t('pipelineSelectBtn')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={onRemove} disabled={busy}
                 style={[wr.btn, { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5' }]}
                 activeOpacity={0.8}
@@ -188,14 +188,14 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
 
           {worker.status === 'Selected' && (
             <>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={onJoin} disabled={busy}
                 style={[wr.btn, { backgroundColor: '#059669' }]}
                 activeOpacity={0.8}
               >
                 <AppText style={wr.btnWhite}>{t('pipelineJoinBtn')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={onRevert} disabled={busy}
                 style={[wr.btn, { backgroundColor: theme.colors.surface1, borderWidth: 1, borderColor: theme.colors.border }]}
                 activeOpacity={0.8}
@@ -206,7 +206,7 @@ const WorkerRow = ({ worker, onSelect, onJoin, onRevert, onRemove, busy }: Worke
           )}
 
           {worker.status === 'Joined' && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onRevert} disabled={busy}
               style={[wr.btn, { backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#fdba74' }]}
               activeOpacity={0.8}
@@ -283,7 +283,7 @@ const ReqSection = ({
   return (
     <View style={[rs.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       {/* Header row */}
-      <TouchableOpacity onPress={onToggle} activeOpacity={0.82} style={rs.headerRow}>
+      <TouchableOpacity accessibilityRole="button" onPress={onToggle} activeOpacity={0.82} style={rs.headerRow}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <AppText style={[rs.title, { color: theme.colors.text }]} numberOfLines={2}>
             {title || t('calRequirement')}
@@ -321,7 +321,7 @@ const ReqSection = ({
       </View>
 
       {/* Expand/collapse toggle */}
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={onToggle}
         style={[rs.toggleRow, { borderTopColor: theme.colors.border }]}
         activeOpacity={0.75}
@@ -341,7 +341,7 @@ const ReqSection = ({
                 {t('pipelineNoWorkers')}
               </AppText>
               {interestedCount > 0 && (
-                <TouchableOpacity onPress={onViewInterested} style={rs.viewInterestedBtn} activeOpacity={0.8}>
+                <TouchableOpacity accessibilityRole="button" onPress={onViewInterested} style={rs.viewInterestedBtn} activeOpacity={0.8}>
                   <AppText style={rs.viewInterestedTxt}>{t('pipelineViewInterested')}</AppText>
                 </TouchableOpacity>
               )}
@@ -360,7 +360,7 @@ const ReqSection = ({
                 />
               ))}
               {interestedCount > 0 && (
-                <TouchableOpacity onPress={onViewInterested} style={rs.viewMoreBtn} activeOpacity={0.8}>
+                <TouchableOpacity accessibilityRole="button" onPress={onViewInterested} style={rs.viewMoreBtn} activeOpacity={0.8}>
                   <AppText style={[rs.viewMoreTxt, { color: BRAND }]}>
                     {`${interestedCount} ${t('ws_outcome_interested')} · ${t('viewAll')}`}
                   </AppText>
@@ -457,7 +457,7 @@ const JoinRateModal = ({ state, onConfirm, onClose }: JoinModalProps): React.JSX
           <AppText style={[jm.label, { color: theme.colors.textSecondary }]}>{t('pipelineRateTypeDaily') + ' / ' + t('pipelineRateTypeMonthly')}</AppText>
           <View style={jm.toggleGroup}>
             {(['Daily', 'Monthly'] as const).map(rt => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={rt}
                 onPress={() => setRateType(rt)}
                 style={[jm.toggle, {
@@ -474,10 +474,10 @@ const JoinRateModal = ({ state, onConfirm, onClose }: JoinModalProps): React.JSX
           </View>
 
           {/* Actions */}
-          <TouchableOpacity onPress={handleConfirm} style={[jm.confirmBtn, { backgroundColor: '#059669' }]} activeOpacity={0.85}>
+          <TouchableOpacity accessibilityRole="button" onPress={handleConfirm} style={[jm.confirmBtn, { backgroundColor: '#059669' }]} activeOpacity={0.85}>
             <AppText style={jm.confirmTxt}>{t('pipelineConfirmJoin')}</AppText>
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.75}>
+          <TouchableOpacity accessibilityRole="button" onPress={onClose} activeOpacity={0.75}>
             <AppText style={[jm.cancelTxt, { color: theme.colors.mutedText }]}>{t('cancel')}</AppText>
           </TouchableOpacity>
         </View>
@@ -735,7 +735,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
           <AppText style={ls.btnTxt}>{t('viewSubscriptionPlans')}</AppText>
         </TouchableOpacity>
       </View>
@@ -762,7 +762,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Subscription')} style={ls.btn} activeOpacity={0.85}>
           <AppText style={ls.btnTxt}>{t('pipelinePlanUpgradeBtn')}</AppText>
         </TouchableOpacity>
       </View>
@@ -822,7 +822,7 @@ export const PipelineScreen = ({ navigation }: Props): React.JSX.Element => {
                 <AppText style={sg.emptyEmoji}>📋</AppText>
                 <AppText style={[sg.emptyTitle, { color: theme.colors.text }]}>{t('noRequirementsTitle')}</AppText>
                 <AppText style={[sg.emptySub, { color: theme.colors.mutedText }]}>{t('noRequirementsDesc')}</AppText>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => navigation.navigate('PostRequirement')}
                   style={sg.postBtn}
                   activeOpacity={0.85}

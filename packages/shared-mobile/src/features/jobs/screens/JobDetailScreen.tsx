@@ -16,6 +16,7 @@ import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { useAppTheme } from '../../../core/theme';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'JobDetail'>;
 
 export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element => {
@@ -53,7 +54,7 @@ export const JobDetailScreen = ({ route, navigation }: Props): React.JSX.Element
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={job.title ?? 'Job Detail'} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

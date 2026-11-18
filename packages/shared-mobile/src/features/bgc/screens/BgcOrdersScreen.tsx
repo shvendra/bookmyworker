@@ -15,8 +15,8 @@ import { BgcRequestResponder } from '../components/BgcRequestResponder';
 import { bgcDateTime, bgcFmtSize, bgcInr, bgcStatusColors } from '../bgcShared';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'BgcOrders'>;
-const BRAND = '#1037A4';
 
 const openLink = async (get: () => Promise<string>, failMsg: string): Promise<void> => {
   try { await Linking.openURL(await get()); } catch (e) { showAlert('', bgcError(e, failMsg).message); }

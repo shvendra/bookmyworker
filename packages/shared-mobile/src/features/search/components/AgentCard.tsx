@@ -75,7 +75,7 @@ export const CallOutcomePicker = ({
 
   return (
     <>
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={() => setShow(true)}
         disabled={saving}
         activeOpacity={0.8}
@@ -97,8 +97,8 @@ export const CallOutcomePicker = ({
         animationType="slide"
         onRequestClose={() => setShow(false)}
       >
-        <TouchableOpacity activeOpacity={1} onPress={() => setShow(false)} style={co.scrim}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[co.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 18 }]}>
+        <TouchableOpacity accessibilityRole="button" activeOpacity={1} onPress={() => setShow(false)} style={co.scrim}>
+          <TouchableOpacity accessibilityRole="button" activeOpacity={1} onPress={() => {}} style={[co.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 18 }]}>
             <View style={[co.grab, { backgroundColor: theme.colors.border }]} />
 
             {/* Header: avatar + name + sub + close */}
@@ -110,7 +110,7 @@ export const CallOutcomePicker = ({
                 <AppText style={[co.ot, { color: theme.colors.text }]} numberOfLines={2}>{name ?? t('ws_call_outcome')}</AppText>
                 <AppText style={[co.os, { color: theme.colors.mutedText }]} numberOfLines={2}>{t('ws_log_this_call')}</AppText>
               </View>
-              <TouchableOpacity onPress={() => setShow(false)} style={[co.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setShow(false)} style={[co.ox, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
                 <Ionicons name="close" size={17} color={theme.colors.mutedText} />
               </TouchableOpacity>
             </View>
@@ -121,7 +121,7 @@ export const CallOutcomePicker = ({
                 const active = current === item.value;
                 const c = getOutcomeColor(item.value);
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={item.value}
                     onPress={() => { onSave(agentId, item.value); setShow(false); }}
                     activeOpacity={0.8}
@@ -136,7 +136,7 @@ export const CallOutcomePicker = ({
 
               {/* Clear outcome */}
               {hasOutcome && (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => { onSave(agentId, ''); setShow(false); }}
                   activeOpacity={0.8}
                   style={[co.oopt, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
@@ -279,7 +279,7 @@ export const AgentCard = React.memo(({
     <View style={[wc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, shadowColor: theme.colors.shadow }]}>
 
       {/* ── Main info row (tappable) ── */}
-      <TouchableOpacity onPress={handleCardPress} activeOpacity={0.88} style={wc.infoRow}>
+      <TouchableOpacity accessibilityRole="button" onPress={handleCardPress} activeOpacity={0.88} style={wc.infoRow}>
         {/* Avatar — gender avatar is the always-present base; the real photo is
             overlaid on top and only made visible once it has truly loaded. */}
         <View style={wc.avatarWrap}>
@@ -398,13 +398,13 @@ export const AgentCard = React.memo(({
       {(!!agent.resumeUrl || !!agent.labourLicenceUrl) && (
         <View style={[wc.docsRow, { borderTopColor: theme.colors.border }]}>
           {!!agent.resumeUrl && (
-            <TouchableOpacity onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '50' }]} activeOpacity={0.8}>
               <Ionicons name="document-text" size={13} color={theme.colors.primary} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.primary }]}>{t('ws_resume')}</AppText>
             </TouchableOpacity>
           )}
           {!!agent.labourLicenceUrl && (
-            <TouchableOpacity onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleCardPress} style={[wc.docChip, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success + '60' }]} activeOpacity={0.8}>
               <Ionicons name="document-attach" size={13} color={theme.colors.success} style={wc.resumeIcon} />
               <AppText style={[wc.docChipTxt, { color: theme.colors.success }]}>{t('ws_licence')}</AppText>
             </TouchableOpacity>
@@ -417,14 +417,14 @@ export const AgentCard = React.memo(({
         {unlockedPhone ? (
           <>
             <View style={wc.unlockedRow}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => onDialCall({ id: agent._id, name: agent.name ?? '', phone: unlockedPhone })}
                 style={[wc.callBtn, { backgroundColor: BRAND }]}
                 activeOpacity={0.85}
               >
                 <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{unlockedPhone}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
                 style={wc.waBtn}
                 activeOpacity={0.85}
@@ -435,14 +435,14 @@ export const AgentCard = React.memo(({
             {/* Alternate number — same unlock, only when the worker has one. */}
             {unlockedAlternate ? (
               <View style={[wc.unlockedRow, { marginTop: 8 }]}>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => onDialCall({ id: agent._id, name: agent.name ?? '', phone: unlockedAlternate })}
                   style={[wc.callBtn, { backgroundColor: '#0f766e' }]}
                   activeOpacity={0.85}
                 >
                   <AppText style={wc.callBtnTxt}><Ionicons name="call" size={13} color={WHITE} />{' '}{t('ws_alt_prefix')} {unlockedAlternate}</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => void Linking.openURL(`https://wa.me/91${unlockedAlternate}`)}
                   style={wc.waBtn}
                   activeOpacity={0.85}
@@ -453,7 +453,7 @@ export const AgentCard = React.memo(({
             ) : null}
           </>
         ) : isContactsExhausted ? (
-          <TouchableOpacity onPress={onTopup} activeOpacity={0.82} style={[wc.topupCta, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '40' }]}>
+          <TouchableOpacity accessibilityRole="button" onPress={onTopup} activeOpacity={0.82} style={[wc.topupCta, { backgroundColor: theme.colors.warningLight, borderColor: theme.colors.warning + '40' }]}>
             <View style={[wc.lockIconBox, { backgroundColor: theme.colors.accentLight }]}>
               <Ionicons name="warning" size={16} color={theme.colors.warning} />
             </View>
@@ -464,7 +464,7 @@ export const AgentCard = React.memo(({
             <AppText style={wc.lockChevron}>›</AppText>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={isSubscribed ? handleUnlock : onSubscribe}
             disabled={loadingUnlock}
             style={[wc.callAgentBtn, { opacity: loadingUnlock ? 0.7 : 1 }]}

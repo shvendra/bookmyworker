@@ -29,6 +29,7 @@ import type { AuthStackParamList } from '../../../app/navigation/types';
 import { WrongAppNotice } from '../components/WrongAppNotice';
 import { parseWrongApp, appForRole, type WrongAppInfo } from '../../../shared/constants/crossApp';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<AuthStackParamList, 'OtpVerification'>;
 
 const { width: W } = Dimensions.get('window');
@@ -200,7 +201,7 @@ export const OtpVerificationScreen = ({ route, navigation }: Props): React.JSX.E
 
   return (
     <View style={[styles.root, { backgroundColor: isDark ? theme.colors.background : '#F5F7FC' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Brand strip */}
       <View style={[styles.brandStrip, { paddingTop: insets.top + 12 }]}>
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   brandStrip: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 28,
     overflow: 'hidden',

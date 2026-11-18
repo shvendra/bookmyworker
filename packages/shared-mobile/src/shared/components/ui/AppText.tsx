@@ -139,9 +139,24 @@ export const AppText = React.memo(({
     weight ? { fontWeight: weight } : undefined,
     style,
   ]) ?? {}) as TextStyle;
+  // Emoji / big-glyph icons: callers set a large fontSize (e.g. 34) on the
+  // default 'body' variant, whose 23px lineHeight is then SHORTER than the
+  // glyph → top & bottom of the emoji get clipped. When a style supplies a
+  // fontSize but no lineHeight and the variant's line box would be too tight,
+  // derive a safe lineHeight from the fontSize. Text that already fits (or
+  // sets its own lineHeight) is untouched.
+  const ownStyle = (StyleSheet.flatten([style]) ?? {}) as TextStyle;
+  // `?.` — a caller may pass a variant that isn't defined (legacy `h3` / `small`); that must never crash.
+  const variantLH = (variantStyles[variant] as TextStyle | undefined)?.lineHeight;
+  const safeLineHeight =
+    typeof ownStyle.fontSize === 'number' && ownStyle.lineHeight == null &&
+    typeof variantLH === 'number' && ownStyle.fontSize * 1.15 > variantLH
+      ? Math.round(ownStyle.fontSize * 1.3)
+      : undefined;
   const baseLineHeight = typeof flat.lineHeight === 'number' ? flat.lineHeight : undefined;
+  const effLineHeight = safeLineHeight ?? baseLineHeight;
   const scaledLineHeight =
-    baseLineHeight != null && effScale > 1 ? baseLineHeight * effScale : undefined;
+    effLineHeight != null && effScale > 1 ? effLineHeight * effScale : undefined;
 
   // ── Brand font (Poppins) ───────────────────────────────────────────────────
   // Android can't synthesise weights from one family, so pick the Poppins family
@@ -159,6 +174,7 @@ export const AppText = React.memo(({
         // so glyphs are never vertically clipped. No-op on iOS, never changes width.
         { includeFontPadding: true },
         variantStyles[variant],
+        safeLineHeight != null ? { lineHeight: safeLineHeight } : null,
         {
           color: color ?? theme.colors.text,
           fontWeight: weight,

@@ -20,6 +20,7 @@ import { AppCard } from '../../../shared/components/ui/AppCard';
 import { agentApi } from '../../../core/api/endpoints/agentApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 interface DocState { uri: string; name: string; type: string }
 
 const pickImage = async (title: string): Promise<DocState | null> => {
@@ -115,7 +116,7 @@ export const WorkerKycReuploadScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('kyc_reupload_title')} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {!!workerName && (

@@ -145,7 +145,7 @@ export const AppInput = ({
         />
 
         {isPasswordField ? (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => setShowPassword((v) => !v)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.trailingBtn}
@@ -158,7 +158,7 @@ export const AppInput = ({
             />
           </TouchableOpacity>
         ) : trailingIcon ? (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={onTrailingPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.trailingBtn}

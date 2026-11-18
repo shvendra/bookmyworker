@@ -20,6 +20,7 @@ import { useAppTheme } from '../../../core/theme';
 import { useAppConfig, formatStat } from '../../../core/api/endpoints/appConfigApi';
 import type { AuthStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -51,7 +52,7 @@ export const WelcomeScreen = ({ navigation }: Props): React.JSX.Element => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Scrollable so the hero + feature cards + CTAs never get clipped on
           short screens or with large system font scaling. */}
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
 
   hero: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 44,
     overflow: 'hidden',
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, alignSelf: 'flex-start',
   },
   proofDots: { flexDirection: 'row', alignItems: 'center' },
-  proofDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#1037A4' },
+  proofDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: BRAND },
   proofText: { marginLeft: 8, flexShrink: 1 },
 
   body: {

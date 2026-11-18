@@ -18,6 +18,7 @@ import { AppText } from '../../../shared/components/ui/AppText';
 import { useAppTheme } from '../../../core/theme';
 import type { OnboardingStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'RoleSelection'>;
 
 interface RoleOption {
@@ -177,7 +178,7 @@ export const RoleSelectionScreen = ({ navigation }: Props): React.JSX.Element =>
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* Header strip */}
       <View style={styles.headerStrip}>
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   headerStrip: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 24,
     paddingBottom: 28,
     overflow: 'hidden',

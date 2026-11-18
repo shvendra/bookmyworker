@@ -121,7 +121,7 @@ export const PaymentWebViewScreen = (): React.JSX.Element => {
     <View style={[s.root, { backgroundColor: '#0f172a' }]}>
       {/* Header */}
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => {
             showAlert(
               t('jp_cancelPaymentTitle'),
@@ -262,7 +262,7 @@ export const TopupWebViewScreen = (): React.JSX.Element => {
   return (
     <View style={[s.root, { backgroundColor: '#0f172a' }]}>
       <View style={[s.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => showAlert(t('jp_cancelPaymentTitle'), t('jp_areYouSure'), [
             { text: t('jp_noContinue'), style: 'cancel' },
             { text: t('jp_yesCancel'), style: 'destructive', onPress: () => navigation.goBack() },

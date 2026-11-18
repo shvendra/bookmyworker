@@ -69,7 +69,7 @@ export const OffersBanner = (): React.JSX.Element | null => {
           style={[s.scroll, { height: h }]}
         >
           {ads.map((a) => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={a._id ?? a.mediaUrl}
               activeOpacity={a.link ? 0.9 : 1}
               disabled={!a.link}

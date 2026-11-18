@@ -26,6 +26,7 @@ import type { MainStackParamList } from '../../../app/navigation/types';
 import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const fmtDate = (iso: string): string => {
@@ -150,7 +151,7 @@ export const AgentWorkersScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
         title={t('myWorkers')}
         onBack={() => navigation.goBack()}

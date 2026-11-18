@@ -32,7 +32,7 @@ export const QuickActionCard = ({
   const isDark = theme.mode === 'dark';
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={onPress}
       activeOpacity={0.75}
       style={[

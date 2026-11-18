@@ -469,7 +469,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
         <View pointerEvents="none" style={sc.headerBlob} />
         <View style={sc.headerRow1}>
           {canGoBack && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={sc.backBtn}
@@ -486,7 +486,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
                 : t('ws_all_india')}
             </AppText>
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.8}
             style={sc.bellBtn}
@@ -499,7 +499,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
 
       {/* ── Plan scope banner ── */}
       {isScoped && (
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => navigation.navigate('Subscription')}
           activeOpacity={0.85}
           style={[scopeBanner.wrap, { backgroundColor: theme.colors.primaryLight, borderBottomColor: theme.colors.border }]}
@@ -529,12 +529,12 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={sc.searchClear}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setSearchQuery('')} style={sc.searchClear}>
                 <AppText style={sc.searchClearTxt}>✕</AppText>
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => setShowFilters(true)}
             activeOpacity={0.85}
             style={sc.filterBtn}
@@ -560,12 +560,12 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
             contentContainerStyle={sc.pillsContent}
           >
             {activePills.map((pill) => (
-              <TouchableOpacity key={pill.key} onPress={pill.onRemove} activeOpacity={0.75} style={[sc.pill, { backgroundColor: theme.colors.primaryLight, borderColor: BRAND + '40' }]}>
+              <TouchableOpacity accessibilityRole="button" key={pill.key} onPress={pill.onRemove} activeOpacity={0.75} style={[sc.pill, { backgroundColor: theme.colors.primaryLight, borderColor: BRAND + '40' }]}>
                 <AppText style={sc.pillTxt} numberOfLines={1}>{pill.label}</AppText>
                 <AppText style={sc.pillClose}>×</AppText>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: resetState, district: resetDistrict })}
               style={sc.pillClear}
             >
@@ -592,7 +592,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <View style={sc.errorIconWrap}><AppText style={{ fontSize: 28 }}>⚠</AppText></View>
           <AppText style={[sc.stateTitle, { color: theme.colors.text }]}>{t('ws_connection_error')}</AppText>
           <AppText style={[sc.stateBody, { color: theme.colors.mutedText }]}>{t('ws_connection_error_body')}</AppText>
-          <TouchableOpacity onPress={() => void refetch()} style={[sc.primaryBtn, { backgroundColor: theme.colors.primary }]}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refetch()} style={[sc.primaryBtn, { backgroundColor: theme.colors.primary }]}>
             <AppText style={sc.primaryBtnTxt}>{t('ws_retry')}</AppText>
           </TouchableOpacity>
         </View>
@@ -608,11 +608,11 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
                 : t('ws_no_workers_area')}
           </AppText>
           {searchQuery.trim() ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setSearchQuery('')} style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}>
               <AppText style={[sc.primaryBtnTxt, { color: BRAND }]}>{t('ws_clear_search')}</AppText>
             </TouchableOpacity>
           ) : activeFilterCount > 0 ? (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setAppliedFilters({ ...EMPTY_FILTERS, state: resetState, district: resetDistrict })}
               style={[sc.primaryBtn, sc.outlineBtn, { borderColor: BRAND }]}
             >
@@ -626,7 +626,7 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           extraData={listExtraData}
           keyExtractor={(item) => item._id}
           style={sc.flex1}
-          contentContainerStyle={sc.list}
+          contentContainerStyle={[sc.list, sc.listMain]}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           maxToRenderPerBatch={8}
@@ -732,7 +732,7 @@ const sc = StyleSheet.create({
   bellDot:         { position: 'absolute', top: 0, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: '#FF8A3D', borderWidth: 2, borderColor: '#1037A4' },
 
   // Search band — light bg with a blue strip behind only the top half of the input
-  searchSection:   { paddingHorizontal: 16, paddingBottom: 14, position: 'relative' },
+  searchSection:   { paddingHorizontal: 16, paddingBottom: 4, position: 'relative' },
   // No active filter pills → nothing sits below the input, so the full 14px
   // bottom padding + the list's own paddingTop left the first result card
   // floating with a big blank gap. Tighten the band in that case; the pills
@@ -773,7 +773,10 @@ const sc = StyleSheet.create({
   // Collapses WorkerSafetyNotice's own default marginTop (10) since this
   // list's contentContainerStyle already contributes paddingTop above it —
   // stacking both made the gap under the search bar look oversized.
-  safetyNotice:    { marginTop: 0 },
+  safetyNotice:    { marginTop: 0, marginBottom: 4 },
+  // Main results list: the search band already supplies the 4px gap above the
+  // first item, so no extra top padding — keeps top gap == gap below the notice.
+  listMain:        { paddingTop: 0 },
 
   // Loading more
   loadMore:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 20 },

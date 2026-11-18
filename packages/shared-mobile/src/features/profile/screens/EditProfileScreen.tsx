@@ -35,6 +35,7 @@ import { ageString } from '../../../shared/utils/ageUtils';
 import { WORKER_QUALIFICATION_TIERS as WORKER_SUB_TYPES } from '../../../shared/data/workerQualificationTiers';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 // Build a flat lookup: category/subcategory value → display label
 const _AREA_LABEL_MAP: Record<string, string> = {};
 (categoriesData as Array<{ label: string; value: string; subcategories: Array<{ label: string; value: string }> }>).forEach((cat) => {
@@ -389,7 +390,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('editProfileTitle')} onBack={() => navigation.goBack()} />
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}
@@ -399,7 +400,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
       >
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={pickPhoto} activeOpacity={0.88} style={styles.avatarTouchable}>
+          <TouchableOpacity accessibilityRole="button" onPress={pickPhoto} activeOpacity={0.88} style={styles.avatarTouchable}>
             {currentPhotoUri && !imageError ? (
               <Image source={{ uri: currentPhotoUri }} style={styles.avatar} onError={() => setImageError(true)} />
             ) : (
@@ -417,11 +418,11 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             )}
           </TouchableOpacity>
           <View style={styles.photoButtons}>
-            <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+            <TouchableOpacity accessibilityRole="button" onPress={pickPhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
               <Ionicons name="images-outline" size={17} color="#fff" style={styles.photoBtnIcon} />
               <AppText style={styles.photoBtnTxt} color="#fff">{t('ep_galleryBtn')}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={takePhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <TouchableOpacity accessibilityRole="button" onPress={takePhoto} activeOpacity={0.85} style={[styles.photoBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
               <Ionicons name="camera-outline" size={18} color={theme.colors.text} style={styles.photoBtnIcon} />
               <AppText style={styles.photoBtnTxt} color={theme.colors.text}>{t('ep_cameraBtn')}</AppText>
             </TouchableOpacity>
@@ -472,7 +473,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             </AppText>
             <View style={styles.genderRow}>
               {GENDER_OPTIONS.map((g) => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={g}
                   onPress={() => setGender(g)}
                   activeOpacity={0.75}
@@ -538,7 +539,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
             </AppText>
             <View style={styles.genderRow}>
               {ROLE_TYPE_OPTIONS.map((opt) => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={opt.value}
                   onPress={() => setRoleType(opt.value)}
                   activeOpacity={0.75}
@@ -564,7 +565,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
               {ALL_CATS.map((cat) => {
                 const sel = selectedCats.includes(cat.value);
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={cat.value}
                     onPress={() => toggleCat(cat.value)}
                     activeOpacity={0.75}
@@ -600,7 +601,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                     autoCorrect={false}
                   />
                   {subSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setSubSearch('')}>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => setSubSearch('')}>
                       <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
                     </TouchableOpacity>
                   )}
@@ -609,7 +610,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                   {filteredSubs.map((sub) => {
                     const sel = selectedSubs.includes(sub.value);
                     return (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         key={sub.value}
                         onPress={() => toggleSub(sub.value)}
                         activeOpacity={0.75}
@@ -653,7 +654,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                 autoCorrect={false}
               />
               {areaSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setAreaSearch('')}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setAreaSearch('')}>
                   <Ionicons name="close-circle" size={18} color={theme.colors.mutedText} />
                 </TouchableOpacity>
               )}
@@ -665,7 +666,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                 {filteredDistricts.map((d) => {
                   const selected = areas.includes(d.label);
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={`${d.state}-${d.label}`}
                       onPress={() => { toggleArea(d.label); setAreaSearch(''); }}
                       activeOpacity={0.7}
@@ -696,7 +697,7 @@ export const EditProfileScreen = ({ navigation }: Props): React.JSX.Element => {
                 </AppText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
                   {areas.map((a) => (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={a}
                       onPress={() => setAreas((prev) => prev.filter((x) => x !== a))}
                       style={[styles.areaTag, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]}

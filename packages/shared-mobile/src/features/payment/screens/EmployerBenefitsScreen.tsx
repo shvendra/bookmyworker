@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -9,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -255,19 +258,39 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('eb_title')} onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Hero status card ── */}
         <FadeInView distance={18}>
         <View style={[s.hero, { backgroundColor: isDark ? BRAND_DARK : BRAND }]}>
+          <LinearGradient
+            pointerEvents="none"
+            colors={isDark ? ['#12348F', '#0B2570', '#071A52'] : ['#2347C5', '#1037A4', '#0A2A80']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(252,211,77,0)', '#FCD34D', 'rgba(252,211,77,0)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={s.heroGoldLine}
+          />
           <FloatView style={s.heroDecor1} distance={9} period={4200} />
           <FloatView style={s.heroDecor2} distance={7} period={3600} delay={600} />
           <View style={s.heroTopRow}>
             <View style={{ flex: 1 }}>
-              <AppText style={s.heroLabel}>👑 {t('eb_currentPlan')}</AppText>
+              <View style={s.heroLabelRow}>
+                <PulseView active scaleTo={1.18} period={1700}>
+                  <AppText style={s.heroCrown}>👑</AppText>
+                </PulseView>
+                <AppText style={s.heroLabel}>{t('eb_currentPlan')}</AppText>
+              </View>
               <AppText style={s.heroTitle}>{t('eb_planNameFmt', { type: typeLabel })}</AppText>
               <AppText style={s.heroTagline}>{t(PLAN_META[typeKey].taglineKey)}</AppText>
               <View style={[s.statusChip, { backgroundColor: isActive ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.22)' }]}>
+                <PulseView active scaleTo={1.5} period={1200}>
+                  <View style={[s.statusDot, { backgroundColor: isActive ? '#4ADE80' : '#F87171' }]} />
+                </PulseView>
                 <AppText style={[s.statusChipTxt, { color: isActive ? '#86EFAC' : '#FCA5A5' }]}>
                   {isActive ? t('eb_activeExpires', { date: fmtExpiry(profile?.subscriptionExpery) }) : t('eb_noSub')}
                 </AppText>
@@ -278,12 +301,14 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 { label: t('eb_contactsLeft'), value: isActive ? remainingContacts : '—' },
                 { label: t('eb_postsLeft'),    value: isActive ? remainingPosts : '—' },
               ].map((stat) => (
-                <View key={stat.label} style={s.heroStatBox}>
+                <FadeInView key={stat.label} delay={200} distance={10}>
+                <View style={s.heroStatBox}>
                   {typeof stat.value === 'number'
                     ? <CountUpText value={stat.value} duration={800} style={s.heroStatVal} />
                     : <AppText style={s.heroStatVal}>{stat.value}</AppText>}
-                  <AppText style={s.heroStatLabel}>{stat.label}</AppText>
+                  <AppText numberOfLines={2} style={s.heroStatLabel}>{stat.label}</AppText>
                 </View>
+                </FadeInView>
               ))}
             </View>
           </View>
@@ -299,6 +324,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               </View>
             </View>
           )}
+          <ShimmerSweep rest={3200} tint="rgba(255,255,255,0.16)" />
         </View>
         </FadeInView>
 
@@ -415,7 +441,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 </View>
               ) : (
                 <PulseView active={isRecommended} scaleTo={1.03} period={1700} style={s.planBtnWrap}>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     style={[s.planBtn, s.planBtnClip, { backgroundColor: BRAND }]}
                     activeOpacity={0.85}
                     onPress={() => openModal(pk)}
@@ -444,7 +470,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
 
       {/* ── Upgrade / buy modal ── */}
       <Modal visible={modalType !== null} transparent animationType="slide" onRequestClose={() => setModalType(null)}>
-        <View style={s.modalBackdrop}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.modalBackdrop}>
           <View style={[s.modalSheet, { backgroundColor: theme.colors.card }]}>
             <View style={[s.modalHead, { backgroundColor: BRAND }]}>
               <View style={{ flex: 1 }}>
@@ -453,12 +479,12 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                   {modalType ? t('eb_upgradeToFmt', { type: t(TYPE_NAME_KEY[modalType]) }) : ''}
                 </AppText>
               </View>
-              <TouchableOpacity onPress={() => setModalType(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setModalType(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <AppText style={s.modalClose}>✕</AppText>
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
               <AppText style={[s.sectionLabel, { color: theme.colors.mutedText, marginBottom: 10 }]}>{t('eb_selectDuration')}</AppText>
               {modalType && DURATIONS.map((d) => {
                 const price = priceFor(modalType, d.id);
@@ -466,7 +492,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 const disc = calcDiscount(m, price);
                 const selected = selectedDuration === d.id;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={d.id}
                     activeOpacity={0.85}
                     onPress={() => changeDuration(d.id)}
@@ -500,7 +526,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                           {t('eb_couponSavedFmt', { percent: appliedCoupon.discountPercent, amount: appliedCoupon.discountAmount })}
                         </AppText>
                       </View>
-                      <TouchableOpacity onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <TouchableOpacity accessibilityRole="button" onPress={removeCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <AppText style={{ color: theme.colors.mutedText, fontSize: 13 }}>{t('eb_couponRemove')}</AppText>
                       </TouchableOpacity>
                     </View>
@@ -514,7 +540,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                         autoCapitalize="characters"
                         style={[s.couponInput, { borderColor: couponError ? '#DC2626' : theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.surface1 }]}
                       />
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         onPress={() => void checkCoupon()}
                         disabled={!couponInput.trim() || couponChecking}
                         style={[s.couponApplyBtn, { backgroundColor: BRAND, opacity: (!couponInput.trim() || couponChecking) ? 0.5 : 1 }]}
@@ -562,7 +588,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
                 );
               })()}
 
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[s.payBtn, { backgroundColor: BRAND, opacity: paying ? 0.7 : 1 }]}
                 activeOpacity={0.85}
                 disabled={paying}
@@ -574,7 +600,7 @@ export const EmployerBenefitsScreen = (): React.JSX.Element => {
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <GstPromptModal
@@ -596,15 +622,19 @@ const s = StyleSheet.create({
   heroDecor1:  { position: 'absolute', top: -40, right: -30, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.05)' },
   heroDecor2:  { position: 'absolute', bottom: -50, left: '35%', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroTopRow:  { flexDirection: 'row', gap: 14 },
-  heroLabel:   { color: 'rgba(255,255,255,0.65)', fontSize: 11, lineHeight: 16, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
+  heroGoldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
+  heroLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  heroCrown:   { fontSize: 14, lineHeight: 20 },
+  statusDot:   { width: 7, height: 7, borderRadius: 4 },
+  heroLabel:   { color: '#FCD34D', fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
   heroTitle:   { color: WHITE, fontSize: 23, lineHeight: 32, fontWeight: '900', letterSpacing: -0.4, marginBottom: 3 },
   heroTagline: { color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 17, marginBottom: 10 },
-  statusChip:  { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  statusChip:  { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   statusChipTxt: { fontSize: 11, fontWeight: '700' },
   heroStats:   { gap: 8 },
-  heroStatBox: { minWidth: 76, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  heroStatBox: { width: 104, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   heroStatVal: { color: WHITE, fontSize: 20, fontWeight: '900', lineHeight: 22 },
-  heroStatLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: '600', marginTop: 2 },
+  heroStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, lineHeight: 14, fontWeight: '600', marginTop: 2, textAlign: 'center' },
   usageWrap:   { marginTop: 16 },
   usageHeadRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   usageLabel:  { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '600', flexShrink: 1 },

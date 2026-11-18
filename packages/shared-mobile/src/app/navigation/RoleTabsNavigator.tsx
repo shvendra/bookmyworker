@@ -1,3 +1,4 @@
+import { boundedScreenLayout } from '../../shared/components/feedback/SafeBoundary';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -323,6 +324,7 @@ export const RoleTabsNavigator = ({ role }: RoleTabsNavigatorProps): React.JSX.E
 
   return (
     <Tab.Navigator
+      screenLayout={boundedScreenLayout}
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <CustomTabBar {...props} tabConfigs={tabs} />}
     >

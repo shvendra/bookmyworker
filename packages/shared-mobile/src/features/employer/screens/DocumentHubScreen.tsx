@@ -2,7 +2,9 @@ import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   StatusBar,
   StyleSheet,
@@ -25,10 +27,10 @@ import { documentApi } from '../../../core/api/endpoints/documentApi';
 import type { EmployerDocument, DocType } from '../../../core/api/endpoints/documentApi';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'DocumentHub'>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const BRAND = '#1037A4';
 const NAVY  = '#0F172A';
 const SLATE = '#64748B';
 const WHITE = '#FFFFFF';
@@ -110,12 +112,12 @@ function DocCard({
 
       {/* Actions */}
       <View style={[dc.actions, { borderTopColor: theme.colors.divider }]}>
-        <TouchableOpacity onPress={onView} style={dc.viewBtn} activeOpacity={0.8}>
+        <TouchableOpacity accessibilityRole="button" onPress={onView} style={dc.viewBtn} activeOpacity={0.8}>
           <AppText style={dc.viewBtnTxt}>
             {isPdf(doc.mimeType) ? t('viewPdf') : t('viewImage')}
           </AppText>
         </TouchableOpacity>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onDelete}
           style={dc.deleteBtn}
           activeOpacity={0.8}
@@ -243,12 +245,12 @@ function UploadModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={um.overlay}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={um.overlay}>
         <View style={[um.sheet, { backgroundColor: theme.colors.card }]}>
           {/* Header */}
           <View style={um.header}>
             <AppText style={[um.headerTitle, { color: theme.colors.text }]}>{t('uploadDocumentTitle')}</AppText>
-            <TouchableOpacity onPress={handleClose} style={[um.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleClose} style={[um.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
               <AppText style={{ color: theme.colors.mutedText, fontSize: 18, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -270,7 +272,7 @@ function UploadModal({
             {DOC_TYPES.map((docTypeItem) => {
               const meta = DOC_TYPE_META[docTypeItem]!;
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={docTypeItem}
                   onPress={() => setDocType(docTypeItem)}
                   style={[
@@ -295,17 +297,17 @@ function UploadModal({
             <View style={[um.filePreview, { borderColor: GREEN, backgroundColor: theme.colors.successLight }]}>
               <AppText style={[um.fileName, { color: theme.colors.text }]} numberOfLines={2}>{file.name}</AppText>
               <AppText style={[um.fileSize, { color: theme.colors.mutedText }]}>{formatFileSize(file.size)}</AppText>
-              <TouchableOpacity onPress={() => setFile(null)} style={um.removeFileBtn}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setFile(null)} style={um.removeFileBtn}>
                 <AppText style={{ color: RED, fontSize: 12, fontWeight: '700' }}>{t('removeFile')}</AppText>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={um.pickerRow}>
-              <TouchableOpacity onPress={pickPDF} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
+              <TouchableOpacity accessibilityRole="button" onPress={pickPDF} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
                 <AppText style={um.pickerIcon}>📄</AppText>
                 <AppText style={[um.pickerTxt, { color: theme.colors.text }]}>{t('pdfLabel')}</AppText>
               </TouchableOpacity>
-              <TouchableOpacity onPress={pickImage} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
+              <TouchableOpacity accessibilityRole="button" onPress={pickImage} style={[um.pickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface1 }]} activeOpacity={0.8}>
                 <AppText style={um.pickerIcon}>🖼️</AppText>
                 <AppText style={[um.pickerTxt, { color: theme.colors.text }]}>{t('imageLabel')}</AppText>
               </TouchableOpacity>
@@ -313,7 +315,7 @@ function UploadModal({
           )}
 
           {/* Upload button */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => void handleUpload()}
             style={[um.uploadBtn, (uploading || !file || !docName.trim()) && { opacity: 0.55 }]}
             disabled={uploading || !file || !docName.trim()}
@@ -324,7 +326,7 @@ function UploadModal({
               : <AppText style={um.uploadBtnTxt}>{t('uploadDocument')}</AppText>}
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -430,7 +432,7 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
           </AppText>
           <AppText style={[hs.stripSub, { color: theme.colors.mutedText }]}>{t('noDocumentsDesc')}</AppText>
         </View>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => setUploadVisible(true)}
           style={hs.uploadBtn}
           activeOpacity={0.85}
@@ -449,7 +451,7 @@ export const DocumentHubScreen = ({ route, navigation }: Props): React.JSX.Eleme
           <AppText style={hs.emptyEmoji}>📁</AppText>
           <AppText style={[hs.emptyTitle, { color: theme.colors.text }]}>{t('noDocuments')}</AppText>
           <AppText style={[hs.emptySub, { color: theme.colors.mutedText }]}>{t('noDocumentsDesc')}</AppText>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => setUploadVisible(true)}
             style={hs.emptyUploadBtn}
             activeOpacity={0.85}

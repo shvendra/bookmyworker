@@ -14,8 +14,8 @@ import { applyBgcPrefill, bgcInr, emptyBgcWorker, validateBgcWorker, type BgcWor
 import { BgcWorkerDocs } from '../components/BgcDocUploader';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'BgcEnroll'>;
-const BRAND = '#1037A4';
 const GENDERS = ['Male', 'Female', 'Other'];
 
 export const BgcEnrollScreen = ({ navigation }: Props): React.JSX.Element => {

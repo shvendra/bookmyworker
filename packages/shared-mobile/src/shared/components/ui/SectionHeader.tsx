@@ -42,7 +42,7 @@ export const SectionHeader = ({
         </View>
       </View>
       {actionLabel && onAction ? (
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onAction}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={styles.actionBtn}

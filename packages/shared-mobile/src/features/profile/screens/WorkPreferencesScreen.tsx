@@ -26,6 +26,7 @@ import { indianStates } from '../../../shared/data/stateDistrict';
 import { workerNeedsEducationDoc } from '../../../shared/utils/labelUtils';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkPreferences'>;
 
 // ── All India districts flattened for serviceable-area search ─────────────────
@@ -237,7 +238,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('wpref_title')} onBack={() => navigation.goBack()} />
       <ScrollView
         style={{ flex: 1 }}
@@ -260,7 +261,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
               </View>
             </View>
             <View style={styles.resumeActions}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={[styles.resumeBtn, { backgroundColor: '#d97706' }, uploadingResume && { opacity: 0.55 }]}
                 onPress={() => void handlePickResume()}
                 disabled={uploadingResume}
@@ -271,7 +272,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
                 </AppText>
               </TouchableOpacity>
               {resumeUrl ? (
-                <TouchableOpacity style={styles.resumeViewBtn} onPress={handleViewResume} activeOpacity={0.85}>
+                <TouchableOpacity accessibilityRole="button" style={styles.resumeViewBtn} onPress={handleViewResume} activeOpacity={0.85}>
                   <AppText style={styles.resumeViewTxt}>👁 {t('viewResume')}</AppText>
                 </TouchableOpacity>
               ) : null}
@@ -285,7 +286,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
           {ALL_CATS.map((cat) => {
             const sel = selectedCats.includes(cat.value);
             return (
-              <TouchableOpacity key={cat.value} onPress={() => toggleCat(cat.value)} activeOpacity={0.75} style={[styles.chip, sel ? chipSelected : chipIdle]}>
+              <TouchableOpacity accessibilityRole="button" key={cat.value} onPress={() => toggleCat(cat.value)} activeOpacity={0.75} style={[styles.chip, sel ? chipSelected : chipIdle]}>
                 <AppText style={[styles.chipText, { color: sel ? '#fff' : theme.colors.text }]}>{getCatLabel(cat, lang)}{sel ? ' ✓' : ''}</AppText>
               </TouchableOpacity>
             );
@@ -307,7 +308,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
                 autoCorrect={false}
               />
               {subSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setSubSearch('')}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => setSubSearch('')}>
                   <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
                 </TouchableOpacity>
               )}
@@ -316,7 +317,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
               {filteredSubs.map((sub) => {
                 const sel = selectedSubs.includes(sub.value);
                 return (
-                  <TouchableOpacity key={sub.value} onPress={() => toggleSub(sub.value)} activeOpacity={0.75} style={[styles.chip, sel ? chipSelected : chipIdle]}>
+                  <TouchableOpacity accessibilityRole="button" key={sub.value} onPress={() => toggleSub(sub.value)} activeOpacity={0.75} style={[styles.chip, sel ? chipSelected : chipIdle]}>
                     <AppText style={[styles.chipText, { color: sel ? '#fff' : theme.colors.text }]}>{getSubLabel(sub, lang)}{sel ? ' ✓' : ''}</AppText>
                   </TouchableOpacity>
                 );
@@ -341,7 +342,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
             autoCorrect={false}
           />
           {areaSearch.length > 0 && (
-            <TouchableOpacity onPress={() => setAreaSearch('')}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setAreaSearch('')}>
               <AppText style={{ fontSize: 14, color: theme.colors.mutedText, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           )}
@@ -351,7 +352,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
             {filteredDistricts.map((d) => {
               const selected = areas.includes(d.label);
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={`${d.state}-${d.label}`}
                   onPress={() => { toggleArea(d.label); setAreaSearch(''); }}
                   activeOpacity={0.7}
@@ -372,7 +373,7 @@ export const WorkPreferencesScreen = ({ navigation }: Props): React.JSX.Element 
             <AppText style={fieldLabelStyle}>{t('wpc_selected', 'Selected')} ({areas.length})</AppText>
             <View style={styles.chipRow}>
               {areas.map((a) => (
-                <TouchableOpacity key={a} onPress={() => setAreas((prev) => prev.filter((x) => x !== a))} style={[styles.areaTag, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]} activeOpacity={0.7}>
+                <TouchableOpacity accessibilityRole="button" key={a} onPress={() => setAreas((prev) => prev.filter((x) => x !== a))} style={[styles.areaTag, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + '40' }]} activeOpacity={0.7}>
                   <AppText style={{ fontSize: 12.5, fontWeight: '600', color: theme.colors.primary, marginRight: 4, flexShrink: 1 }}>{formatAreaLabel(a)}</AppText>
                   <AppText style={{ fontSize: 15, fontWeight: '700', color: theme.colors.primary }}>×</AppText>
                 </TouchableOpacity>

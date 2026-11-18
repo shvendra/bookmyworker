@@ -13,6 +13,7 @@ import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 import { classifySubscriptionError, promptSubscription } from '../../payment/subscriptionPrompt';
 
+import { BRAND } from '../../../core/theme/brand';
 // Birth year / legacy age / full date string / timestamp → current age string.
 const getAge = (dob?: string | number): string => ageString(dob);
 
@@ -169,7 +170,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
               <AppText style={s.headerTitle} numberOfLines={2}>{t('wp_inviteTitle')}</AppText>
               {!!headerLabel && <AppText style={s.headerSub} numberOfLines={2}>{headerLabel}</AppText>}
             </View>
-            <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={s.closeBtn}>
               <AppText style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -217,17 +218,17 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                     <View style={s.actions}>
                       {unlockedPhones[w._id] ? (
                         <View style={{ gap: 6 }}>
-                          <TouchableOpacity onPress={() => void Linking.openURL(`tel:${unlockedPhones[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
+                          <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${unlockedPhones[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
                             <AppText style={s.phoneTxt} numberOfLines={1}>📞 {unlockedPhones[w._id]}</AppText>
                           </TouchableOpacity>
                           {unlockedAlternates[w._id] ? (
-                            <TouchableOpacity onPress={() => void Linking.openURL(`tel:${unlockedAlternates[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
+                            <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(`tel:${unlockedAlternates[w._id]}`)} style={s.phoneBtn} activeOpacity={0.8}>
                               <AppText style={s.phoneTxt} numberOfLines={1}>📲 {unlockedAlternates[w._id]}</AppText>
                             </TouchableOpacity>
                           ) : null}
                         </View>
                       ) : (
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => void viewContact(w)}
                           disabled={!!unlockingId}
                           style={[s.contactIconBtn, !!unlockingId && { opacity: 0.5 }]}
@@ -250,7 +251,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
                           <AppText style={s.invitedLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('wp_invited')}</AppText>
                         </View>
                       ) : (
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => void invite(w)}
                           disabled={!!invitingId}
                           style={[s.inviteBtn, !!invitingId && { opacity: 0.5 }]}
@@ -282,7 +283,7 @@ export const SuggestedWorkersModal = ({ visible, onClose, requirementId, workTyp
 const s = StyleSheet.create({
   overlay:       { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end' },
   sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, height: '92%', overflow: 'hidden' },
-  header:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#1037A4' },
+  header:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, backgroundColor: BRAND },
   headerTitle:   { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub:     { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   closeBtn:      { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' },

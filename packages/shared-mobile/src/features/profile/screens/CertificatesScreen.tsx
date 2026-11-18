@@ -68,7 +68,7 @@ const CertCard = ({ cert, index, onDelete, deleting }: CertCardProps) => {
     <View style={[cc.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       <View style={cc.row}>
         {/* Thumbnail or PDF icon */}
-        <TouchableOpacity onPress={handleOpen} activeOpacity={0.8} style={[cc.thumb, { backgroundColor: isPdf ? '#FEF3C7' : theme.colors.surface }]}>
+        <TouchableOpacity accessibilityRole="button" onPress={handleOpen} activeOpacity={0.8} style={[cc.thumb, { backgroundColor: isPdf ? '#FEF3C7' : theme.colors.surface }]}>
           {isPdf ? (
             <AppText style={cc.pdfIcon}>📄</AppText>
           ) : (
@@ -81,12 +81,12 @@ const CertCard = ({ cert, index, onDelete, deleting }: CertCardProps) => {
           <AppText style={[cc.date, { color: theme.colors.mutedText }]}>
             {new Date(cert.uploadedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
           </AppText>
-          <TouchableOpacity onPress={handleOpen} activeOpacity={0.8}>
+          <TouchableOpacity accessibilityRole="button" onPress={handleOpen} activeOpacity={0.8}>
             <AppText style={[cc.view, { color: BRAND }]}>{t('cert_view')} →</AppText>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => onDelete(index)}
           disabled={deleting}
           style={cc.delBtn}
@@ -349,7 +349,7 @@ export const CertificatesScreen = (): React.JSX.Element => {
                 const loading = uploadingSource === src && uploadCertMutation.isPending;
                 const disabled = uploadCertMutation.isPending;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={src}
                     onPress={() => handleUploadCert(src)}
                     disabled={disabled}
@@ -415,7 +415,7 @@ export const CertificatesScreen = (): React.JSX.Element => {
                   <AppText style={s.licenceIcon}>📄</AppText>
                   <View style={{ flex: 1 }}>
                     <AppText style={[s.licenceName, { color: theme.colors.text }]}>{t('regResumeUploaded')}</AppText>
-                    <TouchableOpacity onPress={() => void Linking.openURL(resumeUrl)} activeOpacity={0.8}>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(resumeUrl)} activeOpacity={0.8}>
                       <AppText style={[s.licenceView, { color: BRAND }]}>{t('cert_view')} →</AppText>
                     </TouchableOpacity>
                   </View>
@@ -428,7 +428,7 @@ export const CertificatesScreen = (): React.JSX.Element => {
               </View>
             )}
 
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => { if (!uploadResumeMutation.isPending) uploadResumeMutation.mutate(); }}
               disabled={uploadResumeMutation.isPending}
               style={[s.emptyBox, { backgroundColor: theme.colors.card, borderColor: BRAND + '60', marginTop: 12, flexDirection: 'row', justifyContent: 'center', gap: 8 }]}
@@ -454,11 +454,11 @@ export const CertificatesScreen = (): React.JSX.Element => {
                   <AppText style={s.licenceIcon}>📄</AppText>
                   <View style={{ flex: 1 }}>
                     <AppText style={[s.licenceName, { color: theme.colors.text }]}>{t('cert_licenceUploaded')}</AppText>
-                    <TouchableOpacity onPress={() => void Linking.openURL(licenceUrl)} activeOpacity={0.8}>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => void Linking.openURL(licenceUrl)} activeOpacity={0.8}>
                       <AppText style={[s.licenceView, { color: BRAND }]}>{t('cert_view')} →</AppText>
                     </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={handleDeleteLicence}
                     disabled={deleteLicenceMutation.isPending}
                     style={cc.delBtn}
@@ -494,7 +494,7 @@ export const CertificatesScreen = (): React.JSX.Element => {
                 const loading = licenceUploadingSource === src && uploadLicenceMutation.isPending;
                 const disabled = uploadLicenceMutation.isPending;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={src}
                     onPress={() => handleUploadLicence(src)}
                     disabled={disabled}

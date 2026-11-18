@@ -24,10 +24,10 @@ import { subcatDisplay } from '../../../shared/data/categoryLabels';
 import { useAuth } from '../../../state/auth/AuthContext';
 import type { MainStackParamList } from '../../../app/navigation/types';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'RequirementCalendar'>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const BRAND = '#1037A4';
 const NAVY  = '#0F172A';
 const SLATE = '#64748B';
 const WHITE = '#FFFFFF';
@@ -133,7 +133,7 @@ function ReqCard({
 
   const { theme } = useAppTheme();
   return (
-    <TouchableOpacity onPress={onPress} style={[rcs.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} activeOpacity={0.85}>
+    <TouchableOpacity accessibilityRole="button" onPress={onPress} style={[rcs.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} activeOpacity={0.85}>
       <View style={rcs.top}>
         <View style={{ flex: 1 }}>
           <AppText style={[rcs.title, { color: theme.colors.text }]} numberOfLines={2}>{title || 'Requirement'}</AppText>
@@ -262,13 +262,13 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
         <View style={[cal.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           {/* Month navigation */}
           <View style={cal.monthNav}>
-            <TouchableOpacity onPress={prevMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+            <TouchableOpacity accessibilityRole="button" onPress={prevMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
               <AppText style={[cal.navArrow, { color: theme.colors.text }]}>‹</AppText>
             </TouchableOpacity>
             <AppText style={[cal.monthTitle, { color: theme.colors.text }]}>
               {monthNames[viewMonth]} {viewYear}
             </AppText>
-            <TouchableOpacity onPress={nextMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
+            <TouchableOpacity accessibilityRole="button" onPress={nextMonth} style={[cal.navBtn, { backgroundColor: theme.colors.surface1 }]} activeOpacity={0.7}>
               <AppText style={[cal.navArrow, { color: theme.colors.text }]}>›</AppText>
             </TouchableOpacity>
           </View>
@@ -287,6 +287,15 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
             <View style={cal.loadingBox}>
               <ActivityIndicator color={BRAND} />
             </View>
+          ) : reqQuery.isError && !reqQuery.data ? (
+            <View style={cal.loadingBox}>
+              <AppText style={{ color: theme.colors.mutedText, textAlign: 'center', marginBottom: 10 }}>
+                {t('loadFailedBody', { defaultValue: 'Please check your internet connection and try again.' })}
+              </AppText>
+              <TouchableOpacity onPress={() => void reqQuery.refetch()} activeOpacity={0.8} accessibilityRole="button">
+                <AppText style={{ color: BRAND, fontWeight: '800' }}>{t('retry', { defaultValue: 'Retry' })}</AppText>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={cal.gridWrap}>
               {grid.map((day, idx) => {
@@ -300,7 +309,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
                 const dotColors  = reqs.slice(0, 3).map((r) => statusDotColor(r.status));
 
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={key}
                     style={[
                       cal.cell,
@@ -428,7 +437,7 @@ export const RequirementCalendarScreen = ({ navigation }: Props): React.JSX.Elem
                   <View style={cal.emptyMonth}>
                     <AppText style={cal.emptyMonthEmoji}>📋</AppText>
                     <AppText style={[cal.emptyMonthTxt, { color: theme.colors.mutedText }]}>{t('noReqScheduledMonth')}</AppText>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => navigation.navigate('PostRequirement')}
                       style={cal.postBtn}
                       activeOpacity={0.85}

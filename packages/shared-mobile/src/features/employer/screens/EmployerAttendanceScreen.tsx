@@ -30,10 +30,10 @@ import type { AttendanceRecord, JoinedWorker, WorkerSummary } from '../../../cor
 import type { MainStackParamList } from '../../../app/navigation/types';
 import { usePlanFeatures } from '../../../core/hooks/usePlanFeatures';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'EmployerAttendance'>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const BRAND  = '#1037A4';
 const GREEN  = '#059669';
 const RED    = '#DC2626';
 const AMBER  = '#D97706';
@@ -114,7 +114,7 @@ function DatePickerBar({
         const dayLabel = weekdays[dt.getUTCDay()];
         const dateLabel = dt.getUTCDate();
         return (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={d}
             onPress={() => onSelect(d)}
             style={[dp.cell, { backgroundColor: theme.colors.surface1, borderColor: 'transparent' }, isSelected && dp.cellActive]}
@@ -180,7 +180,7 @@ function WorkerRow({
         {BTN_DATA.map(({ key, labelKey, active, activeTxt, idleBorder }) => {
           const isActive = value.status === key;
           return (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={key}
               onPress={() => onChange({ ...value, status: key })}
               style={[wr.btn, {
@@ -454,7 +454,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <ScreenHeader title={t('attendanceStat')} onBack={() => navigation.goBack()} />
-        <ScrollView
+        <ScrollView keyboardShouldPersistTaps="handled"
           contentContainerStyle={[lock.scroll, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
         >
@@ -472,7 +472,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                 </View>
               ))}
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={lock.btn} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Subscription')} style={lock.btn} activeOpacity={0.85}>
               <AppText style={lock.btnTxt}>{t('pl_upgradeBtn')}</AppText>
             </TouchableOpacity>
           </View>
@@ -492,7 +492,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
       {/* ── Tabs ──────────────────────────────────────────────────────────── */}
       <View style={[styles.tabBar, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
         {(['mark', 'summary'] as const).map((tab) => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
@@ -519,7 +519,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
           </View>
 
           {joinedWorkers.length === 0 ? (
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
               {renderEmptyJoined()}
             </ScrollView>
           ) : (
@@ -546,13 +546,13 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                       <AppText style={[styles.dayHeaderSub, { color: theme.colors.mutedText }]}>{t('workerCount', { count: joinedWorkers.length })}</AppText>
                     </View>
                     <View style={styles.markAllRow}>
-                      <TouchableOpacity onPress={() => markAll('present')} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
+                      <TouchableOpacity accessibilityRole="button" onPress={() => markAll('present')} style={[styles.markAllBtn, { backgroundColor: theme.colors.successLight, borderColor: '#6EE7B7' }]} activeOpacity={0.75}>
                         <AppText style={[styles.markAllTxt, { color: GREEN }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allPresent')}</AppText>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => markAll('half_day')} style={[styles.markAllBtn, { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }]} activeOpacity={0.75}>
+                      <TouchableOpacity accessibilityRole="button" onPress={() => markAll('half_day')} style={[styles.markAllBtn, { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }]} activeOpacity={0.75}>
                         <AppText style={[styles.markAllTxt, { color: AMBER }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allHalf')}</AppText>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => markAll('absent')} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
+                      <TouchableOpacity accessibilityRole="button" onPress={() => markAll('absent')} style={[styles.markAllBtn, { backgroundColor: theme.colors.dangerLight, borderColor: '#FECACA' }]} activeOpacity={0.75}>
                         <AppText style={[styles.markAllTxt, { color: RED }]} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.2}>{t('allAbsent')}</AppText>
                       </TouchableOpacity>
                     </View>
@@ -572,7 +572,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
           {/* Sticky submit */}
           {joinedWorkers.length > 0 && (
             <View style={[styles.footer, { paddingBottom: insets.bottom + 12, backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => void handleSubmit()}
                 style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
                 activeOpacity={0.85}
@@ -585,7 +585,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
               </TouchableOpacity>
 
               {/* History toggle */}
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => setShowHistory(true)}
                 style={styles.historyBtn}
                 activeOpacity={0.75}
@@ -654,7 +654,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
           <View style={[hm.sheet, { backgroundColor: theme.colors.card, paddingBottom: insets.bottom + 16 }]}>
             <View style={[hm.header, { borderBottomColor: theme.colors.border }]}>
               <AppText style={[hm.title, { color: theme.colors.text }]}>{t('attendanceHistoryTitle')}</AppText>
-              <TouchableOpacity onPress={() => setShowHistory(false)} style={[hm.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setShowHistory(false)} style={[hm.closeBtn, { backgroundColor: theme.colors.surface1 }]}>
                 <AppText style={{ color: theme.colors.mutedText, fontSize: 18, fontWeight: '700' }}>✕</AppText>
               </TouchableOpacity>
             </View>
@@ -677,7 +677,7 @@ export const EmployerAttendanceScreen = ({ route, navigation }: Props): React.JS
                   const badgeBg = presentCount === total ? theme.colors.successLight : presentCount === 0 ? theme.colors.dangerLight : theme.colors.warningLight;
                   const badgeColor = presentCount === total ? GREEN : presentCount === 0 ? RED : AMBER;
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => { setShowHistory(false); handleDateChange(date); }}
                       style={[hm.dayRow, { backgroundColor: theme.colors.surface1, borderColor: theme.colors.border }]}
                       activeOpacity={0.75}

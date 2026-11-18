@@ -22,6 +22,7 @@ import { LoadingState } from '../../../shared/components/feedback/LoadingState';
 import { ErrorState } from '../../../shared/components/feedback/ErrorState';
 import { EmptyState } from '../../../shared/components/feedback/EmptyState';
 
+import { BRAND } from '../../../core/theme/brand';
 const FILTER_TYPES = ['all', 'payout', 'commission', 'topup', 'charge'] as const;
 type FilterType = typeof FILTER_TYPES[number];
 
@@ -149,7 +150,7 @@ export const WalletScreen = (): React.JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title="My Payments" />
       <ScrollView
         style={[styles.scroll, { backgroundColor: theme.colors.background }]}

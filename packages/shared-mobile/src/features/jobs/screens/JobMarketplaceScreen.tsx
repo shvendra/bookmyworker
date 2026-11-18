@@ -37,6 +37,7 @@ import categoriesData from '../../../shared/data/categories.json';
 import { getJobTitle, getCategoryLabel, getLocationStr, getSubCatLabel } from '../../../shared/utils/labelUtils';
 import { buildJobShareMessage } from '../../../shared/utils/jobShare';
 
+import { BRAND } from '../../../core/theme/brand';
 type RouteProps = RouteProp<MainStackParamList, 'JobMarketplace'>;
 
 interface CategoryEntry {
@@ -79,7 +80,7 @@ const WORK_TYPE_VISUALS: Record<string, WorkVisual> = {
   'Specialized & Creative Workers':     { emoji: '🎨', color: '#6D28D9', bg: '#EDE9FE' },
   'Security & Facility Worker':         { emoji: '👮', color: '#1F2937', bg: '#F1F5F9' },
 };
-const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: '#1037A4', bg: '#EBF1FF' };
+const DEFAULT_VISUAL: WorkVisual = { emoji: '👷', color: BRAND, bg: '#EBF1FF' };
 
 // Subcategory keyword → emoji overrides (applied on top of work-type base visual)
 const SUB_EMOJI_RULES: Array<{ pattern: RegExp; emoji: string }> = [
@@ -203,7 +204,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
   };
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       onPress={handleCardPress}
       activeOpacity={0.97}
       style={[styles.reqCard, { backgroundColor: cardBg, borderColor: borderCol }, boosted && { borderWidth: 1.5 }]}
@@ -252,7 +253,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
           </AppText>
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={() => onLike(req._id)}
           activeOpacity={0.75}
           style={[styles.likeBtn, { backgroundColor: isLiked ? '#FEE2E2' : (isDark ? theme.colors.surface : '#F8FAFC') }]}
@@ -352,7 +353,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
       {/* ── Action row ───────────────────────────────────────── */}
       <View style={[styles.actionRow, { borderTopColor: isDark ? theme.colors.border : '#F1F5F9' }]}>
         <View style={styles.actionRight}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={() => { void handleShare(); }}
             style={[styles.shareBtn, { borderColor: isDark ? theme.colors.border : '#E2E8F0', backgroundColor: isDark ? theme.colors.surface : '#F8FAFC' }]}
             activeOpacity={0.75}
@@ -365,7 +366,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
               SelfWorker: can call freely.
               Agent: must have verified badge, else show badge gate message. */}
           {req.employerSubscribed && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => {
                 if (!isSelfWorker && isAgent && !isVerifiedAgent) {
                   showAlert(
@@ -386,7 +387,7 @@ const ReqCard = React.memo(({ req, isAgent, isVerifiedAgent, isSelfWorker, alrea
           )}
 
           {isAgent && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => !alreadyInterested && onInterest(req)}
               activeOpacity={alreadyInterested ? 1 : 0.8}
               style={[styles.applyBtn, { backgroundColor: alreadyInterested ? '#10B981' : visual.color }]}
@@ -419,8 +420,8 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button" style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity accessibilityRole="button"
           activeOpacity={1}
           style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}
         >
@@ -447,7 +448,7 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
                 paddingHorizontal: 24,
                 marginBottom: 24,
                 borderWidth: 1.5,
-                borderColor: loading ? theme.colors.border : (phone ? '#1037A4' + '40' : '#FECACA'),
+                borderColor: loading ? theme.colors.border : (phone ? BRAND + '40' : '#FECACA'),
                 width: '100%',
                 alignItems: 'center',
                 minHeight: 72,
@@ -455,8 +456,8 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
               }}>
                 {loading ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <ActivityIndicator size="small" color="#1037A4" />
-                    <AppText style={{ fontSize: 14, color: '#1037A4', fontWeight: '600' }}>{t('fetchingContact')}</AppText>
+                    <ActivityIndicator size="small" color={BRAND} />
+                    <AppText style={{ fontSize: 14, color: BRAND, fontWeight: '600' }}>{t('fetchingContact')}</AppText>
                   </View>
                 ) : error ? (
                   <View style={{ alignItems: 'center', gap: 4 }}>
@@ -465,8 +466,8 @@ const ContactModal = ({ visible, name, phone, loading, error, onClose }: Contact
                   </View>
                 ) : phone ? (
                   <View style={{ alignItems: 'center', gap: 4 }}>
-                    <AppText style={{ fontSize: 11, fontWeight: '700', color: '#1037A4', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t('mobileNumber')}</AppText>
-                    <AppText style={{ fontSize: 26, fontWeight: '900', color: '#1037A4', letterSpacing: 2 }}>{phone}</AppText>
+                    <AppText style={{ fontSize: 11, fontWeight: '700', color: BRAND, letterSpacing: 0.5, textTransform: 'uppercase' }}>{t('mobileNumber')}</AppText>
+                    <AppText style={{ fontSize: 26, fontWeight: '900', color: BRAND, letterSpacing: 2 }}>{phone}</AppText>
                   </View>
                 ) : (
                   <View style={{ alignItems: 'center', gap: 4 }}>
@@ -522,8 +523,8 @@ const WageModal = ({ visible, req, onClose, onSubmit, loading }: WageModalProps)
         behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-          <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity accessibilityRole="button"
             activeOpacity={1}
             style={[styles.modalBox, { backgroundColor: theme.colors.surface }]}
           >
@@ -813,12 +814,12 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? theme.colors.background : '#F1F5F9' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
 
       {/* ── Green header ─────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerTopRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
             <AppText style={styles.backIcon}>←</AppText>
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
@@ -842,12 +843,12 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             returnKeyType="search"
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearch(''); setDebouncedSearch(''); }} hitSlop={8}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => { setSearch(''); setDebouncedSearch(''); }} hitSlop={8}>
               <AppText style={styles.searchBarClear}>✕</AppText>
             </TouchableOpacity>
           )}
           {!showLikedOnly && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setFilterSheetVisible(true)}
               style={[styles.filterIconBtn, { backgroundColor: hasFilters ? '#F97316' : 'rgba(255,255,255,0.18)' }]}
               activeOpacity={0.8}
@@ -861,7 +862,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         {/* Jobs / Projects tab switcher */}
         {showPostingTabs && (
           <View style={styles.postingTabRow}>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setPostingTab('jobs')}
               activeOpacity={0.85}
               style={[styles.postingTabBtn, postingTab === 'jobs' && styles.postingTabBtnActive]}
@@ -870,7 +871,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
                 {t('proj_tabJobs')}
               </AppText>
             </TouchableOpacity>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setPostingTab('projects')}
               activeOpacity={0.85}
               style={[styles.postingTabBtn, postingTab === 'projects' && styles.postingTabBtnActive]}
@@ -890,13 +891,13 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               { id: 'salary',  icon: 'cash' as const,     label: t('sortHighSalary') },
               { id: 'new',     icon: 'flash' as const,    label: t('sortNewJobs') },
             ] as const).map((s) => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={s.id}
                 onPress={() => setSortMode(s.id)}
                 style={[styles.sortChip, sortMode === s.id && styles.sortChipActive]}
               >
                 <AppText style={[styles.sortChipText, sortMode === s.id && styles.sortChipTextActive]}>
-                  <Ionicons name={s.icon} size={12} color={sortMode === s.id ? '#1037A4' : 'rgba(255,255,255,0.85)'} />{' '}{s.label}
+                  <Ionicons name={s.icon} size={12} color={sortMode === s.id ? BRAND : 'rgba(255,255,255,0.85)'} />{' '}{s.label}
                 </AppText>
               </TouchableOpacity>
             ))}
@@ -912,7 +913,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               <AppText style={[styles.activeChipText, { color: theme.colors.primary }]}>
                 {(WORK_TYPE_VISUALS[selectedCategory] ?? DEFAULT_VISUAL).emoji} {getCategoryLabel(selectedCategory, t)}
               </AppText>
-              <TouchableOpacity onPress={() => { setSelectedCategory(''); setSelectedSubCat(''); }} hitSlop={8}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => { setSelectedCategory(''); setSelectedSubCat(''); }} hitSlop={8}>
                 <AppText style={[styles.activeChipX, { color: theme.colors.primary }]}>✕</AppText>
               </TouchableOpacity>
             </View>
@@ -922,7 +923,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               <AppText style={[styles.activeChipText, { color: '#6366F1' }]}>
                 {getSubCatLabel(selectedSubCat, i18n.language)}
               </AppText>
-              <TouchableOpacity onPress={() => setSelectedSubCat('')} hitSlop={8}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setSelectedSubCat('')} hitSlop={8}>
                 <AppText style={[styles.activeChipX, { color: '#6366F1' }]}>✕</AppText>
               </TouchableOpacity>
             </View>
@@ -995,7 +996,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
         transparent
         onRequestClose={() => setFilterSheetVisible(false)}
       >
-        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setFilterSheetVisible(false)} />
+        <TouchableOpacity accessibilityRole="button" style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setFilterSheetVisible(false)} />
         <View style={[styles.sheetContainer, { backgroundColor: theme.colors.surface }]}>
           {/* Handle */}
           <View style={[styles.sheetHandle, { backgroundColor: theme.colors.border }]} />
@@ -1004,7 +1005,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           <View style={styles.sheetHeader}>
             <AppText style={[styles.sheetTitle, { color: theme.colors.text }]}>{t('filterJobsTitle')}</AppText>
             {(pendingCategory || pendingSubCat) && (
-              <TouchableOpacity onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}>
                 <AppText style={styles.sheetClear}>{t('clearAllFilters')}</AppText>
               </TouchableOpacity>
             )}
@@ -1013,7 +1014,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
           <ScrollView style={styles.sheetBody} showsVerticalScrollIndicator={false}>
             {/* Work Category */}
             <AppText style={[styles.sheetSection, { color: theme.colors.mutedText }]}>{t('workCategorySection').toUpperCase()}</AppText>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => { setPendingCategory(''); setPendingSubCat(''); }}
               style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
             >
@@ -1025,7 +1026,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
               const v = WORK_TYPE_VISUALS[cat.value] ?? DEFAULT_VISUAL;
               const active = pendingCategory === cat.value;
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={cat.value}
                   onPress={() => { setPendingCategory(active ? '' : cat.value); setPendingSubCat(''); }}
                   style={[styles.sheetRow, { borderBottomColor: theme.colors.divider, backgroundColor: active ? theme.colors.primaryLight : 'transparent' }]}
@@ -1043,7 +1044,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
             {pendingSubCategories.length > 0 && (
               <>
                 <AppText style={[styles.sheetSection, { color: theme.colors.mutedText, marginTop: 16 }]}>{t('subCategorySection').toUpperCase()}</AppText>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => setPendingSubCat('')}
                   style={[styles.sheetRow, { borderBottomColor: theme.colors.divider }]}
                 >
@@ -1053,7 +1054,7 @@ export const JobMarketplaceScreen = (): React.JSX.Element => {
                 {pendingSubCategories.map((sc) => {
                   const active = pendingSubCat === sc.value;
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       key={sc.value}
                       onPress={() => setPendingSubCat(active ? '' : sc.value)}
                       style={[styles.sheetRow, { borderBottomColor: theme.colors.divider, backgroundColor: active ? '#EDE9FE' : 'transparent' }]}
@@ -1111,7 +1112,7 @@ const styles = StyleSheet.create({
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: '#1037A4',
+    backgroundColor: BRAND,
     paddingHorizontal: 16,
     paddingBottom: 14,
   },
@@ -1154,7 +1155,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.95)',
   },
   sortChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
-  sortChipTextActive: { color: '#1037A4', fontWeight: '800' },
+  sortChipTextActive: { color: BRAND, fontWeight: '800' },
 
   // ── Jobs / Projects tab switcher ────────────────────────────────────────────
   postingTabRow: {
@@ -1166,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   postingTabBtnActive: { backgroundColor: 'rgba(255,255,255,0.95)' },
   postingTabText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700' },
-  postingTabTextActive: { color: '#1037A4', fontWeight: '900' },
+  postingTabTextActive: { color: BRAND, fontWeight: '900' },
 
   // ── Active filter chips ──────────────────────────────────────────────────────
   activeFiltersRow: {
@@ -1213,7 +1214,7 @@ const styles = StyleSheet.create({
   },
   sheetRowEmoji: { fontSize: 20, lineHeight: 24, width: 28, textAlign: 'center' },
   sheetRowLabel: { flex: 1, fontSize: 14 },
-  sheetRowCheck: { fontSize: 16, fontWeight: '800', color: '#1037A4' },
+  sheetRowCheck: { fontSize: 16, fontWeight: '800', color: BRAND },
   sheetFooter: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
 
   // ── List ────────────────────────────────────────────────────────────────────
@@ -1223,7 +1224,7 @@ const styles = StyleSheet.create({
   reqCard: {
     marginBottom: 10, borderRadius: 16, borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 },
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
   cardTop: {
@@ -1285,7 +1286,7 @@ const styles = StyleSheet.create({
   viewContactBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8,
-    backgroundColor: '#1037A4', flexShrink: 0,
+    backgroundColor: BRAND, flexShrink: 0,
   },
   viewContactIcon: { fontSize: 13, lineHeight: 17 },
   viewContactText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', flexShrink: 0 },

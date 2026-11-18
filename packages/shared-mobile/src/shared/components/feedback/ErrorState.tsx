@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '../../../core/theme';
 import { AppButton } from '../ui/AppButton';
 import { AppText } from '../ui/AppText';
@@ -19,6 +20,7 @@ export const ErrorState = ({
 }: ErrorStateProps): React.JSX.Element => {
   const body = description ?? message ?? 'An unexpected error occurred. Please try again.';
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -37,7 +39,7 @@ export const ErrorState = ({
 
       {onRetry ? (
         <AppButton
-          title="Try again"
+          title={t('retry', { defaultValue: 'Try again' })}
           onPress={onRetry}
           variant="secondary"
           icon="↺"

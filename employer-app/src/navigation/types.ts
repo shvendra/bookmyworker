@@ -95,6 +95,7 @@ export type EmployerStackParamList = {
   // Viewed worker contacts history
   ViewedContacts: undefined;
   EmployerFeedback: { fromPrompt?: boolean } | undefined;
+  EmployerHelp: undefined;
   BgcHome: undefined;
   BgcEnroll: undefined;
   BgcOrders: undefined;

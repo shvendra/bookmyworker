@@ -26,6 +26,7 @@ import type { MainStackParamList } from '../../../app/navigation/types';
 import i18n from '../../../core/i18n';
 import { getLocationStr, getWorkTypeLabel, getSubCatLabel } from '../../../shared/utils/labelUtils';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'RequirementInvitations'>;
 
 // ─── Status tokens ────────────────────────────────────────────────────────────
@@ -252,7 +253,7 @@ const InvitationCard = React.memo(({ item }: { item: WorkerInvitation }): React.
           </View>
           {/* Call button */}
           {!!item.workerPhone && (
-            <TouchableOpacity onPress={handleCall} style={ic.callBtn} activeOpacity={0.8}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleCall} style={ic.callBtn} activeOpacity={0.8}>
               <AppText style={ic.callIcon}>{'📞'}</AppText>
               <AppText style={ic.callTxt}>{t('invCallBtn')}</AppText>
             </TouchableOpacity>
@@ -352,9 +353,9 @@ const SubscriptionLock = React.memo(({ onSubscribe, isExpired }: { onSubscribe: 
           ))}
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={onSubscribe}
-          style={[lk.btn, { backgroundColor: isExpired ? '#D97706' : '#1037A4' }]}
+          style={[lk.btn, { backgroundColor: isExpired ? '#D97706' : BRAND }]}
           activeOpacity={0.85}
         >
           <AppText style={lk.btnTxt}>{isExpired ? t('invRenewBtn') : t('invSubscribeBtn')}{'  →'}</AppText>
@@ -382,7 +383,7 @@ const lk = StyleSheet.create({
   check:       { width: 22, height: 22, borderRadius: 11, backgroundColor: '#1A56DB', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
   checkTxt:    { fontSize: 11, fontWeight: '900', color: '#fff', lineHeight: 14 },
   benefitTxt:  { flex: 1, minWidth: 0, fontSize: 13, fontWeight: '600', lineHeight: 20 },
-  btn:         { alignSelf: 'stretch', borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4, elevation: 2, shadowColor: '#1037A4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  btn:         { alignSelf: 'stretch', borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4, elevation: 2, shadowColor: BRAND, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8 },
   btnTxt:      { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.4 },
 });
 
@@ -485,7 +486,7 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
           const active = filter === key;
           const count  = key === 'all' ? allInvitations.length : allInvitations.filter((i) => i.status === key).length;
           return (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={key}
               onPress={() => setFilter(key)}
               style={[
@@ -531,7 +532,7 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
 
   return (
     <View style={[sc.root, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('workerInvitations')} onBack={() => navigation.goBack()} />
 
       {/* Loading */}
@@ -552,7 +553,7 @@ export const RequirementInvitationsScreen = ({ route, navigation }: Props): Reac
             <AppText style={sc.errorIcon}>{'⚠️'}</AppText>
           </View>
           <AppText style={[sc.errorTxt, { color: theme.colors.text }]}>{t('invCouldNotLoad')}</AppText>
-          <TouchableOpacity onPress={() => void refetch()} style={[sc.retryBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.85}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refetch()} style={[sc.retryBtn, { backgroundColor: theme.colors.primary }]} activeOpacity={0.85}>
             <AppText style={sc.retryTxt}>{t('retry')}</AppText>
           </TouchableOpacity>
         </View>
@@ -614,7 +615,7 @@ const sc = StyleSheet.create({
   sectionTitle:    { fontSize: 15, fontWeight: '900', letterSpacing: -0.2 },
   sectionCount:    { fontSize: 13, fontWeight: '700' },
   sectionRight:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginLeft: 'auto' },
-  inviteBtn:       { backgroundColor: '#1037A4', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  inviteBtn:       { backgroundColor: BRAND, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   inviteBtnTxt:    { color: '#fff', fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
 
   chipScroll:      { marginBottom: 14 },

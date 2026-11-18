@@ -24,6 +24,7 @@ import type { MainStackParamList } from '../../../app/navigation/types';
 import { getWorkTypeLabel, getSubCatLabel, getLocationStr } from '../../../shared/utils/labelUtils';
 import i18n from '../../../core/i18n';
 
+import { BRAND } from '../../../core/theme/brand';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const PAGE_LIMIT = 10;
@@ -336,7 +337,7 @@ export const InvitationsScreen = (): React.JSX.Element => {
 
   return (
     <View style={[s.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader title={t('jobInvitationsTitle')} onBack={() => navigation.goBack()} />
 
       {/* Filter chips — horizontally scrollable so labels never clip in any language */}

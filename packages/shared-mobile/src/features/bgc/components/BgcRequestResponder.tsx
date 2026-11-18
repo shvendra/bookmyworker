@@ -10,6 +10,7 @@ import { bgcApi, bgcError, type BgcCase, type BgcPickedFile, type BgcRequest } f
 import { bgcFmtSize, checkBgcFile } from '../bgcShared';
 import { DocTypeChips, chooseBgcFile } from './BgcDocUploader';
 
+import { BRAND } from '../../../core/theme/brand';
 /** Customer answering ONE open request: attach file(s) and/or type a message. */
 export const BgcRequestResponder = ({ caseId, request, onDone }: { caseId: string; request: BgcRequest; onDone: (c: BgcCase) => void }): React.JSX.Element => {
   const { t } = useTranslation('employer');
@@ -51,7 +52,7 @@ export const BgcRequestResponder = ({ caseId, request, onDone }: { caseId: strin
         <>
           <DocTypeChips value={docType} onChange={setDocType} />
           <TouchableOpacity onPress={() => { void attach(); }} accessibilityRole="button" accessibilityLabel={t('bgc_attachFile')} style={[s.drop, { borderColor: err.fields.files ? '#dc2626' : theme.colors.border }]}>
-            <Ionicons name="attach-outline" size={20} color="#1037A4" />
+            <Ionicons name="attach-outline" size={20} color={BRAND} />
             <AppText style={{ fontSize: 13, fontWeight: '700', color: theme.colors.text }}>{t('bgc_attachFile')}</AppText>
           </TouchableOpacity>
           {files.map((f, i) => (
@@ -67,7 +68,7 @@ export const BgcRequestResponder = ({ caseId, request, onDone }: { caseId: strin
       <AppInput label={needsFile ? t('bgc_messageOptional') : t('bgc_yourAnswer')} value={text} onChangeText={(v) => { setText(v); if (err.fields.text) setErr({ message: '', fields: {} }); }} multiline maxLength={1000} errorText={err.fields.text ? err.message : undefined} />
       {!!err.message && !err.fields.text && <AppText accessibilityRole="alert" style={s.err}>{err.message}</AppText>}
       <AppButton title={busy ? t('bgc_sending') : t('bgc_sendToTeam')} onPress={() => { void send(); }} disabled={busy} size="sm" style={{ marginTop: 8 }} />
-      {busy && <ActivityIndicator style={{ marginTop: 6 }} color="#1037A4" />}
+      {busy && <ActivityIndicator style={{ marginTop: 6 }} color={BRAND} />}
     </View>
   );
 };

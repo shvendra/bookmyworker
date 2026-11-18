@@ -1,3 +1,4 @@
+import { boundedScreenLayout } from '../../../packages/shared-mobile/src/shared/components/feedback/SafeBoundary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DarkTheme as NavigationDarkTheme,
@@ -70,6 +71,7 @@ import { BgcEnrollScreen } from '../../../packages/shared-mobile/src/features/bg
 import { BgcOrdersScreen } from '../../../packages/shared-mobile/src/features/bgc/screens/BgcOrdersScreen';
 import { ViewedContactsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/ViewedContactsScreen';
 import { EmployerFeedbackScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerFeedbackScreen';
+import { EmployerHelpScreen } from '../../../packages/shared-mobile/src/features/employer/screens/EmployerHelpScreen';
 import { DocumentHubScreen } from '../../../packages/shared-mobile/src/features/employer/screens/DocumentHubScreen';
 import { PdfViewerScreen } from '../../../packages/shared-mobile/src/features/profile/screens/PdfViewerScreen';
 import { RequirementInvitationsScreen } from '../../../packages/shared-mobile/src/features/employer/screens/RequirementInvitationsScreen';
@@ -192,7 +194,7 @@ export const AppNavigator = (): React.JSX.Element => {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }} screenLayout={boundedScreenLayout}>
         {state.status === 'unauthenticated' ? (
           // ── Auth screens ──────────────────────────────────────────
           <>
@@ -264,6 +266,7 @@ export const AppNavigator = (): React.JSX.Element => {
             <Stack.Screen name="CallHistory" component={CallHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="ViewedContacts" component={ViewedContactsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="EmployerFeedback" component={EmployerFeedbackScreen} options={{ animation: 'slide_from_bottom', headerShown: false }} />
+            <Stack.Screen name="EmployerHelp" component={EmployerHelpScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="BgcHome" component={BgcHomeScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="BgcEnroll" component={BgcEnrollScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             <Stack.Screen name="BgcOrders" component={BgcOrdersScreen} options={{ animation: 'slide_from_right', headerShown: false }} />

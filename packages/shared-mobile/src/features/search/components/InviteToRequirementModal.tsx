@@ -86,7 +86,7 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
               <AppText style={inv.headerTitle}>{t('wp_inviteTitle')}</AppText>
               <AppText style={inv.headerSub}>{workerName}</AppText>
             </View>
-            <TouchableOpacity onPress={onClose} style={inv.closeBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={inv.closeBtn}>
               <AppText style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: '700' }}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -100,7 +100,7 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
               <AppText style={{ fontSize: 30, marginBottom: 8 }}>📋</AppText>
               <AppText style={inv.emptyTitle}>{t('wp_noOpenReqs')}</AppText>
               <AppText style={inv.emptyDesc}>{t('wp_inviteEmptyDesc')}</AppText>
-              <TouchableOpacity onPress={() => { onClose(); navInv.navigate('PostRequirement'); }} style={[inv.postBtn, { backgroundColor: '#7C3AED' }]} activeOpacity={0.85}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => { onClose(); navInv.navigate('PostRequirement'); }} style={[inv.postBtn, { backgroundColor: '#7C3AED' }]} activeOpacity={0.85}>
                 <AppText style={inv.postBtnTxt}>{t('wp_postReq')}</AppText>
               </TouchableOpacity>
             </View>
@@ -114,7 +114,7 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
               renderItem={({ item: r }) => {
                 const isChk = selected === r._id;
                 return (
-                  <TouchableOpacity onPress={() => setSelected(r._id)} style={[inv.reqRow, isChk && { backgroundColor: '#F5F3FF' }]} activeOpacity={0.7}>
+                  <TouchableOpacity accessibilityRole="button" onPress={() => setSelected(r._id)} style={[inv.reqRow, isChk && { backgroundColor: '#F5F3FF' }]} activeOpacity={0.7}>
                     <View style={[inv.radio, isChk && { backgroundColor: '#7C3AED', borderColor: '#7C3AED' }]}>
                       {isChk && <View style={inv.radioDot} />}
                     </View>
@@ -131,10 +131,10 @@ export const InviteToRequirementModal = ({ visible, onClose, workerId, workerNam
           )}
 
           <View style={inv.footer}>
-            <TouchableOpacity onPress={onClose} style={inv.cancelBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={onClose} style={inv.cancelBtn}>
               <AppText style={inv.cancelTxt}>{t('wp_cancel')}</AppText>
             </TouchableOpacity>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => void handleSend()}
               disabled={saving || !selected}
               style={[inv.saveBtn, (!selected || saving) && { opacity: 0.5 }]}

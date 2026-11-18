@@ -196,7 +196,7 @@ export const ViewedContactsScreen = ({ navigation }: Props): React.JSX.Element =
                 <AppText style={sc.emptyEmoji}>👁️</AppText>
                 <AppText style={[sc.emptyTitle, { color: theme.colors.text }]}>{t('vcEmptyTitle')}</AppText>
                 <AppText style={[sc.emptySub, { color: theme.colors.mutedText }]}>{t('vcEmptyDesc')}</AppText>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={() => navigation.navigate('WorkerSearch')}
                   style={sc.browseBtn}
                   activeOpacity={0.85}

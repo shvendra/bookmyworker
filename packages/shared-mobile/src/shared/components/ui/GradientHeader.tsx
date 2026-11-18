@@ -13,11 +13,13 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../core/theme';
 import { AppText } from './AppText';
 import { Avatar } from './Avatar';
 
+import { BRAND } from '../../../core/theme/brand';
 interface GradientHeaderProps {
   title: string;
   subtitle?: string;
@@ -71,11 +73,12 @@ export const GradientHeader = ({
   avatarBadgeColor,
 }: GradientHeaderProps): React.JSX.Element => {
   const { theme } = useAppTheme();
+  const { t } = useTranslation('employer');
   const insets = useSafeAreaInsets();
   const isDark = theme.mode === 'dark';
 
   const topPad = insets.top; // insets.top already includes status bar on both iOS and Android
-  const bgColor = gradientColor ?? (isDark ? theme.colors.headerBg : '#1037A4');
+  const bgColor = gradientColor ?? (isDark ? theme.colors.headerBg : BRAND);
   // Light mode: keep the header a single flat tone (== base) so it blends seamlessly with any
   // hero/section rendered directly below it (no visible seam). Dark mode keeps its subtle depth.
   const bgColor2 = isDark ? theme.colors.headerBg2 : bgColor;
@@ -112,8 +115,9 @@ export const GradientHeader = ({
       <View style={styles.row}>
         {/* Back button */}
         {showBack && (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={onBack}
+            accessibilityLabel={t('back')}
             style={styles.backBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -148,7 +152,7 @@ export const GradientHeader = ({
         {/* Right section */}
         <View style={styles.rightSection}>
           {rightIcon3 && onRightPress3 && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onRightPress3}
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -157,7 +161,7 @@ export const GradientHeader = ({
             </TouchableOpacity>
           )}
           {rightIcon2 && onRightPress2 && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onRightPress2}
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -166,7 +170,7 @@ export const GradientHeader = ({
             </TouchableOpacity>
           )}
           {rightIcon && onRightPress && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onRightPress}
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -182,7 +186,7 @@ export const GradientHeader = ({
             </TouchableOpacity>
           )}
           {avatarName && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={onAvatarPress}
               disabled={!onAvatarPress}
               style={styles.avatarWrap}
@@ -314,7 +318,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 1.5,
-    borderColor: '#1037A4',
+    borderColor: BRAND,
   },
   notifCount: {
     color: '#FFFFFF',
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0.5,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: '#1037A4',
+    borderColor: BRAND,
   },
   avatarBadgeTxt: { color: '#FFFFFF', fontSize: 9, fontWeight: '800', lineHeight: 12 },
   childrenWrap: {

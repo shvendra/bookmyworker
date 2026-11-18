@@ -42,6 +42,7 @@ import i18n from '../../../core/i18n';
 import { getLocationStr } from '../../../shared/utils/labelUtils';
 import { subcatDisplay } from '../../../shared/data/categoryLabels';
 
+import { BRAND } from '../../../core/theme/brand';
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkerProfile'>;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -213,14 +214,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
   if (isError || !worker) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+        <StatusBar barStyle="light-content" backgroundColor={BRAND} />
         <ScreenHeader title={t('wp_title')} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <AppText style={{ fontSize: 18, fontWeight: '800', color: C.navy, marginBottom: 8 }}>{t('wp_profileUnavailable')}</AppText>
           <AppText style={{ fontSize: 13, color: C.slate, textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
             {t('wp_profileUnavailableDesc')}
           </AppText>
-          <TouchableOpacity onPress={() => void refetch()} style={{ backgroundColor: C.navy, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refetch()} style={{ backgroundColor: C.navy, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}>
             <AppText style={{ color: C.white, fontWeight: '800', fontSize: 14 }}>{t('wp_retry')}</AppText>
           </TouchableOpacity>
         </View>
@@ -252,7 +253,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1037A4" />
+      <StatusBar barStyle="light-content" backgroundColor={BRAND} />
       <ScreenHeader
         title={t('wp_title')}
         onBack={() => navigation.goBack()}
@@ -267,7 +268,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
         bounces={true}
       >
         {/* ── Hero ──────────────────────────────────────────────────── */}
-        <View style={[s.hero, { paddingTop: 16, backgroundColor: '#1037A4' }]}>
+        <View style={[s.hero, { paddingTop: 16, backgroundColor: BRAND }]}>
           {/* Depth layer + circles — matches GradientHeader */}
           <View style={s.heroDepth} pointerEvents="none" />
           <View style={s.heroCircle1} pointerEvents="none" />
@@ -428,7 +429,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
               {(['Shortlisted', 'Selected', 'Joined'] as MappingStatus[]).map((st) => {
                 const m = STATUS_META[st];
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={st}
                     onPress={() => setPickerModal(st)}
                     style={[s.pipelineBtn, { backgroundColor: m.bg }]}
@@ -443,7 +444,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 
           {/* Invite to Requirement button — employer only, requires inviteEnabled plan feature */}
           {isEmployer && planFeat.inviteEnabled && (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => setInviteVisible(true)}
               style={s.inviteBtn}
               activeOpacity={0.85}
@@ -514,14 +515,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                         <AppText style={s.phoneNum}>{unlockedAlternate}</AppText>
                       </View>
                       <View style={s.altActions}>
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => callReturn.dial({ id: workerId, name: displayName, phone: unlockedAlternate })}
                           style={s.altIconBtn}
                           activeOpacity={0.85}
                         >
                           <AppText style={{ fontSize: 16 }}>📞</AppText>
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => void Linking.openURL(`https://wa.me/91${unlockedAlternate}`)}
                           style={s.altIconBtn}
                           activeOpacity={0.85}
@@ -532,14 +533,14 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     </View>
                   ) : null}
                   <View style={s.contactBtns}>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => callReturn.dial({ id: workerId, name: displayName, phone: unlockedPhone })}
                       style={s.callBtn}
                       activeOpacity={0.85}
                     >
                       <AppText style={s.callBtnTxt}>{t('wp_callNow')}</AppText>
                     </TouchableOpacity>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => void Linking.openURL(`https://wa.me/91${unlockedPhone}`)}
                       style={s.waBtn}
                       activeOpacity={0.85}
@@ -561,7 +562,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       </AppText>
                     </AppText>
                   </View>
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => void handleUnlock()}
                     disabled={unlocking}
                     style={[s.viewContactBtn, { backgroundColor: C.green, opacity: unlocking ? 0.6 : 1 }]}
@@ -601,7 +602,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                           </AppText>
                         </View>
                       ) : (
-                        <TouchableOpacity
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => void handleUnlock()}
                           disabled={unlocking || !empProfileLoaded}
                           style={[s.viewContactBtn, { opacity: (unlocking || !empProfileLoaded) ? 0.6 : 1 }]}
@@ -639,7 +640,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                     ))}
                   </View>
                   {/* Try to unlock anyway — backend will handle the already-hired bypass */}
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={() => void handleUnlock()}
                     disabled={unlocking}
                     style={[s.hiredCheckBtn, { opacity: unlocking ? 0.7 : 1 }]}
@@ -649,7 +650,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
                       ? <ActivityIndicator color={C.green} size="small" />
                       : <AppText style={s.hiredCheckTxt}>{t('wp_checkHired')}</AppText>}
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={s.subscribeBtn} activeOpacity={0.85}>
+                  <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Subscription')} style={s.subscribeBtn} activeOpacity={0.85}>
                     <AppText style={s.subscribeTxt}>
                       {empProfile?.isSubscribed ? t('wp_renewSub') : t('wp_viewPlans')}
                     </AppText>
@@ -674,7 +675,7 @@ export const WorkerProfileScreen = ({ route, navigation }: Props): React.JSX.Ele
 const s = StyleSheet.create({
   // Hero section
   hero:        { alignItems: 'center', paddingBottom: 28, paddingHorizontal: 20, overflow: 'hidden', position: 'relative', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  heroDepth:   { ...StyleSheet.absoluteFillObject, backgroundColor: '#1037A4', opacity: 0.45 },
+  heroDepth:   { ...StyleSheet.absoluteFillObject, backgroundColor: BRAND, opacity: 0.45 },
   heroCircle1: { position: 'absolute', width: 280, height: 280, borderRadius: 140, top: -90, right: -70, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroCircle2: { position: 'absolute', width: 200, height: 200, borderRadius: 100, bottom: -40, left: -60, backgroundColor: 'rgba(255,255,255,0.03)' },
 
@@ -682,7 +683,7 @@ const s = StyleSheet.create({
   avatar:         { width: 96, height: 96, borderRadius: 48, borderWidth: 3 },
   avatarFallback: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: 'rgba(255,255,255,0.35)', alignItems: 'center', justifyContent: 'center' },
   initials:       { fontSize: 30, fontWeight: '800', color: '#ffffff' },
-  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#1037A4' },
+  verifiedBadge:  { position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: BRAND },
 
   heroName:     { fontSize: 24, fontWeight: '800', color: '#ffffff', textAlign: 'center', marginBottom: 4 },
   heroCategory: { fontSize: 13, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginBottom: 2 },
@@ -744,7 +745,7 @@ const s = StyleSheet.create({
   // Subscribed but not yet unlocked — shows credit hint
   unlockBox:      { gap: 8 },
   unlockHint:     { backgroundColor: '#EBF1FF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  unlockHintTxt:  { fontSize: 11.5, fontWeight: '600', color: '#1037A4', textAlign: 'center' },
+  unlockHintTxt:  { fontSize: 11.5, fontWeight: '600', color: BRAND, textAlign: 'center' },
 
   // "Check if already hired" button (free, shown in expired/no-sub state)
   hiredCheckBtn:  { width: '100%', borderWidth: 1.5, borderColor: '#6EE7B7', borderRadius: 14, paddingVertical: 14, alignItems: 'center', backgroundColor: '#ECFDF5' },

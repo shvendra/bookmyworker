@@ -29,6 +29,7 @@ import { LocationSelector } from '../forms/LocationSelector';
 import type { UserProfile } from '../../types/domain';
 import categoriesData from '../../data/categories.json';
 
+import { BRAND } from '../../../core/theme/brand';
 // Direct JSON save — same approach as WorkCategorySelectScreen (proven to work)
 async function saveAreasOfWork(areasOfWork: string[]): Promise<void> {
   const token = await getAccessToken();
@@ -157,7 +158,6 @@ function getSteps(user: UserProfile): StepConfig[] {
 }
 
 const { width: W, height: H } = Dimensions.get('window');
-const BRAND = '#1037A4';
 
 // ─── Option Card ──────────────────────────────────────────────────────────────
 const OptionCard = ({
@@ -201,7 +201,7 @@ const OptionCard = ({
 
 const oc = StyleSheet.create({
   card:      { flexDirection: 'row', alignItems: 'center', borderRadius: 18, padding: 14, gap: 12,
-               shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+               shadowColor: BRAND, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   iconBadge: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   iconTxt:   { fontSize: 24 },
   textWrap:  { flex: 1, gap: 3 },
@@ -255,7 +255,7 @@ const CHIP_W = Math.floor((W - 60) / 3);
 const chip = StyleSheet.create({
   wrap:      { width: CHIP_W },
   inner:     { borderRadius: 16, padding: 10, alignItems: 'center', gap: 6, minHeight: 90,
-               shadowColor: '#1037A4', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+               shadowColor: BRAND, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   iconCircle:{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconTxt:   { fontSize: 22 },
   label:     { fontSize: 11.5, lineHeight: 16, textAlign: 'center' },
@@ -528,7 +528,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
             </View>
             <AppText style={cs.title}>{t('wizard_doneTitle')}</AppText>
             <AppText style={cs.sub}>{t('wizard_doneSub')}</AppText>
-            <TouchableOpacity onPress={() => { setDone(false); setShowNudge(false); }} style={cs.btn} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => { setDone(false); setShowNudge(false); }} style={cs.btn} activeOpacity={0.85}>
               <AppText style={cs.btnTxt}>{t('wizard_goDashboard')} →</AppText>
             </TouchableOpacity>
           </View>
@@ -549,10 +549,10 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               <AppText style={nu.title}>{t('wizard_completeProfile')}</AppText>
               <AppText style={nu.sub}>{t('wizard_completeSub')}</AppText>
             </View>
-            <TouchableOpacity onPress={handleReopenWizard} style={[nu.btn, { backgroundColor: BRAND }]} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleReopenWizard} style={[nu.btn, { backgroundColor: BRAND }]} activeOpacity={0.85}>
               <AppText style={nu.btnTxt}>{t('wizard_completeBtn')} →</AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowNudge(false)} style={nu.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setShowNudge(false)} style={nu.closeBtn} activeOpacity={0.7}>
               <AppText style={nu.closeTxt}>✕</AppText>
             </TouchableOpacity>
           </View>
@@ -582,7 +582,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           <View style={[s.navRow, { paddingTop: Platform.OS === 'ios' ? 54 : 36 }]}>
             {/* Back / dismiss button — hidden on location step (mandatory) */}
             {step.id !== 'location' ? (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={stepIdx > 0 ? handleBack : handleDismiss}
                 style={s.navIconBtn}
                 activeOpacity={0.7}
@@ -591,7 +591,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               </TouchableOpacity>
             ) : (
               stepIdx > 0 ? (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   onPress={handleBack}
                   style={s.navIconBtn}
                   activeOpacity={0.7}
@@ -617,7 +617,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
             {/* Skip header button — hidden on location step */}
             {step.id !== 'location' ? (
-              <TouchableOpacity onPress={handleSkipStep} style={s.skipBtn} activeOpacity={0.7}>
+              <TouchableOpacity accessibilityRole="button" onPress={handleSkipStep} style={s.skipBtn} activeOpacity={0.7}>
                 <AppText style={s.skipTxt}>{t('wizard_skip')}</AppText>
               </TouchableOpacity>
             ) : (
@@ -777,7 +777,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                       ].map(g => {
                         const active = genderValue === g.value;
                         return (
-                          <TouchableOpacity
+                          <TouchableOpacity accessibilityRole="button"
                             key={g.value}
                             onPress={() => setGenderValue(g.value)}
                             activeOpacity={0.75}
@@ -831,7 +831,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                       {citySearchFocused && citySuggestions.length > 0 && (
                         <View style={pd.suggBox}>
                           {citySuggestions.map(city => (
-                            <TouchableOpacity
+                            <TouchableOpacity accessibilityRole="button"
                               key={city}
                               onPress={() => addWorkLocation(city)}
                               activeOpacity={0.7}
@@ -851,7 +851,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                         {workLocations.map(city => (
                           <View key={city} style={[pd.chip, { borderColor: accent + '55', backgroundColor: accent + '0D' }]}>
                             <AppText style={[pd.chipTxt, { color: accent }]}>📍 {city}</AppText>
-                            <TouchableOpacity onPress={() => removeWorkLocation(city)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <TouchableOpacity accessibilityRole="button" onPress={() => removeWorkLocation(city)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                               <AppText style={[pd.chipClose, { color: accent }]}>×</AppText>
                             </TouchableOpacity>
                           </View>
@@ -865,7 +865,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
 
             {/* Footer */}
             <View style={s.footer}>
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 onPress={() => { void handleNext(); }}
                 disabled={!canContinue() || saving}
                 activeOpacity={0.88}
@@ -882,7 +882,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
               </TouchableOpacity>
 
               {step.id !== 'location' && (
-                <TouchableOpacity onPress={handleSkipStep} style={s.skipStepBtn} activeOpacity={0.6}>
+                <TouchableOpacity accessibilityRole="button" onPress={handleSkipStep} style={s.skipStepBtn} activeOpacity={0.6}>
                   <AppText style={s.skipStepTxt}>{t('wizard_skipStep')}</AppText>
                 </TouchableOpacity>
               )}
@@ -897,10 +897,10 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
           {/* Header */}
           <View style={[sp.header, { paddingTop: Platform.OS === 'ios' ? 54 : 36 }]}>
             <View style={sp.navRow}>
-              <TouchableOpacity onPress={closeSubcatPicker} style={sp.backBtn} activeOpacity={0.7}>
+              <TouchableOpacity accessibilityRole="button" onPress={closeSubcatPicker} style={sp.backBtn} activeOpacity={0.7}>
                 <AppText style={sp.backTxt}>← Back</AppText>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { closeSubcatPicker(); advanceStep(); }} style={sp.skipBtn} activeOpacity={0.7}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => { closeSubcatPicker(); advanceStep(); }} style={sp.skipBtn} activeOpacity={0.7}>
                 <AppText style={sp.skipTxt}>Skip</AppText>
               </TouchableOpacity>
             </View>
@@ -933,7 +933,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                   {group.subs.map(sub => {
                     const sel = selSubs.includes(sub.value);
                     return (
-                      <TouchableOpacity
+                      <TouchableOpacity accessibilityRole="button"
                         key={sub.value}
                         onPress={() => setSelSubs(prev => sel ? prev.filter(x => x !== sub.value) : [...prev, sub.value])}
                         activeOpacity={0.75}
@@ -968,7 +968,7 @@ export const ProfileCompletionModal = ({ user }: Props): React.JSX.Element | nul
                 <AppText style={[sp.countTxt, { color: BRAND }]}>{selSubs.length} specific skill{selSubs.length !== 1 ? 's' : ''} selected</AppText>
               </View>
             )}
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               onPress={() => { void handleSubcatSave(); }}
               disabled={saving}
               activeOpacity={0.88}
@@ -1078,7 +1078,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 24,
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
   subChipTxt:  { fontSize: 12.5, lineHeight: 17, flexShrink: 1 },
 
@@ -1142,7 +1142,7 @@ const nu = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
-    shadowColor: '#1037A4',
+    shadowColor: BRAND,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
     shadowRadius: 20,
@@ -1212,7 +1212,7 @@ const sp = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 14, paddingVertical: 10,
     borderRadius: 24,
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
   checkDot: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkTxt: { fontSize: 9, color: '#fff', fontWeight: '900', lineHeight: 12 },
@@ -1276,7 +1276,7 @@ const pd = StyleSheet.create({
     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
     backgroundColor: '#fff', borderRadius: 12, marginTop: 4,
     borderWidth: 1, borderColor: '#E2E8F0',
-    shadowColor: '#1037A4', shadowOffset: { width: 0, height: 4 },
+    shadowColor: BRAND, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12, shadowRadius: 12, elevation: 8,
     overflow: 'hidden',
   },
