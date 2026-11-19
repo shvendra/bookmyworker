@@ -31,3 +31,21 @@ export function isOutsidePlanScope(
   }
   return false;
 }
+
+/**
+ * While the employer is typing in the search box, the location they did NOT choose themselves (their own home state, and a
+ * district-plan employer's own district — the defaults the screen starts on) must not narrow the search: a city typed in
+ * the box is looked up across ALL of India. A location they picked in the Filter sheet (anything different from the
+ * defaults) is respected. Returns the state / district / block to actually send to the server.
+ */
+export function effectiveLocation(
+  applied: { state: string; district: string; tehsil: string },
+  defaults: { state: string; district: string },
+  searchText: string,
+): { state: string; district: string; tehsil: string; widened: boolean } {
+  const isDefault = applied.state === defaults.state && applied.district === defaults.district && !applied.tehsil;
+  const widened = !!searchText.trim() && isDefault && !!(applied.state || applied.district);
+  return widened
+    ? { state: '', district: '', tehsil: '', widened: true }
+    : { state: applied.state, district: applied.district, tehsil: applied.tehsil, widened: false };
+}

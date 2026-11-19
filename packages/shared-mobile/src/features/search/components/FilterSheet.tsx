@@ -30,6 +30,9 @@ import {
 } from './workerSearchShared';
 
 // ─── Filter Sheet ─────────────────────────────────────────────────────────────
+/** Show the live matching-workers count on the Apply button? Off for now — see the note where it is used. */
+const SHOW_RESULT_COUNT = false;
+
 export const FilterSheet = ({
   visible,
   initial,
@@ -154,7 +157,9 @@ export const FilterSheet = ({
     - ((lockState || f.state === userState) && f.state ? 1 : 0)
     - ((lockDistrict || (!!resetDistrict && f.district === resetDistrict)) && f.district ? 1 : 0);
 
-  const resultCount = useFilterResultCount(f, visible);
+  // The live "Show N workers" count on the Apply button is switched OFF for now (the catalogue is still small in many places, so a
+  // low or zero count puts employers off). Flip to true to bring it back — nothing else needs to change.
+  const resultCount = useFilterResultCount(f, visible && SHOW_RESULT_COUNT);
 
   const handleReset = (): void =>
     setF({ ...EMPTY_FILTERS, state: userState ?? '', district: lockDistrict ? (userDistrict ?? '') : resetDistrict });
@@ -261,9 +266,12 @@ export const FilterSheet = ({
       );
   }
 
-  const applyLabel = resultCount === null
-    ? (activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters'))
-    : resultCount === 0 ? t('ws_no_workers_match') : t('ws_show_workers', { count: resultCount });
+  // With the count off this is simply "Apply Filters".
+  const applyLabel = !SHOW_RESULT_COUNT
+    ? t('ws_apply_filters')
+    : resultCount === null
+      ? (activeCount > 0 ? t('ws_apply_count', { count: activeCount }) : t('ws_apply_filters'))
+      : resultCount === 0 ? t('ws_no_workers_match') : t('ws_show_workers', { count: resultCount });
 
   return (
     <Modal

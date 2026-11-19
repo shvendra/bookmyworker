@@ -315,4 +315,4 @@ export function countActive(f: WorkerFilters): number {
   ].filter(Boolean).length;
 }
 
-export { countNonLocationActive, isOutsidePlanScope } from './workerFilterGate';
+export { countNonLocationActive, isOutsidePlanScope, effectiveLocation } from './workerFilterGate';

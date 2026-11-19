@@ -54,6 +54,7 @@ import {
   getOutcomeColor, OUTCOME_GREEN, OUTCOME_BLUE,
   countActive,
   countNonLocationActive,
+  effectiveLocation,
   isOutsidePlanScope,
   type WorkerFilters,
 } from '../components/workerSearchShared';
@@ -236,6 +237,14 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Typing in the search box looks across ALL of India: the default home state / district stops narrowing it
+  // (a location the employer picked in the filter sheet still applies). Clearing the box restores the home state.
+  const loc = effectiveLocation(
+    { state: appliedFilters.state, district: appliedFilters.district, tehsil: appliedFilters.tehsil },
+    { state: userState, district: districtScoped ? userDistrict : '' },
+    debouncedQuery,
+  );
+
   // Infinite list
   const {
     data,
@@ -247,14 +256,14 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
     fetchStatus,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['workers-infinite', appliedFilters, debouncedQuery],
+    queryKey: ['workers-infinite', appliedFilters, debouncedQuery, loc.widened],
     queryFn: ({ pageParam = 1 }: { pageParam: number }) =>
       workerApi.getAllAgents({
         workerType:    appliedFilters.workerType    || undefined,
         subCategory:   appliedFilters.subCategory    || undefined,
-        state:         appliedFilters.state         || undefined,
-        district:      appliedFilters.district      || undefined,
-        block:         appliedFilters.tehsil        || undefined,
+        state:         loc.state    || undefined,
+        district:      loc.district || undefined,
+        block:         loc.tehsil   || undefined,
         gender:        appliedFilters.gender        || undefined,
         workerGroup:   appliedFilters.workerGroup   || undefined,
         qualification: appliedFilters.qualification || undefined,
@@ -481,8 +490,8 @@ export const WorkerSearchScreen = (): React.JSX.Element => {
           <View style={sc.headerTitleBlock}>
             <AppText style={sc.headerTitle} numberOfLines={2}>{t('ws_header_title')}</AppText>
             <AppText style={sc.headerSub} numberOfLines={2}>
-              📍 {appliedFilters.state
-                ? t('ws_results_in', { state: getLocationDisplayName(appliedFilters.state, 'state', i18n.language) })
+              📍 {loc.state
+                ? t('ws_results_in', { state: getLocationDisplayName(loc.state, 'state', i18n.language) })
                 : t('ws_all_india')}
             </AppText>
           </View>
